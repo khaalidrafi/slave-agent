@@ -5,6 +5,34 @@ This fork renames the upstream project end to end. Doing that with a search-and-
 commit makes every future upstream merge a fight, so the rename is *generated*, not
 carried. This file is the contract for how we stay able to merge upstream.
 
+* Product doctrine: a light core, optional bulk
+
+The agent runs on a 4 GB machine that is also doing real work. So:
+
+- the core does one thing -- talk to the model, run tools, and learn from what it did;
+- anything else that is merely *useful* becomes a plugin the user chooses to install;
+- we do not self-update.
+
+Self-update is the first thing to go under that rule, and the reason is not taste. On
+Guix and Nix the package manager owns installing and upgrading a program; a self-updater
+that rewrites its own source tree fights the distro, needs write access to a store path that
+is read-only by design, and re-downloads a dependency closure we did not choose. It is
+also the largest single subsystem in the tree (~15k lines of CLI plus the desktop and
+Tauri installers), most of which exists to recover from half-finished updates -- fleet
+checkouts, stashes, restart handoffs, Windows app-installer and store channels. We ship a
+package; the user's package manager does the rest. ~README~ and the docs say so.
+
+** How removals stay mergeable
+
+Deleting upstream files is the one edit that *does* cost merges: upstream keeps committing
+to a path we removed, and every rebase answers with a modify/delete conflict. Treat that as
+expected, not as breakage:
+
+- one commit per removed subsystem, on ~ai/main~, saying what it was and why it is out;
+- resolve each conflict with ~git rm~ of the upstream side -- never by resurrecting the file;
+- a conflict on a removed path is also a signal: upstream is still investing there, which is
+  worth reading before you rm.
+
 * Branch model
 
 #+begin_example
@@ -84,3 +112,10 @@ transitively -- those are someone else's names, not our branding.
 - [ ] Icon art (~assets/icon-master.svg~, ~☤~ in the README) is not text; regenerate with
       ~scripts/generate_icons.py~ once we have our own mark.
 - [ ] ~LICENSE~ and the ~contributors/~ tree keep upstream attribution on purpose.
+- [ ] The ~KEEP_RE~ entry for the upstream repo path was justified by the updater reading
+      upstream releases. Once the updater is gone the path still has to stay (it is our
+      ~origin~ remote), but reword that comment -- it currently states a reason that no
+      longer holds.
+- [ ] Which subsystems move from core to plugin. Measure first: dependency closure, LOC per
+      directory, gateway platform adapters, ~tools/~ and ~plugins/~ inventories. Then propose,
+      and let the user pick what to install.
