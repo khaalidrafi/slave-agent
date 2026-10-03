@@ -1,0 +1,86 @@
+#+TITLE: Fork model: staying mergeable with upstream
+#+STARTUP: overview
+
+This fork renames the upstream project end to end. Doing that with a search-and-replace
+commit makes every future upstream merge a fight, so the rename is *generated*, not
+carried. This file is the contract for how we stay able to merge upstream.
+
+* Branch model
+
+#+begin_example
+NousResearch/hermes-agent @ main        (remote: origin)
+        |
+        +-- ai/main                     our real work. Normal git: rebase, conflicts, review.
+              |
+              +-- ai/slave-agent        ai/main + ONE generated brand commit. Nobody edits it.
+#+end_example
+
+The brand commit is the *output* of a program, so it is thrown away and rebuilt on every
+sync instead of being replayed. That is the whole trick: an upstream change to a line
+containing the old name is a conflict only if the rename is a patch. When it is a build
+step, there is nothing to conflict.
+
+* What to put where
+
+| You want to...                       | Do this                                              |
+|--------------------------------------+------------------------------------------------------|
+| fix a bug, add a feature, edit prompts | work on ~ai/main~                                    |
+| change how the product is NAMED      | edit ~brand.py~ (one file), then ~scripts/fork-sync.sh~ |
+| change a name MAPPING (module, env, dir) | edit ~RULES~ / ~IDENTITY_RE~ in ~scripts/rebrand.py~ |
+| ship the branded tree                | branch off ~ai/slave-agent~, never merge back to ~ai/main~ |
+
+Never hand-edit a brand string in a file. Run the generator. Hand edits are invisible to
+it, so the next sync silently reverts them.
+
+~brand.py~, ~scripts/rebrand.py~ and the fork-brand workflow are exempt from their own
+rewrite (~SELF_PATHS~): they are the places allowed to contain the upstream name, because
+they are what search for it. Print the mapping with ~python3 scripts/rebrand.py --mapping~.
+
+* Syncing upstream
+
+#+begin_src bash
+scripts/fork-sync.sh              # fetch, rebase ai/main, regenerate brand, one commit
+scripts/fork-sync.sh --check      # how many upstream commits we are behind
+git log --oneline ai/main..origin/main
+#+end_src
+
+Conflicts during step 1 are ordinary: they are between ~ai/main~ and upstream, and the
+brand is not in the picture yet. That is the point — you resolve real code, never
+135,000 renames.
+
+* Verification (runs at the end of every ~--apply~)
+
+#+begin_src bash
+python3 scripts/rebrand.py --tier brand --check     # what a human can still see
+python3 scripts/rebrand.py --no-verify --apply --dry-run
+python3 -m compileall -q .                          # syntax after the identifier swap
+#+end_src
+
+The built-in verifier checks two things statically, because this fork cannot be launched
+yet on the 4 GB machine:
+- every top-level ~import slave_*~ / ~from slave_*~ resolves to a real file or package
+  (catches a module renamed on disk but not in code, or the reverse);
+- no leftover line containing the old name, except the protected ones.
+
+Protected and deliberately unchanged (see ~KEEP_RE~): the upstream repo path (the updater
+still reads upstream releases), the upstream docs and installer host, the contributor
+email domain, and Meta's ~hermes-parser~ / ~hermes-estree~ JS packages pulled in
+transitively -- those are someone else's names, not our branding.
+
+* Known costs of this design
+
+- ~ai/slave-agent~ history is one commit deep. Review brand changes by reading the
+  generator diff, not the 5,000-file output.
+- Anything a user already installed under the old state dir is not migrated. We are
+  pre-release; a migration lands with the first real release, in ~ai/main~.
+- Regenerating takes minutes on this machine, not seconds.
+- Lockfiles: ~uv.lock~ and ~package-lock.json~ carry our dist name and are rewritten by
+  the identity tier. They still have to be *validated* by a real ~uv lock~ / ~npm install~
+  before a release; until then treat them as pending.
+
+* TODO Decisions still open
+
+- [ ] Installer one-liner still points at the upstream host; we need our own release URL.
+- [ ] Icon art (~assets/icon-master.svg~, ~☤~ in the README) is not text; regenerate with
+      ~scripts/generate_icons.py~ once we have our own mark.
+- [ ] ~LICENSE~ and the ~contributors/~ tree keep upstream attribution on purpose.

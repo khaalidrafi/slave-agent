@@ -1,0 +1,42 @@
+# Fork-only guard: the brand must stay *derived*, never hand-edited.
+# Runs the generator over the committed branded tree and requires it to be a no-op.
+# A red run here means someone typed a product name into a file instead of changing
+# brand.py / scripts/rebrand.py, which is exactly the drift that makes an upstream
+# merge unresolvable. See FORK.org.
+name: fork-brand-consistency
+
+on:
+  push:
+    branches: ["ai/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  brand:
+    # Skip on the upstream repository itself; this is our fork's contract.
+    if: github.repository != 'NousResearch/hermes-agent'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+
+      - name: generator is idempotent over the committed tree
+        run: |
+          set -o pipefail
+          python3 scripts/rebrand.py --tier brand --apply --dry-run | tee /tmp/brand.log
+          python3 scripts/rebrand.py --tier identity --apply --dry-run | tee /tmp/identity.log
+          # Every tier must report zero work left, and no path may still need moving.
+          grep -E "\[rebrand brand dry-run\] 0 files, 0 replacements" /tmp/brand.log
+          grep -E "\[rebrand identity dry-run\] 0 files, 0 replacements" /tmp/identity.log
+          grep -E "\[rebrand paths dry-run\] 0 paths" /tmp/identity.log
+
+      - name: no old-vocabulary imports anywhere
+        # Imports are the failure mode that bites at first launch, so they are the
+        # one thing we assert outright rather than eyeball in a diff.
+        run: |
+          if git grep -nE '^(from|import)[[:space:]]+hermes' -- '*.py'; then
+            echo "leftover imports of the old module names" >&2
+            exit 1
+          fi
