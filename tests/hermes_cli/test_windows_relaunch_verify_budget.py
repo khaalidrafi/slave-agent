@@ -18,8 +18,9 @@ from gateway.status import (
 )
 from hermes_cli import gateway as gateway_mod
 from hermes_cli.gateway import GATEWAY_RESTART_WATCHER_TIMEOUT_S
+from hermes_cli.process_identity import _hermes_holder_subcommand
 from hermes_cli.update_cmd_windows import (
-    _hermes_holder_subcommand, _pending_relaunch_pids, _relaunch_verify_timeout_s,
+    _pending_relaunch_pids, _relaunch_verify_timeout_s,
 )
 
 

@@ -83,7 +83,7 @@ def _scan_dashboard_processes(*, exclude_pids: set[int] | None = None) -> list[t
     # Canonical token matcher, never argv substrings: ``hermes serve`` is a prefix of ``hermes
     # server`` and this list decides a SIGTERM — ``herdr --session hermes server`` (a terminal
     # multiplexer) was killed and its unit restarted by ``hermes update`` (#121156).
-    from hermes_cli.update_cmd_windows import _hermes_holder_subcommand
+    from hermes_cli.process_identity import _hermes_holder_subcommand
     try:
         found = [(pid, cmd) for pid, cmd in _iter_process_table()
                  if pid not in skip and _hermes_holder_subcommand(cmd) in ("dashboard", "serve")]
@@ -776,7 +776,7 @@ def _is_desktop_local_serve_cmdline(command: str) -> bool:
     Long-lived headless serves (``--host <tailscale-ip> --port 9119``) must never match —
     those are operator-managed remote backends that legitimately run with ppid 1.
     """
-    from hermes_cli.update_cmd_windows import _hermes_holder_subcommand
+    from hermes_cli.process_identity import _hermes_holder_subcommand
     # Canonical token matcher, never argv substrings: ``kanban --preserve-cache`` contains "serve" and
     # ``vim notes about hermes serve`` contains both markers — this predicate decides a kill.
     if _hermes_holder_subcommand(command) != "serve":

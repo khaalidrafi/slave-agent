@@ -34,11 +34,14 @@ from hermes_cli.update_abort_recovery import (  # noqa: F401
     _abort_recovery_is_complete, _qualified_serve_skips, _recover_gateway_restart_after_abort,
     _serve_unit_recovery_available, _surviving_pre_update_serve_runtimes,
     _warn_stale_serve_runtimes)
+from hermes_cli.process_identity import (  # noqa: F401  (re-exported: callers/tests reach them here)
+    _HOLDER_VALUE_FLAGS_FALLBACK, _hermes_holder_subcommand, _holder_value_flags,
+    _holder_value_flags_cache,
+)
 from hermes_cli.update_cmd_windows import (  # noqa: F401
-    _HOLDER_VALUE_FLAGS_FALLBACK,
     _cold_start_windows_gateway_after_update, _desktop_owns_gateway_lifecycle,
-    _detect_venv_python_processes, _hermes_holder_subcommand, _holder_value_flags,
-    _holder_value_flags_cache, _looks_like_desktop_control_plane,
+    _detect_venv_python_processes,
+    _looks_like_desktop_control_plane,
     _pause_windows_gateways_for_update,
     _refresh_bootstrap_cache_scripts, _refresh_windows_gateway_launchers,
     _refuse_gateway_ancestor_tree_kill,
