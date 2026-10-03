@@ -1,11 +1,15 @@
-"""Name what a draining gateway is waiting on while ``hermes update`` blocks on it.
+"""Name what a draining gateway is waiting on, while a caller blocks on it.
 
 The gateway's in-band restart (SIGUSR1 → ``request_restart``) defers ``stop()`` until in-flight
 work finishes, capped by ``agent.restart_after_turn_timeout`` (30 min by default). From the
-updater's side that was a bare "draining (up to 1875s)..." followed by silence, which reads as a
-hung update. The gateway publishes each unit it is holding for in ``gateway_state.json``
+waiting side that was a bare "draining (up to 1875s)..." followed by silence, which reads as a
+hang. The gateway publishes each unit it is holding for in ``gateway_state.json``
 (``active_work``, written by ``GatewayShutdownMixin._describe_active_work``); this module turns
 that into progress lines.
+
+Lives under ``gateway_*`` because the gateway owns the state it reads. It used to sit in
+``update_cmd_drain_report.py``, which made ``gateway.py`` and ``gateway_launchd.py`` import the
+self-updater to print their own drain status.
 """
 
 from __future__ import annotations
