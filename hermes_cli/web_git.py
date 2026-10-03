@@ -552,7 +552,7 @@ def _fetch_tracking_ref(root: str, remote: str, branch: str) -> bool:
     A tag-pinned narrow clone maps only the tag in ``remote.<remote>.fetch``, so a by-name
     fetch writes FETCH_HEAD without creating the tracking ref (#125686).
     """
-    from hermes_cli.update_cmd_check import tracking_refspec
+    from hermes_cli.gitlock import tracking_refspec
 
     return _git(root, ["fetch", remote, tracking_refspec(remote, branch)])[0] == 0
 

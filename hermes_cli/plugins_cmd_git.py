@@ -294,11 +294,11 @@ def _autostash_dirty_tree(git_exe: str, target: Path) -> tuple[str, str]:
     status = _pc()._run_plugin_git(git_exe, target, "status", "--porcelain", "-z")
     if status.returncode != 0 or not status.stdout.strip():
         return "", ""
-    # `git add -N` entries make `git stash push` fail outright (see update_cmd_stash), so promote them
-    # to real staged adds first; the checkout's own local edits are otherwise unstashable.
-    from hermes_cli.update_cmd_stash import _intent_to_add_paths
+    # `git add -N` entries make `git stash push` fail outright (see gitlock.intent_to_add_paths),
+    # so promote them to real staged adds first; the checkout's own local edits are otherwise unstashable.
+    from hermes_cli.gitlock import intent_to_add_paths
 
-    intent_to_add = _intent_to_add_paths(status.stdout)
+    intent_to_add = intent_to_add_paths(status.stdout)
     if intent_to_add:
         _pc()._run_plugin_git(git_exe, target, "add", "--", *intent_to_add)
     pre_stash = _stash_ref(git_exe, target)

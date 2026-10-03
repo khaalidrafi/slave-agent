@@ -12,6 +12,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Owned by gitlock now (the web UI and worktree isolation need the same rule); imported at module
+# level so ``_check.tracking_refspec`` keeps resolving for callers that reach it through this module.
+from hermes_cli.gitlock import tracking_refspec
+
 
 def _git(git_cmd: list[str], root: Path, args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
     from hermes_cli._subprocess_compat import windows_hide_flags
@@ -91,16 +95,6 @@ def channel_compare_branch(selected_channel: str, git_cmd: list[str], root: Path
 
 def is_shallow_repository(git_cmd: list[str], root: Path) -> bool:
     return _git(git_cmd, root, ["rev-parse", "--is-shallow-repository"]).stdout.strip() == "true"
-
-
-def tracking_refspec(remote: str, branch: str) -> str:
-    """Refspec that always writes ``<remote>/<branch>``, whatever ``remote.<remote>.fetch`` says.
-
-    Narrow clones (tag-pinned ``--single-branch``, #125112) map only the tag, so a by-name fetch
-    writes FETCH_HEAD and never the tracking ref the updater resolves. The ``+`` is load-bearing:
-    on a depth-1 clone the new tip is not a descendant of the old one.
-    """
-    return f"+refs/heads/{branch}:refs/remotes/{remote}/{branch}"
 
 
 def _fetch(git_cmd: list[str], root: Path, depth_args: list[str], remote: str, branch: str):

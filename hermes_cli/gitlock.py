@@ -1,7 +1,11 @@
-"""Stale git lock-file and aborted-fetch pack-debris recovery for update/check paths.
+"""Git plumbing helpers shared by the checkout paths.
 
-A killed ``git fetch`` can leave ``.git/shallow.lock`` behind (every later fetch fails with "Unable to
-create '.../shallow.lock': File exists") and ``tmp_pack_*`` files git itself never cleans up."""
+Historically this was "stale git lock-file and aborted-fetch pack-debris recovery for update/check
+paths". Two pure ref/porcelain helpers now live here too because the code that needs them is not
+the self-updater: a killed ``git fetch`` can leave ``.git/shallow.lock`` behind (every later fetch
+fails with "Unable to create '.../shallow.lock': File exists") and ``tmp_pack_*`` files git itself
+never cleans up; ``tracking_refspec`` and ``intent_to_add_paths`` describe git behaviour that the
+web UI, the worktree isolation and the plugin installer all have to agree on."""
 
 from __future__ import annotations
 
@@ -656,3 +660,29 @@ def consolidate_lazy_fetch_packs(repo_root: Path, *,
     except Exception:
         logger.debug("lazy-fetch pack consolidation failed for %s", repo_root, exc_info=True)
         return 0
+
+
+def tracking_refspec(remote: str, branch: str) -> str:
+    """Refspec that always writes ``<remote>/<branch>``, whatever ``remote.<remote>.fetch`` says.
+
+    Narrow clones (tag-pinned ``--single-branch``, #125112) map only the tag, so a by-name fetch
+    writes FETCH_HEAD and never the tracking ref the caller resolves. The ``+`` is load-bearing:
+    on a depth-1 clone the new tip is not a descendant of the old one.
+    """
+    return f"+refs/heads/{branch}:refs/remotes/{remote}/{branch}"
+
+
+def intent_to_add_paths(porcelain_z: str) -> tuple[str, ...]:
+    """Paths recorded with ``git add -N`` (intent-to-add), read from NUL-separated porcelain output.
+
+    Such an entry carries the empty blob with zeroed stat data, so it is never "uptodate" and
+    ``git stash push`` rejects the whole stash with ``Entry 'X' not uptodate. Cannot merge.`` - a dead
+    end for the user, because that is the state an editor leaves behind when it shows a new file in
+    diffs. Porcelain marks it ``" A"`` (in the worktree, absent from the index); a real staged add is
+    ``"A "`` and an untracked file ``"??"``. Rename records carry a second, prefix-less field, which
+    the leading ``" A"`` test cannot match.
+    """
+    return tuple(
+        record[3:] for record in porcelain_z.split("\0")
+        if len(record) > 3 and record[0] == " " and record[1] == "A"
+    )

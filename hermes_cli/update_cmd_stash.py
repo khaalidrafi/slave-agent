@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
+from hermes_cli.gitlock import intent_to_add_paths
+
 # Log-record parity with the origin module.
 logger = logging.getLogger("hermes_cli.update_cmd")
 
@@ -39,22 +41,6 @@ def _git_quiet(git_cmd: list[str], args: list[str], cwd: Path, **kwargs):
         return subprocess.run(git_cmd + args, cwd=cwd, capture_output=True, **kwargs)
     except (OSError, subprocess.SubprocessError):
         return None
-
-
-def _intent_to_add_paths(porcelain_z: str) -> tuple[str, ...]:
-    """Paths recorded with ``git add -N`` (intent-to-add), read from NUL-separated porcelain output.
-
-    Such an entry carries the empty blob with zeroed stat data, so it is never "uptodate" and
-    ``git stash push`` rejects the whole stash with ``Entry 'X' not uptodate. Cannot merge.`` - a dead
-    end for the user, because that is the state an editor leaves behind when it shows a new file in
-    diffs. Porcelain marks it ``" A"`` (in the worktree, absent from the index); a real staged add is
-    ``"A "`` and an untracked file ``"??"``. Rename records carry a second, prefix-less field, which
-    the leading ``" A"`` test cannot match.
-    """
-    return tuple(
-        record[3:] for record in porcelain_z.split("\0")
-        if len(record) > 3 and record[0] == " " and record[1] == "A"
-    )
 
 
 def _git_paths_z(git_cmd: list[str], args: list[str], cwd: Path):
@@ -93,10 +79,10 @@ def _stash_local_changes_if_needed(git_cmd: list[str], cwd: Path) -> Optional[st
         subprocess.run(git_cmd + ["reset"], cwd=cwd, capture_output=True)
 
     # Intent-to-add entries are the other index state `git stash push` refuses (see
-    # _intent_to_add_paths). Promoting them to real staged adds keeps their content and is lossless
-    # for the user's work; after the restore they come back as staged additions, which is the closest
-    # `git stash` can represent.
-    intent_to_add = _intent_to_add_paths(status.stdout)
+    # gitlock.intent_to_add_paths). Promoting them to real staged adds keeps their content and is
+    # lossless for the user's work; after the restore they come back as staged additions, which is
+    # the closest `git stash` can represent.
+    intent_to_add = intent_to_add_paths(status.stdout)
     if intent_to_add:
         print(f"→ Making {len(intent_to_add)} intent-to-add file(s) stashable...")
         add = _git_run(git_cmd, ["add", "--", *intent_to_add], cwd)
