@@ -26,14 +26,14 @@ function handoffFixture(remote: boolean): { root: string; deps: CheckoutStrategy
   fs.mkdirSync(scriptDirectory, { recursive: true })
   fs.writeFileSync(path.join(scriptDirectory, IS_WINDOWS ? 'windows.ps1' : 'posix.sh'), '')
   fs.writeFileSync(path.join(scriptDirectory, 'runtime.ps1'), '')
-  fs.mkdirSync(path.join(root, '.hermes', 'bin'), { recursive: true })
-  fs.writeFileSync(path.join(root, '.hermes', 'bin', 'hermes.exe'), '')
+  fs.mkdirSync(path.join(root, '.slave', 'bin'), { recursive: true })
+  fs.writeFileSync(path.join(root, '.slave', 'bin', 'slave.exe'), '')
 
   const status: SourceUpdate = { supported: true, branch: 'main', targetSha: 'a'.repeat(40), updateAvailable: true }
 
   const deps: CheckoutStrategyDeps = {
     readSourceUpdate: async (): Promise<SourceUpdate> => status,
-    hermesHome: home,
+    slaveHome: home,
     isWindows: IS_WINDOWS,
     isMac: process.platform === 'darwin',
     defaultUpdateBranch: 'main',

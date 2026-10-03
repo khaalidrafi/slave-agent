@@ -129,8 +129,8 @@ describe('VersionHero bundle banners', () => {
 
   const stubRelaunch = () => {
     const relaunchApp = vi.fn().mockResolvedValue(undefined)
-    const original = window.hermesDesktop
-    Object.defineProperty(window, 'hermesDesktop', {
+    const original = window.slaveDesktop
+    Object.defineProperty(window, 'slaveDesktop', {
       configurable: true,
       value: { ...original, openExternal: vi.fn(), relaunchApp }
     })

@@ -36,13 +36,13 @@ def test_main_arms_watchdog_then_imports_cli_before_runtime_prep(monkeypatch):
     parent_pid = 424242
     events = []
 
-    class FakeHermesCLI:
+    class FakeSlaveCLI:
         def __init__(self, **kwargs):
             events.append(("cli", kwargs["resume"]))
 
     class FakeCliFinder(importlib.abc.MetaPathFinder, importlib.abc.Loader):
-        # Record when ``cli`` is actually imported, not just when HermesCLI is built:
-        # importing cli loads ~/.hermes/.env, which MCP discovery in runtime prep needs.
+        # Record when ``cli`` is actually imported, not just when SlaveCLI is built:
+        # importing cli loads ~/.slave/.env, which MCP discovery in runtime prep needs.
         def find_spec(self, name, path=None, target=None):
             return importlib.util.spec_from_loader(name, self) if name == "cli" else None
 
@@ -51,7 +51,7 @@ def test_main_arms_watchdog_then_imports_cli_before_runtime_prep(monkeypatch):
 
         def exec_module(self, module):
             events.append(("cli-import",))
-            module.HermesCLI = FakeHermesCLI
+            module.SlaveCLI = FakeSlaveCLI
 
     # setitem first so teardown also removes the stub module the import below inserts.
     monkeypatch.setitem(sys.modules, "cli", None)

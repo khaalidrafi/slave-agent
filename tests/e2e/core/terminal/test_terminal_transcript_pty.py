@@ -1,7 +1,7 @@
 """C2 on terminal surfaces: what the classic CLI and the Ink TUI finally show is the transcript,
 exactly once, unmangled, and matches what was persisted.
 
-Real chain: a real ``hermes chat --cli`` / ``hermes --tui`` process (the TUI spawns its real Node
+Real chain: a real ``slave chat --cli`` / ``slave --tui`` process (the TUI spawns its real Node
 frontend and real ``tui_gateway`` child) on a real PTY, a real AIAgent + SessionDB on disk, and the
 recording fake OpenAI-compatible provider streaming scripted multi-chunk replies, a tool-call turn
 and a reasoning turn. The byte stream is rendered through a VT emulator so assertions are made on
@@ -135,8 +135,8 @@ MATRIX = [
 @pytest.mark.parametrize(("surface", "scenario"), MATRIX)
 def test_terminal_transcript_integrity(surface: str, scenario: str, tmp_path: Path) -> None:
     if surface == "tui" and not _tui_available():
-        if os.environ.get("HERMES_E2E_REQUIRE_TUI") == "1":
-            pytest.fail("ui-tui/dist/entry.js or node missing but HERMES_E2E_REQUIRE_TUI=1")
+        if os.environ.get("SLAVE_E2E_REQUIRE_TUI") == "1":
+            pytest.fail("ui-tui/dist/entry.js or node missing but SLAVE_E2E_REQUIRE_TUI=1")
         pytest.skip("Ink TUI not built (cd ui-tui && npm run build) or node missing")
 
     spec = _scenarios(surface)[scenario]

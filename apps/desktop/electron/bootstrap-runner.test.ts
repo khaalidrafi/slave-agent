@@ -22,7 +22,7 @@ const SCRIPT_NAME = process.platform === 'win32' ? 'install.ps1' : 'install.sh'
 const ZERO_COMMIT = '0000000000000000000000000000000000000000'
 
 function mkTmpHome() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-bootstrap-test-'))
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'slave-bootstrap-test-'))
 }
 
 test('runBootstrap bails immediately when the signal is already aborted', async () => {
@@ -35,7 +35,7 @@ test('runBootstrap bails immediately when the signal is already aborted', async 
     installStamp: null,
     activeRoot: '/tmp/hermes-runner-test',
     sourceRepoRoot: null,
-    hermesHome: '/tmp/hermes-runner-test',
+    slaveHome: '/tmp/hermes-runner-test',
     logRoot: '/tmp/hermes-runner-test',
     onEvent: ev => events.push(ev),
     abortSignal: controller.signal
@@ -53,7 +53,7 @@ test('existing checkout detection requires git metadata', () => {
   const home = mkTmpHome()
 
   try {
-    const activeRoot = path.join(home, 'hermes-agent')
+    const activeRoot = path.join(home, 'slave-agent')
     assert.equal(hasExistingGitCheckout(activeRoot), false)
 
     fs.mkdirSync(path.join(activeRoot, '.git'), { recursive: true })
@@ -70,10 +70,10 @@ test('fresh bootstrap args include the packaged commit pin', () => {
   assert.deepEqual(
     buildPosixPinArgs({
       installStamp,
-      activeRoot: '/tmp/hermes-agent',
-      hermesHome: '/tmp/hermes'
+      activeRoot: '/tmp/slave-agent',
+      slaveHome: '/tmp/hermes'
     }),
-    ['--dir', '/tmp/hermes-agent', '--hermes-home', '/tmp/hermes', '--branch', 'main', '--commit', installStamp.commit]
+    ['--dir', '/tmp/slave-agent', '--slave-home', '/tmp/hermes', '--branch', 'main', '--commit', installStamp.commit]
   )
 })
 
@@ -84,11 +84,11 @@ test('existing-checkout bootstrap args keep branch but skip the packaged commit 
   assert.deepEqual(
     buildPosixPinArgs({
       installStamp,
-      activeRoot: '/tmp/hermes-agent',
-      hermesHome: '/tmp/hermes',
+      activeRoot: '/tmp/slave-agent',
+      slaveHome: '/tmp/hermes',
       pinCommit: false
     }),
-    ['--dir', '/tmp/hermes-agent', '--hermes-home', '/tmp/hermes', '--branch', 'main']
+    ['--dir', '/tmp/slave-agent', '--slave-home', '/tmp/hermes', '--branch', 'main']
   )
 })
 
@@ -107,9 +107,9 @@ test('fallback install stamps use an unpinned branch ref', () => {
     buildPosixPinArgs({
       installStamp: stamp,
       activeRoot: '/tmp/hermes',
-      hermesHome: '/tmp/home'
+      slaveHome: '/tmp/home'
     }),
-    ['--dir', '/tmp/hermes', '--hermes-home', '/tmp/home', '--branch', 'main']
+    ['--dir', '/tmp/hermes', '--slave-home', '/tmp/home', '--branch', 'main']
   )
 })
 
@@ -164,7 +164,7 @@ test('resolveInstallScript downloads fallback stamps by branch instead of zero c
     const result = await resolveInstallScript({
       installStamp: { commit: ZERO_COMMIT, branch: 'main' },
       sourceRepoRoot: null,
-      hermesHome: home,
+      slaveHome: home,
       emit: () => {},
       _download: async (ref, destPath) => {
         refs.push(ref)
@@ -199,7 +199,7 @@ test('resolveInstallScript refreshes the live branch for an existing checkout', 
     const result = await resolveInstallScript({
       installStamp: { commit, branch: 'main' },
       sourceRepoRoot: null,
-      hermesHome: home,
+      slaveHome: home,
       emit: () => {},
       pinCommit: false,
       _download: async (ref, destPath) => {
@@ -234,7 +234,7 @@ test('resolveInstallScript refreshes an immutable-pin cache on a fresh install',
     const result = await resolveInstallScript({
       installStamp: { commit, branch: 'main' },
       sourceRepoRoot: null,
-      hermesHome: home,
+      slaveHome: home,
       emit: () => {},
       _download: async (ref, destPath) => {
         refs.push(ref)
@@ -259,7 +259,7 @@ test('resolveInstallScript fails closed instead of executing an installed stale 
 
   try {
     const commit = 'a'.repeat(40)
-    const scriptsDir = path.join(home, 'hermes-agent', 'scripts')
+    const scriptsDir = path.join(home, 'slave-agent', 'scripts')
     fs.mkdirSync(scriptsDir, { recursive: true })
     fs.writeFileSync(path.join(scriptsDir, SCRIPT_NAME), 'stale installed script\n')
 
@@ -267,7 +267,7 @@ test('resolveInstallScript fails closed instead of executing an installed stale 
       resolveInstallScript({
         installStamp: { commit, branch: 'main' },
         sourceRepoRoot: null,
-        hermesHome: home,
+        slaveHome: home,
         emit: () => {},
         _download: async () => {
           throw new Error('Failed to download install script: HTTP 404')
@@ -287,7 +287,7 @@ test('resolveInstallScript fails closed instead of executing an installed stale 
 test('installer log lines reach the emitter without escape sequences; \\r redraws keep the last frame', () => {
   assert.equal(cleanInstallerLogLine('\u001b[0;32m✓\u001b[0m Detected: macos (macos)'), '✓ Detected: macos (macos)')
   assert.equal(cleanInstallerLogLine('\u001b[2K\u001b[1GCloning repository…\u001b[K'), 'Cloning repository…')
-  assert.equal(cleanInstallerLogLine('\u001b]0;hermes\u0007Installing Hermes'), 'Installing Hermes')
+  assert.equal(cleanInstallerLogLine('\u001b]0;slave\u0007Installing slave-agent'), 'Installing slave-agent')
   assert.equal(cleanInstallerLogLine('\r 12%\r 67%\r100%\u001b[K'), '100%')
   assert.equal(cleanInstallerLogLine('Resolving dependencies…\r'), 'Resolving dependencies…')
   // Only-escape frames drop entirely, so the caller emits nothing for them.
@@ -310,7 +310,7 @@ test.skipIf(process.platform === 'win32')(
       installStamp: null,
       activeRoot: home,
       sourceRepoRoot: home,
-      hermesHome: home,
+      slaveHome: home,
       logRoot: home,
       onEvent: () => {}
     })

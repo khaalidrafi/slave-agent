@@ -26,7 +26,7 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_0123456789abcdef0123456789abcdef.png"
-        canonical = rf"C:\Users\Alice\AppData\Local\hermes\cache\images\{capture_name}"
+        canonical = rf"C:\Users\Alice\AppData\Local\slave\cache\images\{capture_name}"
         response = (
             "Here is the screenshot.\n"
             f"MEDIA:/Users/Alice/AppData/Local/hermes/cache/images/{capture_name}"
@@ -55,7 +55,7 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_fedcba9876543210fedcba9876543210.jpg"
-        canonical = rf"D:\Hermes Data\cache\images\{capture_name}"
+        canonical = rf"D:\slave-agent Data\cache\images\{capture_name}"
         response = f'MEDIA:"/Users/Alice/Hermes Data/cache/images/{capture_name}"'
         messages = [
             {
@@ -88,7 +88,7 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png"
-        canonical = rf"C:\Users\Alice\AppData\Local\hermes\cache\images\{capture_name}"
+        canonical = rf"C:\Users\Alice\AppData\Local\slave\cache\images\{capture_name}"
         messages = [
             {
                 "role": "tool",
@@ -151,7 +151,7 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_dddddddddddddddddddddddddddddddd.png"
-        canonical = rf"C:\Users\Alice\AppData\Local\hermes\cache\images\{capture_name}"
+        canonical = rf"C:\Users\Alice\AppData\Local\slave\cache\images\{capture_name}"
         payload = _json.dumps(
             {
                 "summary": f"capture\n  (shareable screenshot saved to {canonical})",

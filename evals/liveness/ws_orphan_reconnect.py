@@ -13,9 +13,9 @@ import threading
 import time
 
 repo = Path(sys.argv[1]).resolve()
-home = tempfile.mkdtemp(prefix="hermes-orphan-wire-")
+home = tempfile.mkdtemp(prefix="slave-orphan-wire-")
 os.environ.clear()
-os.environ.update(HOME=home, HERMES_HOME=home + "/.hermes", PATH="/usr/bin:/bin")
+os.environ.update(HOME=home, SLAVE_HOME=home + "/.slave", PATH="/usr/bin:/bin")
 sys.path.insert(0, str(repo))
 from tui_gateway import server as s
 from tui_gateway.ws import handle_ws

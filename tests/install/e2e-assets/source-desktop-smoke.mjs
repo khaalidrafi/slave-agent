@@ -38,7 +38,7 @@ if (values.desktop === 'absent') {
   const driver = fileURLToPath(new URL('./desktop-smoke.ts', import.meta.url));
   const args = [driver, '--exe', executables[0], '--origin', 'source'];
   for (const key of ['root', 'home', 'user-data', 'out', 'phase', 'expect-commit']) args.push(`--${key}`, values[key]);
-  const mockUrl = values['mock-url'] || process.env.HERMES_E2E_MOCK_URL;
+  const mockUrl = values['mock-url'] || process.env.SLAVE_E2E_MOCK_URL;
   if (mockUrl) args.push('--mock-url', mockUrl);
   const result = spawnSync(process.execPath, args, { stdio: 'inherit', cwd: values.root });
   if (result.error) throw result.error;

@@ -471,16 +471,16 @@ describe('MessagingView Telegram quick setup', () => {
       expires_at: new Date(Date.now() + 600_000).toISOString(),
       pairing_id: 'pair-1',
       qr_payload: 'tg://pair',
-      suggested_username: 'hermes_bot'
+      suggested_username: 'slave_bot'
     })
     getTelegramOnboardingStatus.mockResolvedValue({
-      bot_username: 'hermes_bot',
+      bot_username: 'slave_bot',
       expires_at: new Date(Date.now() + 600_000).toISOString(),
       owner_user_id: '8792111505',
       status: 'ready'
     })
     applyTelegramOnboarding.mockResolvedValue({
-      bot_username: 'hermes_bot',
+      bot_username: 'slave_bot',
       needs_restart: false,
       ok: true,
       platform: 'telegram',
@@ -507,13 +507,13 @@ describe('MessagingView Telegram quick setup', () => {
       await waitFor(() => expect(watchGatewayRestartOutcome).toHaveBeenCalled())
       expect(notify).toHaveBeenCalledWith({
         kind: 'success',
-        message: 'Connected: @hermes_bot · Telegram saved; gateway restarting…',
+        message: 'Connected: @slave_bot · Telegram saved; gateway restarting…',
         title: 'Telegram setup saved'
       })
       // The pairing UI is gone, but the card still names the bot that was just connected.
       expect(screen.queryByRole('button', { name: /Save and restart/ })).toBeNull()
       expect(screen.getByText('Connected')).toBeTruthy()
-      expect(screen.getByText('@hermes_bot')).toBeTruthy()
+      expect(screen.getByText('@slave_bot')).toBeTruthy()
     } finally {
       $settingsScopeOverride.set(null)
     }

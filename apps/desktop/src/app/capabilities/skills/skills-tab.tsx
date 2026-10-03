@@ -1,4 +1,4 @@
-import { compactNumber } from '@hermes/shared'
+import { compactNumber } from '@slave-agent/shared'
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
@@ -44,7 +44,7 @@ import { categoryFor, filteredOfficial, filteredSkills, skillsQueryKey, usageOf 
 
 // Sort direction for the Skills list — persisted so the tab remembers
 // most/least-used across navigations and restarts.
-const $skillsSortDesc = persistentAtom('hermes.desktop.capabilities.skillsSortDesc', true, Codecs.bool)
+const $skillsSortDesc = persistentAtom('slave.desktop.capabilities.skillsSortDesc', true, Codecs.bool)
 
 // Row subtitle: category, with non-default origins badged.
 function skillSubtitle(skill: SkillInfo): ReactNode {
@@ -96,7 +96,7 @@ export function SkillsTab({ onRefresh, profile, query, skills }: SkillsTabProps)
 
   // Learned/local skills are editable + archivable, mirroring the memory
   // graph (same /api/learning/node endpoints — delete archives, restorable
-  // via `hermes curator restore`).
+  // via `slave curator restore`).
   const [skillEditor, setSkillEditor] = useState<null | { content: string; name: string }>(null)
   const [skillDraft, setSkillDraft] = useState('')
   const [skillSaving, setSkillSaving] = useState(false)

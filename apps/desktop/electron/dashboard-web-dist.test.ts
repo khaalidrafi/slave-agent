@@ -13,7 +13,7 @@ function touchIndex(dir) {
 }
 
 function withTempRoot(fn) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-dashboard-web-dist-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'slave-dashboard-web-dist-'))
 
   try {
     return fn(root)
@@ -22,12 +22,12 @@ function withTempRoot(fn) {
   }
 }
 
-test('desktop-spawned dashboard resolves hermes_cli/web_dist, not Desktop renderer dist', () => {
+test('desktop-spawned dashboard resolves slave_cli/web_dist, not Desktop renderer dist', () => {
   withTempRoot(root => {
-    const activeHermesRoot = path.join(root, 'hermes-agent')
+    const activeSlaveRoot = path.join(root, 'slave-agent')
 
     const desktopDist = path.join(
-      activeHermesRoot,
+      activeSlaveRoot,
       'apps',
       'desktop',
       'release',
@@ -37,13 +37,13 @@ test('desktop-spawned dashboard resolves hermes_cli/web_dist, not Desktop render
       'dist'
     )
 
-    const dashboardDist = path.join(activeHermesRoot, 'hermes_cli', 'web_dist')
+    const dashboardDist = path.join(activeSlaveRoot, 'slave_cli', 'web_dist')
     touchIndex(desktopDist)
     touchIndex(dashboardDist)
     assert.equal(
       resolveDashboardWebDist({
-        activeHermesRoot,
-        appRoot: path.join(activeHermesRoot, 'apps', 'desktop'),
+        activeSlaveRoot,
+        appRoot: path.join(activeSlaveRoot, 'apps', 'desktop'),
         env: {}
       }),
       dashboardDist
@@ -57,8 +57,8 @@ test('explicit dashboard dist override wins when it exists', () => {
     touchIndex(override)
     assert.equal(
       resolveDashboardWebDist({
-        activeHermesRoot: path.join(root, 'hermes-agent'),
-        env: { HERMES_DESKTOP_DASHBOARD_WEB_DIST: override }
+        activeSlaveRoot: path.join(root, 'slave-agent'),
+        env: { SLAVE_DESKTOP_DASHBOARD_WEB_DIST: override }
       }),
       override
     )
@@ -67,25 +67,25 @@ test('explicit dashboard dist override wins when it exists', () => {
 
 test('missing dashboard bundle falls back to canonical path for a clear child error', () => {
   withTempRoot(root => {
-    const activeHermesRoot = path.join(root, 'hermes-agent')
+    const activeSlaveRoot = path.join(root, 'slave-agent')
     assert.equal(
-      resolveDashboardWebDist({ activeHermesRoot, env: {} }),
-      path.join(activeHermesRoot, 'hermes_cli', 'web_dist')
+      resolveDashboardWebDist({ activeSlaveRoot, env: {} }),
+      path.join(activeSlaveRoot, 'slave_cli', 'web_dist')
     )
   })
 })
 
-test('appRoot candidate is used when it has a dashboard bundle and activeHermesRoot does not', () => {
+test('appRoot candidate is used when it has a dashboard bundle and activeSlaveRoot does not', () => {
   withTempRoot(root => {
-    const activeHermesRoot = path.join(root, 'active-install')
+    const activeSlaveRoot = path.join(root, 'active-install')
     const sourceRoot = path.join(root, 'source-checkout')
     const appRoot = path.join(sourceRoot, 'apps', 'desktop')
-    const appRootDashboard = path.resolve(appRoot, '..', '..', 'hermes_cli', 'web_dist')
-    fs.mkdirSync(activeHermesRoot, { recursive: true })
+    const appRootDashboard = path.resolve(appRoot, '..', '..', 'slave_cli', 'web_dist')
+    fs.mkdirSync(activeSlaveRoot, { recursive: true })
     touchIndex(appRootDashboard)
     assert.equal(
       resolveDashboardWebDist({
-        activeHermesRoot,
+        activeSlaveRoot,
         appRoot,
         env: {}
       }),

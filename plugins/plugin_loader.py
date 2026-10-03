@@ -28,10 +28,10 @@ def register_synthetic_package(name: str, search_locations: List[str]) -> None:
 
 
 def user_plugins_dir() -> Optional[Path]:
-    """Return ``$HERMES_HOME/plugins/`` or None if unavailable."""
+    """Return ``$SLAVE_HOME/plugins/`` or None if unavailable."""
     try:
-        from hermes_constants import get_hermes_home
-        d = get_hermes_home() / "plugins"
+        from slave_constants import get_slave_home
+        d = get_slave_home() / "plugins"
         return d if d.is_dir() else None
     except Exception:
         return None

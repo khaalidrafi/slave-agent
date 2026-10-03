@@ -57,7 +57,7 @@ beforeEach(() => {
   setLaunchMode.mockResolvedValue({ ok: true, registry: { ...registry, launchMode: 'last-used' } })
   setPrimary.mockResolvedValue({ ok: true, registry: { ...registry, primary: 'homelab' } })
   test.mockResolvedValue({ ok: true, reachable: true })
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'slaveDesktop', {
     configurable: true,
     value: { connections: { list, remove, save, setLaunchMode, setPrimary, test } }
   })
@@ -83,8 +83,8 @@ describe('ConnectionsRegistrySection', () => {
     save.mockRejectedValueOnce(new Error('plaintext consent required'))
     const applyConnectionConfig = vi.fn()
     const select = vi.fn()
-    Object.assign(window.hermesDesktop, { applyConnectionConfig })
-    Object.assign(window.hermesDesktop.connections, { select })
+    Object.assign(window.slaveDesktop, { applyConnectionConfig })
+    Object.assign(window.slaveDesktop.connections, { select })
     render(<ConnectionsRegistrySection />)
     fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
     const values = screen.getAllByPlaceholderText('Saved — leave blank to keep')
@@ -120,7 +120,7 @@ describe('ConnectionsRegistrySection', () => {
     const pendingLogin = deferred<{ connected: boolean }>()
     const oauthLoginConnectionConfig = vi.fn().mockReturnValue(pendingLogin.promise)
 
-    Object.assign(window.hermesDesktop, {
+    Object.assign(window.slaveDesktop, {
       applyConnectionConfig,
       saveConnectionConfig,
       probeConnectionConfig,
@@ -164,7 +164,7 @@ describe('ConnectionsRegistrySection', () => {
   it('refreshes a cached roster immediately after a successful connection test', async () => {
     _resetFleetRosterForTests()
     const getAgentRoster = vi.fn().mockResolvedValue({ agents: [], sources: [] })
-    Object.assign(window.hermesDesktop!, { getAgentRoster })
+    Object.assign(window.slaveDesktop!, { getAgentRoster })
 
     try {
       await refreshFleetRoster()
@@ -203,16 +203,16 @@ describe('ConnectionsRegistrySection', () => {
 
   it('signs a hand-registered Cloud connection in and saves it as oauth (#89529)', async () => {
     const oauthLoginConnectionConfig = vi.fn().mockResolvedValue({ connected: true, ok: true })
-    Object.assign(window.hermesDesktop!, { oauthLoginConnectionConfig })
+    Object.assign(window.slaveDesktop!, { oauthLoginConnectionConfig })
 
     render(<ConnectionsRegistrySection />)
 
     await screen.findByText('Homelab')
     fireEvent.click(screen.getByText('Add connection'))
-    fireEvent.click(screen.getByRole('button', { name: 'Hermes Cloud' }))
+    fireEvent.click(screen.getByRole('button', { name: 'slave-agent Cloud' }))
     fireEvent.change(screen.getByPlaceholderText('Homelab'), { target: { value: 'Team cloud' } })
     fireEvent.change(screen.getByPlaceholderText('http://homelab.lan:9119'), {
-      target: { value: 'https://team.hermes.cloud' }
+      target: { value: 'https://team.slave.cloud' }
     })
 
     // Cloud never takes a pasted token: no token box, a sign-in button instead.
@@ -224,7 +224,7 @@ describe('ConnectionsRegistrySection', () => {
     // draft must sign in on the legacy shared portal jar, which is the jar the
     // saved cloud entry reads — never a private per-connection jar.
     await waitFor(() =>
-      expect(oauthLoginConnectionConfig).toHaveBeenCalledWith('https://team.hermes.cloud', {
+      expect(oauthLoginConnectionConfig).toHaveBeenCalledWith('https://team.slave.cloud', {
         connectionId: null,
         label: 'Team cloud',
         authMode: 'oauth',
@@ -239,12 +239,12 @@ describe('ConnectionsRegistrySection', () => {
       authMode: 'oauth',
       kind: 'cloud',
       label: 'Team cloud',
-      url: 'https://team.hermes.cloud'
+      url: 'https://team.slave.cloud'
     })
     expect(save.mock.calls[0][0].token).toBeUndefined()
   })
 
-  it('saves a custom remote Hermes path for SSH connections', async () => {
+  it('saves a custom remote slave-agent path for SSH connections', async () => {
     render(<ConnectionsRegistrySection />)
 
     await waitFor(() => expect(screen.getByText('Homelab')).toBeTruthy())
@@ -262,11 +262,11 @@ describe('ConnectionsRegistrySection', () => {
       host: 'dev@build.test:2222',
       kind: 'ssh',
       label: 'Build host',
-      remoteHermesPath: '/opt/hermes/bin/hermes'
+      remoteSlavePath: '/opt/hermes/bin/hermes'
     })
   })
 
-  it('clears a saved remote Hermes path back to auto-detect', async () => {
+  it('clears a saved remote slave-agent path back to auto-detect', async () => {
     const sshRegistry: DesktopConnectionsRegistry = {
       ...registry,
       connections: [
@@ -276,7 +276,7 @@ describe('ConnectionsRegistrySection', () => {
           id: 'build-host',
           kind: 'ssh',
           label: 'Build host',
-          remoteHermesPath: '/opt/hermes/bin/hermes',
+          remoteSlavePath: '/opt/hermes/bin/hermes',
           tokenPreview: null,
           tokenSet: false,
           user: 'dev'
@@ -295,7 +295,7 @@ describe('ConnectionsRegistrySection', () => {
     fireEvent.click(screen.getByText('Save connection').closest('button')!)
 
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
-    expect(save.mock.calls[0][0]).toMatchObject({ id: 'build-host', remoteHermesPath: '' })
+    expect(save.mock.calls[0][0]).toMatchObject({ id: 'build-host', remoteSlavePath: '' })
   })
 
   it('disables Local on create while the managed entry exists', async () => {

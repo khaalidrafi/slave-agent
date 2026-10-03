@@ -1,9 +1,9 @@
 name: claude-subscription-directsdk
 repo: https://github.com/NousResearch/hermes-plugin-claude-subscription-directsdk
 sha: ef73726cfaf2fa0ee041e55572f406e2c24fed83
-description: Experimental model provider that runs Hermes turns on a Claude Pro/Max subscription through
+description: Experimental model provider that runs slave-agent turns on a Claude Pro/Max subscription through
   the official Claude Code CLI (the Agent SDK path), so no separate API key or per-token bill. Requires
-  the claude CLI installed and logged in; the plugin checks for it at load, in hermes model, in the pickers
+  the claude CLI installed and logged in; the plugin checks for it at load, in slave model, in the pickers
   and before every request, and refuses cleanly with the install hint when it is missing. Disclosure — every
   turn is billed against your Claude subscription's Agent SDK allowance, and the provider inherits whatever
   account claude is logged into.

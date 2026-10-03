@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesApi from '@/hermes'
+import type * as SlaveApi from '@/hermes'
 import { $freeTierSignIn, openFreeTierSignIn } from '@/store/free-tier-sign-in'
 
 const pollOAuthSession = vi.fn()
@@ -12,7 +12,7 @@ const requestGateway = vi.fn(async () => ({ available: true, has_guest: true }))
 // real implementation so the modules the dialog pulls in (the onboarding
 // DeviceCode cell, the model picker) still resolve their imports.
 vi.mock('@/hermes', async importOriginal => ({
-  ...(await importOriginal<typeof HermesApi>()),
+  ...(await importOriginal<typeof SlaveApi>()),
   pollOAuthSession: (providerId: string, sessionId: string) => pollOAuthSession(providerId, sessionId),
   startOAuthLogin: async () => ({
     expires_in: 900,
@@ -45,7 +45,7 @@ describe('FreeTierSignInDialog', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     pollOAuthSession.mockResolvedValue({
       account_email: 'someone@example.com',
-      model: 'Hermes-4-405B',
+      model: 'Slave-4-405B',
       reason: null,
       session_id: 'session-1',
       status: 'approved'
@@ -73,6 +73,6 @@ describe('FreeTierSignInDialog', () => {
     })
 
     await waitFor(() => expect(screen.getByText('Signed in as someone@example.com')).toBeTruthy())
-    expect(screen.getByText('Hermes-4-405B')).toBeTruthy()
+    expect(screen.getByText('Slave-4-405B')).toBeTruthy()
   })
 })

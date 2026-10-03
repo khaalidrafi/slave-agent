@@ -9,7 +9,7 @@ test('error page names the failure and carries a Reload button', () => {
     errorCode: -6,
     errorDescription: 'The desktop renderer bundle is incomplete after the last update (2 missing file(s)).',
     missingAssets: ['assets/app-C0ffee.js', 'assets/shiki-block-DeadBeef.js'],
-    repairHint: 'hermes desktop --force-build'
+    repairHint: 'slave desktop --force-build'
   })
 
   assert.match(html, /incomplete after the last update \(2 missing file\(s\)\)/)

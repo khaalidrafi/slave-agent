@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/hermes', () => ({
   setApiRequestConnection: vi.fn(),
-  HermesGateway: class {
+  SlaveGateway: class {
     connectionState = 'closed'
     connect = async (): Promise<void> => {
       this.connectionState = 'open'
@@ -52,7 +52,7 @@ function installDesktop(): { getConnection: ReturnType<typeof vi.fn>; getConnect
     getConnectionFor: vi.fn(async () => conn)
   }
 
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = stub
+  ;(window as unknown as { slaveDesktop: unknown }).slaveDesktop = stub
 
   return stub
 }
@@ -69,7 +69,7 @@ beforeEach(() => {
 afterEach(() => {
   closeSecondaryGateways()
   vi.clearAllMocks()
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { slaveDesktop?: unknown }).slaveDesktop
 })
 
 describe('user opens dial main as foreground from the first IPC (#102281)', () => {

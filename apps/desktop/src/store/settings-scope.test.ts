@@ -86,7 +86,7 @@ describe('settings scope store', () => {
     // SAME key. An `undefined` request scope makes profileScoped() omit
     // `?profile=` entirely, and the backend resolves an omitted profile to the
     // home it was LAUNCHED under — not the profile being edited. With a pooled
-    // desktop backend (`hermes --profile a serve`, editing b) that mismatch
+    // desktop backend (`slave --profile a serve`, editing b) that mismatch
     // made every settings page read a's values and write them back to a, while
     // the note kept naming b.
     $activeGatewayProfile.set('nash')
@@ -100,7 +100,7 @@ describe('settings scope store', () => {
     expect($settingsRequestProfile.get()).toBe('nash')
   })
 
-  it('leaves a custom HERMES_HOME on the ambient request path', () => {
+  it('leaves a custom SLAVE_HOME on the ambient request path', () => {
     // `custom` names a home outside profiles/: there is no profile directory to
     // resolve, so the ambient path is the only correct answer.
     $activeGatewayProfile.set('custom')

@@ -11,7 +11,7 @@ import {
 
 const ACTION_NAMES: Record<SystemAction, string> = {
   restart: "gateway-restart",
-  update: "hermes-update",
+  update: "slave-update",
 };
 
 export function SystemActionsProvider({

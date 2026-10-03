@@ -6,21 +6,21 @@
 # new job. The driver's phases share state via the workroot, and every leg
 # runs the REAL user surface for its methods:
 #
-#   desktop-installer@latest    the website's Hermes-Setup.exe, downloaded and
+#   desktop-installer@latest    the website's Slave-Setup.exe, downloaded and
 #                               run headed, AutoHotkey clicks Install ->
 #                               Launch, the real Electron window must appear.
 #   installer-script            the irm | iex one-liner: the install.ps1
 #                               shipped AT the OLD ref, headless.
 #   installer-script+desktop    the same one-liner with -IncludeDesktop:
-#                               builds Hermes.exe AND registers Start Menu /
+#                               builds Slave.exe AND registers Start Menu /
 #                               Desktop shortcuts.
-#   hermes-update               venv hermes.exe update.
+#   slave-update               venv slave.exe update.
 #   open-app-update             the app's own Update button, app launched
 #                               from the installed exe under Playwright's
 #                               Electron driver (Settings -> About ->
 #                               "Update now"); the production hand-off chain
 #                               runs untouched.
-#   hermes-desktop-app-update   the same button, app launched via `hermes
+#   slave-desktop-app-update   the same button, app launched via `slave
 #                               desktop`: the driver captures the product's
 #                               own spawn (argv/cwd/env) and re-executes it
 #                               under Playwright.
@@ -50,7 +50,7 @@ on:
         required: true
         type: string
       update-method:
-        description: 'How the install updates to HEAD. Supported: open-app-update (Update button under Playwright, from a desktop-bearing install), hermes-desktop-app-update (same button, app launched via hermes desktop), hermes-update, installer-script, installer-script+desktop, desktop-installer@latest (re-download Hermes-Setup.exe, AHK clicks Install over the existing install).'
+        description: 'How the install updates to HEAD. Supported: open-app-update (Update button under Playwright, from a desktop-bearing install), slave-desktop-app-update (same button, app launched via slave desktop), slave-update, installer-script, installer-script+desktop, desktop-installer@latest (re-download Slave-Setup.exe, AHK clicks Install over the existing install).'
         required: true
         type: string
       install-ref:
@@ -170,20 +170,20 @@ jobs:
     if: >-
       (inputs.install-method == 'installer-script'
         || (contains(fromJSON('["installer-script+desktop", "desktop-installer@latest"]'), inputs.install-method) && inputs.tag-has-desktop))
-      && (contains(fromJSON('["hermes-update", "installer-script"]'), inputs.update-method)
-        || (contains(fromJSON('["installer-script+desktop", "hermes-desktop-app-update", "desktop-installer@latest"]'), inputs.update-method) && inputs.tag-has-desktop)
+      && (contains(fromJSON('["slave-update", "installer-script"]'), inputs.update-method)
+        || (contains(fromJSON('["installer-script+desktop", "slave-desktop-app-update", "desktop-installer@latest"]'), inputs.update-method) && inputs.tag-has-desktop)
         || (inputs.update-method == 'open-app-update' && inputs.tag-has-desktop
             && contains(fromJSON('["desktop-installer@latest", "installer-script+desktop"]'), inputs.install-method)))
     runs-on: windows-latest-32-core
     timeout-minutes: ${{ inputs.timeout-minutes }}
 
     env:
-      # Sibling of the checkout (D:\a\hermes-agent\hermes-desktop-gui-e2e):
+      # Sibling of the checkout (D:\a\slave-agent\slave-desktop-gui-e2e):
       # outside the repo so the staged bare clone and the install never
       # collide with the checkout itself. NOTE: ${{ runner.temp }} is NOT
       # available in job-level env (only github/inputs/matrix/needs/
       # secrets/strategy/vars).
-      HERMES_E2E_WORKROOT: ${{ github.workspace }}\..\hermes-desktop-gui-e2e
+      SLAVE_E2E_WORKROOT: ${{ github.workspace }}\..\slave-desktop-gui-e2e
 
     steps:
       # Full history: the driver bare-clones this checkout as the repo the
@@ -215,20 +215,20 @@ jobs:
       # The driver therefore runs that turn under e2e-assets/pty-run.py, which uses
       # pywinpty: the same ConPTY spawner the product uses on Windows, pinned to the
       # version pyproject.toml requires. Install it with uv (the toolchain python ships
-      # without pip) out of HERMES_RUNTIME_DIR, which is the tools directory itself and
+      # without pip) out of SLAVE_RUNTIME_DIR, which is the tools directory itself and
       # is not on PATH for workflow steps; the import check proves it landed.
       # py-spy lands beside it: the driver's hang watchdog dumps the stack of
       # every Python process of a stuck install or update before stopping it.
       - name: Install the pseudoconsole runner's dependency
         shell: pwsh
         run: |
-          $uvDir = Get-ChildItem $env:HERMES_RUNTIME_DIR -Filter 'uv-*' -Directory | Select-Object -First 1
-          if (-not $uvDir) { throw "uv not found under $env:HERMES_RUNTIME_DIR" }
-          & (Join-Path $uvDir.FullName 'uv.exe') pip install --system --python $env:HERMES_PYTHON --quiet "pywinpty==3.0.5" "py-spy==0.4.2"
+          $uvDir = Get-ChildItem $env:SLAVE_RUNTIME_DIR -Filter 'uv-*' -Directory | Select-Object -First 1
+          if (-not $uvDir) { throw "uv not found under $env:SLAVE_RUNTIME_DIR" }
+          & (Join-Path $uvDir.FullName 'uv.exe') pip install --system --python $env:SLAVE_PYTHON --quiet "pywinpty==3.0.5" "py-spy==0.4.2"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -c "import winpty; print('pty-run dependency ready')"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & (Join-Path (Split-Path $env:HERMES_PYTHON) 'py-spy.exe') --version
+          & (Join-Path (Split-Path $env:SLAVE_PYTHON) 'py-spy.exe') --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       # One recording mechanism on every OS: the composite action verifies
@@ -241,11 +241,11 @@ jobs:
           mode: start
           output: ${{ github.workspace }}\gui-e2e-proof\recording.mkv
 
-      # Product steps below never see setup-pm's HERMES_RUNTIME_DIR or
-      # HERMES_PYTHON: windows-e2e.ps1 drops both on entry, so the installer,
-      # the app, `hermes update` and every chat turn share the leg's one store
-      # (<HERMES_HOME>\tools), as on a user's machine. setup-pm reaches the
-      # driver's own tooling only through HERMES_PYTHON (and PATH for older
+      # Product steps below never see setup-pm's SLAVE_RUNTIME_DIR or
+      # SLAVE_PYTHON: windows-e2e.ps1 drops both on entry, so the installer,
+      # the app, `slave update` and every chat turn share the leg's one store
+      # (<SLAVE_HOME>\tools), as on a user's machine. setup-pm reaches the
+      # driver's own tooling only through SLAVE_PYTHON (and PATH for older
       # installers' uv/ripgrep).
       - name: Stage serve repo (main -> ${{ inputs.install-ref }})
         shell: powershell
@@ -274,7 +274,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path gui-e2e-proof -Force | Out-Null
-          Copy-Item -LiteralPath (Join-Path $env:HERMES_E2E_WORKROOT 'known-failure.json') -Destination gui-e2e-proof/known-failure.json
+          Copy-Item -LiteralPath (Join-Path $env:SLAVE_E2E_WORKROOT 'known-failure.json') -Destination gui-e2e-proof/known-failure.json
 
       - name: Upload known-failure receipt
         if: steps.update.outputs.known_failure != ''
@@ -307,8 +307,8 @@ jobs:
         run: |
           $out = "gui-e2e-proof"
           New-Item -ItemType Directory -Path $out -Force | Out-Null
-          $work = $env:HERMES_E2E_WORKROOT
-          $home_ = Join-Path $work "hermes-home"
+          $work = $env:SLAVE_E2E_WORKROOT
+          $home_ = Join-Path $work "slave-home"
           foreach ($pair in @(
             @{ src = (Join-Path $work "proof");                          dst = "proof" },
             @{ src = (Join-Path $work "logs");                           dst = "driver-logs" },

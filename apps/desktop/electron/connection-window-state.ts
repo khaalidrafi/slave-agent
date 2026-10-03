@@ -11,7 +11,7 @@ import type { BrowserWindow, WebContents } from 'electron'
  * `isFullscreen: false` overwrites the live flag in the renderer, losing the
  * fullscreen titlebar inset until the next toggle. Reading the state at IPC
  * reply time keeps every republish consistent with the
- * `hermes:window-state-changed` live-push path.
+ * `slave:window-state-changed` live-push path.
  *
  * `undefined` when no usable window exists (sender gone, fallback destroyed) —
  * callers then leave the connection's own (possibly stale) fields untouched

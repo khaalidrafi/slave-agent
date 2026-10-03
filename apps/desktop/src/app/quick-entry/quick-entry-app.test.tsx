@@ -7,14 +7,14 @@ import type { QuickEntryStatePush } from '@/store/quick-entry'
 
 import { QuickEntryApp } from './quick-entry-app'
 
-const initialHermesDesktop = window.hermesDesktop
+const initialSlaveDesktop = window.slaveDesktop
 
 describe('QuickEntryApp', () => {
   let pushState: ((payload: QuickEntryStatePush) => void) | undefined
 
   beforeEach(() => {
     pushState = undefined
-    window.hermesDesktop = {
+    window.slaveDesktop = {
       quickEntry: {
         dismiss: vi.fn(),
         onShown: vi.fn(() => vi.fn()),
@@ -31,7 +31,7 @@ describe('QuickEntryApp', () => {
 
   afterEach(() => {
     cleanup()
-    window.hermesDesktop = initialHermesDesktop
+    window.slaveDesktop = initialSlaveDesktop
     vi.restoreAllMocks()
   })
 

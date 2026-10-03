@@ -27,7 +27,7 @@ test.runIf(process.platform !== 'win32')('the launch environment keeps Chromium 
   expect(Buffer.byteLength(path.join(env.TMPDIR, 'scoped_dirXXXXXX', 'SingletonSocket'))).toBeLessThan(108)
 })
 
-test('the update window carries Hermes connection state without cloning Chromium state', (): void => {
+test('the update window carries slave-agent connection state without cloning Chromium state', (): void => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'update-window-userdata-'))
   const userData = path.join(root, 'electron-user-data')
   fs.mkdirSync(userData)
@@ -39,18 +39,18 @@ test('the update window carries Hermes connection state without cloning Chromium
   }
 
   const captured = {
-    HERMES_HOME: path.join(root, 'hermes-home'),
-    HERMES_DESKTOP_USER_DATA_DIR: userData,
+    SLAVE_HOME: path.join(root, 'slave-home'),
+    SLAVE_DESKTOP_USER_DATA_DIR: userData,
     PATH: process.env.PATH || '',
   }
 
   try {
     const isolated = isolateUpdateWindowEnvironment(captured)
-    const isolatedUserData = isolated.HERMES_DESKTOP_USER_DATA_DIR
+    const isolatedUserData = isolated.SLAVE_DESKTOP_USER_DATA_DIR
 
     expect(isolatedUserData).not.toBe(userData)
-    expect(captured.HERMES_DESKTOP_USER_DATA_DIR).toBe(userData)
-    expect(isolated.HERMES_HOME).toBe(captured.HERMES_HOME)
+    expect(captured.SLAVE_DESKTOP_USER_DATA_DIR).toBe(userData)
+    expect(isolated.SLAVE_HOME).toBe(captured.SLAVE_HOME)
     expect(fs.readFileSync(path.join(isolatedUserData, 'connections.json'), 'utf8')).toBe('{"primary":"local"}\n')
     expect(fs.existsSync(path.join(isolatedUserData, 'Local State'))).toBe(false)
 

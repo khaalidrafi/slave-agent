@@ -1,6 +1,6 @@
 // #77311: the renderer heap ceiling knob (`desktop.renderer_max_old_space_mb`)
 // and `desktop.electron_flags` must reach app.commandLine on packaged launches
-// that never go through the `hermes desktop` launcher.
+// that never go through the `slave desktop` launcher.
 import { describe, expect, it, vi } from 'vitest'
 
 import { planLaunchSwitches, readDesktopLaunchConfig } from './renderer-heap-flags'

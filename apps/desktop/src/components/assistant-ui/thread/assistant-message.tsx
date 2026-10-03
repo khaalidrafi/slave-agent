@@ -820,7 +820,7 @@ const ErrorRecoveryActions: FC = () => {
   const model = useStore($currentModel)
   const connection = useStore($connection)
 
-  // Open Logs reveals the LOCAL Electron profile's HERMES_HOME/logs. On a
+  // Open Logs reveals the LOCAL Electron profile's SLAVE_HOME/logs. On a
   // remote/cloud connection the failed turn's gateway+agent logs live on the
   // remote box — the local folder only holds Desktop-side transport logs, so
   // the label says "Open Desktop logs" there instead of implying it opens the
@@ -855,7 +855,7 @@ const ErrorRecoveryActions: FC = () => {
   }, [])
 
   // Reveal a local folder through Electron; `logsRoot` is the profile's
-  // HERMES_HOME/logs, and its parent is the Hermes data folder itself (what
+  // SLAVE_HOME/logs, and its parent is the Slave data folder itself (what
   // the user needs to see to free space after a disk-full failure). Resolved
   // for the profile that OWNS this session (a tile / Bot chat names it in its
   // composer scope), not the pooled backend's launch profile (#119080).
@@ -864,7 +864,7 @@ const ErrorRecoveryActions: FC = () => {
   const openLocalDir = useCallback(
     async (resolve: (logsRoot: string) => string, failedMessage: string) => {
       try {
-        const root = await window.hermesDesktop?.logsRoot?.(normalizeProfileKey(ownerProfile))
+        const root = await window.slaveDesktop?.logsRoot?.(normalizeProfileKey(ownerProfile))
 
         if (!root) {
           notifyError(new Error('logs root unavailable'), failedMessage)
@@ -872,7 +872,7 @@ const ErrorRecoveryActions: FC = () => {
           return
         }
 
-        const result = await window.hermesDesktop?.openDir?.(resolve(root))
+        const result = await window.slaveDesktop?.openDir?.(resolve(root))
 
         if (result && !result.ok) {
           notifyError(new Error(result.error || 'open failed'), failedMessage)
@@ -889,9 +889,9 @@ const ErrorRecoveryActions: FC = () => {
     [copy.errorOpenLogsFailed, openLocalDir]
   )
 
-  const openHermesFolder = useCallback(
-    () => openLocalDir(root => root.replace(/[\\/]+logs[\\/]*$/, ''), copy.errorOpenHermesFolderFailed),
-    [copy.errorOpenHermesFolderFailed, openLocalDir]
+  const openSlaveFolder = useCallback(
+    () => openLocalDir(root => root.replace(/[\\/]+logs[\\/]*$/, ''), copy.errorOpenSlaveFolderFailed),
+    [copy.errorOpenSlaveFolderFailed, openLocalDir]
   )
 
   const diagnosticsText = useCallback(
@@ -914,7 +914,7 @@ const ErrorRecoveryActions: FC = () => {
     setModelPickerOpen(true)
   }, [])
 
-  const localFolders = Boolean(window.hermesDesktop?.logsRoot)
+  const localFolders = Boolean(window.slaveDesktop?.logsRoot)
   // The provider's own reset moment (429 Retry-After / resets_at), so the user knows WHEN
   // Retry will work instead of guessing (#98852). Informational only: no automatic retry.
   const limitReset = formatLimitReset(surface?.resetsAt)
@@ -952,9 +952,9 @@ const ErrorRecoveryActions: FC = () => {
           to={updateApiKeyRoute(surface)}
         />
       )}
-      {plan.openHermesFolder && localFolders && (
-        <button className="aui-error-action" onClick={() => void openHermesFolder()} type="button">
-          {copy.errorOpenHermesFolder}
+      {plan.openSlaveFolder && localFolders && (
+        <button className="aui-error-action" onClick={() => void openSlaveFolder()} type="button">
+          {copy.errorOpenSlaveFolder}
         </button>
       )}
       {plan.retry && (

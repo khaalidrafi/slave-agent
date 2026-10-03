@@ -68,12 +68,12 @@ describe('host.settings', () => {
 
     expect(writes).toEqual(
       expect.arrayContaining([
-        ['hermes.desktop.sessionListDensity', 'detailed'],
-        ['hermes.desktop.tabStripDefault', 'never'],
-        ['hermes.desktop.backdrop.v1', 'true'],
-        ['hermes.desktop.intro-splash.v1', 'false'],
-        ['hermes.desktop.reasoning.collapsedByDefault', 'true'],
-        ['hermes.desktop.composerPopout.gesturesEnabled', 'false']
+        ['slave.desktop.sessionListDensity', 'detailed'],
+        ['slave.desktop.tabStripDefault', 'never'],
+        ['slave.desktop.backdrop.v1', 'true'],
+        ['slave.desktop.intro-splash.v1', 'false'],
+        ['slave.desktop.reasoning.collapsedByDefault', 'true'],
+        ['slave.desktop.composerPopout.gesturesEnabled', 'false']
       ])
     )
   })

@@ -24,7 +24,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
-  Reflect.deleteProperty(window, 'hermesDesktop')
+  Reflect.deleteProperty(window, 'slaveDesktop')
 })
 
 describe('remote setup owner', () => {
@@ -35,7 +35,7 @@ describe('remote setup owner', () => {
       const newProbe = deferred<DesktopConnectionProbeResult>()
       const probeConnectionConfig = vi.fn().mockReturnValueOnce(oldProbe.promise).mockReturnValueOnce(newProbe.promise)
 
-      Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { probeConnectionConfig } })
+      Object.defineProperty(window, 'slaveDesktop', { configurable: true, value: { probeConnectionConfig } })
       const { result, rerender } = renderHook(() => useRemoteSetup({ host, onNotice: () => {} }))
       act(() => {
         result.current.setAuthMode('oauth')
@@ -69,7 +69,7 @@ describe('remote setup owner', () => {
     const pendingLogin = deferred<{ connected: boolean }>()
     const oauthLoginConnectionConfig = vi.fn().mockReturnValue(pendingLogin.promise)
 
-    Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { oauthLoginConnectionConfig } })
+    Object.defineProperty(window, 'slaveDesktop', { configurable: true, value: { oauthLoginConnectionConfig } })
     const { result, unmount } = renderHook(() => useRemoteSetup({ host: 'registry', onNotice }))
     act(() => {
       result.current.setAuthMode('oauth')
@@ -94,15 +94,15 @@ it.each<RemoteSetupHost>(['first-run', 'settings', 'registry'])(
   async (host: RemoteSetupHost): Promise<void> => {
     const probe: ReturnType<typeof deferred<DesktopConnectionProbeResult>> = deferred<DesktopConnectionProbeResult>()
 
-    const tested: ReturnType<typeof deferred<Awaited<ReturnType<Window['hermesDesktop']['testConnectionConfig']>>>> =
+    const tested: ReturnType<typeof deferred<Awaited<ReturnType<Window['slaveDesktop']['testConnectionConfig']>>>> =
       deferred()
 
     const bridge = {
-      probeConnectionConfig: vi.fn<Window['hermesDesktop']['probeConnectionConfig']>().mockReturnValue(probe.promise),
-      testConnectionConfig: vi.fn<Window['hermesDesktop']['testConnectionConfig']>().mockReturnValue(tested.promise)
-    } satisfies Pick<Window['hermesDesktop'], 'probeConnectionConfig' | 'testConnectionConfig'>
+      probeConnectionConfig: vi.fn<Window['slaveDesktop']['probeConnectionConfig']>().mockReturnValue(probe.promise),
+      testConnectionConfig: vi.fn<Window['slaveDesktop']['testConnectionConfig']>().mockReturnValue(tested.promise)
+    } satisfies Pick<Window['slaveDesktop'], 'probeConnectionConfig' | 'testConnectionConfig'>
 
-    Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: bridge })
+    Object.defineProperty(window, 'slaveDesktop', { configurable: true, value: bridge })
 
     const {
       result

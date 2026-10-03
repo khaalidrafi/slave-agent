@@ -15,7 +15,7 @@ description: >-
   entered on letsfg.co, never in the conversation. Traveller details given for a booking (name,
   date of birth, passport, contact) are sent to LetsFG and saved on that account. OAuth must be
   enabled with
-  `hermes mcp add letsfg --url https://letsfg.co/mcp --auth oauth --connect-timeout 300`;
+  `slave mcp add letsfg --url https://letsfg.co/mcp --auth oauth --connect-timeout 300`;
   the bundled mcp.json alone yields 401.
 maintainer: LetsFG
 tier: community

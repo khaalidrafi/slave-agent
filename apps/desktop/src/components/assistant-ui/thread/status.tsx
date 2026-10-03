@@ -381,7 +381,7 @@ export const TurnActivityIndicator: FC = () => {
       className={cn(!active && 'sr-only')}
       data-slot="aui_turn-activity"
       data-state={active ? 'active' : 'idle'}
-      label={active ? hint || 'Hermes is working' : ''}
+      label={active ? hint || 'slave-agent is working' : ''}
     >
       {active && (
         <>

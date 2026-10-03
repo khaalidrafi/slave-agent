@@ -65,7 +65,7 @@ function completedInstallMatches({ source, receipt, hiddenLock, key, nativeKey }
 // debug log names the code while stdio stays on the terminal, so give each run
 // its own logs dir and retry once only on that code. Other failures keep the tree.
 function runNpmCi(node, npm, args, { source, env }) {
-  const logsDir = mkdtempSync(join(tmpdir(), 'hermes-npm-logs-'))
+  const logsDir = mkdtempSync(join(tmpdir(), 'slave-npm-logs-'))
   // Builders set CI=1, which turns npm's spinner off. Ask for it back: npm
   // still shows it only on a terminal. Kept out of `args`, which keys the receipt.
   const run = () => execFileSync(node, [npm, ...args, '--progress=true', `--logs-dir=${logsDir}`],

@@ -28,7 +28,7 @@ describe('session transcript pagination ownership', () => {
   beforeEach(() => {
     api.mockReset()
     $transcriptTailBySessionId.set({})
-    Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { api } })
+    Object.defineProperty(window, 'slaveDesktop', { configurable: true, value: { api } })
     setApiRequestProfile('default')
     setApiRequestLocalMode(true)
   })
@@ -37,7 +37,7 @@ describe('session transcript pagination ownership', () => {
     setApiRequestLocalMode(false)
     setApiRequestConnection(null)
     setApiRequestProfile(null)
-    Reflect.deleteProperty(window, 'hermesDesktop')
+    Reflect.deleteProperty(window, 'slaveDesktop')
   })
 
   it.each(['local', null])(

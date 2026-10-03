@@ -11,7 +11,7 @@ it.each(['not-a-git-checkout', 'update-root-steward-owned-git-tree', 'fetch-fail
 
     const deps: CheckoutStrategyDeps = {
       readSourceUpdate: vi.fn(async (): Promise<SourceUpdate> => status),
-      hermesHome: 'home',
+      slaveHome: 'home',
       isWindows: process.platform === 'win32',
       isMac: process.platform === 'darwin',
       defaultUpdateBranch: 'main',

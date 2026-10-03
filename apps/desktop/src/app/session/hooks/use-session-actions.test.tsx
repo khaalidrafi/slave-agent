@@ -1,4 +1,4 @@
-import { registryBackendScopeKey } from '@hermes/shared'
+import { registryBackendScopeKey } from '@slave-agent/shared'
 import { useStore } from '@nanostores/react'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import type { MutableRefObject } from 'react'
@@ -7085,7 +7085,7 @@ describe('branchStoredSession failure retry', () => {
     await waitFor(() => expect(createCallCount).toBe(2))
   })
 
-  // Regression for hermes-sweeper review on PR #65411: a retry after a lost
+  // Regression for slave-sweeper review on PR #65411: a retry after a lost
   // response must reuse the SAME idempotency key, otherwise the backend
   // spawns a duplicate child session.
   it('passes the same idempotency_key on retry as on the first attempt', async () => {
@@ -7137,7 +7137,7 @@ describe('branchStoredSession failure retry', () => {
     expect(seenKeys[1]).toBe(seenKeys[0])
   })
 
-  // Regression for hermes-sweeper review on PR #65411: the notification must
+  // Regression for slave-sweeper review on PR #65411: the notification must
   // go through notifyError's readableError normalization (wrapper stripping,
   // detail extraction, long-message fallback), not raw err.message.
   it('uses readableError normalization for the failure notification', async () => {

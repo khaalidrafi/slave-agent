@@ -34,7 +34,7 @@ import {
 import { $activeSessionId, $connection, $selectedStoredSessionId } from '@/store/session'
 import { isPeerInstanceWindow, windowProfileOverride } from '@/store/windows'
 
-const LAST_PROFILE_STORAGE_KEY = 'hermes.desktop.lastProfileByConnection'
+const LAST_PROFILE_STORAGE_KEY = 'slave.desktop.lastProfileByConnection'
 
 // Every await of a source switch is bounded. A wedged spawn, ticket mint,
 // handshake or IPC (the #93454 class) must surface as a failed click — not a
@@ -137,7 +137,7 @@ export function setConnectionsRegistry(registry: DesktopConnectionsRegistry): vo
 
 /** Refresh the renderer cache from Electron's local registry. No backend is contacted. */
 export async function refreshConnectionsRegistry(): Promise<DesktopConnectionsRegistry | null> {
-  const bridge = window.hermesDesktop?.connections
+  const bridge = window.slaveDesktop?.connections
 
   if (!bridge) {
     return null
@@ -155,7 +155,7 @@ export async function refreshConnectionsRegistry(): Promise<DesktopConnectionsRe
 }
 
 async function rememberConnection(connectionId: string): Promise<void> {
-  const setLastUsed = window.hermesDesktop?.connections?.setLastUsed
+  const setLastUsed = window.slaveDesktop?.connections?.setLastUsed
 
   if (!setLastUsed) {
     return

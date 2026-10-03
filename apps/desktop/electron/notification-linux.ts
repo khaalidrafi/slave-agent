@@ -250,7 +250,7 @@ export function createLinuxNotifications() {
               member: 'Notify',
               signature: 'susssasa{sv}i',
               body: [
-                'Hermes',
+                'slave-agent',
                 0,
                 options.icon || '',
                 options.title,
@@ -258,7 +258,7 @@ export function createLinuxNotifications() {
                 actions,
                 {
                   urgency: new Variant('y', 1),
-                  'desktop-entry': new Variant('s', 'hermes'),
+                  'desktop-entry': new Variant('s', 'slave'),
                   'suppress-sound': new Variant('b', options.silent)
                 },
                 -1

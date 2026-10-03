@@ -1,4 +1,4 @@
-// The standalone desktop-plugin root (`<HERMES_HOME>/desktop-plugins`) and the
+// The standalone desktop-plugin root (`<SLAVE_HOME>/desktop-plugins`) and the
 // one-time migrations that make it the ONLY place desktop code loads from.
 //
 // A desktop plugin extends THIS APP — panes, palette commands, themes — not an
@@ -88,11 +88,11 @@ async function listDirs(dir: string): Promise<string[]> {
   }
 }
 
-/** Every hermes home the app knows about locally: the default plus each profile. */
-export async function localHomes(hermesHome: string): Promise<string[]> {
-  const profiles = await listDirs(path.join(hermesHome, 'profiles'))
+/** Every slave home the app knows about locally: the default plus each profile. */
+export async function localHomes(slaveHome: string): Promise<string[]> {
+  const profiles = await listDirs(path.join(slaveHome, 'profiles'))
 
-  return [hermesHome, ...profiles.map(name => path.join(hermesHome, 'profiles', name))]
+  return [slaveHome, ...profiles.map(name => path.join(slaveHome, 'profiles', name))]
 }
 
 /** Move every `profiles/<name>/desktop-plugins/<id>` folder into the app-level
@@ -100,11 +100,11 @@ export async function localHomes(hermesHome: string): Promise<string[]> {
  *  id, so a duplicate is the same plugin installed twice); the profile copy is
  *  left in place for the user to delete rather than destroyed. Emptied profile
  *  roots are removed so the migration is a no-op on the next launch. */
-export async function migrateProfileScopedDesktopPlugins(hermesHome: string, appRoot: string): Promise<string[]> {
+export async function migrateProfileScopedDesktopPlugins(slaveHome: string, appRoot: string): Promise<string[]> {
   const moved: string[] = []
 
-  for (const profile of await listDirs(path.join(hermesHome, 'profiles'))) {
-    const scopedRoot = path.join(hermesHome, 'profiles', profile, DESKTOP_PLUGINS_DIR)
+  for (const profile of await listDirs(path.join(slaveHome, 'profiles'))) {
+    const scopedRoot = path.join(slaveHome, 'profiles', profile, DESKTOP_PLUGINS_DIR)
 
     for (const entry of await listDirs(scopedRoot)) {
       const from = path.join(scopedRoot, entry)
@@ -298,11 +298,11 @@ async function sourceGone(name: string, entry: string): Promise<boolean> {
  *  desktop half. First home wins for a name that appears in several profiles
  *  (the default home is first). Also drops root copies whose source package
  *  is gone — an uninstalled agent package must not leave a ghost pane. */
-export async function reconcileUnifiedDesktopHalves(hermesHome: string, appRoot: string): Promise<string[]> {
+export async function reconcileUnifiedDesktopHalves(slaveHome: string, appRoot: string): Promise<string[]> {
   const touched: string[] = []
   const seen = new Set<string>()
 
-  for (const home of await localHomes(hermesHome)) {
+  for (const home of await localHomes(slaveHome)) {
     const pluginsRoot = path.join(home, 'plugins')
 
     for (const name of await listDirs(pluginsRoot)) {

@@ -2,7 +2,7 @@
  * desktop-uninstall.ts
  *
  * Pure, electron-free helpers for the desktop Chat GUI uninstaller. These map
- * the three user-facing uninstall modes to the `hermes uninstall` CLI flags,
+ * the three user-facing uninstall modes to the `slave uninstall` CLI flags,
  * resolve the running app bundle/exe so a detached cleanup script can remove
  * it after the app quits, and build that cleanup script for each OS.
  *
@@ -11,14 +11,14 @@
  *
  * The three modes mirror the CLI's options exactly:
  *   - 'gui'  → remove ONLY the Chat GUI, keep the agent + all user data.
- *              `hermes uninstall --gui --yes`
+ *              `slave uninstall --gui --yes`
  *   - 'lite' → remove the GUI + agent code, KEEP user data (config / sessions
- *              / .env) for a future reinstall. `hermes uninstall --yes`
+ *              / .env) for a future reinstall. `slave uninstall --yes`
  *   - 'full' → remove everything: GUI + agent + all user data.
- *              `hermes uninstall --full --yes`
+ *              `slave uninstall --full --yes`
  *
  * Why a detached cleanup script: 'lite'/'full' delete the very venv the
- * `hermes` command runs from, and every mode may need to delete the running
+ * `slave` command runs from, and every mode may need to delete the running
  * app bundle (locked on macOS/Windows while the process is alive). So we hand
  * the work to a detached child that waits for this app's PID to exit, runs the
  * Python uninstall, then removes the app bundle — then the app quits. Same
@@ -30,7 +30,7 @@ import path from 'node:path'
 import type { InstallStamp } from './install-stamp'
 
 export interface UninstallSummaryDetails {
-  hermes_home: string
+  slave_home: string
   agent_installed: boolean
   gui_installed: boolean
   source_built_artifacts: string[]
@@ -75,14 +75,14 @@ export function registerDesktopUninstallIpc({
   const kind: InstallKind = resolveInstallKind(stamp ?? {})
   const codeRemovalAllowed: boolean = installKindAllowsCodeRemoval(kind)
 
-  ipcMain.handle('hermes:uninstall:summary', async (): Promise<DesktopUninstallSummary> => {
+  ipcMain.handle('slave:uninstall:summary', async (): Promise<DesktopUninstallSummary> => {
     const summary: UninstallSummaryDetails = codeRemovalAllowed ? await probeSummary() : fallbackSummary()
 
     // The local artifact owns this decision, not the Python summary.
     return { ...summary, code_removal_allowed: codeRemovalAllowed }
   })
   ipcMain.handle(
-    'hermes:uninstall:run',
+    'slave:uninstall:run',
     async (_event: unknown, payload?: unknown): Promise<DesktopUninstallResult> => {
       // Every cleanup mode can remove the bundle, including a hidden data request.
       if (!codeRemovalAllowed) {
@@ -114,7 +114,7 @@ const UNINSTALL_MODES: string[] = ['gui', 'lite', 'full', 'data']
 //   'bundled'  — a bundled or light artifact. The OS owns app removal.
 //   'external' — another package manager owns updates and removal.
 //   'standard' — everything else: the git-clone install the desktop
-//                installer bootstraps, or a `hermes desktop` source build.
+//                installer bootstraps, or a `slave desktop` source build.
 //                The classic script flow (venv python + rm the bundle) works.
 //
 // Only 'standard' installs may use the desktop cleanup script.
@@ -174,8 +174,8 @@ function allowedUninstallModes(kind: InstallKind): string[] {
 function nativeRemovalInstructions(kind, platform, appPath = null) {
   if (kind === 'nix') {
     return (
-      'This Hermes desktop app was installed by Nix. Uninstall it the same way you installed it: ' +
-      'remove hermes-agent from your flake or profile, then rebuild.'
+      'This slave-agent desktop app was installed by Nix. Uninstall it the same way you installed it: ' +
+      'remove slave-agent from your flake or profile, then rebuild.'
     )
   }
 
@@ -184,7 +184,7 @@ function nativeRemovalInstructions(kind, platform, appPath = null) {
   }
 
   if (platform === 'darwin') {
-    return 'Quit the app and drag Hermes.app from Applications to the Trash.'
+    return 'Quit the app and drag Slave.app from Applications to the Trash.'
   }
 
   if (appPath && /\.appimage$/i.test(String(appPath))) {
@@ -195,13 +195,13 @@ function nativeRemovalInstructions(kind, platform, appPath = null) {
     return `Delete the app directory at ${appPath}.`
   }
 
-  return 'Delete the Hermes AppImage (or app directory) from wherever you saved it.'
+  return 'Delete the slave-agent AppImage (or app directory) from wherever you saved it.'
 }
 
 /**
- * Map an uninstall mode to the `python -m hermes_cli.uninstall` argv (after the
+ * Map an uninstall mode to the `python -m slave_cli.uninstall` argv (after the
  * python executable). Uses the dedicated lightweight module entrypoint (not
- * `hermes_cli.main`) so it can run under a system Python OUTSIDE the venv that
+ * `slave_cli.main`) so it can run under a system Python OUTSIDE the venv that
  * lite/full delete — see the Finding-3 note in buildWindowsCleanupScript.
  * Throws on an unknown mode so a typo can't silently become a full wipe.
  */
@@ -210,7 +210,7 @@ function uninstallArgsForMode(mode: string) {
     throw new Error(`Unknown uninstall mode: ${mode}`)
   }
 
-  return ['-m', 'hermes_cli.uninstall', '--mode', mode]
+  return ['-m', 'slave_cli.uninstall', '--mode', mode]
 }
 
 /** True when `mode` removes the agent code (lite/full), false otherwise. */
@@ -228,7 +228,7 @@ function modeRemovesUserData(mode: string) {
  * given the path to the running executable (`process.execPath`) and platform.
  *
  *   macOS:   …/Hermes.app/Contents/MacOS/Hermes  → …/Hermes.app
- *   Windows: …\Hermes\Hermes.exe                 → …\Hermes  (install dir)
+ *   Windows: …\Slave\Slave.exe                 → …\Slave  (install dir)
  *   Linux:   AppImage → the APPIMAGE env path; unpacked → the *-unpacked dir
  *
  * Returns null when we can't confidently identify a removable bundle (e.g.
@@ -260,10 +260,10 @@ function resolveRemovableAppPath(execPath, platform, env: any = {}) {
   }
 
   if (platform === 'win32') {
-    // NSIS per-user installs Hermes.exe directly in the install dir.
+    // NSIS per-user installs Slave.exe directly in the install dir.
     const dir = p.dirname(exe)
 
-    if (/[\\/]Hermes$/i.test(dir) || /[\\/]hermes-desktop$/i.test(dir)) {
+    if (/[\\/]Slave$/i.test(dir) || /[\\/]slave-desktop$/i.test(dir)) {
       return dir
     }
 
@@ -302,11 +302,11 @@ function shouldRemoveAppBundle(isPackaged, appPath) {
  *   3. removes the app bundle if one was resolved.
  *
  * `pythonExe` should be a Python OUTSIDE the venv for lite/full (the venv is
- * being deleted); `pythonPath` is prepended to PYTHONPATH so `import hermes_cli`
+ * being deleted); `pythonPath` is prepended to PYTHONPATH so `import slave_cli`
  * resolves from the agent source. `q()` single-quote-escapes for the shell
  * (closes-escapes-reopens any embedded apostrophe), defending against spaces.
  */
-function buildPosixCleanupScript({ desktopPid, pythonExe, pythonPath, agentRoot, uninstallArgs, appPath, hermesHome }) {
+function buildPosixCleanupScript({ desktopPid, pythonExe, pythonPath, agentRoot, uninstallArgs, appPath, slaveHome }) {
   const q = s => `'${String(s).replace(/'/g, `'\\''`)}'`
 
   const lines = [
@@ -321,7 +321,7 @@ function buildPosixCleanupScript({ desktopPid, pythonExe, pythonPath, agentRoot,
     '    sleep 0.5',
     '  done',
     'fi',
-    `export HERMES_HOME=${q(hermesHome)}`
+    `export SLAVE_HOME=${q(slaveHome)}`
   ]
 
   if (pythonPath) {
@@ -348,7 +348,7 @@ function buildPosixCleanupScript({ desktopPid, pythonExe, pythonPath, agentRoot,
  * the venv that contains `python.exe`. A running .exe is mandatory-locked on
  * Windows, so running the uninstall from the venv's OWN python half-fails. The
  * desktop passes a system Python (findSystemPython) as `pythonExe` for those
- * modes + `pythonPath`=agentRoot so `import hermes_cli` resolves from source
+ * modes + `pythonPath`=agentRoot so `import slave_cli` resolves from source
  * while the venv is torn down. gui-only doesn't touch the venv, so it can use
  * either interpreter.
  *
@@ -366,18 +366,18 @@ function buildWindowsCleanupScript({
   agentRoot,
   uninstallArgs,
   appPath,
-  hermesHome
+  slaveHome
 }) {
   const pid = Number(desktopPid) || 0
   // cmd.exe has no string escaping inside quotes; strip embedded quotes (paths
   // under %LOCALAPPDATA% never contain them). `&`/`^` in a path would still be
-  // a problem, but Hermes install paths don't use them.
+  // a problem, but Slave install paths don't use them.
   const q = s => `"${String(s).replace(/"/g, '')}"`
 
   const lines = [
     '@echo off',
     'setlocal enableextensions',
-    `set "HERMES_HOME=${String(hermesHome).replace(/"/g, '')}"`,
+    `set "SLAVE_HOME=${String(slaveHome).replace(/"/g, '')}"`,
     `set "PID=${pid}"`
   ]
 

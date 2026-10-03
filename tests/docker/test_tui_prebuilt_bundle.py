@@ -4,11 +4,11 @@ Regression guard for the hosted-chat failure where the embedded dashboard
 Chat tab died with a 502 / "[session ended]". Root cause: the image installs
 only a subset of the npm monorepo workspaces (root/web/ui-tui, never apps/*),
 so the actualized node_modules permanently disagrees with the canonical
-package-lock.json. Without HERMES_TUI_DIR set, ``_make_tui_argv`` falls
+package-lock.json. Without SLAVE_TUI_DIR set, ``_make_tui_argv`` falls
 through to source dependency preparation, racing itself across
 concurrent /api/pty connections → ENOTEMPTY.
 
-The fix is ``ENV HERMES_TUI_DIR=/opt/hermes/ui-tui`` in the Dockerfile, which
+The fix is ``ENV SLAVE_TUI_DIR=/opt/hermes/ui-tui`` in the Dockerfile, which
 makes the launcher take the prebuilt-bundle fast path (``node --expose-gc
 .../dist/entry.js``) and skip the install check entirely. These tests assert
 that invariant holds in the built image.
@@ -21,17 +21,17 @@ import subprocess
 
 
 def _exec_py(image: str, py: str) -> str:
-    """Run a Python snippet inside the image as the hermes user, return stdout."""
+    """Run a Python snippet inside the image as the slave user, return stdout."""
     inner = (
         "source /opt/hermes/.venv/bin/activate && "
         "cd /opt/hermes && "
         f"python3 -c {shlex.quote(py)}"
     )
-    # Drop to the hermes user (UID 10000) so we exercise the same path the
+    # Drop to the slave user (UID 10000) so we exercise the same path the
     # dashboard PTY child runs as — not root.
     cmd = [
         "docker", "run", "--rm", "--network=none", "--entrypoint", "su", image,
-        "hermes", "-s", "/bin/bash", "-c", inner,
+        "slave", "-s", "/bin/bash", "-c", inner,
     ]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, f"in-container python failed:\n{r.stderr[-2000:]}"
@@ -64,7 +64,7 @@ def test_prebuilt_bundle_present_and_no_runtime_install(built_image: str) -> Non
     py = (
         "import json\n"
         "from pathlib import Path\n"
-        "from hermes_cli.main_tui_launch import _make_tui_argv\n"
+        "from slave_cli.main_tui_launch import _make_tui_argv\n"
         "ui = Path('/opt/hermes/ui-tui')\n"
         "argv, cwd = _make_tui_argv(ui, tui_dev=False)\n"
         "out = {\n"
@@ -76,7 +76,7 @@ def test_prebuilt_bundle_present_and_no_runtime_install(built_image: str) -> Non
     )
     out = json.loads(_exec_py(built_image, py))
     assert out["dist_entry_exists"], "prebuilt ui-tui/dist/entry.js missing from image"
-    # With HERMES_TUI_DIR set, _make_tui_argv returns the prebuilt path BEFORE
+    # With SLAVE_TUI_DIR set, _make_tui_argv returns the prebuilt path BEFORE
     # ever reaching the install check — so the resolved argv is what matters.
     assert out["uses_prebuilt"], f"launcher did not take prebuilt path: argv={out['argv']!r}"
     assert "npm" not in out["argv"][0].lower(), (
@@ -91,12 +91,12 @@ import json
 import os
 import subprocess
 import sys
-from hermes_cli.main_tui_launch import _apply_tui_python_env
+from slave_cli.main_tui_launch import _apply_tui_python_env
 
 env = dict(os.environ)
 _apply_tui_python_env(env)
 child = subprocess.run(
-    [env["HERMES_PYTHON"], "-c",
+    [env["SLAVE_PYTHON"], "-c",
      "import os, sys; print(os.path.realpath(sys.executable), flush=True); import tui_gateway.entry"],
     cwd="/opt/hermes", env=env, capture_output=True, text=True, timeout=30,
 )
@@ -108,14 +108,14 @@ print(json.dumps({
 }))
 '''
     # Run as the image user without `su`, which would erase Docker's
-    # HERMES_PYTHON and hide the broken runtime environment.
+    # SLAVE_PYTHON and hide the broken runtime environment.
     inner = (
         "source /opt/hermes/.venv/bin/activate && "
         "cd /opt/hermes && "
         f"python3 -c {shlex.quote(py)}"
     )
     r = subprocess.run(
-        ["docker", "run", "--rm", "--network=none", "--user", "hermes",
+        ["docker", "run", "--rm", "--network=none", "--user", "slave",
          "--entrypoint", "/bin/bash", built_image, "-c", inner],
         capture_output=True, text=True, timeout=120,
     )

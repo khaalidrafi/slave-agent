@@ -36,7 +36,7 @@
  *    independently scoped).
  */
 
-import { backendScopeKey, LOCAL_CONNECTION_ID } from '@hermes/shared'
+import { backendScopeKey, LOCAL_CONNECTION_ID } from '@slave-agent/shared'
 import { computed } from 'nanostores'
 
 import { stableRecord } from '@/lib/stable-array'

@@ -2,13 +2,13 @@ import { act, cleanup, render } from '@testing-library/react'
 import { useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesModule from '@/hermes'
+import type * as SlaveModule from '@/hermes'
 import { textPart } from '@/lib/chat-messages'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import { $sessionTiles, publishSessionState } from '@/store/session-states'
 
 vi.mock('@/hermes', async importOriginal => {
-  const actual = await importOriginal<typeof HermesModule>()
+  const actual = await importOriginal<typeof SlaveModule>()
 
   return {
     ...actual,
@@ -122,7 +122,7 @@ describe('useTranscriptPeerSync (#65047)', () => {
       render(<Harness />)
     })
 
-    const peer = new FakeBroadcastChannel('hermes:transcript')
+    const peer = new FakeBroadcastChannel('slave:transcript')
 
     await act(async () => {
       peer.postMessage({ messageCount: 4, sessionId: STORED })
@@ -162,7 +162,7 @@ describe('useTranscriptPeerSync (#65047)', () => {
       render(<Harness />)
     })
 
-    const peer = new FakeBroadcastChannel('hermes:transcript')
+    const peer = new FakeBroadcastChannel('slave:transcript')
 
     await act(async () => {
       peer.postMessage({ sessionId: 'some-other-chat', messageCount: 9 })

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { HermesConnection } from '@/global'
+import type { SlaveConnection } from '@/global'
 import { getSession } from '@/hermes'
 import { clearSessionDraft, stashSessionDraft } from '@/store/composer'
 import { $gatewaySwitching } from '@/store/gateway-switch'
@@ -22,7 +22,7 @@ vi.mock('@/hermes', async importOriginal => ({
   getSession: vi.fn()
 }))
 
-function localConnection(): HermesConnection {
+function localConnection(): SlaveConnection {
   return {
     baseUrl: 'http://127.0.0.1:9119',
     isFullscreen: false,
@@ -220,7 +220,7 @@ describe('startUnrestoredTileTitleBackfill retires dead tiles (#125678)', () => 
 
     await vi.waitFor(() => expect($sessionTiles.get()).toEqual([]))
     expect(get.mock.calls.map(call => call[1])).toEqual(['default', 'writer'])
-    expect(window.localStorage.getItem('hermes.desktop.sessionTiles.v2') ?? '').not.toContain('dead-chat')
+    expect(window.localStorage.getItem('slave.desktop.sessionTiles.v2') ?? '').not.toContain('dead-chat')
     reopenLastClosedTile()
     expect($sessionTiles.get()).toEqual([])
   })

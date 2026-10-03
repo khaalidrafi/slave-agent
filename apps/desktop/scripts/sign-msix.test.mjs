@@ -24,16 +24,16 @@ test('shouldSignFile rejects the Store-submission variant (Partner Center re-sig
   // cannot customize CN and CA/B requires the legal entity name — so
   // SignerSign would fail 0x8007000B. Partner Center signs on ingestion.
   assert.equal(
-    shouldSignFile('release/Store-HermesBundled-0.28.0+canary.20260828T211829Z-win-x64.msix'),
+    shouldSignFile('release/Store-SlaveBundled-0.28.0+canary.20260828T211829Z-win-x64.msix'),
     false
   )
   assert.equal(
-    shouldSignFile('release/Store-HermesBundled-0.28.0+canary.20260828T211829Z-win-arm64.msixbundle'),
+    shouldSignFile('release/Store-SlaveBundled-0.28.0+canary.20260828T211829Z-win-arm64.msixbundle'),
     false
   )
   // The out-of-store artifacts keep the only signature Windows validates.
   assert.equal(
-    shouldSignFile('release/HermesBundled-0.28.0+canary.20260828T211829Z-win-x64.msix'),
+    shouldSignFile('release/SlaveBundled-0.28.0+canary.20260828T211829Z-win-x64.msix'),
     true
   )
 })
@@ -43,7 +43,7 @@ test('shouldSignFile rejects every non-package file the hook is asked to sign', 
   // map — signing them is wasted round-trips and would break the hash if
   // done after makeappx packs the package.
   assert.equal(shouldSignFile('release/win-unpacked/Hermes.exe'), false)
-  assert.equal(shouldSignFile('C:/work/hermes-agent/release/win-unpacked/Hermes.exe'), false)
+  assert.equal(shouldSignFile('C:/work/slave-agent/release/win-unpacked/Hermes.exe'), false)
   assert.equal(shouldSignFile('release/Hermes-0.17.0-win32-arm64.nsis.exe'), false)
   assert.equal(shouldSignFile('release/Hermes-0.17.0-win32-arm64.msixupload'), false)
   assert.equal(shouldSignFile('release/Hermes-0.17.0-win32-arm64.dll'), false)

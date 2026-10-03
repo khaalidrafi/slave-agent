@@ -1,4 +1,4 @@
-import { type GatewayEvent, JsonRpcGatewayClient } from '@hermes/shared'
+import { type GatewayEvent, JsonRpcGatewayClient } from '@slave-agent/shared'
 import { QueryClient } from '@tanstack/react-query'
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { useRef } from 'react'
@@ -117,7 +117,7 @@ async function mountWithPendingReplay() {
       ...cache,
       queryClient,
       hydrateFromStoredSession: noop,
-      refreshHermesConfig: noop,
+      refreshSlaveConfig: noop,
       refreshSessions: noop
     })
 

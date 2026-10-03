@@ -1,4 +1,4 @@
-import type { ToolLabel } from '@hermes/shared'
+import type { ToolLabel } from '@slave-agent/shared'
 
 import { TOOL_LABELS_ARG } from '@/lib/connector-tools'
 import { firstStringField, normalize } from '@/lib/text'
@@ -420,7 +420,7 @@ export interface SettledClarifyProjection {
  *
  * Only an UNRESOLVED part (never completed: no `result` key, sealed or not)
  * can own an event. Tool call ids are not unique across turns — llama.cpp
- * emits one constant id for every call and Hermes' own deterministic ids
+ * emits one constant id for every call and Slave' own deterministic ids
  * repeat — so a part that already carries its completion is a finished call
  * from an earlier turn, not the owner of the new one. Routing to it would
  * draw the new call over the old row and leave the live turn empty.

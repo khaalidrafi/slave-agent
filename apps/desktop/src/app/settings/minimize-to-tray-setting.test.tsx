@@ -9,7 +9,7 @@ const errors = vi.hoisted(() => vi.fn())
 vi.mock('@/store/notifications', () => ({ notifyError: errors }))
 vi.mock('@/lib/haptics', () => ({ triggerHaptic: vi.fn() }))
 
-const original = window.hermesDesktop
+const original = window.slaveDesktop
 const c = en.settings.config
 interface Status {
   enabled: boolean
@@ -36,14 +36,14 @@ function bridge(initial: Status) {
     }
   }
 
-  window.hermesDesktop = { ...original, minimizeToTray: api }
+  window.slaveDesktop = { ...original, minimizeToTray: api }
 
   return { api, listeners }
 }
 
 afterEach(() => {
   cleanup()
-  window.hermesDesktop = original
+  window.slaveDesktop = original
   vi.clearAllMocks()
 })
 

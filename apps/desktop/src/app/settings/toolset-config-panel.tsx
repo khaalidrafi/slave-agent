@@ -258,7 +258,7 @@ interface PostSetupRunnerProps {
 /**
  * Runs a provider's post-setup install hook (npm / pip / binary) via the
  * `/api/tools/toolsets/{name}/post-setup` spawn-action and tails the resulting
- * log inline — the GUI equivalent of the install step `hermes tools` runs
+ * log inline — the GUI equivalent of the install step `slave tools` runs
  * after you pick a backend that needs extra dependencies.
  *
  * Idempotent UX: when the backend's readiness status says the install is
@@ -336,7 +336,7 @@ function PostSetupRunner({ toolset, postSetupKey, installed = false, onComplete,
                 message: copy.postSetupErrorMessage(prettyName(postSetupKey)),
                 action: {
                   label: copy.postSetupOpenLogs,
-                  onClick: () => void window.hermesDesktop?.revealLogs?.().catch(() => undefined)
+                  onClick: () => void window.slaveDesktop?.revealLogs?.().catch(() => undefined)
                 },
                 secondaryAction: { label: copy.postSetupRunAgain, onClick: () => void run() }
               }
@@ -404,7 +404,7 @@ interface ModelCatalogPickerProps {
 }
 
 /**
- * Backend model catalog — the GUI counterpart of the model picker `hermes
+ * Backend model catalog — the GUI counterpart of the model picker `slave
  * tools` runs after you choose an image/video generation backend (e.g. FAL's
  * multi-model catalog). Renders speed / strengths / price per model as a
  * radio-card list and persists the choice to `image_gen.model` /
@@ -663,9 +663,9 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
 
       const url = start.verification_url
 
-      if (window.hermesDesktop?.openExternal) {
+      if (window.slaveDesktop?.openExternal) {
         try {
-          await window.hermesDesktop.openExternal(url)
+          await window.slaveDesktop.openExternal(url)
         } catch {
           window.open(url, '_blank', 'noopener,noreferrer')
         }

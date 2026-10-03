@@ -88,7 +88,7 @@ test('normalizeRemoteHeaders keeps safe proxy headers and drops transport/auth h
       Authorization: { encoding: 'plain', value: 'bearer' },
       Cookie: { encoding: 'plain', value: 'a=b' },
       Host: { encoding: 'plain', value: 'example.com' },
-      'X-Hermes-Session-Token': { encoding: 'plain', value: 'token' },
+      'X-Slave-Session-Token': { encoding: 'plain', value: 'token' },
       'Bad Header': { encoding: 'plain', value: 'bad' },
       Empty: { encoding: 'plain', value: '' }
     }),
@@ -352,7 +352,7 @@ test('normalizeSshConfig strips a pasted "ssh " command prefix', () => {
 })
 
 test('localProfileEntry preserves inactive SSH drafts but drops Cloud state', () => {
-  const ssh = { mode: 'ssh', host: 'box', user: 'alice', remoteHermesPath: '/hermes' }
+  const ssh = { mode: 'ssh', host: 'box', user: 'alice', remoteSlavePath: '/hermes' }
   assert.deepEqual(localProfileEntry(ssh), { mode: 'local', savedSsh: ssh })
   assert.deepEqual(localProfileEntry({ mode: 'local', savedSsh: ssh }), {
     mode: 'local',
@@ -423,7 +423,7 @@ const ROUTES = [
   },
   {
     // THE INVARIANT this collapse must not eat: a route the server cannot
-    // profile-scope has only the backend PROCESS's HERMES_HOME left as a
+    // profile-scope has only the backend PROCESS's SLAVE_HOME left as a
     // scope, so it keeps a pooled backend. /api/files/upload acts on host
     // paths and takes no `profile` even after #118275.
     name: 'a mutating local request the server cannot scope keeps its pooled backend',
@@ -555,7 +555,7 @@ const ROUTES = [
     expected: { backend: 'pool', descriptorProfile: null, scopePath: false }
   },
   {
-    name: 'HERMES_DESKTOP_ISOLATED_BACKEND keeps a local profile on its own pooled backend',
+    name: 'SLAVE_DESKTOP_ISOLATED_BACKEND keeps a local profile on its own pooled backend',
     profile: 'coder',
     opts: {
       primaryProfile: 'default',
@@ -771,7 +771,7 @@ test('pathWithGlobalRemoteProfile preserves cross-profile selectors when transla
   )
 })
 
-// --- translateSelfProfileQuery (registry SSH-scoped hermes:api contract) ---
+// --- translateSelfProfileQuery (registry SSH-scoped slave:api contract) ---
 
 test('translateSelfProfileQuery rewrites the self-profile filter into the backend namespace', () => {
   assert.equal(
@@ -930,7 +930,7 @@ test('resolveProfileApiRequest scopes destructive profile-owned routes to the sh
 
 test('resolveProfileApiRequest keeps an unscopable mutating route on a process-scoped backend', () => {
   // The load-bearing half of the collapse: a route the server cannot scope has
-  // nothing left but the backend process's own HERMES_HOME, so it must NOT fall
+  // nothing left but the backend process's own SLAVE_HOME, so it must NOT fall
   // through to the shared primary. Live proof of the failure mode this pins:
   // `POST /api/memory/reset?profile=beta` on an unfixed server deleted ALPHA's
   // MEMORY.md and returned ok:true.
@@ -1055,7 +1055,7 @@ test('resolveProfileApiRequest keeps gateway lifecycle verbs on the primary with
 test('resolveProfileApiRequest routes action-status polls with the action-spawning routes', () => {
   // /api/actions/{name}/status must land on the SAME backend as the endpoints
   // that spawn actions (skills hub install/uninstall/update, mcp catalog
-  // install): _spawn_hermes_action registers the dynamic action name only in
+  // install): _spawn_slave_action registers the dynamic action name only in
   // the spawning process. Splitting the pair 404s the poll with
   // "Unknown action: skills-install-<slug>-<hash>".
   assert.deepEqual(
@@ -1229,23 +1229,23 @@ test('resolveAuthMode: ignores unknown values, defaults to token', () => {
 // --- cookiesHaveSession ---
 
 test('cookiesHaveSession detects the bare access-token cookie', () => {
-  assert.equal(cookiesHaveSession([{ name: 'hermes_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: 'slave_session_at', value: 'x' }]), true)
 })
 
 test('cookiesHaveSession detects the __Host- and __Secure- prefixed variants', () => {
-  assert.equal(cookiesHaveSession([{ name: '__Host-hermes_session_at', value: 'x' }]), true)
-  assert.equal(cookiesHaveSession([{ name: '__Secure-hermes_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: '__Host-slave_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: '__Secure-slave_session_at', value: 'x' }]), true)
 })
 
 test('cookiesHaveSession is false for an empty value', () => {
-  assert.equal(cookiesHaveSession([{ name: 'hermes_session_at', value: '' }]), false)
+  assert.equal(cookiesHaveSession([{ name: 'slave_session_at', value: '' }]), false)
 })
 
 test('cookiesHaveSession ignores unrelated cookies (AT-only by design)', () => {
   // cookiesHaveSession is deliberately access-token-only — a lone RT cookie
   // is NOT an access token, so this returns false. Connectivity callers must
   // use cookiesHaveLiveSession instead (see below).
-  assert.equal(cookiesHaveSession([{ name: 'hermes_session_rt', value: 'x' }]), false)
+  assert.equal(cookiesHaveSession([{ name: 'slave_session_rt', value: 'x' }]), false)
   assert.equal(cookiesHaveSession([{ name: 'other', value: 'x' }]), false)
 })
 
@@ -1258,37 +1258,37 @@ test('cookiesHaveSession handles non-arrays', () => {
 // --- cookiesHaveLiveSession (AT or RT — the connectivity check) ---
 
 test('cookiesHaveLiveSession is true for a live access-token cookie', () => {
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_at', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Host-hermes_session_at', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-hermes_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: 'slave_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Host-slave_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-slave_session_at', value: 'x' }]), true)
 })
 
 test('cookiesHaveLiveSession is true for an RT cookie even with NO access-token cookie', () => {
   // This is the bug-fix case: the AT cookie has lapsed (dropped from the jar)
   // but the 24h RT cookie is still alive. The session is still connectable —
   // the gateway rotates a fresh AT from the RT on the next request.
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_rt', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Host-hermes_session_rt', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-hermes_session_rt', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: 'slave_session_rt', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Host-slave_session_rt', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-slave_session_rt', value: 'x' }]), true)
 })
 
 test('cookiesHaveLiveSession is true when both AT and RT are present', () => {
   assert.equal(
     cookiesHaveLiveSession([
-      { name: 'hermes_session_at', value: 'a' },
-      { name: 'hermes_session_rt', value: 'r' }
+      { name: 'slave_session_at', value: 'a' },
+      { name: 'slave_session_rt', value: 'r' }
     ]),
     true
   )
 })
 
 test('cookiesHaveLiveSession is false for empty values', () => {
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_at', value: '' }]), false)
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_rt', value: '' }]), false)
+  assert.equal(cookiesHaveLiveSession([{ name: 'slave_session_at', value: '' }]), false)
+  assert.equal(cookiesHaveLiveSession([{ name: 'slave_session_rt', value: '' }]), false)
   assert.equal(
     cookiesHaveLiveSession([
-      { name: 'hermes_session_at', value: '' },
-      { name: 'hermes_session_rt', value: '' }
+      { name: 'slave_session_at', value: '' },
+      { name: 'slave_session_rt', value: '' }
     ]),
     false
   )
@@ -1494,7 +1494,7 @@ test('gateway WS URL IPC result serializes success and the auth-vs-transport mat
 
   for (const error of [
     Object.assign(new Error('500: unavailable'), { statusCode: 500 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to slave-agent backend after 8000ms'),
     Object.assign(new Error('socket reset'), { code: 'ECONNRESET' })
   ]) {
     assert.deepEqual(await gatewayWsUrlIpcResult(async () => Promise.reject(error)), {
@@ -1536,7 +1536,7 @@ test('gatewayTicketFailure only copies an integer statusCode, not a message pref
 })
 
 // OAuth integration regression (#85373): the WS-ticket mint boundary runs
-// BEFORE waitForHermesReady. This mirrors main.ts buildRemoteConnection's
+// BEFORE waitForSlaveReady. This mirrors main.ts buildRemoteConnection's
 // catch — classify a Nous Cloud server fault via the shared factory, else
 // fall through to gatewayTicketFailure. Proves the production composition:
 //   1. Cloud + OAuth ticket mint + 503  -> actionable Cloud-down error
@@ -1596,7 +1596,7 @@ test('FIX #95701: a confirmed 401/403 ticket rejection is tagged isReauthRequire
 test('FIX #95701: transport and server failures at the ticket mint stay retryable — never reauth', () => {
   for (const source of [
     Object.assign(new Error('503: unavailable'), { statusCode: 503 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to slave-agent backend after 8000ms'),
     Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })
   ]) {
     const wrapped = gatewayTicketFailure(source, 'auth copy', 'transport copy') as any

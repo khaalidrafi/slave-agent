@@ -1,4 +1,4 @@
-import { DEFAULT_REASONING_EFFORT, isReasoningEffort } from '@hermes/shared'
+import { DEFAULT_REASONING_EFFORT, isReasoningEffort } from '@slave-agent/shared'
 
 import { normalize } from '@/lib/text'
 

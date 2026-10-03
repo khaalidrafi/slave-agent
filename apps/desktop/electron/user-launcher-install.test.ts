@@ -13,15 +13,15 @@ afterEach((): void => {
 })
 
 function sourceTree(root: string): void {
-  fs.mkdirSync(path.join(root, 'hermes_cli'), { recursive: true })
+  fs.mkdirSync(path.join(root, 'slave_cli'), { recursive: true })
   fs.mkdirSync(path.join(root, 'pm'))
-  fs.writeFileSync(path.join(root, 'hermes_cli', 'main.py'), '')
-  fs.writeFileSync(path.join(root, 'hermes_cli', '_launchers.py'), '')
+  fs.writeFileSync(path.join(root, 'slave_cli', 'main.py'), '')
+  fs.writeFileSync(path.join(root, 'slave_cli', '_launchers.py'), '')
 }
 
 function publishLauncher(dir: string, reported: string): string {
   fs.mkdirSync(dir, { recursive: true })
-  const launcher: string = path.join(dir, process.platform === 'win32' ? 'hermes.cmd' : 'hermes')
+  const launcher: string = path.join(dir, process.platform === 'win32' ? 'slave.cmd' : 'slave')
 
   const body: string =
     process.platform === 'win32'
@@ -33,8 +33,8 @@ function publishLauncher(dir: string, reported: string): string {
   return launcher
 }
 
-// The reported machine: setup-hermes.sh published ~/.local/bin/hermes for a
-// clone outside ~/.hermes/hermes-agent, and a Finder/Dock launch inherited
+// The reported machine: setup-slave.sh published ~/.local/bin/hermes for a
+// clone outside ~/.slave/slave-agent, and a Finder/Dock launch inherited
 // launchd's PATH, which has no ~/.local/bin. Desktop must still find it.
 test.skipIf(process.platform === 'win32')(
   'a ~/.local/bin launcher resolves its non-canonical install on a GUI PATH without ~/.local/bin',
@@ -43,18 +43,18 @@ test.skipIf(process.platform === 'win32')(
 
     try {
       const home: string = path.join(base, 'home')
-      const root: string = path.join(home, 'src', 'hermes-agent')
+      const root: string = path.join(home, 'src', 'slave-agent')
       sourceTree(root)
       const launcher: string = publishLauncher(path.join(home, '.local', 'bin'), root)
       vi.stubEnv('HOME', home)
       vi.stubEnv('PATH', '/usr/bin:/bin:/usr/sbin:/sbin')
 
-      const found = userLauncherInstallRoot(false, path.join(home, '.hermes'))
+      const found = userLauncherInstallRoot(false, path.join(home, '.slave'))
       assert.deepEqual(found, { launcher, root })
 
       const backend = await resolveSourceInstallationBackend(root, ['serve'], {
         isWindows: false,
-        hermesHome: path.join(home, '.hermes')
+        slaveHome: path.join(home, '.slave')
       })
 
       assert.equal(backend?.command, launcher)
@@ -66,23 +66,23 @@ test.skipIf(process.platform === 'win32')(
   }
 )
 
-test('a user-bin launcher is ignored when it reports no Hermes source tree', (): void => {
+test('a user-bin launcher is ignored when it reports no slave-agent source tree', (): void => {
   const base: string = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'user-launcher-')))
 
   try {
     const home: string = path.join(base, 'home')
-    const hermesHome: string = path.join(home, '.hermes')
+    const slaveHome: string = path.join(home, '.slave')
     const notSource: string = path.join(base, 'elsewhere')
     fs.mkdirSync(notSource)
-    publishLauncher(path.join(hermesHome, 'bin'), notSource)
+    publishLauncher(path.join(slaveHome, 'bin'), notSource)
     vi.stubEnv('HOME', home)
     vi.stubEnv('USERPROFILE', home)
     vi.stubEnv('LOCALAPPDATA', path.join(home, 'AppData', 'Local'))
 
-    assert.equal(userLauncherInstallRoot(process.platform === 'win32', hermesHome), null)
+    assert.equal(userLauncherInstallRoot(process.platform === 'win32', slaveHome), null)
 
     sourceTree(notSource)
-    assert.equal(userLauncherInstallRoot(process.platform === 'win32', hermesHome)?.root, notSource)
+    assert.equal(userLauncherInstallRoot(process.platform === 'win32', slaveHome)?.root, notSource)
   } finally {
     fs.rmSync(base, { recursive: true, force: true })
   }

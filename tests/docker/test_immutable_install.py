@@ -2,11 +2,11 @@
 
 Build the real image and verify at runtime:
 
-  1. /opt/hermes is not writable by the hermes user (immutable install tree)
-  2. A stale "docker" stamp in $HERMES_HOME is healed (removed) on boot
+  1. /opt/hermes is not writable by the slave user (immutable install tree)
+  2. A stale "docker" stamp in $SLAVE_HOME is healed (removed) on boot
 
 The hosted write-policy env (PYTHONDONTWRITEBYTECODE,
-HERMES_WRITE_SAFE_ROOT, ...) is covered by
+SLAVE_WRITE_SAFE_ROOT, ...) is covered by
 test_immutable_install_permissions.py.
 """
 from __future__ import annotations
@@ -25,20 +25,20 @@ from tests.docker.conftest import (
 def test_install_tree_not_writable_by_hermes(
     built_image: str, container_name: str, uid: int,
 ) -> None:
-    """The hermes user must not be able to modify /opt/hermes.
+    """The slave user must not be able to modify /opt/hermes.
 
     The install tree (source, venv, TUI bundle, node_modules) must remain
     root-owned and non-writable so an agent session cannot self-modify
     the installation and brick the gateway.
     """
-    start_container(built_image, container_name, f"HERMES_UID={uid}", f"HERMES_GID={uid}")
+    start_container(built_image, container_name, f"SLAVE_UID={uid}", f"SLAVE_GID={uid}")
     identity = docker_exec(container_name, "id", "-u")
     assert identity.returncode == 0 and identity.stdout.strip() == str(uid)
 
     probe = docker_exec(container_name, "/opt/hermes/.venv/bin/python", "-c", """
 import os
 from pathlib import Path
-from hermes_cli.config import detect_install_method
+from slave_cli.config import detect_install_method
 assert os.geteuid() != 0
 code = Path('/opt/hermes/.install_method')
 home = Path('/opt/data/.install_method')
@@ -67,13 +67,13 @@ for relative in ('.venv/.lock', 'pm-runtime/.lock'):
 
     r = docker_exec_sh(
         container_name,
-        # Try to create a file under /opt/hermes as the hermes user
+        # Try to create a file under /opt/hermes as the slave user
         "touch /opt/hermes/test_write 2>&1 && "
         "echo WRITE_SUCCEEDED || echo WRITE_FAILED",
         timeout=10,
     )
     assert "WRITE_FAILED" in r.stdout, (
-        f"hermes user can write to /opt/hermes (install tree not immutable): "
+        f"slave user can write to /opt/hermes (install tree not immutable): "
         f"{r.stdout}"
     )
 
@@ -85,7 +85,7 @@ for relative in ('.venv/.lock', 'pm-runtime/.lock'):
         timeout=10,
     )
     assert "WRITE_FAILED" in r.stdout, (
-        f"hermes user can write to /opt/hermes/.venv: {r.stdout}"
+        f"slave user can write to /opt/hermes/.venv: {r.stdout}"
     )
 
 
@@ -96,7 +96,7 @@ for relative in ('.venv/.lock', 'pm-runtime/.lock'):
 def test_stale_docker_stamp_in_home_is_healed_on_boot(
     built_image: str, container_name: str,
 ) -> None:
-    """A stale 'docker' stamp left in $HERMES_HOME by an older image
+    """A stale 'docker' stamp left in $SLAVE_HOME by an older image
     must be removed on boot so shared homes self-heal."""
     # Start container, write a stale stamp
     start_container(built_image, container_name)
@@ -122,6 +122,6 @@ def test_stale_docker_stamp_in_home_is_healed_on_boot(
         timeout=10,
     )
     assert "HEALED" in r.stdout or r.stdout.strip() != "docker", (
-        f"stale 'docker' stamp in $HERMES_HOME was not healed on boot: "
+        f"stale 'docker' stamp in $SLAVE_HOME was not healed on boot: "
         f"{r.stdout}"
     )

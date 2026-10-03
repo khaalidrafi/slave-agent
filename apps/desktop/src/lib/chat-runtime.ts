@@ -1,6 +1,6 @@
 import type { ThreadMessage } from '@assistant-ui/react'
-import type { ModelOptionsResult } from '@hermes/shared'
-import { SLASH_COMMAND_RE } from '@hermes/shared'
+import type { ModelOptionsResult } from '@slave-agent/shared'
+import { SLASH_COMMAND_RE } from '@slave-agent/shared'
 
 import type { QuickModelOption } from '@/app/chat/composer/types'
 import type { ClientSessionState } from '@/app/types'
@@ -127,7 +127,7 @@ export function coerceGatewayText(value: unknown): string {
 /**
  * Normalize a reasoning/thinking text payload from the gateway.
  *
- * Only the leading status prefix (e.g. "Hermes is thinking...") and the
+ * Only the leading status prefix (e.g. "slave-agent is thinking...") and the
  * obvious placeholder echoes are stripped. We deliberately do NOT trim
  * the delta — reasoning streams as small chunks (often individual tokens
  * with leading or trailing spaces), and trimming each chunk before
@@ -286,7 +286,7 @@ export function personalityNamesFromConfig(config: unknown): string[] {
   const root = config && typeof config === 'object' ? (config as Record<string, unknown>) : {}
   const agent = root.agent && typeof root.agent === 'object' ? (root.agent as Record<string, unknown>) : {}
 
-  // The Python runtime (`hermes_cli.personality.available_personalities`) overlays
+  // The Python runtime (`slave_cli.personality.available_personalities`) overlays
   // built-ins with the root-level `personalities` block, then `agent.personalities`
   // (agent wins on a name clash). Read both here so a root-registered persona the
   // CLI/gateway honour also reaches the GUI (#123297).

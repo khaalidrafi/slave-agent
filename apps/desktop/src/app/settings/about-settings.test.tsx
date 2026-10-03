@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { DesktopUpdateStatus, DesktopVersionInfo, HermesConnection } from '@/global'
+import type { DesktopUpdateStatus, DesktopVersionInfo, SlaveConnection } from '@/global'
 import { en } from '@/i18n/en'
 import type * as SessionStore from '@/store/session'
 import { $connection } from '@/store/session'
@@ -22,7 +22,7 @@ vi.mock('@/store/session', async (importOriginal): Promise<Record<string, unknow
   const actual = await importOriginal<typeof SessionStore>()
   const { atom } = await import('nanostores')
 
-  return { ...actual, $connection: atom<HermesConnection | null>(null) }
+  return { ...actual, $connection: atom<SlaveConnection | null>(null) }
 })
 
 vi.mock('@/store/updates', async (): Promise<Record<string, unknown>> => {
@@ -55,7 +55,7 @@ vi.mock('@/store/updates', async (): Promise<Record<string, unknown>> => {
   }
 })
 
-function connection(mode: 'local' | 'remote'): HermesConnection {
+function connection(mode: 'local' | 'remote'): SlaveConnection {
   return {
     baseUrl: 'http://gateway:9119',
     isFullscreen: false,
@@ -77,7 +77,7 @@ describe('AboutSettings', (): void => {
       electronVersion: '40',
       nodeVersion: '26',
       platform: 'linux',
-      hermesRoot: '/test/hermes',
+      slaveRoot: '/test/hermes',
       installId: 'test-install'
     })
     $updateStatus.set({ supported: true, behind: 0 })

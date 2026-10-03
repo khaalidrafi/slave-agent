@@ -33,7 +33,7 @@ test('getBinaries collects .exe and .dll recursively, case-insensitive, sorted',
   const root = tmpTree()
   fs.mkdirSync(path.join(root, 'resources', 'agent-payload', 'tools', 'python', 'bin'), { recursive: true })
   fs.mkdirSync(path.join(root, 'resources', 'agent-payload', 'tools', 'chromium-1', 'meep'), { recursive: true })
-  fs.writeFileSync(path.join(root, 'Hermes.exe'), 'x')
+  fs.writeFileSync(path.join(root, 'Slave.exe'), 'x')
   fs.writeFileSync(path.join(root, 'FFMPEG.DLL'), 'x')
   fs.writeFileSync(path.join(root, 'resources', 'agent-payload', 'tools', 'python', 'bin', 'node.exe'), 'x')
   fs.writeFileSync(path.join(root, 'resources', 'agent-payload', 'tools', 'chromium-1', 'meep', 'chrome.dll'), 'x')
@@ -43,7 +43,7 @@ test('getBinaries collects .exe and .dll recursively, case-insensitive, sorted',
 
   assert.deepEqual(files, [
     path.join('FFMPEG.DLL'),
-    path.join('Hermes.exe'),
+    path.join('Slave.exe'),
     path.join('resources', 'agent-payload', 'tools', 'chromium-1', 'meep', 'chrome.dll'),
     path.join('resources', 'agent-payload', 'tools', 'python', 'bin', 'node.exe')
   ])
@@ -54,7 +54,7 @@ test('getBinaries skips symlinks and honors the skip predicate (product exe)', (
   fs.mkdirSync(path.join(root, 'tools'), { recursive: true })
   const target = path.join(root, 'tools', 'real.exe')
   fs.writeFileSync(target, 'x')
-  fs.writeFileSync(path.join(root, 'Hermes.exe'), 'x')
+  fs.writeFileSync(path.join(root, 'Slave.exe'), 'x')
   const link = path.join(root, 'tools', 'link.exe')
   try {
     fs.symlinkSync(target, link)
@@ -63,7 +63,7 @@ test('getBinaries skips symlinks and honors the skip predicate (product exe)', (
     // is the skip predicate; symlink skipping is covered on the other OS.
   }
 
-  const exe = path.join(root, 'Hermes.exe')
+  const exe = path.join(root, 'Slave.exe')
   const files = getBinaries(root, { skip: file => path.resolve(file) === exe })
 
   assert.equal(files.includes(exe), false)
@@ -91,8 +91,8 @@ test('chunk splits into ~100-file batches with no leftovers', () => {
 
 test('customSign skips Store- submission packages (Partner Center signs)', async () => {
   const result = await customSign(
-    { path: 'C:/out/Store-HermesBundled-0.28.0-win-x64.msix' },
-    { appInfo: { productFilename: 'Hermes' } },
+    { path: 'C:/out/Store-SlaveBundled-0.28.0-win-x64.msix' },
+    { appInfo: { productFilename: 'slave-agent' } },
     { signMsix: async () => { throw new Error('must not be called') } }
   )
   assert.equal(result, true)
@@ -116,12 +116,12 @@ test('customSign delegates only the msix package and root product exe to the Azu
       files: structuredClone(builderConfig.files),
       extraResources: structuredClone(builderConfig.extraResources),
       directories: { output },
-      win: { ...builderConfig.win, executableName: 'hermes-collision' }
+      win: { ...builderConfig.win, executableName: 'slave-collision' }
     }
   })
   await info.validateConfig()
   const packager = new WinPackager(info)
-  const msix = path.join(tmpTree(), 'HermesBundled-0.28.0-win-x64.msix')
+  const msix = path.join(tmpTree(), 'SlaveBundled-0.28.0-win-x64.msix')
   assert.equal(await customSign({ path: msix }, packager, deps), true)
   assert.deepEqual(delegated, [['msix', msix]])
 
@@ -131,7 +131,7 @@ test('customSign delegates only the msix package and root product exe to the Azu
     const exe = path.join(root, exeName)
     delegated.length = 0
     // Same basename is not enough: payload copies wait for the afterPack batch.
-    for (const file of [path.join(root, 'resources', 'agent-payload', 'bin', exeName), path.join(`${root}-other`, exeName), path.join(root, 'resources', 'Hermes-helper.exe')]) {
+    for (const file of [path.join(root, 'resources', 'agent-payload', 'bin', exeName), path.join(`${root}-other`, exeName), path.join(root, 'resources', 'Slave-helper.exe')]) {
       assert.equal(await customSign({ path: file }, packager, deps), true)
     }
     assert.deepEqual(delegated, [])
@@ -145,7 +145,7 @@ test('customSign delegates only the msix package and root product exe to the Azu
 test('batchSignAppTree is a no-op (skipped=true) without the Azure env, and signs via chunked argv-array invocations when set', async () => {
   const root = tmpTree()
   fs.mkdirSync(path.join(root, 'tools'), { recursive: true })
-  const exe = path.join(root, 'Hermes.exe')
+  const exe = path.join(root, 'Slave.exe')
   fs.writeFileSync(exe, 'x')
   fs.writeFileSync(path.join(root, 'tools', 'node.exe'), 'x')
   fs.writeFileSync(path.join(root, 'tools', 'FFMPEG.DLL'), 'x')
@@ -215,7 +215,7 @@ test('batchSignAppTree chunks large trees into ~100-file signtool invocations, s
   }
 
   const invocations = []
-  const result = await batchSignAppTree(root, path.join(root, 'Hermes.exe'), {
+  const result = await batchSignAppTree(root, path.join(root, 'Slave.exe'), {
     env: {
       AZURE_SIGN_ENDPOINT: 'https://cus.codesigning.azure.net',
       AZURE_SIGN_ACCOUNT: 'codesign2',
@@ -267,7 +267,7 @@ test('sign chunks run concurrently, capped at the configured concurrency', async
     inFlight -= 1
   }
 
-  await batchSignAppTree(root, path.join(root, 'Hermes.exe'), {
+  await batchSignAppTree(root, path.join(root, 'Slave.exe'), {
     env: {
       AZURE_SIGN_ENDPOINT: 'https://cus.codesigning.azure.net',
       AZURE_SIGN_ACCOUNT: 'codesign2',
@@ -296,7 +296,7 @@ test.each([false, true])('timestamp retry is bounded; permanent failure=%s', asy
     if (permanent || calls < 3) throw new Error('Invalid Time Stamp Request Length:-1')
   }
 
-  const signing = batchSignAppTree(root, path.join(root, 'Hermes.exe'), {
+  const signing = batchSignAppTree(root, path.join(root, 'Slave.exe'), {
     env: {
       AZURE_SIGN_ENDPOINT: 'https://cus.codesigning.azure.net',
       AZURE_SIGN_ACCOUNT: 'codesign2',
@@ -322,7 +322,7 @@ test('batch signing passes its paired toolchain and runtime to both child phases
     dotnetRoot: path.join(root, 'dotnet'),
   }
   const invocations = []
-  const result = await batchSignAppTree(root, path.join(root, 'Hermes.exe'), {
+  const result = await batchSignAppTree(root, path.join(root, 'Slave.exe'), {
     ...tools,
     env: {
       AZURE_SIGN_ENDPOINT: 'https://test.invalid',

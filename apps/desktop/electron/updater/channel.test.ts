@@ -56,7 +56,7 @@ async function fixture(): Promise<{
     buildId: 'a'.repeat(32),
     channel: 'fresh-preview-29',
     sequence: 1,
-    repository: 'example/hermes-agent',
+    repository: 'example/slave-agent',
     commit: 'b'.repeat(40),
     sourceVersion: '1.2.3',
     version: '0.0.1',
@@ -65,13 +65,13 @@ async function fixture(): Promise<{
     bundleEnv: {},
     identity: {
       token: '1234567890abcdef',
-      displayName: 'Hermes fresh-preview-29',
-      appId: 'chat.nous.hermes.h1234567890abcdef',
-      appNamePascal: 'HermesH1234567890abcdef',
-      artifactNamePascal: 'HermesH1234567890abcdef',
-      cliName: 'hermes-fresh-preview-29',
-      windowsExecutableName: 'HermesH1234567890abcdef.exe',
-      msixAppIdWithOrg: 'NousResearch.HermesH1234567890abcdef'
+      displayName: 'slave-agent fresh-preview-29',
+      appId: 'chat.nous.slave.h1234567890abcdef',
+      appNamePascal: 'SlaveH1234567890abcdef',
+      artifactNamePascal: 'SlaveH1234567890abcdef',
+      cliName: 'slave-fresh-preview-29',
+      windowsExecutableName: 'SlaveH1234567890abcdef.exe',
+      msixAppIdWithOrg: 'NousResearch.SlaveH1234567890abcdef'
     }
   }
 
@@ -139,7 +139,7 @@ async function retiredFixture(
     f.build = { ...f.build, identity: structuredClone(sourceRecord.identity) }
     f.record.identity = structuredClone(sourceRecord.identity)
   } else {
-    f.record.identity = { ...f.build.identity, appId: 'chat.nous.hermes', token: 'fedcba0987654321' }
+    f.record.identity = { ...f.build.identity, appId: 'chat.nous.slave', token: 'fedcba0987654321' }
   }
 
   f.manifest.request = {
@@ -175,7 +175,7 @@ async function retiredFixture(
   return { ...f, retired }
 }
 
-test.each(['NODE_OPTIONS', 'PATH', 'HERMES_PYTHON'])(
+test.each(['NODE_OPTIONS', 'PATH', 'SLAVE_PYTHON'])(
   'channel manifest rejects process-control bundle key %s',
   async (key: string): Promise<void> => {
     const f = await fixture()
@@ -514,7 +514,7 @@ test.each(['hash', 'identity', 'repository', 'signer', 'escape', 'schema', 'vers
     }
 
     if (fault === 'repository') {
-      f.manifest.request.repository = 'other/hermes-agent'
+      f.manifest.request.repository = 'other/slave-agent'
     }
 
     if (fault === 'signer') {

@@ -1,6 +1,6 @@
 """Tests for ``LocalEnvironment.get_temp_dir`` temp-dir redirect.
 
-Hermes exposes ``terminal.temp_dir`` (mirrored to ``TERMINAL_TEMP_DIR``) so
+slave-agent exposes ``terminal.temp_dir`` (mirrored to ``TERMINAL_TEMP_DIR``) so
 users on RAM-based tmpfs ``/tmp`` can point session temp files (background
 logs/pid/exit files, code-execution sandboxes) at real storage.
 """
@@ -57,17 +57,17 @@ def test_temp_dir_empty_falls_through(tmp_path, monkeypatch):
     assert Path(env.get_temp_dir()) == tmp_path
 
 
-def test_default_is_hermes_cache_not_tmp(tmp_path, monkeypatch):
+def test_default_is_slave_cache_not_tmp(tmp_path, monkeypatch):
     """With no overrides at all, the default temp root is real storage under
-    HERMES_HOME (cache/terminal), NOT tmpfs /tmp."""
-    import hermes_constants  # noqa: F401 — resolves HERMES_HOME per call
+    SLAVE_HOME (cache/terminal), NOT tmpfs /tmp."""
+    import slave_constants  # noqa: F401 — resolves SLAVE_HOME per call
 
     for var in ("TERMINAL_TEMP_DIR", "TMPDIR", "TMP", "TEMP"):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     env = _make_local_env({})
     result = env.get_temp_dir()
-    assert Path(result) == tmp_path / ".hermes" / "cache" / "terminal"
+    assert Path(result) == tmp_path / ".slave" / "cache" / "terminal"
     assert os.path.isdir(result)
 
 
@@ -93,25 +93,25 @@ def test_cleanup_terminal_temp_cache(tmp_path, monkeypatch):
     fresh = time.time()
 
     # Stale loose artifact — pruned.
-    stale = root / "hermes-snap-deadbeef.sh"
+    stale = root / "slave-snap-deadbeef.sh"
     stale.write_text("x")
     os.utime(stale, (old, old))
 
     # Fresh artifact — kept.
-    keep = root / "hermes-snap-cafef00d.sh"
+    keep = root / "slave-snap-cafef00d.sh"
     keep.write_text("x")
 
     # Live bg group: stale .pid but fresh .log — WHOLE group kept.
-    live_pid = root / "hermes_bg_live1.pid"
+    live_pid = root / "slave_bg_live1.pid"
     live_pid.write_text("123")
     os.utime(live_pid, (old, old))
-    live_log = root / "hermes_bg_live1.log"
+    live_log = root / "slave_bg_live1.log"
     live_log.write_text("running")
     os.utime(live_log, (fresh, fresh))
 
     # Dead bg group: everything stale — pruned.
     for suffix in ("log", "pid", "exit"):
-        f = root / f"hermes_bg_dead1.{suffix}"
+        f = root / f"slave_bg_dead1.{suffix}"
         f.write_text("x")
         os.utime(f, (old, old))
 
@@ -120,7 +120,7 @@ def test_cleanup_terminal_temp_cache(tmp_path, monkeypatch):
     assert keep.exists()
     assert live_pid.exists() and live_log.exists()
     assert not stale.exists()
-    assert not (root / "hermes_bg_dead1.log").exists()
+    assert not (root / "slave_bg_dead1.log").exists()
 
 
 if __name__ == "__main__":

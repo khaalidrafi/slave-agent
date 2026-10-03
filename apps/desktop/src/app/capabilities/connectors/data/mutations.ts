@@ -1,4 +1,4 @@
-import type { ConnectionAnswer, ConnectorPolicyGetResult } from '@hermes/shared'
+import type { ConnectionAnswer, ConnectorPolicyGetResult } from '@slave-agent/shared'
 import { useCallback, useRef, useState } from 'react'
 
 import type { ProfileScope } from '@/hermes'

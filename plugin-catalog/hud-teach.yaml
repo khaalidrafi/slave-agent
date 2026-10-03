@@ -2,7 +2,7 @@ name: hud-teach
 repo: https://github.com/iamlukethedev/hermes-hud-teach
 sha: faa71902eaaf0b82af58c37a58a117daf159021a
 description: 'Click-through numbered marks on any live Mac window — chess, games,
-  Photoshop, Settings — so Hermes can teach on the real UI without clicking for
+  Photoshop, Settings — so slave-agent can teach on the real UI without clicking for
   the user.'
 maintainer: iamlukethedev
 tier: community

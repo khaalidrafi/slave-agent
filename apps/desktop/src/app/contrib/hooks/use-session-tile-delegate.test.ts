@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reasoningEffortPending } from '@/app/chat/session-view'
 import type { ClientSessionState } from '@/app/types'
-import type * as HermesModule from '@/hermes'
+import type * as SlaveModule from '@/hermes'
 import { type ChatMessage, textPart } from '@/lib/chat-messages'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import { $notifications } from '@/store/notifications'
@@ -15,7 +15,7 @@ import type { SessionInfo } from '@/types/hermes'
 import { useSessionTileDelegate } from './use-session-tile-delegate'
 
 vi.mock('@/hermes', async importActual => ({
-  ...(await importActual<typeof HermesModule>()),
+  ...(await importActual<typeof SlaveModule>()),
   getLatestSessionMessages: vi.fn(async () => ({ messages: [], session_id: '' })),
   getSession: vi.fn()
 }))

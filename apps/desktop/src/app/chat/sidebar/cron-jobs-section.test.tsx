@@ -8,7 +8,7 @@ import type { CronJob, SessionInfo } from '@/types/hermes'
 import { SidebarCronJobsSection } from './cron-jobs-section'
 
 // The peek's run list comes off the backend; the liveness flags below are the
-// endpoint's own (`hermes_cli/web_routers/cron.py`: `is_active` is
+// endpoint's own (`slave_cli/web_routers/cron.py`: `is_active` is
 // `ended_at IS NULL` + a 300s activity window, `scheduler_owned` is a live
 // in-flight execution).
 const getCronJobRuns = vi.fn<() => Promise<SessionInfo[]>>()

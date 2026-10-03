@@ -32,7 +32,7 @@ vi.mock('@/hermes', () => ({
   // profile.ts calls this at import (its $activeGatewayProfile subscribe fires
   // immediately), pulled in transitively via session-states.
   setApiRequestProfile: () => {},
-  HermesGateway: class {}
+  SlaveGateway: class {}
 }))
 
 vi.mock('@/store/gateway', () => ({

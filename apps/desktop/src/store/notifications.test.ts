@@ -58,7 +58,7 @@ test('structured storage_* error codes route to Maintenance', () => {
   expect($routeRequest.get()?.path).toBe('/command-center?section=maintenance')
 })
 
-test('405 method-not-allowed toasts a restart in plain words with a Restart Hermes action', () => {
+test('405 method-not-allowed toasts a restart in plain words with a Restart slave-agent action', () => {
   const before = $backendRestartRequest.get()
   notifyError(new Error('405 Method Not Allowed'), 'Request failed')
 
@@ -80,9 +80,9 @@ test('disk-full / ENOSPC phrasings are classified as disk-full, other storage fa
 test('notifyError posts the full error to desktop.log, not the summary', () => {
   const logLine = vi.fn()
 
-  const previous = (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  const previous = (window as unknown as { slaveDesktop?: unknown }).slaveDesktop
 
-  ;(window as unknown as { hermesDesktop: { logLine: typeof logLine } }).hermesDesktop = { logLine }
+  ;(window as unknown as { slaveDesktop: { logLine: typeof logLine } }).slaveDesktop = { logLine }
 
   try {
     const error = new Error('sqlite3.OperationalError: database is locked')
@@ -96,9 +96,9 @@ test('notifyError posts the full error to desktop.log, not the summary', () => {
     expect(logLine.mock.calls[0][0]).toContain('session.ts:12')
   } finally {
     if (previous === undefined) {
-      delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+      delete (window as unknown as { slaveDesktop?: unknown }).slaveDesktop
     } else {
-      ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = previous
+      ;(window as unknown as { slaveDesktop: unknown }).slaveDesktop = previous
     }
   }
 })
@@ -107,7 +107,7 @@ test.each(['missing', 'closed'] as const)(
   'notifyError still shows a toast when the log bridge is %s',
   (state: 'missing' | 'closed'): void => {
     vi.stubGlobal(
-      'hermesDesktop',
+      'slaveDesktop',
       state === 'missing'
         ? undefined
         : {
@@ -130,7 +130,7 @@ test.each(['missing', 'closed'] as const)(
 test('code-skew 503 unwraps to a restart-required summary, not raw IPC JSON', () => {
   notifyError(
     new Error(
-      'Error invoking remote method \'hermes:api\': Error: 503: {"detail":"Restart required: This process is running code from 08b4875f4a but the checkout on disk is now 48d2528066."}'
+      'Error invoking remote method \'slave:api\': Error: 503: {"detail":"Restart required: This process is running code from 08b4875f4a but the checkout on disk is now 48d2528066."}'
     ),
     'Could not load models'
   )

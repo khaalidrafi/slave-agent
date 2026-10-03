@@ -103,7 +103,7 @@ async function http(entry: Resident, route: string, body?: Record<string, string
     method: body ? 'POST' : 'GET',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'X-Hermes-Session-Token': token } : {})
+      ...(token ? { 'X-Slave-Session-Token': token } : {})
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
     signal: AbortSignal.timeout(5000)
@@ -115,7 +115,7 @@ async function http(entry: Resident, route: string, body?: Record<string, string
 const client = createPoolRetirementClient(async (url, token, options) => {
   const response = await fetch(url, {
     method: options.method,
-    headers: { 'X-Hermes-Session-Token': token, 'Content-Type': 'application/json' },
+    headers: { 'X-Slave-Session-Token': token, 'Content-Type': 'application/json' },
     body: JSON.stringify(options.body),
     signal: AbortSignal.timeout(options.timeoutMs)
   })
@@ -131,7 +131,7 @@ const client = createPoolRetirementClient(async (url, token, options) => {
 })
 
 async function spawnResident(key: string, release: () => void): Promise<Resident> {
-  const home = join(root, key, '.hermes')
+  const home = join(root, key, '.slave')
   mkdirSync(home, { recursive: true })
   writeFileSync(join(home, 'config.yaml'), 'cron:\n  script_timeout: 160\n')
   const token = randomUUID()
@@ -144,10 +144,10 @@ async function spawnResident(key: string, release: () => void): Promise<Resident
       ...process.env,
       HOME: join(root, key),
       USERPROFILE: join(root, key),
-      HERMES_HOME: home,
-      HERMES_DESKTOP: '1',
-      HERMES_SERVE_HEADLESS: '1',
-      HERMES_DASHBOARD_SESSION_TOKEN: token,
+      SLAVE_HOME: home,
+      SLAVE_DESKTOP: '1',
+      SLAVE_SERVE_HEADLESS: '1',
+      SLAVE_DASHBOARD_SESSION_TOKEN: token,
       PYTHONUNBUFFERED: '1',
       PYTHONDONTWRITEBYTECODE: '1',
       PYTHONNOUSERSITE: '1'
@@ -197,13 +197,13 @@ async function spawnResident(key: string, release: () => void): Promise<Resident
   record('spawn', key, { pid: child.pid })
   assert.ok(live.size <= coordinator.limit, 'Live OS children exceeded the pool cap')
   await until(
-    `${key} HERMES_BACKEND_READY`,
+    `${key} SLAVE_BACKEND_READY`,
     () => {
       if (child.exitCode !== null || child.signalCode !== null) {
         throw new Error(`${key} exited before ready:\n${entry.output}`)
       }
 
-      const match = entry.output.match(/HERMES_BACKEND_READY[^\n]*port=(\d+)/)
+      const match = entry.output.match(/SLAVE_BACKEND_READY[^\n]*port=(\d+)/)
 
       if (match) {
         entry.port = Number(match[1])

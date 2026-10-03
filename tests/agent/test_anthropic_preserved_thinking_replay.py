@@ -77,7 +77,7 @@ def _native_turn(agent, question, size, sig):
 
 
 def _session_db(tmp_path, *session_ids):
-    from hermes_state import SessionDB
+    from slave_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     for session_id in session_ids:
@@ -194,7 +194,7 @@ _PRESERVED = [
     # Future ids keep by default; known last-turn-only generations and non-Claude ids do not.
     ("claude-fable-5-2", True), ("claude-mythos-6", True), ("claude-newfamily-7", True),
     ("claude-haiku-5", False), ("claude-3-7-sonnet-20250219", False), ("claude-sonnet-4", False),
-    ("hermes-4-405b", False),
+    ("slave-4-405b", False),
 ]
 # case -> (model, route, number of growing thinking blocks that must reach the wire)
 _ACCOUNTING_CASES = {

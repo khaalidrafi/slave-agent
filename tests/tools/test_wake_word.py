@@ -1,4 +1,4 @@
-"""Tests for tools.wake_word — the "Hey Hermes" hotword detector.
+"""Tests for tools.wake_word — the "Hey slave-agent" hotword detector.
 
 No live audio or network: the sounddevice import is faked, engines are stubbed,
 and lazy-dep availability is monkeypatched. Covers config resolution, engine
@@ -39,8 +39,8 @@ def test_config_defaults_and_clamping():
     # Invalid input falls back to the configured default, not a hardcoded 0.5.
     assert ww._sensitivity({"sensitivity": "nope"}) == ww._DEFAULTS["sensitivity"]
     assert ww._sensitivity({}) == ww._DEFAULTS["sensitivity"]
-    assert ww.wake_phrase({"phrase": "hey hermes"}) == "hey hermes"
-    assert ww.wake_phrase({}) == "hey hermes"
+    assert ww.wake_phrase({"phrase": "hey slave"}) == "hey slave"
+    assert ww.wake_phrase({}) == "hey slave"
 
 
 def test_wake_surface_enabled_gate():
@@ -79,7 +79,7 @@ def test_loaded_wake_defaults_resolve_supported_provider(tmp_path, monkeypatch, 
 
     from pm.extras import extra_supported
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     path = tmp_path / "config.yaml"
     if saved is not None:
         path.write_text(saved, encoding="utf-8")
@@ -98,7 +98,7 @@ def test_loaded_wake_defaults_resolve_supported_provider(tmp_path, monkeypatch, 
 
 def test_load_wake_word_config_guards_non_dict(monkeypatch):
     monkeypatch.setattr(
-        "hermes_cli.config.load_config", lambda: {"wake_word": "oops"}
+        "slave_cli.config.load_config", lambda: {"wake_word": "oops"}
     )
     assert ww.load_wake_word_config() == {}
 
@@ -230,7 +230,7 @@ def test_loaded_provider_requirements_preserve_choices_and_require_keys(tmp_path
 
     from pm.extras import extra_supported
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.delenv("PORCUPINE_ACCESS_KEY", raising=False)
     saved = f"wake_word:\n  provider: {provider}\n  capture: client\n"
     path = tmp_path / "config.yaml"
@@ -268,11 +268,11 @@ def test_requirements_openwakeword_available(monkeypatch):
     monkeypatch.setattr(ww, "_audio_available", lambda: True)
     monkeypatch.setattr(pm, "available", lambda f: True)
     r = ww.check_wake_word_requirements(
-        {"provider": "openwakeword", "phrase": "hey hermes"}
+        {"provider": "openwakeword", "phrase": "hey slave"}
     )
     assert r["available"] is True
     assert r["provider"] == "openwakeword"
-    assert r["phrase"] == "hey hermes"
+    assert r["phrase"] == "hey slave"
 
 
 def test_tts_ready_is_a_probe_never_an_installer(monkeypatch):
@@ -373,7 +373,7 @@ def test_requirements_lazy_disabled_returns_remedy_not_nameerror(monkeypatch):
     r = ww.check_wake_word_requirements({"provider": "openwakeword"})
     assert r["available"] is False
     assert r["deps_available"] is False
-    assert "hermes pm install --extra wake-openwakeword" in r["hint"]
+    assert "slave pm install --extra wake-openwakeword" in r["hint"]
 
 
 def test_requirements_deps_present_but_no_audio_hint(monkeypatch):
@@ -442,8 +442,8 @@ def test_openwakeword_custom_model_path_used(monkeypatch):
     assert eng._labels == ["hey_hermes"]
 
 
-def test_bundled_hey_hermes_model_ships_on_disk():
-    # The "hey hermes" wake word works out of the box only if the model is
+def test_bundled_hey_slave_model_ships_on_disk():
+    # The "hey slave" wake word works out of the box only if the model is
     # actually bundled. pyopen-wakeword runs TFLite only.
     path = ww._bundled_wakeword_path()
     assert os.path.exists(path), path

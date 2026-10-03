@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Hermes Agent bootstrap: clone, acquire uv/Python, then hand the checkout to
+# slave-agent bootstrap: clone, acquire uv/Python, then hand the checkout to
 # the same completion an update runs -- command publication, product builds and
 # post-build maintenance -- so a fresh install and a finished update land in one
 # state. Heavy dependencies (tool binaries, browsers, node) are pm's job:
-# `hermes pm install`.
+# `slave pm install`.
 #
-# Stage protocol kept for Hermes-Setup:
+# Stage protocol kept for Slave-Setup:
 #   --manifest            print the stage list as JSON
 #   --stage NAME [--json] run one stage
 #   --non-interactive     skip stages that need input
@@ -20,11 +20,11 @@ set -u
 # hygiene can't break the locked sync the way it used to before pm owned it.
 export UV_NO_CONFIG=1
 
-REPO_URL="${HERMES_REPO_URL:-https://github.com/NousResearch/hermes-agent.git}"
+REPO_URL="${SLAVE_REPO_URL:-https://github.com/NousResearch/hermes-agent.git}"
 BRANCH="main"
 INSTALL_COMMIT=""
-INSTALL_DIR="${HERMES_INSTALL_DIR:-}"
-HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+INSTALL_DIR="${SLAVE_INSTALL_DIR:-}"
+SLAVE_HOME="${SLAVE_HOME:-$HOME/.slave}"
 STAGE=""
 WANT_MANIFEST=false
 JSON=false
@@ -36,7 +36,7 @@ SKIP_COMPUTER_USE=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --branch|-Branch|--commit|-Commit|--dir|--hermes-home|-HermesHome|--stage|-Stage)
+        --branch|-Branch|--commit|-Commit|--dir|--slave-home|-SlaveHome|--stage|-Stage)
             option="$1"
             if [ $# -lt 2 ] || [ -z "$2" ] || [[ "$2" == -* ]]; then
                 printf '%s needs a value\n' "$option" >&2
@@ -46,7 +46,7 @@ while [ $# -gt 0 ]; do
                 --branch|-Branch) BRANCH="$2" ;;
                 --commit|-Commit) INSTALL_COMMIT="$2" ;;
                 --dir) INSTALL_DIR="$2" ;;
-                --hermes-home|-HermesHome) HERMES_HOME="$2" ;;
+                --slave-home|-SlaveHome) SLAVE_HOME="$2" ;;
                 --stage|-Stage) STAGE="$2" ;;
             esac
             shift 2 ;;
@@ -60,29 +60,29 @@ while [ $# -gt 0 ]; do
         --verbose|-Verbose) VERBOSE=true; shift ;;
         -h|--help)
             echo "Usage: install.sh [--branch NAME] [--commit SHA] [--dir PATH]"
-            echo "                  [--hermes-home PATH]"
+            echo "                  [--slave-home PATH]"
             echo "                  [--manifest] [--stage NAME] [--json]"
             echo "                  [--non-interactive] [--include-desktop] [--verbose]"
             echo "                  [--skip-browser] [--skip-computer-use]"
             echo
             echo "  --skip-browser  Do not install the browser tools (agent-browser + Chromium)."
             echo "                  Alias: --no-playwright. Remembered by later"
-            echo "                  installs and 'hermes update'; undo with 'hermes pm install agent-browser'."
+            echo "                  installs and 'slave update'; undo with 'slave pm install agent-browser'."
             echo "  --skip-computer-use"
             echo "                  Do not install the computer-use driver (cua-driver). Remembered"
-            echo "                  the same way; undo with 'hermes pm install cua-driver'."
+            echo "                  the same way; undo with 'slave pm install cua-driver'."
             exit 0 ;;
         *) echo "unknown option: $1" >&2; exit 1 ;;
     esac
 done
 
-INSTALL_DIR="${INSTALL_DIR:-$HERMES_HOME/hermes-agent}"
-export HERMES_HOME
+INSTALL_DIR="${INSTALL_DIR:-$SLAVE_HOME/slave-agent}"
+export SLAVE_HOME
 
-INSTALL_LOG="$HERMES_HOME/logs/install.log"
+INSTALL_LOG="$SLAVE_HOME/logs/install.log"
 
 # Same glyphs as the pre-pm installer. Colour only on a terminal, so CI
-# transcripts and the Hermes-Setup driver read plain text.
+# transcripts and the Slave-Setup driver read plain text.
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     C_RED=$'\033[0;31m' C_GREEN=$'\033[0;32m' C_YELLOW=$'\033[0;33m'
     C_CYAN=$'\033[0;36m' C_MAGENTA=$'\033[0;35m' C_BOLD=$'\033[1m'
@@ -100,7 +100,7 @@ fail() { STAGE_REASON="$1"; log_error "$1"; exit 1; }
 print_banner() {
     printf '\n%s%s' "$C_MAGENTA" "$C_BOLD"
     printf '%s\n' "┌─────────────────────────────────────────────────────────┐"
-    printf '%s\n' "│             ☤ Hermes Agent Installer                    │"
+    printf '%s\n' "│             ☤ slave-agent Installer                    │"
     printf '%s\n' "├─────────────────────────────────────────────────────────┤"
     printf '%s\n' "│  An open source AI agent by Nous Research.              │"
     printf '%s\n' "└─────────────────────────────────────────────────────────┘"
@@ -109,11 +109,11 @@ print_banner() {
 
 # Interactive runs collapse child-process output (git, uv, pm, the builds)
 # into one status line. CI, --verbose and a non-terminal stdout -- the
-# Hermes-Setup --json driver, E2E transcripts -- keep the full stream those
+# Slave-Setup --json driver, E2E transcripts -- keep the full stream those
 # readers parse.
 quiet_output() {
     [ "$VERBOSE" = true ] && return 1
-    if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ] || [ -n "${HERMES_INSTALL_VERBOSE:-}" ]; then
+    if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ] || [ -n "${SLAVE_INSTALL_VERBOSE:-}" ]; then
         return 1
     fi
     [ -t 1 ]
@@ -263,16 +263,16 @@ uv_bootstrap_target() {
 UV_CMD=""
 ensure_uv() {
     [ -n "$UV_CMD" ] && return 0
-    # Always the pinned artifact, never a uv already on PATH: Hermes runs only
+    # Always the pinned artifact, never a uv already on PATH: slave-agent runs only
     # its own packaged toolchain.
     local _target
     if ! _target="$(uv_bootstrap_target)"; then
-        fail "no pinned uv build for this platform ($(uname -s) $(uname -m)); Hermes does not support this host"
+        fail "no pinned uv build for this platform ($(uname -s) $(uname -m)); slave-agent does not support this host"
     fi
     if ! uv_bootstrap_pin "$_target"; then
-        fail "no pinned uv artifact for $_target; Hermes does not support this host"
+        fail "no pinned uv artifact for $_target; slave-agent does not support this host"
     fi
-    local _store="${HERMES_RUNTIME_DIR:-$HERMES_HOME/tools}"
+    local _store="${SLAVE_RUNTIME_DIR:-$SLAVE_HOME/tools}"
     local _entry="$_store/uv-$UV_PIN_VERSION-$_target"
     UV_CMD="$_entry/uv"
     if [ ! -x "$UV_CMD" ]; then
@@ -337,7 +337,7 @@ check_platform() {
     # install the phone cannot run (no Android wheels in the lock). The
     # signed APT package is the only supported shape there.
     if [ -n "${TERMUX_VERSION:-}" ] || case "${PREFIX:-}" in *com.termux/files/usr*) true ;; *) false ;; esac; then
-        fail "Termux is installed from its APT repository, not install.sh: pkg install hermes-agent (setup: https://hermes-agent.nousresearch.com/docs/getting-started/termux)"
+        fail "Termux is installed from its APT repository, not install.sh: pkg install slave-agent (setup: https://hermes-agent.nousresearch.com/docs/getting-started/termux)"
     fi
     case "$(uname -s 2>/dev/null)" in
         Linux*) : ;;
@@ -382,7 +382,7 @@ stage_result() {
 
 # The single authoritative stage list: emit_manifest prints it AND the
 # no-flag ladder runs it. `products` is the shared completion tail -- the same
-# call `hermes update` makes -- so the manifest and the run cannot disagree.
+# call `slave update` makes -- so the manifest and the run cannot disagree.
 # `desktop` stays directly dispatchable via --stage for external callers, but
 # is never listed: --include-desktop selects the desktop product inside
 # `products` instead of adding a second build stage.
@@ -403,7 +403,7 @@ products_record() {
 stage_record() {
     case "$1" in
         prerequisites) echo "System prerequisites|runtime|false" ;;
-        repository)    echo "Download Hermes Agent|runtime|false" ;;
+        repository)    echo "Download slave-agent|runtime|false" ;;
         venv)          echo "Create Python environment|runtime|false" ;;
         python-deps)   echo "Install Python dependencies|runtime|false" ;;
         config)        echo "Prepare config and skills|configuration|false" ;;
@@ -455,9 +455,9 @@ stage_repository() {
     fi
     if [ -d "$INSTALL_DIR/.git" ]; then
         log "Updating $INSTALL_DIR ($BRANCH)"
-        # An explicit HERMES_REPO_URL names the source for reruns too, not
+        # An explicit SLAVE_REPO_URL names the source for reruns too, not
         # just the first clone.
-        if [ -n "${HERMES_REPO_URL:-}" ]; then
+        if [ -n "${SLAVE_REPO_URL:-}" ]; then
             git -C "$INSTALL_DIR" remote set-url origin "$REPO_URL" || fail "cannot point origin at $REPO_URL"
         fi
         # Explicit refspec: a tag-pinned --single-branch checkout from an older
@@ -498,9 +498,9 @@ stage_repository() {
                 git -C "$INSTALL_DIR" reset -q || fail "cannot clear the unmerged index in $INSTALL_DIR"
             fi
             run_logged "Stashing local changes" \
-                git -C "$INSTALL_DIR" stash push --include-untracked -m "hermes-install-autostash-$stamp" \
+                git -C "$INSTALL_DIR" stash push --include-untracked -m "slave-install-autostash-$stamp" \
                 || fail "could not stash local changes in $INSTALL_DIR; commit or move them aside, then rerun"
-            log_warn "local changes stashed as hermes-install-autostash-$stamp"
+            log_warn "local changes stashed as slave-install-autostash-$stamp"
         fi
         # checkout's branch guess only sees remote refs the refspec maps, so a
         # narrow checkout (detached at its tag, no local branch) gets the branch
@@ -516,10 +516,10 @@ stage_repository() {
             # A release cut off the main line, a force-pushed remote, or the
             # user's own commits cannot fast-forward. Every stage below reads
             # files only the new tree has (pm/), so an install left on the old
-            # tree cannot finish -- match the remote the way `hermes update`
+            # tree cannot finish -- match the remote the way `slave update`
             # does, after parking the old tip.
             # Only commits absent from origin need a rescue ref. Keep the same
-            # namespace as `hermes update` so its pruning and recovery work.
+            # namespace as `slave update` so its pruning and recovery work.
             local dropped rescue_kind rescue_ref prior
             dropped="$(git -C "$INSTALL_DIR" rev-list --count "origin/$BRANCH..HEAD")" \
                 || fail "cannot count commits before reset"
@@ -547,7 +547,7 @@ stage_repository() {
             if [ -d "$INSTALL_DIR" ] && [ ! -L "$INSTALL_DIR" ] && [ -z "$(ls -A "$INSTALL_DIR")" ]; then
                 rmdir "$INSTALL_DIR" || fail "cannot replace empty $INSTALL_DIR"
             else
-                fail "$INSTALL_DIR exists and is not a Hermes git checkout. Move it aside, or install elsewhere with --dir <path>."
+                fail "$INSTALL_DIR exists and is not a slave-agent git checkout. Move it aside, or install elsewhere with --dir <path>."
             fi
         fi
         mkdir -p "$(dirname "$INSTALL_DIR")"
@@ -598,7 +598,7 @@ stage_repository() {
         rmdir "$staged"
         # A treeless checkout must never write a commit-graph: over a graph with
         # changed-path data that lazy-fetches the trees of every unseen commit, in a
-        # loop (#127711). gc.auto stays on: `hermes update` folds lazy-fetch packs with
+        # loop (#127711). gc.auto stays on: `slave update` folds lazy-fetch packs with
         # `gc --auto`.
         git -C "$INSTALL_DIR" config maintenance.commit-graph.enabled false \
             || log_warn "could not disable maintenance.commit-graph.enabled in $INSTALL_DIR"
@@ -606,7 +606,7 @@ stage_repository() {
             || log_warn "could not disable gc.writeCommitGraph in $INSTALL_DIR"
         git -C "$INSTALL_DIR" config fetch.writeCommitGraph false \
             || log_warn "could not disable fetch.writeCommitGraph in $INSTALL_DIR"
-        log_success "Hermes Agent cloned"
+        log_success "slave-agent cloned"
     fi
     if [ -n "$INSTALL_COMMIT" ]; then
         # A pin must come from the branch being installed: the complete
@@ -632,7 +632,7 @@ bootstrap_python() {
     ensure_uv
     local _py
     # Read packages.python.version by following object names and braces, not
-    # indentation — same pre-Python reader contract as setup-hermes.sh's pin().
+    # indentation — same pre-Python reader contract as setup-slave.sh's pin().
     _py="$(awk -F '"' '
         /^[[:space:]]*("[^"]+"[[:space:]]*:[[:space:]]*)?\{/ { path[++depth] = $2; next }
         /^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$/ { delete path[depth--]; next }
@@ -658,8 +658,8 @@ bootstrap_python() {
 bootstrap_pm() {
     local boot_py
     local pm_args=(install)
-    # PM records the opt-outs, so later installs and `hermes update` keep the
-    # tools off until `hermes pm install <name>` opts back in.
+    # PM records the opt-outs, so later installs and `slave update` keep the
+    # tools off until `slave pm install <name>` opts back in.
     [ "$SKIP_BROWSER" = true ] && pm_args+=(--without agent-browser)
     [ "$SKIP_COMPUTER_USE" = true ] && pm_args+=(--without cua-driver)
     bootstrap_python
@@ -702,7 +702,7 @@ append_shell_path() {
         return 0
     fi
     mkdir -p "$(dirname "$rc")"
-    printf '\n# Hermes Agent command\n%s\n' "$line" >> "$rc" || fail "cannot update PATH in $rc"
+    printf '\n# slave-agent command\n%s\n' "$line" >> "$rc" || fail "cannot update PATH in $rc"
     log_success "added ~/.local/bin to PATH in $rc"
 }
 
@@ -747,11 +747,11 @@ stage_products() {
     if [ "$INCLUDE_DESKTOP" = true ] || desktop_product_present; then
         args+=(--desktop)
     fi
-    (cd "$INSTALL_DIR" && run_logged "Building the hermes command and apps" \
-        "$boot_py" -I -B -X utf8 hermes_cli/source_completion.py "${args[@]}") \
+    (cd "$INSTALL_DIR" && run_logged "Building the slave command and apps" \
+        "$boot_py" -I -B -X utf8 slave_cli/source_completion.py "${args[@]}") \
         || fail "app products or command publication failed"
     wire_shell_path
-    log_success "app products and hermes command ready"
+    log_success "app products and slave command ready"
 }
 
 stage_desktop() {
@@ -763,17 +763,17 @@ stage_desktop() {
 }
 
 stage_config() {
-    mkdir -p "$HERMES_HOME"/cron "$HERMES_HOME"/sessions "$HERMES_HOME"/logs \
-        "$HERMES_HOME"/pairing "$HERMES_HOME"/hooks "$HERMES_HOME"/image_cache \
-        "$HERMES_HOME"/audio_cache "$HERMES_HOME"/memories "$HERMES_HOME"/skills
-    if [ ! -f "$HERMES_HOME/.env" ]; then
-        cp "$INSTALL_DIR/.env.example" "$HERMES_HOME/.env" 2>/dev/null || touch "$HERMES_HOME/.env"
+    mkdir -p "$SLAVE_HOME"/cron "$SLAVE_HOME"/sessions "$SLAVE_HOME"/logs \
+        "$SLAVE_HOME"/pairing "$SLAVE_HOME"/hooks "$SLAVE_HOME"/image_cache \
+        "$SLAVE_HOME"/audio_cache "$SLAVE_HOME"/memories "$SLAVE_HOME"/skills
+    if [ ! -f "$SLAVE_HOME/.env" ]; then
+        cp "$INSTALL_DIR/.env.example" "$SLAVE_HOME/.env" 2>/dev/null || touch "$SLAVE_HOME/.env"
     fi
-    chmod 600 "$HERMES_HOME/.env"
-    if [ ! -f "$HERMES_HOME/config.yaml" ] && [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
-        cp "$INSTALL_DIR/cli-config.yaml.example" "$HERMES_HOME/config.yaml"
+    chmod 600 "$SLAVE_HOME/.env"
+    if [ ! -f "$SLAVE_HOME/config.yaml" ] && [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
+        cp "$INSTALL_DIR/cli-config.yaml.example" "$SLAVE_HOME/config.yaml"
     fi
-    log_success "config prepared in $HERMES_HOME"
+    log_success "config prepared in $SLAVE_HOME"
 }
 
 # Interactive stages read the terminal, not stdin: under `curl | bash` stdin
@@ -784,20 +784,20 @@ has_terminal() { (: </dev/tty) 2>/dev/null; }
 stage_setup() {
     if [ "$NON_INTERACTIVE" = true ]; then return 0; fi
     if ! has_terminal; then
-        log "setup skipped (no terminal); run 'hermes setup' after install"
+        log "setup skipped (no terminal); run 'slave setup' after install"
         return 0
     fi
-    "$INSTALL_DIR/.hermes/bin/hermes" setup </dev/tty || fail "setup failed"
+    "$INSTALL_DIR/.slave/bin/hermes" setup </dev/tty || fail "setup failed"
 }
 
 stage_gateway() {
     if [ "$NON_INTERACTIVE" = true ]; then return 0; fi
     if ! has_terminal; then
-        log "gateway setup skipped (no terminal); run 'hermes gateway install' after install"
+        log "gateway setup skipped (no terminal); run 'slave gateway install' after install"
         return 0
     fi
     # Setup installs the service when it handles the gateway; ask only if it did not.
-    "$INSTALL_DIR/.hermes/bin/hermes" gateway install --if-missing </dev/tty || fail "gateway installation failed"
+    "$INSTALL_DIR/.slave/bin/hermes" gateway install --if-missing </dev/tty || fail "gateway installation failed"
 }
 
 stage_complete() {
@@ -809,14 +809,14 @@ stage_complete() {
             "$commit" "$BRANCH" "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" > "$INSTALL_DIR/.hermes-bootstrap-complete.tmp"
         mv -f "$INSTALL_DIR/.hermes-bootstrap-complete.tmp" "$INSTALL_DIR/.hermes-bootstrap-complete"
     fi
-    log_success "Hermes Agent install complete. Run: hermes"
+    log_success "slave-agent install complete. Run: slave"
 }
 
 print_path_reload_hint() {
     # The rc files only reach shells started later, and this installer is
     # always a child (`curl | bash`, `bash install.sh`) that cannot change its
     # parent's PATH. The inherited PATH is the parent's, so it says whether
-    # the user can run `hermes` right away.
+    # the user can run `slave` right away.
     case ":$PATH:" in *":$HOME/.local/bin:"*|*":$HOME/.local/bin/:"*) return 0 ;; esac
     local rc
     local login_shell="${SHELL:-}"
@@ -826,7 +826,7 @@ print_path_reload_hint() {
         bash|"") rc="source ~/.bashrc" ;;
         *) rc=". ~/.profile" ;;
     esac
-    log "Reload your shell to use hermes: open a new terminal, or run: $rc"
+    log "Reload your shell to use slave: open a new terminal, or run: $rc"
 }
 
 run_stage() (

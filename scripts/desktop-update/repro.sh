@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# repro.sh -- reproduce desktop-update paths against a sandboxed HERMES_HOME.
+# repro.sh -- reproduce desktop-update paths against a sandboxed SLAVE_HOME.
 #
-# Nothing here touches your real ~/.hermes or checkout. Each mode builds (or
+# Nothing here touches your real ~/.slave or checkout. Each mode builds (or
 # reuses) a disposable install under $TMPDIR and drives the REAL code path --
-# the actual installer, the actual orchestrator, the actual `hermes update`.
+# the actual installer, the actual orchestrator, the actual `slave update`.
 #
 #   repro.sh shim          shim UI only: success event after 6s
 #   repro.sh shim-fail     shim UI only: error event after 6s
-#   repro.sh fresh         fresh install into a sandbox HERMES_HOME
+#   repro.sh fresh         fresh install into a sandbox SLAVE_HOME
 #                          (scripts/install.sh, the literal user path)
 #   repro.sh behind [N]    sandbox install rewound N commits (default 25),
 #                          then the posix orchestrator drives it forward --
@@ -31,8 +31,8 @@ set -euo pipefail
 MODE="${1:-help}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SANDBOX="${HERMES_UPDATE_REPRO_HOME:-/tmp/hermes-update-repro}"
-SANDBOX_ROOT="$SANDBOX/hermes-agent"
+SANDBOX="${SLAVE_UPDATE_REPRO_HOME:-/tmp/hermes-update-repro}"
+SANDBOX_ROOT="$SANDBOX/slave-agent"
 
 say() { printf '\n\033[1m== %s ==\033[0m\n' "$1"; }
 
@@ -47,16 +47,16 @@ ensure_sandbox_install() {
   # The literal user path: install.sh against a clone of THIS checkout, so
   # the repro reproduces what you're about to ship, not origin/main.
   git clone --quiet "$REPO_ROOT" "$SANDBOX_ROOT"
-  HERMES_HOME="$SANDBOX" bash "$SANDBOX_ROOT/scripts/install.sh" --non-interactive --skip-setup --hermes-home "$SANDBOX"
+  SLAVE_HOME="$SANDBOX" bash "$SANDBOX_ROOT/scripts/install.sh" --non-interactive --skip-setup --slave-home "$SANDBOX"
 }
 
 case "$MODE" in
   shim)
-    HERMES_SELFTEST_HOLD_SECONDS="${HERMES_SELFTEST_HOLD_SECONDS:-6}" \
+    SLAVE_SELFTEST_HOLD_SECONDS="${SLAVE_SELFTEST_HOLD_SECONDS:-6}" \
       bash "$SCRIPT_DIR/posix.sh" --self-test-ui
     ;;
   shim-fail)
-    HERMES_SELFTEST_FAIL=1 HERMES_SELFTEST_HOLD_SECONDS="${HERMES_SELFTEST_HOLD_SECONDS:-6}" \
+    SLAVE_SELFTEST_FAIL=1 SLAVE_SELFTEST_HOLD_SECONDS="${SLAVE_SELFTEST_HOLD_SECONDS:-6}" \
       bash "$SCRIPT_DIR/posix.sh" --self-test-ui
     ;;
   fresh)
@@ -73,7 +73,7 @@ case "$MODE" in
     git -C "$SANDBOX_ROOT" reset --hard --quiet "HEAD~$N"
     say "sandbox now at: $(git -C "$SANDBOX_ROOT" log --oneline -1)"
     say "driving the orchestrator (watch the shim; log: $SANDBOX/logs/desktop-update-handoff.log)"
-    HERMES_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
+    SLAVE_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
       --install-root "$SANDBOX_ROOT" --branch main --desktop-pid 0 || true
     say "result file:"
     cat "$SANDBOX/.hermes-update-result.json" 2>/dev/null || echo "(none written)"
@@ -84,7 +84,7 @@ case "$MODE" in
     ensure_sandbox_install
     say "breaking the sandbox venv, then driving the orchestrator"
     mv "$SANDBOX_ROOT/venv" "$SANDBOX_ROOT/venv.hidden"
-    HERMES_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
+    SLAVE_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
       --install-root "$SANDBOX_ROOT" --branch main --desktop-pid 0 || true
     mv "$SANDBOX_ROOT/venv.hidden" "$SANDBOX_ROOT/venv"
     say "result file (expect ok:false, exit 3):"
@@ -95,8 +95,8 @@ case "$MODE" in
     # Pure-decision matrix for the linux relaunch gate. Builds a fake
     # checkout layout under $TMPDIR; --self-test-gate prints the decision and
     # exits without running an update.
-    G="$(mktemp -d -t hermes-gate-test.XXXXXX)"
-    UNPACKED="$G/hermes-agent/apps/desktop/release/linux-unpacked"
+    G="$(mktemp -d -t slave-gate-test.XXXXXX)"
+    UNPACKED="$G/slave-agent/apps/desktop/release/linux-unpacked"
     mkdir -p "$UNPACKED"
     touch "$UNPACKED/hermes" && chmod +x "$UNPACKED/hermes"
 
@@ -105,7 +105,7 @@ case "$MODE" in
       if [ "$2" = "$3" ]; then printf 'ok   %s -> %s\n' "$1" "$3"
       else printf 'FAIL %s -> %s (want %s)\n' "$1" "$3" "$2"; fails=$((fails+1)); fi
     }
-    decide() { bash "$SCRIPT_DIR/posix.sh" --self-test-gate --install-root "$G/hermes-agent" "$@" | cut -d: -f1; }
+    decide() { bash "$SCRIPT_DIR/posix.sh" --self-test-gate --install-root "$G/slave-agent" "$@" | cut -d: -f1; }
 
     expect "appimage (not under unpacked)"      skew     "$(decide --relaunch-target /opt/Hermes/hermes)"
     expect "sibling-prefix dir not fooled"      skew     "$(decide --relaunch-target "$UNPACKED-evil/hermes")"
@@ -119,9 +119,9 @@ case "$MODE" in
 
     # Result JSON must survive hostile strings (git allows `"` in branch
     # names; messages carry arbitrary text) -- parse it back with python.
-    QHOME="$G/qhome"; mkdir -p "$QHOME/hermes-agent"
+    QHOME="$G/qhome"; mkdir -p "$QHOME/slave-agent"
     bash "$SCRIPT_DIR/posix.sh" --no-ui --no-marker-cleanup --desktop-pid 0 \
-      --install-root "$QHOME/hermes-agent" --branch 'evil"branch\n$(x)' >/dev/null 2>&1 || true
+      --install-root "$QHOME/slave-agent" --branch 'evil"branch\n$(x)' >/dev/null 2>&1 || true
     if python3 -c "import json,sys; d=json.load(open('$QHOME/.hermes-update-result.json')); sys.exit(0 if d['branch']=='evil\"branch\\\\n\$(x)' and d['ok']==False else 1)"; then
       printf 'ok   result JSON escapes hostile branch/message\n'
     else
@@ -134,9 +134,9 @@ case "$MODE" in
   launch)
     # Terminal-lifecycle matrix (gille round 2): launch acceptance is part
     # of the outcome. Each case runs the REAL orchestrator (--no-ui) against
-    # a fake install whose `hermes` stub exits 0 instantly, so the flow
+    # a fake install whose `slave` stub exits 0 instantly, so the flow
     # reaches finish() with FINAL_CODE=0 and exercises the launch leg.
-    L="$(mktemp -d -t hermes-launch-test.XXXXXX)"
+    L="$(mktemp -d -t slave-launch-test.XXXXXX)"
     fails=0
     expect_msg() { # name python-expr
       if python3 -c "import json,sys; d=json.load(open('$L/.hermes-update-result.json')); sys.exit(0 if ($2) else 1)"; then
@@ -145,33 +145,33 @@ case "$MODE" in
         printf 'FAIL %s -> %s\n' "$1" "$(cat "$L/.hermes-update-result.json" 2>/dev/null)"; fails=$((fails+1))
       fi
     }
-    stub_install() { # creates a fake install whose hermes update succeeds
-      rm -rf "$L"; mkdir -p "$L/hermes-agent/venv/bin"
-      printf '#!/bin/sh\nexit 0\n' > "$L/hermes-agent/venv/bin/hermes"
-      chmod +x "$L/hermes-agent/venv/bin/hermes"
+    stub_install() { # creates a fake install whose slave update succeeds
+      rm -rf "$L"; mkdir -p "$L/slave-agent/venv/bin"
+      printf '#!/bin/sh\nexit 0\n' > "$L/slave-agent/venv/bin/hermes"
+      chmod +x "$L/slave-agent/venv/bin/hermes"
     }
 
     # 1. linux relaunch target dies instantly -> manual downgrade in result
     stub_install
-    UNPACKED="$L/hermes-agent/apps/desktop/release/linux-unpacked"
+    UNPACKED="$L/slave-agent/apps/desktop/release/linux-unpacked"
     mkdir -p "$UNPACKED"
     printf '#!/bin/sh\nexit 1\n' > "$UNPACKED/hermes"; chmod +x "$UNPACKED/hermes"
     if [ "$(uname)" != "Darwin" ]; then
-      bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/hermes-agent" \
+      bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/slave-agent" \
         --relaunch-target "$UNPACKED/hermes" >/dev/null 2>&1 || true
-      expect_msg "instant-exit relaunch downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen Hermes' in d['message']"
+      expect_msg "instant-exit relaunch downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen slave-agent’ in d['message']"
     else
       # mac: a SUPPLIED target that is missing is a REJECTED launch and
       # must downgrade to manual — never a clean "Update complete."
-      bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/hermes-agent" \
+      bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/slave-agent" \
         --relaunch-target "$L/NoSuch.app" >/dev/null 2>&1 || true
-      expect_msg "missing bundle downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen Hermes' in d['message']"
+      expect_msg "missing bundle downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen slave-agent’ in d['message']"
     fi
 
     # 2. gated skew: success result carries the skew message (the manual
     #    event's payload), never a bare "Update complete."
     stub_install
-    bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/hermes-agent" \
+    bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/slave-agent" \
       --relaunch-target /opt/Hermes/hermes >/dev/null 2>&1 || true
     if [ "$(uname)" != "Darwin" ]; then
       expect_msg "skew outcome surfaces in result message" "d['ok']==True and d['manual']==True and 'was not changed' in d['message']"

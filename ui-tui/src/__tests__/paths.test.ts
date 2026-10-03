@@ -99,7 +99,7 @@ describe('fmtProjectCwdBranch', () => {
   })
 
   it('keeps the project visible when space is tight', () => {
-    expect(fmtProjectCwdBranch('/Users/bb/proj', 'main', 'hermes-agent', 12)).toBe('hermes-agent')
+    expect(fmtProjectCwdBranch('/Users/bb/proj', 'main', 'slave-agent', 12)).toBe('slave-agent')
   })
 })
 

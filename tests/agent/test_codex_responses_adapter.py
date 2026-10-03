@@ -830,7 +830,7 @@ def test_preflight_codex_api_kwargs_drops_oversized_message_id_end_to_end():
     kwargs = _preflight_codex_api_kwargs(
         {
             "model": "gpt-5.5",
-            "instructions": "You are Hermes.",
+            "instructions": "You are Slave.",
             "input": [
                 {"role": "user", "content": "ping"},
                 {
@@ -984,7 +984,7 @@ def _xai_reasoning_only_response(reasoning_text):
 def test_codex_preflight_passes_text_verbosity_through():
     """The preflight whitelist must let the Responses ``text`` block reach the wire (#20203).
 
-    Before it was allowed, ``text.verbosity`` died inside Hermes with
+    Before it was allowed, ``text.verbosity`` died inside slave-agent with
     "unsupported field(s): text" before the request ever left the process.
     """
     kwargs = {

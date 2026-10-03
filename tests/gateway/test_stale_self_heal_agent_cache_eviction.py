@@ -42,7 +42,7 @@ cached entry's snapshot session_id..." / ``_stale_dead_sid_reuse``).
 
 import threading
 
-from hermes_state import SessionDB
+from slave_state import SessionDB
 
 
 def _make_runner_with_db(tmp_path):

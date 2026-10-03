@@ -23,7 +23,7 @@ function installApi() {
     transport: { sdp: 'answer', type: 'answer' }
   }))
 
-  Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { api } })
+  Object.defineProperty(window, 'slaveDesktop', { configurable: true, value: { api } })
 
   return api
 }
@@ -53,7 +53,7 @@ function installWebRTC() {
 afterEach(() => {
   setApiRequestConnection(null)
   setApiRequestProfile(null)
-  Reflect.deleteProperty(window, 'hermesDesktop')
+  Reflect.deleteProperty(window, 'slaveDesktop')
   Reflect.deleteProperty(globalThis, 'RTCPeerConnection')
   Reflect.deleteProperty(window.navigator, 'mediaDevices')
 })

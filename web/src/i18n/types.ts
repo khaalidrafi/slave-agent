@@ -173,9 +173,9 @@ export interface Translations {
     startedInBackground: string;
     stopped: string;
     updateHermes: string;
-    updateHermesConfirmMessage?: string;
-    updateHermesConfirmNow?: string;
-    updateHermesConfirmTitle?: string;
+    updateSlaveConfirmMessage?: string;
+    updateSlaveConfirmNow?: string;
+    updateSlaveConfirmTitle?: string;
     updatingHermes: string;
     waitingForOutput: string;
   };

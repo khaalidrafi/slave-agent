@@ -152,7 +152,7 @@ beforeEach(() => {
   setApiRequestConnection(null)
   setApiRequestProfile(null)
   vi.stubGlobal('window', {
-    hermesDesktop: { api, connections: { list, setLastUsed } },
+    slaveDesktop: { api, connections: { list, setLastUsed } },
     localStorage,
     location: window.location
   })
@@ -982,7 +982,7 @@ describe('selectConnection', () => {
     $connection.set({ connectionId: 'local', mode: 'local', profile: 'mac', registryScoped: true })
     $activeGatewayProfile.set('mac')
 
-    expect(JSON.parse(localStorage.getItem('hermes.desktop.lastProfileByConnection') || '{}')).toEqual({
+    expect(JSON.parse(localStorage.getItem('slave.desktop.lastProfileByConnection') || '{}')).toEqual({
       local: 'mac'
     })
 

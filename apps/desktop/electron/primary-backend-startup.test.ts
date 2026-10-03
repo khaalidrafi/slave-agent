@@ -11,7 +11,7 @@ import {
 } from './primary-backend-startup'
 
 const bootstrapBackend = {
-  activeRoot: '/tmp/hermes-home/hermes-agent',
+  activeRoot: '/tmp/hermes-home/slave-agent',
   kind: 'bootstrap-needed',
   platform: 'linux'
 }
@@ -20,7 +20,7 @@ function startupOptions<T extends Record<string, unknown> = Record<string, never
   const base = {
     assertCurrentAttempt: () => {},
     connectRemote: vi.fn(async remote => ({ baseUrl: remote.baseUrl, mode: 'remote' as const })),
-    ensureLocalRuntime: vi.fn(async backend => ({ ...backend, command: 'hermes' })),
+    ensureLocalRuntime: vi.fn(async backend => ({ ...backend, command: 'slave' })),
     prepareLocalBackend: vi.fn(async () => bootstrapBackend),
     resolveRemote: vi.fn(async () => null),
     waitForDecision: vi.fn(async () => 'continue-local' as const),
@@ -79,7 +79,7 @@ test('primary remote descriptor preserves the effective SSH dialing identity', (
   const ssh = {
     effectiveConfigFingerprint: 'effective-config',
     host: 'build-host',
-    remoteHermesPath: '/srv/hermes',
+    remoteSlavePath: '/srv/hermes',
     remoteProfile: 'default',
     user: 'alice'
   }
@@ -206,7 +206,7 @@ test('a null post-update primary still spawns local exactly once', async () => {
 
 test('continue local waits for update exclusion and ensures the prepared runtime exactly once', async () => {
   const gate = createFirstRunSetupGate({ stuckAfterMs: 0 })
-  const runtimeBackend = { ...bootstrapBackend, command: 'hermes' }
+  const runtimeBackend = { ...bootstrapBackend, command: 'slave' }
 
   const options = startupOptions({
     ensureLocalRuntime: vi.fn(async () => runtimeBackend),

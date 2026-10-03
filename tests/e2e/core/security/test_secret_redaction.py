@@ -1,14 +1,14 @@
-"""Secrets never reach disk or the next provider request through the classic CLI (``hermes chat -q``).
+"""Secrets never reach disk or the next provider request through the classic CLI (``slave chat -q``).
 
 Contract under test (``security.redact_secrets``, on by default; website/docs/user-guide/configuration.md
-§ Security, hermes_logging.py, user-guide/sessions.md § Export Sessions):
+§ Security, slave_logging.py, user-guide/sessions.md § Export Sessions):
 
 * tool output is redacted before it enters the conversation, so it never reaches state.db (any table,
   FTS, WAL), a session export, or the next provider request; a read of a secret-bearing file (``.env``)
   masks credential-shaped assignments whatever the value looks like;
 * the model's own answer is redacted at the storage boundary (history / state.db / exports / replay);
 * every log file (agent.log, errors.log, gateway.log) goes through ``RedactingFormatter``;
-* ``hermes sessions export --redact`` masks message content AND tool-call arguments.
+* ``slave sessions export --redact`` masks message content AND tool-call arguments.
 
 NOT COVERED (raw by design, so not asserted): a tool argument and the user's own prompt stay exactly as
 executed in state.db, in the default (non ``--redact``) export and in the provider replay of the
@@ -45,10 +45,10 @@ def cli_world(tmp_path_factory) -> World:
     root = tmp_path_factory.mktemp("redact-cli")
     home, ws, keys = root / "home", root / "ws", Secrets()
     seed_workspace(ws, keys)
-    ctx = Ctx(keys, ws, home / ".hermes" / ".env")
+    ctx = Ctx(keys, ws, home / ".slave" / ".env")
     with FakeLLMServer(Director(ctx), api_key=keys.provider, record_get=True) as llm:
         ctx.port = llm.port
-        write_home(home / ".hermes", llm.base_url, api_key=keys.provider, env=keys.env(), config=CONFIG)
+        write_home(home / ".slave", llm.base_url, api_key=keys.provider, env=keys.env(), config=CONFIG)
         runs: dict[str, str] = {}
         for name, scenario in SCENARIOS.items():
             r = run_hermes(["chat", "-q", prompt_for(name, keys), "-Q"], home, cwd=ws, timeout=150)

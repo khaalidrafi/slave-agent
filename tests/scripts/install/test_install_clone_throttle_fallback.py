@@ -23,8 +23,8 @@ def test_clone_retries_and_publishes_only_materialized_tree(tmp_path, materializ
     git("commit", "-m", "fixture")
     dest = tmp_path / "install"
     attempts = tmp_path / "attempts"
-    env = dict(os.environ, HOME=tmp_path.as_posix(), HERMES_HOME=(tmp_path / "home").as_posix(),
-               HERMES_INSTALL_DIR=dest.as_posix(), HERMES_REPO_URL=origin.as_posix())
+    env = dict(os.environ, HOME=tmp_path.as_posix(), SLAVE_HOME=(tmp_path / "home").as_posix(),
+               SLAVE_INSTALL_DIR=dest.as_posix(), SLAVE_REPO_URL=origin.as_posix())
     # Inject throttling at the network boundary; the fallback and checkout use real Git.
     script = f'''source {shlex.quote((ROOT / 'scripts/install.sh').as_posix())} --manifest
 sleep() {{ :; }}

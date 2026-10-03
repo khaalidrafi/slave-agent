@@ -21,18 +21,18 @@ apt_options=(
 )
 mkdir -p "$work/state"
 printf 'user data survives package replacement\n' > "$work/state/sentinel"
-export HERMES_HOME="$work/state"
+export SLAVE_HOME="$work/state"
 if [ -f /previous.deb ]; then
     dpkg --force-not-root --force-script-chrootless --install /previous.deb
-    previous="$(dpkg-query -W -f='${Version}' hermes-agent)"
+    previous="$(dpkg-query -W -f='${Version}' slave-agent)"
     dpkg --compare-versions "$expected" gt "$previous"
 fi
 apt-get "${apt_options[@]}" update
-apt-get "${apt_options[@]}" --yes install hermes-agent
-actual="$(dpkg-query -W -f='${Version}' hermes-agent)"
+apt-get "${apt_options[@]}" --yes install slave-agent
+actual="$(dpkg-query -W -f='${Version}' slave-agent)"
 [ "$actual" = "$expected" ]
 [ "$(cat "$work/state/sentinel")" = 'user data survives package replacement' ]
-root="$PREFIX/lib/hermes-agent"
+root="$PREFIX/lib/slave-agent"
 export LD_LIBRARY_PATH="$root/tools/python$PREFIX/lib:$root/tools/node$PREFIX/lib:$root/tools/ffmpeg$PREFIX/lib:$root/runtime-libs/lib:$PREFIX/lib"
 export PYTHONPATH="$root/app"
 "$root/venv/bin/python" "$ctmp/validate_installed.py"

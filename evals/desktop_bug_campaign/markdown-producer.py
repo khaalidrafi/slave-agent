@@ -13,12 +13,12 @@ output = Path(sys.argv[1])
 with tempfile.TemporaryDirectory(prefix="markdown-producer-") as temporary:
     home = Path(temporary)
     for key in list(os.environ):
-        if key.startswith("HERMES_") or key.endswith(("_API_KEY", "_TOKEN")):
+        if key.startswith("SLAVE_") or key.endswith(("_API_KEY", "_TOKEN")):
             os.environ.pop(key, None)
-    os.environ.update(HOME=str(home), HERMES_HOME=str(home / ".hermes"))
+    os.environ.update(HOME=str(home), SLAVE_HOME=str(home / ".slave"))
     from cron.jobs import create_job, save_job_output
     from gateway.wake import persist_delegation_delivery
-    from hermes_state import SessionDB
+    from slave_state import SessionDB
     from tools.cronjob_tools import _manual_run_completion
     from tools.process_registry_notifications import format_process_notification
 

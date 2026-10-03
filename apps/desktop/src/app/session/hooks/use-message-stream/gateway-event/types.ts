@@ -1,4 +1,4 @@
-import type { GatewayEvent, PersistedTurn } from '@hermes/shared'
+import type { GatewayEvent, PersistedTurn } from '@slave-agent/shared'
 import type { QueryClient } from '@tanstack/react-query'
 import type { MutableRefObject } from 'react'
 
@@ -40,7 +40,7 @@ export interface GatewayEventDeps {
     runtimeSessionId?: string | null
   ) => Promise<void>
   queryClient: QueryClient
-  refreshHermesConfig: () => Promise<void>
+  refreshSlaveConfig: () => Promise<void>
   scheduleSessionsRefresh: () => void
   sessionInterrupted: (sessionId: string) => boolean
   sessionStateByRuntimeIdRef: MutableRefObject<Map<string, ClientSessionState>>
@@ -74,7 +74,7 @@ export interface GatewayEventContext {
   occurredAt: number
   /** The event came from the active (connection, profile) source. */
   fromActiveSource: () => boolean
-  /** Coalesced trailing refreshHermesConfig (one per session.info burst). */
+  /** Coalesced trailing refreshSlaveConfig (one per session.info burst). */
   scheduleConfigRefresh: () => void
 }
 

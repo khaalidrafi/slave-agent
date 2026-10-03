@@ -203,14 +203,14 @@ class TestAnchorHeal:
 class TestUpdateInvokeFallback:
     def test_dead_alias_no_marker_falls_back_to_module_invocation(self, tmp_path):
         """No marker to heal from, but the venv python itself boots (the
-        launchd-gateway shape): drive the update as python -m hermes_cli.main."""
+        launchd-gateway shape): drive the update as python -m slave_cli.main."""
         root = make_venv(tmp_path, python=GOOD_STUB, python3=BAD_STUB,
                          marker=None)
         out = run_selftest(root)
         assert "state=no-marker" in out
-        assert out.endswith("/venv/bin/python -m hermes_cli.main")
+        assert out.endswith("/venv/bin/python -m slave_cli.main")
 
-    def test_healthy_venv_keeps_hermes_entrypoint(self, tmp_path):
+    def test_healthy_venv_keeps_slave_entrypoint(self, tmp_path):
         root = make_venv(tmp_path, python=GOOD_STUB, python3=GOOD_STUB,
                          marker=None)
         out = run_selftest(root)
@@ -222,25 +222,25 @@ class TestHandoffSurvivesBrickAB:
     """A/B analog of the reported loop: `venv/bin/hermes` execs python3."""
 
     def _make_hermes(self, root: Path) -> Path:
-        hermes = root / "venv/bin/hermes"
+        slave = root / "venv/bin/hermes"
         _write_exe(
-            hermes,
+            slave,
             "#!/usr/bin/env bash\n"
             'exec "$(cd "$(dirname "$0")" && pwd)/python3" -c "import encodings"\n',
         )
-        return hermes
+        return slave
 
     def test_bricked_entrypoint_fails_before_and_boots_after_heal(self, tmp_path):
         root = make_venv(tmp_path, python=GOOD_STUB, python3=BAD_STUB,
                          marker="STORE")
-        hermes = self._make_hermes(root)
+        slave = self._make_hermes(root)
         # BEFORE the heal: the entrypoint dies exactly like the field logs.
-        before = subprocess.run([str(hermes)], capture_output=True,
+        before = subprocess.run([str(slave)], capture_output=True,
                                 text=True, encoding="utf-8", errors="replace")
         assert before.returncode == 1
         assert "No module named 'encodings'" in before.stderr
         # Heal (real posix.sh function), then the same entrypoint boots.
         assert "state=healed-aliases" in run_selftest(root)
-        after = subprocess.run([str(hermes)], capture_output=True,
+        after = subprocess.run([str(slave)], capture_output=True,
                                text=True, encoding="utf-8", errors="replace")
         assert after.returncode == 0

@@ -55,7 +55,7 @@ function connectedExternal(patch: Partial<OAuthProvider> = {}): OAuthProvider {
 beforeEach(() => {
   listOAuthProviders.mockResolvedValue({ providers: [connectedExternal()] })
   disconnectOAuthProvider.mockResolvedValue({ ok: false, provider: 'nous' })
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'slaveDesktop', {
     configurable: true,
     value: { terminal: {} }
   })
@@ -97,7 +97,7 @@ describe('connected external provider row', () => {
     listOAuthProviders.mockResolvedValue({
       providers: [
         {
-          cli_command: 'hermes auth add nous',
+          cli_command: 'slave auth add nous',
           disconnectable: true,
           docs_url: '',
           flow: 'device_code',

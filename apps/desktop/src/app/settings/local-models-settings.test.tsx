@@ -51,9 +51,9 @@ vi.mock('@/hermes', () => ({
   sideloadLocalModel: vi.fn()
 }))
 
-import * as hermes from '@/hermes'
+import * as slave from '@/hermes'
 
-const mocked = vi.mocked(hermes)
+const mocked = vi.mocked(slave)
 
 const BASE_STATUS: LocalModelsStatus = {
   enabled: true,
@@ -565,10 +565,10 @@ describe('BrowseSection', () => {
     vi.useFakeTimers()
 
     try {
-      vi.mocked(hermes.searchHFModels).mockResolvedValue({
+      vi.mocked(slave.searchHFModels).mockResolvedValue({
         hits: [{ downloads: 872724, gated: false, likes: 47, repo: 'unsloth/Qwen3.8-27B-GGUF', updated: '2026-08-18' }]
       })
-      vi.mocked(hermes.listHFRepoFiles).mockResolvedValue({
+      vi.mocked(slave.listHFRepoFiles).mockResolvedValue({
         files: [
           { fit: 'fits-gpu', label: 'Q4_K_M', paths: ['Qwen3.8-27B-Q4_K_M.gguf'], total_bytes: 17 * 2 ** 30 },
           { fit: 'too-big', label: 'F16', paths: ['Qwen3.8-27B-F16.gguf'], total_bytes: 56 * 2 ** 30 }
@@ -593,11 +593,11 @@ describe('BrowseSection', () => {
       const box = screen.getByPlaceholderText(/search models/i)
       fireEvent.change(box, { target: { value: 'qwen' } })
       // Debounce: no call until the pause elapses.
-      expect(hermes.searchHFModels).not.toHaveBeenCalled()
+      expect(slave.searchHFModels).not.toHaveBeenCalled()
       await act(async () => {
         await vi.advanceTimersByTimeAsync(400)
       })
-      expect(hermes.searchHFModels).toHaveBeenCalledWith('qwen', 20, { connectionId: null, profile: 'default' })
+      expect(slave.searchHFModels).toHaveBeenCalledWith('qwen', 20, { connectionId: null, profile: 'default' })
       expect(screen.getByText('unsloth/Qwen3.8-27B-GGUF')).toBeTruthy()
 
       fireEvent.click(screen.getByRole('button', { name: /show files/i }))
@@ -612,12 +612,12 @@ describe('BrowseSection', () => {
       expect((f16Btn as HTMLButtonElement).disabled).toBe(true)
       expect((q4Btn as HTMLButtonElement).disabled).toBe(false)
 
-      vi.mocked(hermes.downloadBrowsedModel).mockResolvedValue({ job_id: 'j1', model_id: 'Qwen3.8-27B-Q4_K_M' })
+      vi.mocked(slave.downloadBrowsedModel).mockResolvedValue({ job_id: 'j1', model_id: 'Qwen3.8-27B-Q4_K_M' })
       fireEvent.click(q4Btn)
       await act(async () => {
         await vi.runOnlyPendingTimersAsync()
       })
-      expect(hermes.downloadBrowsedModel).toHaveBeenCalledWith(
+      expect(slave.downloadBrowsedModel).toHaveBeenCalledWith(
         'unsloth/Qwen3.8-27B-GGUF',
         ['Qwen3.8-27B-Q4_K_M.gguf'],
         { connectionId: null, profile: 'default' }
@@ -630,12 +630,12 @@ describe('BrowseSection', () => {
 
 describe('added-by-you rows', () => {
   it('staged models outside the catalog get the full action set', async () => {
-    vi.mocked(hermes.getLocalModelsStatus).mockResolvedValue({
+    vi.mocked(slave.getLocalModelsStatus).mockResolvedValue({
       ...BASE_STATUS,
-      loaded_models: { 'Hermes-4.3-36B-Q5_K_M': 'loaded' },
-      models: [{ id: 'Hermes-4.3-36B-Q5_K_M', size_bytes: 25 * 2 ** 30, size_label: '25.0 GB' }],
+      loaded_models: { 'Slave-4.3-36B-Q5_K_M': 'loaded' },
+      models: [{ id: 'Slave-4.3-36B-Q5_K_M', size_bytes: 25 * 2 ** 30, size_label: '25.0 GB' }],
       placement: {
-        'Hermes-4.3-36B-Q5_K_M': {
+        'Slave-4.3-36B-Q5_K_M': {
           granted_window_label: '96K',
           spilled: false,
           window: 98304,
@@ -644,10 +644,10 @@ describe('added-by-you rows', () => {
       },
       server_running: true
     })
-    vi.mocked(hermes.getLocalCatalog).mockResolvedValue({ models: [] })
+    vi.mocked(slave.getLocalCatalog).mockResolvedValue({ models: [] })
 
     renderPane()
-    await screen.findByText('Hermes-4.3-36B-Q5_K_M')
+    await screen.findByText('Slave-4.3-36B-Q5_K_M')
 
     // Full management surface: Use, eject, delete, live placement pill.
     expect(screen.getByText(/added by you/i)).toBeTruthy()

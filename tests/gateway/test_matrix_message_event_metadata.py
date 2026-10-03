@@ -271,7 +271,7 @@ async def test_reply_to_bot_under_require_mention_keeps_reply_author(monkeypatch
     msg = adapter.handle_message.await_args.args[0]
     assert msg.reply_to_message_id == "$bot_msg"
     assert msg.reply_to_author_id == "@hermes:example.org"
-    assert msg.reply_to_author_name == "hermes"
+    assert msg.reply_to_author_name == "slave"
     assert msg.reply_to_text == "did you check the logs?"
     assert msg.text == "hello there"
 

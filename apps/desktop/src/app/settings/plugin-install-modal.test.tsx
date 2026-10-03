@@ -73,7 +73,7 @@ beforeEach(() => {
     }
   ])
   probePluginRepo.mockResolvedValue({ ok: true, agent: true, desktop: true, warnings: [] })
-  vi.stubGlobal('hermesDesktop', { probePluginRepo, installDesktopPlugin })
+  vi.stubGlobal('slaveDesktop', { probePluginRepo, installDesktopPlugin })
 })
 afterEach(() => {
   cleanup()
@@ -192,7 +192,7 @@ describe('Unified package desktop half on a local backend', () => {
         : { plugins: [] }
     )
     installDesktopPlugin.mockResolvedValue({ ok: true, pluginName: 'pkg' })
-    vi.stubGlobal('hermesDesktop', { installDesktopPlugin, probePluginRepo, reconcileDesktopPlugins })
+    vi.stubGlobal('slaveDesktop', { installDesktopPlugin, probePluginRepo, reconcileDesktopPlugins })
     renderFlow()
     act(() => openPluginInstallRequest({ repo: 'https://github.com/example/pkg' }))
     expect(await screen.findByText('This package includes')).toBeTruthy()

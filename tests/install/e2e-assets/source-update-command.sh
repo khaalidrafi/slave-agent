@@ -2,7 +2,7 @@
 # Build the installed CLI's invocation for a source-to-source update.
 # Older releases do not accept either flag, so probe their own help first.
 build_source_update_command() {
-  local hermes="$1" help="$2"
+  local slave="$1" help="$2"
   update_cmd=("$hermes" update)
   if grep -qF -- --yes <<< "$help"; then
     update_cmd+=(--yes)

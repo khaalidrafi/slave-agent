@@ -76,22 +76,22 @@ class _TinyImageHandler(http.server.BaseHTTPRequestHandler):
 
 @pytest.fixture
 def http_server(tmp_path, monkeypatch):
-    """Spin up a localhost HTTP server and isolate HERMES_HOME under tmp_path.
+    """Spin up a localhost HTTP server and isolate SLAVE_HOME under tmp_path.
 
-    ``HERMES_ALLOW_PRIVATE_URLS`` opts the loopback test server into private-IP
+    ``SLAVE_ALLOW_PRIVATE_URLS`` opts the loopback test server into private-IP
     reach (the same toggle a LAN-hosted provider would set) — save_url now
     refuses private targets by default.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "1")
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+    monkeypatch.setenv("SLAVE_ALLOW_PRIVATE_URLS", "1")
     from tools import url_safety
     url_safety._reset_allow_private_cache()
-    (tmp_path / ".hermes").mkdir()
+    (tmp_path / ".slave").mkdir()
 
-    # Force the constants/image cache helpers to re-read HERMES_HOME.
+    # Force the constants/image cache helpers to re-read SLAVE_HOME.
     import sys
     for mod in list(sys.modules):
-        if mod.startswith("hermes_constants") or mod.startswith("agent.image_gen_provider"):
+        if mod.startswith("slave_constants") or mod.startswith("agent.image_gen_provider"):
             sys.modules.pop(mod, None)
 
     httpd = socketserver.TCPServer(("127.0.0.1", 0), _TinyImageHandler)
@@ -100,12 +100,12 @@ def http_server(tmp_path, monkeypatch):
     thread.start()
     yield f"http://127.0.0.1:{port}", httpd
     httpd.shutdown()
-    monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
+    monkeypatch.delenv("SLAVE_ALLOW_PRIVATE_URLS", raising=False)
     url_safety._reset_allow_private_cache()
 
 
 class TestSaveUrlImage:
-    def test_writes_real_bytes_to_hermes_home_cache(self, http_server):
+    def test_writes_real_bytes_to_slave_home_cache(self, http_server):
         base, _ = http_server
         from agent.image_gen_provider import save_url_image
 
@@ -113,7 +113,7 @@ class TestSaveUrlImage:
 
         assert path.exists()
         assert path.read_bytes() == PNG_1PX
-        # Durable generated-media dir: under HERMES_HOME but OUTSIDE the swept
+        # Durable generated-media dir: under SLAVE_HOME but OUTSIDE the swept
         # inbound caches — gateway cleanup must never delete the only copy of a
         # generated deliverable (#126445).
         assert os.path.join("cache", "generated", "images") in str(path)

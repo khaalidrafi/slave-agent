@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesApi from '@/hermes'
+import type * as SlaveApi from '@/hermes'
 import { getActionStatus } from '@/hermes'
 import { $desktopActionTasks } from '@/store/activity'
 
@@ -22,7 +22,7 @@ function spawn(name: string) {
 }
 
 vi.mock('@/hermes', async importOriginal => ({
-  ...(await importOriginal<typeof HermesApi>()),
+  ...(await importOriginal<typeof SlaveApi>()),
   getActionStatus: vi.fn(async (name: string) => ({
     exit_code: running[name] ? null : 0,
     lines: [`${name} run ${runs[name]} output`],

@@ -20,7 +20,7 @@ import { fsPumpDeps, pumpStreamToFile, writeBufferToFile } from './gateway-file-
 let dir = ''
 
 beforeEach(async () => {
-  dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'hermes-download-fs-'))
+  dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'slave-download-fs-'))
 })
 
 afterEach(async () => {

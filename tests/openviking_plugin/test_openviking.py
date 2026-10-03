@@ -10,7 +10,7 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 import plugins.memory.openviking as openviking_plugin
-from hermes_cli.version_info import get_version_info
+from slave_cli.version_info import get_version_info
 from plugins.memory.openviking import OpenVikingMemoryProvider
 
 
@@ -125,7 +125,7 @@ def make_prefetch_provider(monkeypatch, responses, **env):
     provider._endpoint = "http://openviking.test"
     provider._account = "default"
     provider._user = "default"
-    provider._agent = "hermes"
+    provider._agent = "slave"
     provider._session_id = "session-test"
     return provider
 
@@ -148,7 +148,7 @@ class TestOpenVikingSkillQuerySafety:
         assert openviking_plugin._derive_openviking_user_text([{"text": "hi"}]) == ""
 
 
-    def test_skill_markers_match_hermes_scaffolding(self, tmp_path, monkeypatch):
+    def test_skill_markers_match_slave_scaffolding(self, tmp_path, monkeypatch):
         import agent.skill_bundles as skill_bundles
         import agent.skill_commands as skill_commands
         import tools.skills_tool as skills_tool
@@ -159,7 +159,7 @@ class TestOpenVikingSkillQuerySafety:
         _write_bundle(bundles_dir, "demo", ["example"])
 
         monkeypatch.setattr(skills_tool, "SKILLS_DIR", skills_dir)
-        monkeypatch.setenv("HERMES_BUNDLES_DIR", str(bundles_dir))
+        monkeypatch.setenv("SLAVE_BUNDLES_DIR", str(bundles_dir))
         monkeypatch.setattr(skill_commands, "_skill_commands_by_key", {})
         monkeypatch.setattr(skill_bundles, "_bundles_cache", {})
         monkeypatch.setattr(skill_bundles, "_bundles_cache_mtime", None)
@@ -196,7 +196,7 @@ class TestOpenVikingSkillQuerySafety:
         provider._api_key = ""
         provider._account = "default"
         provider._user = "default"
-        provider._agent = "hermes"
+        provider._agent = "slave"
         skill_message = (
             '[IMPORTANT: The user has invoked the "skill-creator" skill, indicating they want '
             "you to follow its instructions. The full skill content is loaded below.]\n\n"
@@ -230,7 +230,7 @@ class TestOpenVikingSkillQuerySafety:
         provider._api_key = ""
         provider._account = "default"
         provider._user = "default"
-        provider._agent = "hermes"
+        provider._agent = "slave"
         provider._session_id = "session-1"
         skill_message = (
             '[IMPORTANT: The user has invoked the "skill-creator" skill, indicating they want '
@@ -258,7 +258,7 @@ class TestOpenVikingSkillQuerySafety:
                         {
                             "role": "assistant",
                             "parts": [{"type": "text", "text": "Done."}],
-                            "peer_id": "hermes",
+                            "peer_id": "slave",
                         },
                     ]
                 },
@@ -271,10 +271,10 @@ class TestOpenVikingConfigSchema:
     def test_recall_config_reads_from_config_yaml(self, monkeypatch, tmp_path):
         """_recall_config() reads memory.openviking values from config.yaml when
         the corresponding OPENVIKING_RECALL_* env vars are not set."""
-        # Populate config.yaml in the temp HERMES_HOME
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        config_yaml = hermes_home / "config.yaml"
+        # Populate config.yaml in the temp SLAVE_HOME
+        slave_home = tmp_path / "slave_test"
+        slave_home.mkdir(exist_ok=True)
+        config_yaml = slave_home / "config.yaml"
         config_yaml.write_text(
             """\
 memory:
@@ -292,7 +292,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("SLAVE_HOME", str(slave_home))
         # Clear any OPENVIKING_RECALL_* env vars so config.yaml prevails
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
@@ -314,9 +314,9 @@ memory:
     def test_recall_config_env_overrides_config_yaml(self, monkeypatch, tmp_path):
         """Env vars OPENVIKING_RECALL_* take precedence over config.yaml values
         when both are present."""
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        config_yaml = hermes_home / "config.yaml"
+        slave_home = tmp_path / "slave_test"
+        slave_home.mkdir(exist_ok=True)
+        config_yaml = slave_home / "config.yaml"
         config_yaml.write_text(
             """\
 memory:
@@ -327,7 +327,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("SLAVE_HOME", str(slave_home))
         # Override config.yaml via env
         monkeypatch.setenv("OPENVIKING_RECALL_LIMIT", "6")
         monkeypatch.setenv("OPENVIKING_RECALL_RESOURCES", "false")
@@ -341,9 +341,9 @@ memory:
     def test_recall_config_partial_config_yaml(self, monkeypatch, tmp_path):
         """Partially populated config.yaml falls back to defaults for omitted keys
         and env vars can override individual fields."""
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        config_yaml = hermes_home / "config.yaml"
+        slave_home = tmp_path / "slave_test"
+        slave_home.mkdir(exist_ok=True)
+        config_yaml = slave_home / "config.yaml"
         config_yaml.write_text(
             """\
 memory:
@@ -354,7 +354,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("SLAVE_HOME", str(slave_home))
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
                 monkeypatch.delenv(key, raising=False)
@@ -372,7 +372,7 @@ memory:
                 monkeypatch.delenv(key, raising=False)
         monkeypatch.setattr(
             openviking_plugin,
-            "_load_hermes_openviking_config",
+            "_load_slave_openviking_config",
             lambda: {
                 "recall_limit": "12",
                 "recall_score_threshold": "0.42",
@@ -397,7 +397,7 @@ memory:
                 monkeypatch.delenv(key, raising=False)
         monkeypatch.setattr(
             openviking_plugin,
-            "_load_hermes_openviking_config",
+            "_load_slave_openviking_config",
             lambda: {
                 "recall_limit": "many",
                 "recall_score_threshold": True,
@@ -417,7 +417,7 @@ memory:
     def test_recall_env_overrides_string_config_with_native_types(self, monkeypatch):
         monkeypatch.setattr(
             openviking_plugin,
-            "_load_hermes_openviking_config",
+            "_load_slave_openviking_config",
             lambda: {"recall_limit": "12", "recall_resources": "false"},
         )
         monkeypatch.setenv("OPENVIKING_RECALL_LIMIT", "4")
@@ -605,7 +605,7 @@ class TestOpenVikingRead:
 
 
 class TestOpenVikingAutoRecallPrefetch:
-    @pytest.mark.parametrize("peer", ["", "hermes"])
+    @pytest.mark.parametrize("peer", ["", "slave"])
     def test_prefetch_e2e_sends_limit_and_reads_l2_content(self, monkeypatch, peer):
         records = {"searches": [], "reads": [], "listings": [], "headers": []}
 
@@ -755,7 +755,7 @@ class TestOpenVikingAutoRecallPrefetch:
         ]
         assert all(headers.get("x-openviking-actor-peer", "") == peer for headers in normalized_headers)
         assert all(
-            headers.get("user-agent") == f"openviking-memory-hermes/{get_version_info().base_version}"
+            headers.get("user-agent") == f"openviking-memory-slave/{get_version_info().base_version}"
             for headers in normalized_headers
         )
         assert all(headers.get("x-openviking-account") == "acct" for headers in normalized_headers)
@@ -827,7 +827,7 @@ class TestEnsureClientReloadsEnv:
         constructions = []
 
         class _StubClient:
-            def __init__(self, endpoint, api_key, account="", user="", agent="hermes"):
+            def __init__(self, endpoint, api_key, account="", user="", agent="slave"):
                 constructions.append({"endpoint": endpoint, "api_key": api_key,
                                       "account": account, "user": user, "agent": agent})
                 self.endpoint, self.api_key = endpoint, api_key
@@ -861,7 +861,7 @@ class TestEnsureClientReloadsEnv:
 
     def test_rebuilt_client_resolves_its_own_user_space(self, monkeypatch):
         class _StubClient:
-            def __init__(self, endpoint, api_key="", account="", user="", agent="hermes"):
+            def __init__(self, endpoint, api_key="", account="", user="", agent="slave"):
                 self.endpoint = endpoint
                 self.api_key = api_key
                 self.account = account
@@ -879,7 +879,7 @@ class TestEnsureClientReloadsEnv:
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "http://srv:31933")
         monkeypatch.setenv("OPENVIKING_API_KEY", "")
         monkeypatch.setenv("OPENVIKING_USER", "alice")
-        monkeypatch.setenv("OPENVIKING_AGENT", "hermes")
+        monkeypatch.setenv("OPENVIKING_AGENT", "slave")
 
         provider = OpenVikingMemoryProvider()
         provider._env_refresh_enabled = True
@@ -927,7 +927,7 @@ class TestEnsureClientReloadsEnv:
         monkeypatch.setattr("plugins.memory.openviking._VikingClient", _StubClient)
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://openviking.example")
         monkeypatch.setenv("OPENVIKING_API_KEY", "sk-test")
-        monkeypatch.setenv("OPENVIKING_AGENT", "hermes")
+        monkeypatch.setenv("OPENVIKING_AGENT", "slave")
 
         provider = OpenVikingMemoryProvider()
         provider.initialize("session-1")
@@ -940,7 +940,7 @@ class TestEnsureClientReloadsEnv:
         ))
 
         assert out["status"] == "submitted"
-        assert out["session_id"].startswith("hermes-remember-")
+        assert out["session_id"].startswith("slave-remember-")
         assert out["session_uri"] == f"viking://user/default/sessions/{out['session_id']}"
         assert out["message_status"] == "accepted"
         assert out["extraction_status"] == "accepted"
@@ -974,7 +974,7 @@ class TestEnsureClientReloadsEnv:
 
         provider = OpenVikingMemoryProvider()
         provider._client = _StubClient()
-        provider._agent = "hermes"
+        provider._agent = "slave"
         monkeypatch.setattr(provider, "_ensure_client", lambda: provider._client)
 
         out = json.loads(provider._tool_remember({
@@ -1012,8 +1012,8 @@ class TestEnsureClientReloadsEnv:
         second = json.loads(provider._tool_remember({"content": "second"}))
 
         assert first["session_id"] != second["session_id"]
-        assert first["session_id"].startswith("hermes-remember-")
-        assert second["session_id"].startswith("hermes-remember-")
+        assert first["session_id"].startswith("slave-remember-")
+        assert second["session_id"].startswith("slave-remember-")
         assert all("/api/v1/content/write" not in path for path, _ in posts)
 
     def test_remember_reports_unknown_message_submission_failure(self, monkeypatch):
@@ -1057,14 +1057,14 @@ class TestEnsureClientReloadsEnv:
         out = json.loads(provider._tool_remember({"content": "stable fact"}))
 
         assert out["error"].startswith(
-            "Memory message was accepted, but commit failed for session hermes-remember-"
+            "Memory message was accepted, but commit failed for session slave-remember-"
         )
         assert out["error"].endswith(": commit rejected")
         assert out["failure_stage"] == "commit"
         assert out["message_status"] == "accepted"
         assert out["session_uri"].endswith(f"/sessions/{out['session_id']}")
         assert out["recovery_command"] == f"ov session commit {out['session_id']}"
-        assert "same OpenViking profile and credentials as Hermes" in out["recovery_note"]
+        assert "same OpenViking profile and credentials as slave-agent" in out["recovery_note"]
         assert len(posts) == 2
         assert posts[0][0].endswith("/messages")
         assert posts[1][0].endswith("/commit")
@@ -1098,7 +1098,7 @@ class TestEnsureClientReloadsEnv:
         provider._api_key = stale_client.api_key
         provider._account = ""
         provider._user = ""
-        provider._agent = "hermes"
+        provider._agent = "slave"
         provider._client = stale_client
         provider._env_refresh_enabled = True
 
@@ -1282,7 +1282,7 @@ class TestUnavailableRecovery:
                 probes.append(self.endpoint)
                 return len(probes) > 1  # down at startup, up on the next access
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://remote.example")
         monkeypatch.setattr(openviking_plugin, "_VikingClient", _FlakyClient)
         provider = OpenVikingMemoryProvider()

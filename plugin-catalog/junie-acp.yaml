@@ -1,8 +1,8 @@
 name: junie-acp
 repo: https://github.com/JetBrains/junie
 sha: 296ea839b354956fbd22544687a88b944c18dc22
-subdir: hermes-plugin
-description: JetBrains Junie coding agent as a Hermes model provider over ACP.
+subdir: slave-plugin
+description: JetBrains Junie coding agent as a slave-agent model provider over ACP.
 maintainer: JetBrains
 tier: community
 category: models

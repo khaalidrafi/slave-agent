@@ -35,7 +35,7 @@ requires_posix_handoff = pytest.mark.skipif(
 @pytest.fixture
 def progress(tmp_path):
     """The real loopback server, over a status file the test drives."""
-    status = tmp_path / "hermes-update-status"
+    status = tmp_path / "slave-update-status"
     proc = subprocess.Popen(
         [
             sys.executable,
@@ -90,7 +90,7 @@ def test_every_state_carries_a_clock(progress):
         ("running", ""),
         ("running", "Installing the new app"),
         ("done", ""),
-        ("manual", "Reopen Hermes to finish."),
+        ("manual", "Reopen slave-agent to finish."),
         ("error", "Update failed."),
     ]:
         progress.publish(state, message)
@@ -112,7 +112,7 @@ def test_unreadable_status_still_serves_a_running_state(progress):
 
 # ── posix.sh: the stages it publishes at its own gates ─────────────────────
 
-# Stands in for `hermes update`, and reports the stage that was on screen
+# Stands in for `slave update`, and reports the stage that was on screen
 # while it ran -- the update child is the only thing that can observe the
 # window's state at the exact moment of the longest wait in the hand-off.
 FAKE_HERMES = """#!/usr/bin/env bash
@@ -120,23 +120,23 @@ FAKE_HERMES = """#!/usr/bin/env bash
 # real update call; answer it without consuming a counted call so the
 # exits.N mapping below still refers to actual update attempts.
 case "$*" in *--help*) echo "--keep-stash"; exit 0 ;; esac
-n="$(cat "$HERMES_TEST_CALLS" 2>/dev/null || echo 0)"; n=$((n + 1))
-printf '%s' "$n" > "$HERMES_TEST_CALLS"
+n="$(cat "$SLAVE_TEST_CALLS" 2>/dev/null || echo 0)"; n=$((n + 1))
+printf '%s' "$n" > "$SLAVE_TEST_CALLS"
 for f in "$TMPDIR"/hermes-update-status.[0-9]*; do
   case "$f" in *.tmp) continue ;; esac
-  cp "$f" "$HERMES_TEST_CAPTURE.$n" 2>/dev/null
+  cp "$f" "$SLAVE_TEST_CAPTURE.$n" 2>/dev/null
 done
-exit "$(cat "$HERMES_TEST_EXITS.$n" 2>/dev/null || echo 0)"
+exit "$(cat "$SLAVE_TEST_EXITS.$n" 2>/dev/null || echo 0)"
 """
 
 
 def _run_handoff(tmp_path, exits: dict[int, int]) -> list[dict]:
     """Run the real hand-off end to end; return the stage seen at each call."""
-    install_root = tmp_path / "hermes-agent"
+    install_root = tmp_path / "slave-agent"
     (install_root / "venv" / "bin").mkdir(parents=True)
-    hermes = install_root / "venv" / "bin" / "hermes"
-    hermes.write_text(FAKE_HERMES)
-    hermes.chmod(0o755)
+    slave = install_root / "venv" / "bin" / "slave"
+    slave.write_text(FAKE_HERMES)
+    slave.chmod(0o755)
 
     capture = tmp_path / "seen"
     calls = tmp_path / "calls"
@@ -146,11 +146,11 @@ def _run_handoff(tmp_path, exits: dict[int, int]) -> list[dict]:
     env = {
         **os.environ,
         "TMPDIR": str(tmp_path),
-        "HERMES_TEST_CAPTURE": str(capture),
-        "HERMES_TEST_CALLS": str(calls),
-        "HERMES_TEST_EXITS": str(tmp_path / "exits"),
+        "SLAVE_TEST_CAPTURE": str(capture),
+        "SLAVE_TEST_CALLS": str(calls),
+        "SLAVE_TEST_EXITS": str(tmp_path / "exits"),
     }
-    env.pop("HERMES_HOME", None)  # Exercise the legacy install-parent fallback.
+    env.pop("SLAVE_HOME", None)  # Exercise the legacy install-parent fallback.
     # The hand-off daemonizes and the launcher exits immediately; the result
     # file is the orchestrator's own completion signal.
     subprocess.run(
@@ -179,7 +179,7 @@ def _run_handoff(tmp_path, exits: dict[int, int]) -> list[dict]:
 
 @requires_posix_handoff
 def test_update_gate_publishes_its_stage_before_running(tmp_path):
-    """`hermes update` is the longest wait in the hand-off and the one the
+    """`slave update` is the longest wait in the hand-off and the one the
     Discord report sat through; the window must name it while it happens."""
     stages = _run_handoff(tmp_path, {1: 0})
 

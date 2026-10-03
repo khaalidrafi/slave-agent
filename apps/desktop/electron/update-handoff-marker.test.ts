@@ -10,8 +10,8 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..', '..')
 const POSIX_SCRIPT = path.join(REPO_ROOT, 'scripts', 'desktop-update', 'posix.sh')
 
 function sandbox(tag: string) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), `hermes-handoff-marker-${tag}-`))
-  const installRoot = path.join(home, 'hermes-agent')
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), `slave-handoff-marker-${tag}-`))
+  const installRoot = path.join(home, 'slave-agent')
   fs.mkdirSync(installRoot)
 
   return { home, installRoot }
@@ -30,12 +30,12 @@ function markerStartedAt(home: string): number {
 }
 
 function runPosix(installRoot: string, startedAt?: string) {
-  const env: NodeJS.ProcessEnv = { ...process.env, HERMES_HOME: path.dirname(installRoot) }
+  const env: NodeJS.ProcessEnv = { ...process.env, SLAVE_HOME: path.dirname(installRoot) }
 
   if (startedAt === undefined) {
-    delete env.HERMES_UPDATE_STARTED_AT
+    delete env.SLAVE_UPDATE_STARTED_AT
   } else {
-    env.HERMES_UPDATE_STARTED_AT = startedAt
+    env.SLAVE_UPDATE_STARTED_AT = startedAt
   }
 
   return spawnSync(

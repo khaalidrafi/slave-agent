@@ -28,7 +28,7 @@ describe('readPreUpdateBackupEnabled', () => {
 
     const runtime = {
       command: '/runtime/python',
-      args: ['-m', 'hermes_cli.main', 'config', 'get', 'updates.pre_update_backup', '--json'],
+      args: ['-m', 'slave_cli.main', 'config', 'get', 'updates.pre_update_backup', '--json'],
       env: { PYTHONPATH: '/runtime/hermes' }
     }
 
@@ -38,7 +38,7 @@ describe('readPreUpdateBackupEnabled', () => {
       runtime.args,
       expect.objectContaining({
         env: expect.objectContaining({
-          HERMES_HOME: '/profiles/active',
+          SLAVE_HOME: '/profiles/active',
           PYTHONPATH: '/runtime/hermes'
         })
       })

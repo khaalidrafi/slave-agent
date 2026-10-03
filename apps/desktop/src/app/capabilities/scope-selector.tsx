@@ -83,8 +83,8 @@ export function useCapabilityScope({
   // one gateway is registered. Only then is the (heavier) union agent roster
   // fetched to feed the selector — single-connection setups keep the exact
   // legacy profiles list. Both feature-detected for older Electron mains.
-  const registryBridge = window.hermesDesktop?.connections
-  const rosterBridge = window.hermesDesktop?.getAgentRoster
+  const registryBridge = window.slaveDesktop?.connections
+  const rosterBridge = window.slaveDesktop?.getAgentRoster
 
   const { data: registryData } = useQuery({
     queryKey: ['capabilities-connections-registry'],
@@ -126,7 +126,7 @@ export function useCapabilityScope({
 
     return (profilesData?.profiles ?? []).map(p => ({
       key: p.name,
-      label: p.is_default ? 'Hermes (default)' : p.name,
+      label: p.is_default ? 'slave-agent (default)' : p.name,
       value: p.name
     }))
   }, [multiConnection, profilesData, rosterData])

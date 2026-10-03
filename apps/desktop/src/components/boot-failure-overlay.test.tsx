@@ -16,7 +16,7 @@ import { BootFailureOverlay } from './boot-failure-overlay'
 
 function failBoot() {
   $desktopBoot.set({
-    error: 'Could not connect to Hermes gateway',
+    error: 'Could not connect to slave-agent gateway',
     fakeMode: false,
     message: 'boot failed',
     phase: 'renderer.error',
@@ -28,8 +28,8 @@ function failBoot() {
 }
 
 function stubDesktop(config: Record<string, unknown>, overrides: Record<string, unknown> = {}) {
-  const original = window.hermesDesktop
-  Object.defineProperty(window, 'hermesDesktop', {
+  const original = window.slaveDesktop
+  Object.defineProperty(window, 'slaveDesktop', {
     configurable: true,
     value: {
       getRecentLogs: async () => ({ lines: [] }),
@@ -50,7 +50,7 @@ function stubDesktop(config: Record<string, unknown>, overrides: Record<string, 
     }
   })
 
-  return () => Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: original })
+  return () => Object.defineProperty(window, 'slaveDesktop', { configurable: true, value: original })
 }
 
 const remoteToken = {
@@ -347,7 +347,7 @@ describe('BootFailureOverlay', () => {
     $desktopBoot.set({
       ...$desktopBoot.get(),
       error:
-        'This app bundles its own Hermes runtime, but the runtime files are missing or damaged. Reinstall Hermes Desktop to restore it.'
+        'This app bundles its own slave-agent runtime, but the runtime files are missing or damaged. Reinstall slave-agent Desktop to restore it.'
     })
 
     try {

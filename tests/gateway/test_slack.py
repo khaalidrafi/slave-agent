@@ -214,7 +214,7 @@ def adapter():
 
 @pytest.fixture(autouse=True)
 def _redirect_cache(tmp_path, monkeypatch):
-    """Point document cache to tmp_path so tests don't touch ~/.hermes."""
+    """Point document cache to tmp_path so tests don't touch ~/.slave."""
     monkeypatch.setattr(
         "gateway.platforms.base.DOCUMENT_CACHE_DIR", tmp_path / "doc_cache"
     )
@@ -541,7 +541,7 @@ class TestSlackConnectCleanup:
     async def test_disconnect_closes_workspace_clients_and_clears_runtime_state(self):
         """Regression for #51465: shutdown must close Slack WebClients.
 
-        ``hermes gateway run --replace`` takes the old process through the
+        ``slave gateway run --replace`` takes the old process through the
         normal adapter.disconnect() path. If Slack leaves AsyncWebClient
         instances open there, aiohttp logs ``Unclosed client session`` while
         the old gateway exits after SIGTERM.
@@ -953,19 +953,19 @@ class TestSlackProxyBehavior:
         await pin_proxy(client=per_request_client, next_=_continue)
         assert per_request_client.proxy == "http://proxy.example.com:3128"
         assert continued is True
-        assert "hermes_feedback" in created_apps[0].registered_actions
-        assert "hermes_clarify_other" in created_apps[0].registered_actions
+        assert "slave_feedback" in created_apps[0].registered_actions
+        assert "slave_clarify_other" in created_apps[0].registered_actions
         clarify_choice_patterns = [
             action_id
             for action_id in created_apps[0].registered_actions
             if hasattr(action_id, "fullmatch")
         ]
         assert any(
-            pattern.fullmatch("hermes_clarify_choice_0")
+            pattern.fullmatch("slave_clarify_choice_0")
             for pattern in clarify_choice_patterns
         )
         assert not any(
-            pattern.fullmatch("hermes_clarify_choice")
+            pattern.fullmatch("slave_clarify_choice")
             for pattern in clarify_choice_patterns
         )
 
@@ -1172,12 +1172,12 @@ class TestStandaloneSendUserDmResolution:
             result = await _slack_mod._standalone_send(
                 config,
                 "C123",
-                "[Hermes](https://example.com/hermes)",
+                "[slave-agent](https://example.com/hermes)",
             )
 
         assert result["success"] is True
         payload = session.post.call_args.kwargs["json"]
-        assert payload["text"] == "<https://example.com/hermes|Hermes>"
+        assert payload["text"] == "<https://example.com/hermes|slave-agent>"
         assert payload["unfurl_links"] is False
         assert payload["unfurl_media"] is False
 
@@ -3269,7 +3269,7 @@ class TestSlashCommands:
 
 
     @pytest.mark.asyncio
-    async def test_legacy_hermes_prefix_still_works(self, adapter):
+    async def test_legacy_slave_prefix_still_works(self, adapter):
         """Backward compat: /hermes btw foo must still route to /btw foo.
 
         Old workspace manifests only declared /hermes as the single slash.
@@ -3302,7 +3302,7 @@ class TestMessageSplitting:
 
     @pytest.mark.asyncio
     async def test_send_coerces_string_unfurl_options(self, adapter):
-        """`hermes config set` / Railway persist YAML booleans as strings.
+        """`slave config set` / Railway persist YAML booleans as strings.
 
         Relay-plane parity: string "false"/"true" must coerce instead of
         being silently dropped (which would leave previews on with no error).
@@ -4260,7 +4260,7 @@ class TestTrackingStructureBounds:
     @pytest.mark.asyncio
     async def test_slash_command_contexts_bounded(self, adapter):
         adapter._SLASH_CTX_MAX = 4
-        adapter.handle_hermes_command = AsyncMock(return_value=None)
+        adapter.handle_slave_command = AsyncMock(return_value=None)
         for i in range(10):
             command = {
                 "command": "/hermes",
@@ -5512,7 +5512,7 @@ class TestSlackAuthoredTextDeduplication:
     @pytest.mark.parametrize(
         "flat",
         [
-            "hey <@U_BOT|hermes> please look",
+            "hey <@U_BOT|slave> please look",
             "hey <@U_BOT> please look",
             "hey &lt;@U_BOT&gt; please look",
         ],

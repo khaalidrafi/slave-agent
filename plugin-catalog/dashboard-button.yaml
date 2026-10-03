@@ -1,8 +1,8 @@
-# Dashboard Button — one-click access to the Hermes Web Dashboard on 127.0.0.1:9119.
+# Dashboard Button — one-click access to the slave-agent Web Dashboard on 127.0.0.1:9119.
 name: dashboard-button
 repo: https://github.com/g3org3yo/dashboard-button
 sha: e3ad0477d61587a0f9e8f1f136d275995328070d
-description: "One-click access to the Hermes Web Dashboard (127.0.0.1:9119) from the Desktop app — sidebar row, in-app page that loads itself when the server comes up, and a status-bar chip with a live dot. Front-end only: no agent calls, no tokens, no API keys."
+description: "One-click access to the slave-agent Web Dashboard (127.0.0.1:9119) from the Desktop app — sidebar row, in-app page that loads itself when the server comes up, and a status-bar chip with a live dot. Front-end only: no agent calls, no tokens, no API keys."
 maintainer: g3org3yo
 tier: community
 category: desktop

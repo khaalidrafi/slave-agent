@@ -1,6 +1,6 @@
 """Live Windows hold on a replaced PM entry (#124807).
 
-A running Hermes process keeps the replaced interpreter's DLLs mapped, so
+A running slave-agent process keeps the replaced interpreter's DLLs mapped, so
 deleting the old entry fails with WinError 5 long after the new one is
 published. This maps a real DLL from inside the live entry, reinstalls over
 it, and requires the install to succeed and the tree to be reclaimed once

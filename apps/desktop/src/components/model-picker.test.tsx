@@ -1,5 +1,5 @@
-import type { ModelOptionsResult } from '@hermes/shared'
-import { fuzzyRank, modelSearchText } from '@hermes/shared'
+import type { ModelOptionsResult } from '@slave-agent/shared'
+import { fuzzyRank, modelSearchText } from '@slave-agent/shared'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
@@ -45,7 +45,7 @@ const OPTIONS: ModelOptionsResult = {
     {
       slug: 'nous',
       name: 'Nous',
-      models: ['Hermes-4.5'],
+      models: ['Slave-4.5'],
       authenticated: true
     }
   ]
@@ -133,7 +133,7 @@ describe('ModelPickerDialog download rows', () => {
     })
     renderPicker()
 
-    expect(await screen.findByText('Hermes-4.5')).toBeTruthy()
+    expect(await screen.findByText('Slave-4.5')).toBeTruthy()
     expect(screen.getByText('Qwen3.8 Flash Next (UD-Q4_K_XL)')).toBeTruthy()
     expect(screen.getByText('41%')).toBeTruthy()
   })

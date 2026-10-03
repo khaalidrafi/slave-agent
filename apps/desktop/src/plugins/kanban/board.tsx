@@ -50,7 +50,7 @@ import {
   useQueryClient,
   useValue,
   WorkspacePageHeaderControl
-} from '@hermes/plugin-sdk'
+} from '@slave-agent/plugin-sdk'
 import {
   type CSSProperties,
   type DragEvent as ReactDragEvent,

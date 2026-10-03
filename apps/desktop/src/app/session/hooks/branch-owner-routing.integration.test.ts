@@ -20,7 +20,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const dialed: { connectionId: string; profile: string }[] = []
 const sent: { method: string; params: Record<string, unknown>; url: string }[] = []
 
-class FakeHermesGateway {
+class FakeSlaveGateway {
   connectionState = 'closed'
   private url = ''
 
@@ -67,7 +67,7 @@ class FakeHermesGateway {
 
 vi.mock('@/hermes', async importOriginal => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  HermesGateway: FakeHermesGateway,
+  SlaveGateway: FakeSlaveGateway,
   setApiRequestConnection: vi.fn()
 }))
 
@@ -79,7 +79,7 @@ describe('branch owner routing (real router, faked transport)', () => {
 
     // A registry with two backends exposing the SAME profile name — the exact
     // ambiguity that makes profile-only routing wrong.
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+    ;(window as unknown as { slaveDesktop: unknown }).slaveDesktop = {
       getConnection: async () => ({ mode: 'local' }),
       getConnectionFor: async ({ connectionId, profile }: { connectionId: string; profile: string }) => {
         dialed.push({ connectionId, profile })

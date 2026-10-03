@@ -16,14 +16,14 @@ const lockedLog = [
 
 const base = {
   platform: 'windows', phase: 'update', commit: 'a370ab8391ca5f8de7ebbc449f05cb0df36ade7c',
-  installMethod: 'installer-script', updateMethod: 'hermes-update',
-  error: 'E2E ASSERTION FAILED: hermes update exited 1 (expected 0)', logs: { update: lockedLog },
+  installMethod: 'installer-script', updateMethod: 'slave-update',
+  error: 'E2E ASSERTION FAILED: slave update exited 1 (expected 0)', logs: { update: lockedLog },
 }
 
 describe('known install failures', () => {
   it('recognizes the released launcher self-lock, not generic access denied', () => {
     expect(matchKnownFailure(base)?.id).toBe('windows-launcher-self-lock')
-    expect(matchKnownFailure({ ...base, logs: { update: lockedLog.replaceAll('hermes.exe', 'other.exe') } })).toBeNull()
+    expect(matchKnownFailure({ ...base, logs: { update: lockedLog.replaceAll('slave.exe', 'other.exe') } })).toBeNull()
     expect(matchKnownFailure({ ...base, logs: { update: lockedLog.replace('(os error 5)', '(os error 32)') } })).toBeNull()
   })
 
@@ -39,15 +39,15 @@ describe('known install failures', () => {
   it('matches manual-only app updates only for the three proven July script cases', () => {
     const sample = {
       ...base, commit: '7c1a029553d87c43ecff8a3821336bc95872213b',
-      updateMethod: 'hermes-desktop-app-update',
-      error: 'E2E ASSERTION FAILED: app driven via captured hermes desktop spec; update completed',
-      logs: { desktop: '[hermes] [updates] no staged updater; surfacing manual `hermes update` for CLI install at C:/install\n[hermes] [updates] manual: hermes update\n' },
+      updateMethod: 'slave-desktop-app-update',
+      error: 'E2E ASSERTION FAILED: app driven via captured slave desktop spec; update completed',
+      logs: { desktop: '[slave] [updates] no staged updater; surfacing manual `slave update` for CLI install at C:/install\n[slave] [updates] manual: slave update\n' },
     }
 
     expect(matchKnownFailure(sample)?.id).toBe('windows-july-manual-app-update')
     expect(matchKnownFailure({ ...sample, installMethod: 'desktop-installer@latest' })).toBeNull()
     expect(matchKnownFailure({ ...sample, error: 'onboarding timed out' })).toBeNull()
-    expect(matchKnownFailure({ ...sample, logs: { desktop: '[updates] manual: hermes update' } })).toBeNull()
+    expect(matchKnownFailure({ ...sample, logs: { desktop: '[updates] manual: slave update' } })).toBeNull()
   })
 
   it('CLI writes a receipt and exits zero only on a confirmed match', () => {
@@ -71,7 +71,7 @@ describe('known install failures', () => {
 it('renders known receipts as footnotes, without suppressing a red job', async () => {
   const modulePath = new URL('../scripts/sandbox/generate-e2e-matrix.mjs', import.meta.url).href
   const { renderMarkdownResults, legId } = await import(/* @vite-ignore */ modulePath)
-  const name = 'windows: installer-script -> hermes-update (v2026.3.12 -> HEAD)'
+  const name = 'windows: installer-script -> slave-update (v2026.3.12 -> HEAD)'
   const artifacts = new Map([[`install-e2e-known-${rules[0].id}--${legId(name)}`, 42]])
   const known = renderMarkdownResults([{ name: name + ' / e2e', conclusion: 'success' }], [], artifacts)
   expect(known).toContain('0 passed, 0 failed, 1 known failures')

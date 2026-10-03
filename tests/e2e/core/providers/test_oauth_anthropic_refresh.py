@@ -1,6 +1,6 @@
 """Anthropic OAuth access token expires mid-turn: one refresh, the turn completes, the rotation persists.
 
-Real ``hermes -z`` process, native ``anthropic`` provider on the OAuth route
+Real ``slave -z`` process, native ``anthropic`` provider on the OAuth route
 (``sk-ant-oat…`` pool credential), inference against the SDK-oracle loopback
 Messages endpoint (accepted base-URL override ``http://127.0.0.1:<port>/anthropic``),
 and the vendor token endpoint (hardcoded ``https://platform.claude.com``)

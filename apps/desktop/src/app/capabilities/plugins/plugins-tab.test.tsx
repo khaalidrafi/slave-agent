@@ -157,13 +157,13 @@ describe('PluginsTab', () => {
 
   it('renders a unified package as ONE row with a Desktop switch and an Agent switch', () => {
     $pluginRecords.set({
-      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'hermes-media-studio' }
+      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'slave-media-studio' }
     })
     $agentPlugins.set([
       {
         description: '',
-        key: 'hermes-media-studio',
-        name: 'hermes-media-studio',
+        key: 'slave-media-studio',
+        name: 'slave-media-studio',
         source: 'git',
         status: 'disabled',
         version: '1'
@@ -186,7 +186,7 @@ describe('PluginsTab', () => {
         name: 'Media Studio',
         kind: 'disk',
         status: 'loaded',
-        packageName: 'hermes-media-studio',
+        packageName: 'slave-media-studio',
         packageOrigin: { repo: 'https://github.com/NousResearch/hermes-media-studio.git', sha: 'abc' }
       }
     })
@@ -208,7 +208,7 @@ describe('PluginsTab', () => {
 
   it('disables "Install here" when the package has no known origin (hand-copied folder)', () => {
     $pluginRecords.set({
-      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'hermes-media-studio' }
+      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'slave-media-studio' }
     })
 
     render(<PluginsTab profile="workbot" scopeLabel="workbot" />)
@@ -236,7 +236,7 @@ describe('PluginsTab', () => {
           sha: 'a'.repeat(40),
           subdir: '',
           tier: 'community',
-          type: 'hermes-plugin-pick'
+          type: 'slave-plugin-pick'
         },
         origin: 'https://hermes-agent.nousresearch.com'
       })
@@ -261,7 +261,7 @@ describe('PluginsTab', () => {
         data: {
           name: 'evil-plugin',
           repo: 'https://github.com/evil/evil-plugin',
-          type: 'hermes-plugin-pick'
+          type: 'slave-plugin-pick'
         },
         origin: 'https://evil.example.com'
       })
@@ -331,7 +331,7 @@ describe('PluginsTab', () => {
           name: 'nested-plugin',
           repo: 'https://github.com/example/plugins-monorepo',
           subdir: 'nested-plugin',
-          type: 'hermes-plugin-pick'
+          type: 'slave-plugin-pick'
         },
         origin: 'https://hermes-agent.nousresearch.com'
       })
@@ -418,7 +418,7 @@ describe('PluginsTab', () => {
       expect(checked()).toBe('false')
       expect($pluginRecords.get().kanban.status).toBe('disabled')
       expect($pluginDecisions.get()).not.toHaveProperty('kanban')
-      expect(window.localStorage.getItem('hermes.desktop.pluginDecisions.v2')).toBeNull()
+      expect(window.localStorage.getItem('slave.desktop.pluginDecisions.v2')).toBeNull()
       expect(notices('success')).toHaveLength(0)
 
       // Same intended value again, backend healthy: both halves turn on.
@@ -635,7 +635,7 @@ describe('PluginsTab catalog UX', () => {
   it('offers no desktop Uninstall for a bundled plugin or a unified package half', () => {
     $pluginRecords.set({
       bots: { id: 'bots', name: 'Bot Mode', kind: 'bundled', status: 'loaded' },
-      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'hermes-media-studio' }
+      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'slave-media-studio' }
     })
 
     render(<PluginsTab profile={null} />)
@@ -678,7 +678,7 @@ describe('PluginsTab catalog UX', () => {
         data: {
           name: 'demo-weather',
           repo: 'https://github.com/example/demo-weather',
-          type: 'hermes-plugin-pick'
+          type: 'slave-plugin-pick'
         },
         origin: 'https://hermes-agent.nousresearch.com'
       })
@@ -711,7 +711,7 @@ describe('PluginsTab catalog UX', () => {
         data: {
           name: 'demo-weather',
           repo: 'https://github.com/example/demo-weather',
-          type: 'hermes-plugin-pick'
+          type: 'slave-plugin-pick'
         },
         origin: 'https://hermes-agent.nousresearch.com'
       })

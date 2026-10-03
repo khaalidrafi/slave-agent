@@ -1,4 +1,4 @@
-import { compactNumber } from '@hermes/shared'
+import { compactNumber } from '@slave-agent/shared'
 import { useLocation, useNavigate } from 'react-router'
 
 import { PanelEmpty } from '@/app/overlays/panel'

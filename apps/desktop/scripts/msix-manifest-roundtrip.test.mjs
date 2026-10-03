@@ -39,9 +39,9 @@ function makeFakeDesktop(version) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'msix-roundtrip-'))
   fs.writeFileSync(
     path.join(dir, 'product-identity.cjs'),
-    "module.exports = { store: false, light: false, displayName: 'Hermes', appId: 'com.nousresearch.hermes-bundled', channel: 'latest', artifactNamePascal: 'HermesBundled', msixAppIdWithOrg: 'NousResearch.HermesBundled' }\n"
+    "module.exports = { store: false, light: false, displayName: 'slave-agent’, appId: 'com.nousresearch.hermes-bundled', channel: 'latest', artifactNamePascal: 'SlaveBundled', msixAppIdWithOrg: 'NousResearch.SlaveBundled' }\n"
   )
-  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'hermes-desktop', version }))
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'slave-desktop', version }))
   return dir
 }
 

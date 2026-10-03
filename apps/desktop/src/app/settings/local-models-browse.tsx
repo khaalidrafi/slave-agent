@@ -164,7 +164,7 @@ export function LocalModelsBrowseSection(): ReactElement {
   )
 
   const sideload = useCallback((): void => {
-    window.hermesDesktop
+    window.slaveDesktop
       .selectPaths({ filters: [{ extensions: ['gguf'], name: 'GGUF models' }], title: copy.sideloadTitle })
       .then((paths: string[]): Promise<void> | undefined => {
         if (!paths.length) {

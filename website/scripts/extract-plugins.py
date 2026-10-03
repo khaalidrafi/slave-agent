@@ -18,8 +18,8 @@ Outputs (both under website/static/api/, CDN-served at /docs/api/):
 - ``plugins.json``        — list of catalog entries for the page (camelCase)
 - ``plugins-meta.json``   — counts by tier + generatedAt + removedCount
 - ``plugin-catalog.json`` — ``{"entries": [raw YAML mappings], "removed": [...]}`` in the loader's own
-  schema; installed Hermes clients fetch this for live catalog refresh
-  (``hermes_cli.plugin_catalog.LIVE_CATALOG_URL``) so new entries and removals reach them without
+  schema; installed slave-agent clients fetch this for live catalog refresh
+  (``slave_cli.plugin_catalog.LIVE_CATALOG_URL``) so new entries and removals reach them without
   updating. Emitting it here means the docs deploy IS the publish step — no second pipeline.
 """
 
@@ -37,7 +37,7 @@ from urllib.parse import urlsplit
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 DEFAULT_CATALOG_DIR = REPO_ROOT / "plugin-catalog"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "website" / "static" / "api"
@@ -265,7 +265,7 @@ def load_catalog_entries(catalog_dir: Path, stars: dict[str, int] | None = None,
             "readme": raw.get("readme") is not False and bool(readme_url(repo, sha, subdir)),
             "readmeUrl": readme_url(repo, sha, subdir) if raw.get("readme") is not False else "",
             "maintainerSlug": maintainer_slug(str(raw.get("maintainer") or "")),
-            "installCommand": f"hermes plugins install {name}",
+            "installCommand": f"slave plugins install {name}",
             "stars": _repo_stars(repo, stars),
             "addedAt": dates.get(path.name, {}).get("addedAt"),
             "updatedAt": dates.get(path.name, {}).get("updatedAt"),

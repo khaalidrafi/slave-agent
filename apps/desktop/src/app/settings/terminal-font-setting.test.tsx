@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/hermes', () => ({
-  saveHermesConfig: (config: Record<string, unknown>) => mocks.save(config)
+  saveSlaveConfig: (config: Record<string, unknown>) => mocks.save(config)
 }))
 
 vi.mock('@/i18n', () => ({
@@ -41,8 +41,8 @@ vi.mock('@/store/notifications', () => ({
 }))
 
 vi.mock('../hooks/use-config-record', () => ({
-  setHermesConfigCache: (config: Record<string, unknown>) => mocks.cache(config),
-  useHermesConfigRecord: () => ({ data: mocks.loadedConfig, dataUpdatedAt: mocks.configUpdatedAt })
+  setSlaveConfigCache: (config: Record<string, unknown>) => mocks.cache(config),
+  useSlaveConfigRecord: () => ({ data: mocks.loadedConfig, dataUpdatedAt: mocks.configUpdatedAt })
 }))
 
 vi.mock('../hooks/use-on-profile-switch', () => ({
@@ -64,7 +64,7 @@ describe('TerminalFontSetting', () => {
     vi.useFakeTimers()
     mocks.configUpdatedAt = 1
     mocks.loadedConfig = {
-      display: { skin: 'hermes' },
+      display: { skin: 'slave' },
       terminal: { backend: 'local', cwd: '/workspace', font_family: '' }
     }
     mocks.save.mockResolvedValue({ ok: true })
@@ -93,7 +93,7 @@ describe('TerminalFontSetting', () => {
     // gets the merged record so sibling terminal keys survive.
     expect(mocks.save).toHaveBeenCalledWith({ terminal: { font_family: 'MesloLGS NF' } })
     expect(mocks.cache).toHaveBeenCalledWith({
-      display: { skin: 'hermes' },
+      display: { skin: 'slave' },
       terminal: { backend: 'local', cwd: '/workspace', font_family: 'MesloLGS NF' }
     })
   })

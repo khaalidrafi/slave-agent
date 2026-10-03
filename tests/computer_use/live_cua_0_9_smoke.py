@@ -84,7 +84,7 @@ end run
 
 
 async def run_smoke(socket_path: str) -> dict[str, dict[str, Any]]:
-    session_id = f"hermes-cua-live-{uuid.uuid4().hex[:8]}"
+    session_id = f"slave-cua-live-{uuid.uuid4().hex[:8]}"
     params = StdioServerParameters(
         command="cua-driver",
         args=["mcp", "--embedded", "--socket", socket_path],
@@ -98,7 +98,7 @@ async def run_smoke(socket_path: str) -> dict[str, dict[str, Any]]:
     browser_pid: int | None = None
     prior_foreground_pids: set[int] = set()
     file_descriptor, temporary_name = tempfile.mkstemp(
-        prefix="hermes-cua-live-", suffix=".txt"
+        prefix="slave-cua-live-", suffix=".txt"
     )
     os.close(file_descriptor)
     smoke_path = Path(temporary_name)
@@ -189,7 +189,7 @@ async def run_smoke(socket_path: str) -> dict[str, dict[str, Any]]:
                                 "stage": "editor_discovery",
                             }
                         else:
-                            marker = "hermes foreground smoke"
+                            marker = "slave foreground smoke"
                             type_args = {
                                 "pid": launched_pid,
                                 "window_id": window_id,

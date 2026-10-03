@@ -1,4 +1,4 @@
-import { registryBackendScopeKey } from '@hermes/shared'
+import { registryBackendScopeKey } from '@slave-agent/shared'
 import { atom } from 'nanostores'
 
 import { $activeGatewayProfile } from '@/store/profile'

@@ -246,7 +246,7 @@ describe('toChatMessages', () => {
   })
 
   it('lifts the leading attachment block into the chip row, like the live bubble (large paste)', () => {
-    const paste = '@file:/home/u/.hermes/attachments/pasted_content_2026-09-27_21-33-42-827_55e028-2.txt'
+    const paste = '@file:/home/u/.slave/attachments/pasted_content_2026-09-27_21-33-42-827_55e028-2.txt'
 
     const [captioned, bare] = toChatMessages([
       {
@@ -287,13 +287,13 @@ describe('toChatMessages', () => {
     const [message] = toChatMessages([
       {
         role: 'assistant',
-        content: "MEDIA:/Users/brooklyn/.hermes/cache/audio/tts_20260501_222725.mp3\n\nhow's that sound?",
+        content: "MEDIA:/Users/brooklyn/.slave/cache/audio/tts_20260501_222725.mp3\n\nhow's that sound?",
         timestamp: 1
       }
     ])
 
     expect(chatMessageText(message)).toBe(
-      "[Audio: tts_20260501_222725.mp3](#media:%2FUsers%2Fbrooklyn%2F.hermes%2Fcache%2Faudio%2Ftts_20260501_222725.mp3)\n\nhow's that sound?"
+      "[Audio: tts_20260501_222725.mp3](#media:%2FUsers%2Fbrooklyn%2F.slave%2Fcache%2Faudio%2Ftts_20260501_222725.mp3)\n\nhow's that sound?"
     )
   })
 
@@ -562,9 +562,9 @@ describe('toChatMessages', () => {
     ])
   })
 
-  // Hermes closes a failed turn with an assistant-role row (agent/turn_failure_copy.py);
+  // Slave closes a failed turn with an assistant-role row (agent/turn_failure_copy.py);
   // painted as the model's reply it read as the assistant refusing the request.
-  it('renders the failed-turn boundary as a Hermes notice, not a model reply', () => {
+  it('renders the failed-turn boundary as a slave-agent notice, not a model reply', () => {
     const messages = toChatMessages([
       { role: 'user', content: 'do the thing', timestamp: 1 },
       { role: 'assistant', content: 'Your request was not processed.', display_kind: 'failed_turn', timestamp: 2 }

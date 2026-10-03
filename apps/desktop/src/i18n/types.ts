@@ -469,7 +469,7 @@ export interface Translations {
       loadingSessions: string
       retryingRemoteBackend: string
       startingDesktopConnection: string
-      startingHermesDesktop: string
+      startingSlaveDesktop: string
     }
     errors: {
       backgroundExited: string
@@ -578,7 +578,7 @@ export interface Translations {
       openaiTtsNeedsKey: string
       codeSkewRestartRequired: string
       rpcOutOfSync: string
-      restartHermesFailed: string
+      restartSlaveFailed: string
     }
     actions: {
       restartHermes: string
@@ -1403,9 +1403,9 @@ export interface Translations {
       sshPortDesc: string
       sshKeyTitle: string
       sshKeyDesc: string
-      sshHermesPathTitle: string
-      sshHermesPathDesc: string
-      sshHermesPathPlaceholder: string
+      sshSlavePathTitle: string
+      sshSlavePathDesc: string
+      sshSlavePathPlaceholder: string
       sshTestConnection: string
       sshConnect: string
       sshButtonsHint: string
@@ -2117,7 +2117,7 @@ export interface Translations {
       serverStates: {
         connected: string
         app_not_running: string
-        hermes_not_connected: string
+        slave_not_connected: string
         endpoint_unavailable: string
         no_interactive_session: string
         version_too_old: string
@@ -2381,7 +2381,7 @@ export interface Translations {
     noSessions: string
     gatewayRunning: string
     gatewayStopped: string
-    hermesActiveSessions: (version: string, count: number) => string
+    slaveActiveSessions: (version: string, count: number) => string
     restartGateway: string
     openBrowser: string
     toggleBrowser: string
@@ -3792,8 +3792,8 @@ export interface Translations {
     alreadySignedInHeading: string
     alreadySignedInBody: string
     // First-launch set-up failure notice: the free tier could not be created at boot.
-    // One sentence per backend code (`hermes_cli/anon_auth.py::ANON_*`); the copy never says
-    // the free MODEL is off — what is unavailable is using Hermes without signing in.
+    // One sentence per backend code (`slave_cli/anon_auth.py::ANON_*`); the copy never says
+    // the free MODEL is off — what is unavailable is using Slave without signing in.
     setupFailed: {
       gateClosed: string
       paused: string
@@ -4328,8 +4328,8 @@ export interface Translations {
       errorChooseModel: string
       errorCompressConversation: string
       errorCompressFailed: string
-      errorOpenHermesFolder: string
-      errorOpenHermesFolderFailed: string
+      errorOpenSlaveFolder: string
+      errorOpenSlaveFolderFailed: string
       errorUpdateApiKey: string
       /** One-click recovery for an expired/revoked OAuth grant: re-runs that
        *  provider's sign-in flow (auth layer, authKind 'oauth'). */

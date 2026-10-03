@@ -1,4 +1,4 @@
-import { compactNumber } from '@hermes/shared'
+import { compactNumber } from '@slave-agent/shared'
 import { useStore } from '@nanostores/react'
 import { useCallback, useMemo, useState } from 'react'
 
@@ -30,7 +30,7 @@ import { filteredToolsets, toolsetCalls, TOOLSETS_QUERY_KEY, toolsetsQueryKey } 
 
 // Sort direction for the Tools list — persisted so the tab remembers
 // most/least-used across navigations and restarts.
-const $toolsetsSortDesc = persistentAtom('hermes.desktop.capabilities.toolsetsSortDesc', true, Codecs.bool)
+const $toolsetsSortDesc = persistentAtom('slave.desktop.capabilities.toolsetsSortDesc', true, Codecs.bool)
 
 interface ToolsetsTabProps {
   /** The scope's toolset list, straight from the shell's query. */

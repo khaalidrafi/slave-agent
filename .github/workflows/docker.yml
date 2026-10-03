@@ -58,7 +58,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  IMAGE_NAME: nousresearch/hermes-agent
+  IMAGE_NAME: nousresearch/slave-agent
 
 jobs:
   # Resolve the release phase. Release modes run only via workflow_call from
@@ -216,7 +216,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           tags: ${{ env.IMAGE_NAME }}:test
           build-args: |
-            HERMES_BOT_DESKTOP=${{ matrix.variant == 'desktop' && '1' || '0' }}
+            SLAVE_BOT_DESKTOP=${{ matrix.variant == 'desktop' && '1' || '0' }}
           # Slim owns the scope; desktop adds the gated apt layer, so it reads
           # and writes nothing — a mode=max scope could exceed the cache cap.
           cache-from: type=gha,scope=docker-${{ matrix.arch }}
@@ -225,7 +225,7 @@ jobs:
 
       # Run the docker-integration test suite against the freshly-built image
       # already loaded into the local daemon (`:test`). The fixture's
-      # HERMES_TEST_IMAGE branch short-circuits the rebuild. Release tests
+      # SLAVE_TEST_IMAGE branch short-circuits the rebuild. Release tests
       # archive these exact bytes rather than rebuilding at publish time.
       # Park the stamp while PM provisions the runner, then restore it so
       # tests/docker can compare the image's provenance with the checkout.
@@ -247,7 +247,7 @@ jobs:
         if: inputs.skip-tests != true
         env:
           # Skip rebuild; use the image already loaded by the build step.
-          HERMES_TEST_IMAGE: ${{ env.IMAGE_NAME }}:test
+          SLAVE_TEST_IMAGE: ${{ env.IMAGE_NAME }}:test
           # Match the policy in tests.yml :: test job — no accidental
           # real-API calls from inside the harness.
           OPENROUTER_API_KEY: ""
@@ -257,7 +257,7 @@ jobs:
           # Each of these tests drives a container, so the docker daemon sets
           # the limit and not the processor. This pins the runner's worker
           # count to the core count.
-          HERMES_TEST_WORKERS=$(nproc) scripts/run_tests.sh tests/docker/
+          SLAVE_TEST_WORKERS=$(nproc) scripts/run_tests.sh tests/docker/
 
       - name: Verify release image identity
         if: needs.mode.outputs.phase == 'test'
@@ -390,7 +390,7 @@ jobs:
           file: Dockerfile
           platforms: ${{ matrix.platform }}
           build-args: |
-            HERMES_BOT_DESKTOP=${{ matrix.variant == 'desktop' && '1' || '0' }}
+            SLAVE_BOT_DESKTOP=${{ matrix.variant == 'desktop' && '1' || '0' }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
@@ -712,7 +712,7 @@ jobs:
           import json, sys
           manifest = json.load(open("/tmp/manifest/manifest.json"))
           manifest["list-digest"] = sys.argv[2]
-          manifest["image"] = "nousresearch/hermes-agent"
+          manifest["image"] = "nousresearch/slave-agent"
           manifest["tags"] = [sys.argv[1]]
           json.dump(manifest, open("/tmp/manifest/manifest.json", "w"), indent=2)
           EOF

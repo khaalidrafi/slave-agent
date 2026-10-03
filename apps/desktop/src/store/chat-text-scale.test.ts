@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 
-const KEY = 'hermes.desktop.chat-text-scale.v1'
+const KEY = 'slave.desktop.chat-text-scale.v1'
 
 beforeEach(() => {
   vi.resetModules()

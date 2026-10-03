@@ -7,7 +7,7 @@ describe('Webhook REST parity helpers', () => {
 
   beforeEach(() => {
     api = vi.fn().mockResolvedValue({})
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'slaveDesktop', {
       configurable: true,
       value: { api }
     })
@@ -15,7 +15,7 @@ describe('Webhook REST parity helpers', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    Reflect.deleteProperty(window, 'hermesDesktop')
+    Reflect.deleteProperty(window, 'slaveDesktop')
   })
 
   it('encodes the name when deleting a subscription', async () => {

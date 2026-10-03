@@ -26,18 +26,18 @@ const desktop = (over: Partial<PluginRecord>): PluginRecord => ({
 describe('mergePluginPackages', () => {
   it('shows a unified package as ONE row with both halves, never two rows', () => {
     const rows = mergePluginPackages(
-      [desktop({ id: 'media', name: 'Media Studio', packageName: 'hermes-media-studio' })],
-      [agent({ name: 'hermes-media-studio', has_desktop_half: true, description: 'Generate media.' })]
+      [desktop({ id: 'media', name: 'Media Studio', packageName: 'slave-media-studio' })],
+      [agent({ name: 'slave-media-studio', has_desktop_half: true, description: 'Generate media.' })]
     )
 
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: 'both', agentMissingInProfile: false, desktopMissing: false })
     expect(rows[0].desktop?.id).toBe('media')
-    expect(rows[0].agent?.name).toBe('hermes-media-studio')
+    expect(rows[0].agent?.name).toBe('slave-media-studio')
   })
 
   it('a desktop half whose agent half is absent from THIS profile offers the install-here affordance', () => {
-    const rows = mergePluginPackages([desktop({ id: 'media', packageName: 'hermes-media-studio' })], [])
+    const rows = mergePluginPackages([desktop({ id: 'media', packageName: 'slave-media-studio' })], [])
 
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: 'both', agent: null, agentMissingInProfile: true })
@@ -59,49 +59,49 @@ describe('mergePluginPackages', () => {
     const rows = mergePluginPackages(
       [
         desktop({
-          id: 'hermes-talk',
-          name: 'Hermes Talk',
-          description: 'GPT-Live subscription or explicit API voice, with Hermes task delegation.',
-          packageName: 'hermes-talk',
-          file: '/Users/me/.hermes/desktop-plugins/hermes-talk/plugin.js'
+          id: 'slave-talk',
+          name: 'slave-agent Talk',
+          description: 'GPT-Live subscription or explicit API voice, with slave-agent task delegation.',
+          packageName: 'slave-talk',
+          file: '/Users/me/.slave/desktop-plugins/hermes-talk/plugin.js'
         })
       ],
-      [agent({ name: 'hermes-talk', has_desktop_half: true, version: '0.21.0' })]
+      [agent({ name: 'slave-talk', has_desktop_half: true, version: '0.21.0' })]
     )
 
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({
-      key: 'hermes-talk',
-      name: 'Hermes Talk',
+      key: 'slave-talk',
+      name: 'slave-agent Talk',
       kind: 'both',
       desktopMissing: false,
       agentMissingInProfile: false
     })
-    expect(rows[0].desktop?.id).toBe('hermes-talk')
-    expect(rows[0].agent?.name).toBe('hermes-talk')
+    expect(rows[0].desktop?.id).toBe('slave-talk')
+    expect(rows[0].agent?.name).toBe('slave-talk')
   })
 
   it('keeps an unmarked app-root copy its own row rather than guessing from the folder name', () => {
     const rows = mergePluginPackages(
       [
         desktop({
-          id: 'hermes-talk',
-          name: 'Hermes Talk',
-          file: '/Users/me/.hermes/desktop-plugins/hermes-talk/plugin.js'
+          id: 'slave-talk',
+          name: 'slave-agent Talk',
+          file: '/Users/me/.slave/desktop-plugins/hermes-talk/plugin.js'
         })
       ],
-      [agent({ name: 'hermes-talk', has_desktop_half: true })]
+      [agent({ name: 'slave-talk', has_desktop_half: true })]
     )
 
     expect(rows.map(row => [row.key, row.kind])).toEqual([
-      ['hermes-talk', 'both'],
-      ['desktop:hermes-talk', 'desktop']
+      ['slave-talk', 'both'],
+      ['desktop:slave-talk', 'desktop']
     ])
   })
 
   it('leaves a same-named standalone desktop plugin alone when the agent package has no desktop half', () => {
     const rows = mergePluginPackages(
-      [desktop({ id: 'clock', name: 'Clock', file: '/Users/me/.hermes/desktop-plugins/clock/plugin.js' })],
+      [desktop({ id: 'clock', name: 'Clock', file: '/Users/me/.slave/desktop-plugins/clock/plugin.js' })],
       [agent({ name: 'clock' })]
     )
 

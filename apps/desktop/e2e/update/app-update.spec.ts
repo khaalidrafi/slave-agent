@@ -1,7 +1,7 @@
 /**
  * Failure class: APP-DRIVEN UPDATE completes.
  *
- * A user on a healthy local install (scripts/install.sh + `hermes desktop`)
+ * A user on a healthy local install (scripts/install.sh + `slave desktop`)
  * sees "Update now" in Settings → About when upstream main moves, clicks it,
  * and the app hands off to the updater, quits, updates, and comes back:
  *   - the backend checkout is on the new upstream commit, clean;
@@ -11,7 +11,7 @@
  *   - the updated app reports itself current (no update offered again).
  *
  * Real entry points only: the About panel's button and the app's own
- * hand-off (scripts/desktop-update/posix.sh → `hermes update`). Fakes: the git
+ * hand-off (scripts/desktop-update/posix.sh → `slave update`). Fakes: the git
  * server (local bare origin) and the LLM provider.
  */
 
@@ -68,7 +68,7 @@ test('clicking Update now moves the backend to the new commit, relaunches the ap
 
     await test.step('the update lands and the app relaunches itself', async () => {
       await waitFor(
-        'the updater to finish `hermes update`',
+        'the updater to finish `slave update`',
         () => /hermes update exit code: \d+/.test(handoffLog(facts)),
         {
           timeout: 8 * 60_000,
@@ -76,7 +76,7 @@ test('clicking Update now moves the backend to the new commit, relaunches the ap
           explain: () => explain(`handoff log:\n${handoffLog(facts)}`)
         }
       )
-      expect(handoffLog(facts), `the updater's hermes update succeeded\n${explain()}`).toMatch(
+      expect(handoffLog(facts), `the updater's slave update succeeded\n${explain()}`).toMatch(
         /hermes update exit code: 0\s*$|retry exit code: 0/m
       )
       expect(git(facts.checkout, 'rev-parse', 'HEAD'), 'the backend checkout is on the new upstream commit').toBe(

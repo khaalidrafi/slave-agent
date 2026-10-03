@@ -1,14 +1,14 @@
 """Lane-private helpers for the upgrade / install-integrity and config round-trip suites.
 
-Every Hermes process these suites spawn runs:
+Every slave-agent process these suites spawn runs:
 
-* with a HOME/HERMES_HOME under the test's tmp dir and an environment built from an
-  allowlist (no inherited ``*_API_KEY`` / ``HERMES_*``), so only the fake provider is
+* with a HOME/SLAVE_HOME under the test's tmp dir and an environment built from an
+  allowlist (no inherited ``*_API_KEY`` / ``SLAVE_*``), so only the fake provider is
   configured;
 * inside a ``bwrap`` sandbox when bubblewrap is usable: its own PID namespace (the
   updater's process-table scans cannot see, let alone signal, any real gateway on the
   host), a tmpfs over ``/run/user/<uid>`` (no user systemd bus), the real
-  ``~/.hermes`` bind-mounted read-only, and ``--die-with-parent`` so killing the
+  ``~/.slave`` bind-mounted read-only, and ``--die-with-parent`` so killing the
   sandbox kills every descendant (no orphans);
 * with ``systemctl``/``launchctl``/``sudo``/``loginctl`` shims first on PATH that log
   their argv and fail, so a service-restart attempt is observable and never reaches a
@@ -90,19 +90,19 @@ def isolated_env(
     pythonpath: Path | None = None,
     extra: dict[str, str] | None = None,
 ) -> dict[str, str]:
-    """Allowlisted environment with HOME/HERMES_HOME under ``root``."""
+    """Allowlisted environment with HOME/SLAVE_HOME under ``root``."""
     home = root / "home"
-    hermes_home = home / ".hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    slave_home = home / ".slave"
+    slave_home.mkdir(parents=True, exist_ok=True)
     shim_dir = root / "shims"
     write_shims(shim_dir)
     env = {k: os.environ[k] for k in _ENV_ALLOW if k in os.environ}
     env.setdefault("LANG", "C.UTF-8")
     env.update(
         HOME=str(home),
-        HERMES_HOME=str(hermes_home),
+        SLAVE_HOME=str(slave_home),
         # The pytest ancestor marks this child as guarded; its HOME is already the sandbox.
-        HERMES_STATE_DB_GUARD_BYPASS="1",
+        SLAVE_STATE_DB_GUARD_BYPASS="1",
         XDG_RUNTIME_DIR=str(root / "run"),
         XDG_CONFIG_HOME=str(home / ".config"),
         XDG_DATA_HOME=str(home / ".local" / "share"),
@@ -112,7 +112,7 @@ def isolated_env(
         TERM="dumb",
         PYTHONUNBUFFERED="1",
         PYTHONHASHSEED="0",
-        HERMES_DISABLE_LAZY_INSTALLS="1",
+        SLAVE_DISABLE_LAZY_INSTALLS="1",
         TIRITH_ENABLED="false",
         GIT_TERMINAL_PROMPT="0",
         GIT_CONFIG_NOSYSTEM="1",
@@ -122,12 +122,12 @@ def isolated_env(
     )
     (root / "run").mkdir(parents=True, exist_ok=True)
     # Reuse the host uv cache (read/write, uv is concurrency-safe) so dependency syncs are
-    # warm; never the real ~/.hermes.
+    # warm; never the real ~/.slave.
     real_uv_cache = Path(os.environ.get("UV_CACHE_DIR") or REAL_HOME / ".cache" / "uv")
     if real_uv_cache.is_dir():
         env["UV_CACHE_DIR"] = str(real_uv_cache)
     base_path = os.environ.get("PATH", "/usr/bin:/bin")
-    uv = shutil.which("uv") or (str(REAL_HOME / ".hermes" / "bin" / "uv") if (REAL_HOME / ".hermes" / "bin" / "uv").exists() else None)
+    uv = shutil.which("uv") or (str(REAL_HOME / ".slave" / "bin" / "uv") if (REAL_HOME / ".slave" / "bin" / "uv").exists() else None)
     path_parts = [str(shim_dir), *[str(p) for p in extra_path]]
     if uv:
         path_parts.append(str(Path(uv).parent))
@@ -154,7 +154,7 @@ def sandbox_argv(argv: Sequence[str], *, writable: Iterable[Path], unshare_net: 
     # The child's allowlisted PATH may omit the Nix-provided bwrap (notably a login shell
     # with a clean distro PATH); resolve it in the parent before wrapping the command.
     cmd = [shutil.which("bwrap") or "bwrap", "--dev-bind", "/", "/"]
-    real_hermes = REAL_HOME / ".hermes"
+    real_hermes = REAL_HOME / ".slave"
     if real_hermes.is_dir():
         cmd += ["--ro-bind", str(real_hermes), str(real_hermes)]
     for w in writable:

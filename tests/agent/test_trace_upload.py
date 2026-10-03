@@ -26,7 +26,7 @@ from agent.trace_upload import (
 
 def _sample_messages():
     return [
-        {"role": "system", "content": "you are hermes"},
+        {"role": "system", "content": "you are slave"},
         {"role": "user", "content": "list files"},
         {"role": "assistant", "content": "Listing.", "tool_calls": [
             {"id": "call_1", "function": {"name": "terminal", "arguments": '{"command": "ls"}'}},
@@ -101,7 +101,7 @@ def test_converter_keeps_secrets_when_redact_disabled():
 def test_load_session_messages_closes_database_on_failure(monkeypatch):
     db = MagicMock()
     db.resolve_session_id.side_effect = RuntimeError("read failed")
-    monkeypatch.setattr("hermes_state.SessionDB", lambda db_path=None: db)
+    monkeypatch.setattr("slave_state.SessionDB", lambda db_path=None: db)
 
     with pytest.raises(RuntimeError, match="read failed"):
         load_session_messages("s1")

@@ -30,8 +30,8 @@ def main():
     receipt = Path(os.environ['HANDOFF_CAPTURE'])
     previous = receipt.read_text(encoding='utf-8') if receipt.exists() else ''
     with receipt.open('a', encoding='utf-8') as stream:
-        stream.write(json.dumps({'argv': sys.argv[1:], 'home': os.environ.get('HERMES_HOME'),
-                                 'install_root': os.environ.get('HERMES_INSTALL_ROOT'),
+        stream.write(json.dumps({'argv': sys.argv[1:], 'home': os.environ.get('SLAVE_HOME'),
+                                 'install_root': os.environ.get('SLAVE_INSTALL_ROOT'),
                                  'cwd': os.getcwd()}) + '\\n')
     print('Desktop build failed') if os.environ.get('HANDOFF_EXIT') else None
     sys.exit(int(os.environ['HANDOFF_EXIT']) if 'HANDOFF_EXIT' in os.environ else (1 if not previous else 0))
@@ -52,7 +52,7 @@ def _run_handoff(tmp_path, target, *, windows=False, inherited_home=True, modern
         )
     package = (
         install / "venv" / "Lib" / "site-packages" if windows and not modern else install
-    ) / "hermes_cli"
+    ) / "slave_cli"
     package.mkdir(parents=True)
     (package / "__init__.py").touch()
     (package / "main.py").write_text(FAKE_CLI, encoding="utf-8")
@@ -69,19 +69,19 @@ def _run_handoff(tmp_path, target, *, windows=False, inherited_home=True, modern
         **os.environ,
         "HOME": str(tmp_path),
         "TMPDIR": str(tmp_path),
-        "HERMES_INSTALL_ROOT": str(install),
+        "SLAVE_INSTALL_ROOT": str(install),
         "HANDOFF_CAPTURE": str(capture),
     }
     env.pop("PYTHONPATH", None)
     env.pop("PYTHONHOME", None)
-    env.pop("HERMES_HOME", None)
+    env.pop("SLAVE_HOME", None)
     if inherited_home:
-        env["HERMES_HOME"] = str(home)
+        env["SLAVE_HOME"] = str(home)
     if modern:
         env["HANDOFF_EXIT"] = str(code)
         if foreign:
             env["HANDOFF_FOREIGN"] = str(tmp_path)
-        env["HERMES_RUNTIME_DIR"] = str(tmp_path / "empty-store")
+        env["SLAVE_RUNTIME_DIR"] = str(tmp_path / "empty-store")
     if windows:
         # The disposable runtime has only the fixture CLI; verification is outside
         # this transport contract and runs its own harmless fixture implementation.
@@ -105,12 +105,12 @@ def _run_handoff(tmp_path, target, *, windows=False, inherited_home=True, modern
             bin_dir = install / "venv" / "bin"
             bin_dir.mkdir(parents=True)
             (bin_dir / "python3").symlink_to(sys.executable)
-            hermes = bin_dir / "hermes"
-            hermes.write_text(
-                f'#!/usr/bin/env bash\nexec {shlex.quote(sys.executable)} -m hermes_cli.main "$@"\n',
+            slave = bin_dir / "slave"
+            slave.write_text(
+                f'#!/usr/bin/env bash\nexec {shlex.quote(sys.executable)} -m slave_cli.main "$@"\n',
                 encoding="utf-8",
             )
-            hermes.chmod(0o755)
+            slave.chmod(0o755)
         command = [
             "bash",
             str(SCRIPTS / "posix.sh"),
@@ -266,5 +266,5 @@ def test_earlier_pm_userbin_publication_requires_exact_source_identity(tmp_path,
     result, calls, home, install = _run_handoff(tmp_path, [], modern=True, userbin_only=True, foreign=foreign)
     assert result.returncode == (3 if foreign else 0), result.stdout + result.stderr
     assert len(calls) == (0 if foreign else 1)
-    assert not (install / '.hermes/bin/hermes').exists()
+    assert not (install / '.slave/bin/hermes').exists()
     assert not (install / 'venv').exists()

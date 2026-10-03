@@ -1,4 +1,4 @@
-import type { ConnectorAccountRow, ConnectorToolsResult } from '@hermes/shared'
+import type { ConnectorAccountRow, ConnectorToolsResult } from '@slave-agent/shared'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 

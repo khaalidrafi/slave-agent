@@ -59,7 +59,7 @@ class TestIRCAdapterLockConflict:
             raise AssertionError("socket must not be opened on a lock conflict")
         monkeypatch.setattr(asyncio, "open_connection", _no_connect)
         adapter = IRCAdapter(PlatformConfig(enabled=True, extra={
-            "server": "irc.example", "nickname": "hermes", "channel": "#x"}))
+            "server": "irc.example", "nickname": "slave", "channel": "#x"}))
         assert await adapter.connect() is False
         assert adapter._fatal_error_code == "irc_lock"
         assert "other" in adapter._fatal_error_message
@@ -115,13 +115,13 @@ class TestIRCAdapterMessageParsing:
             extra={
                 "server": "localhost",
                 "port": 6667,
-                "nickname": "hermes",
+                "nickname": "slave",
                 "channel": "#test",
                 "use_tls": False,
             },
         )
         a = IRCAdapter(cfg)
-        a._current_nick = "hermes"
+        a._current_nick = "slave"
         a._registered = True
         return a
 
@@ -141,7 +141,7 @@ class TestIRCAdapterMessageParsing:
 
         adapter._dispatch_message = capture_dispatch
 
-        await adapter._handle_line(":user!u@host PRIVMSG #test :hermes: hello there")
+        await adapter._handle_line(":user!u@host PRIVMSG #test :slave: hello there")
         assert len(dispatched) == 1
         assert dispatched[0]["text"] == "hello there"
         assert dispatched[0]["chat_id"] == "#test"
@@ -171,7 +171,7 @@ class TestIRCAdapterMessageParsing:
         adapter._dispatch_message = capture_dispatch
         adapter._message_handler = AsyncMock()
 
-        await adapter._handle_line(":user!u@host PRIVMSG hermes :\x01ACTION waves\x01")
+        await adapter._handle_line(":user!u@host PRIVMSG slave :\x01ACTION waves\x01")
         assert len(dispatched) == 1
         assert dispatched[0]["text"] == "* user waves"
 
@@ -187,14 +187,14 @@ class TestIRCAdapterMessageParsing:
             extra={
                 "server": "localhost",
                 "port": 6667,
-                "nickname": "hermes",
+                "nickname": "slave",
                 "channel": "#test",
                 "use_tls": False,
                 "allowed_users": ["Admin", "BOB"],
             },
         )
         adapter = IRCAdapter(cfg)
-        adapter._current_nick = "hermes"
+        adapter._current_nick = "slave"
         adapter._registered = True
         dispatched = []
 
@@ -204,7 +204,7 @@ class TestIRCAdapterMessageParsing:
         adapter._dispatch_message = capture_dispatch
         adapter._message_handler = AsyncMock()
 
-        await adapter._handle_line(":eve!u@host PRIVMSG #test :hermes: hello")
+        await adapter._handle_line(":eve!u@host PRIVMSG #test :slave: hello")
         assert len(dispatched) == 0
 
 
@@ -348,7 +348,7 @@ class TestIRCStandaloneSend:
         # NICK uses the cron-suffixed identity to avoid colliding with the
         # long-running gateway adapter that may already hold the nickname.
         assert any(line.startswith("NICK hermesbot-cron") for line in sent_lines)
-        assert any(line.startswith("USER hermesbot-cron 0 * :Hermes Agent (cron)")
+        assert any(line.startswith("USER hermesbot-cron 0 * :slave-agent (cron)")
                    for line in sent_lines)
         assert any(line == "PRIVMSG #cron :hello from cron" for line in sent_lines)
         assert any(line.startswith("QUIT ") for line in sent_lines)

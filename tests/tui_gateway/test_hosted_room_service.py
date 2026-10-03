@@ -367,7 +367,7 @@ def test_create_send_drive_publish_and_replay_without_client_transport(tmp_path:
         room_id="room-1",
         name="Release room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -404,7 +404,7 @@ def test_restart_republishes_terminal_task_before_admitting_more(tmp_path: Path)
         room_id="room-1",
         name="Release room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -571,7 +571,7 @@ def test_same_thread_followup_migrates_and_delivers_committed_peer_reply(
         room_id="room-1",
         name="Shared context room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -624,7 +624,7 @@ def test_active_same_thread_followup_waits_for_current_task(tmp_path: Path):
         room_id="room-1",
         name="Serialized room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -667,7 +667,7 @@ def test_thread_transcript_prunes_committed_message_and_settlement_together(
         room_id="room-1",
         name="Bounded room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -707,7 +707,7 @@ def test_thread_transcript_prunes_committed_message_and_settlement_together(
 
 
 def test_service_derives_room_deadline_from_agent_timeout(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", "90")
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", "90")
 
     service = HostedRoomService(_server(), db_path=tmp_path / "state.db")
 
@@ -802,7 +802,7 @@ def test_stop_fence_prevents_the_next_room_member_from_starting(
         room_id="room-1",
         name="Release room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -848,7 +848,7 @@ def test_acknowledged_stop_refuses_to_disband_while_exact_turn_is_still_running(
         room_id="room-1",
         name="Release room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -912,7 +912,7 @@ def test_local_pending_approval_requires_exact_task_generation_and_request(
         room_id="room-1",
         name="Release room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )
@@ -1842,7 +1842,7 @@ def test_peer_approval_is_scoped_visible_and_resolvable(tmp_path: Path):
             {
                 "member_id": "default",
                 "profile": "default",
-                "handle": "hermes",
+                "handle": "slave",
             },
             {
                 "member_id": "member-peer",
@@ -2033,7 +2033,7 @@ def test_peer_recovery_replays_the_same_execution_generation(tmp_path: Path):
         room_id="room-1",
         name="Peer room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {
                 "member_id": "member-peer",
                 "profile": "reviewer",
@@ -2073,10 +2073,10 @@ def test_peer_recovery_replays_the_same_execution_generation(tmp_path: Path):
 
 
 def test_local_profiles_skips_delete_tombstones_and_dot_dirs(tmp_path: Path):
-    """`hermes profile delete` leaves ``profiles/.deleted/<name>``; neither the tombstone dir, a
+    """`slave profile delete` leaves ``profiles/.deleted/<name>``; neither the tombstone dir, a
     tombstoned profile, nor a marker-less cron shell is a roster member (#106847: ``.deleted``
     failed validate_roster every cycle; #99392: side-effect dirs listed as bots)."""
-    from hermes_constants import mark_named_profile_deleted
+    from slave_constants import mark_named_profile_deleted
 
     profiles = tmp_path / "profiles"
     (profiles / "ops").mkdir(parents=True)

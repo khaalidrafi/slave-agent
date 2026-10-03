@@ -33,8 +33,8 @@ test.each([['repository', true, true], ['missing repository', false, true], ['no
       } else {
         const repositoryInfo = await packager.repositoryInfo
         assert.equal(repositoryInfo.user, 'NousResearch')
-        assert.equal(repositoryInfo.project, 'hermes-agent')
-        assert.deepEqual(await getPublishConfigs(packager, null, null, true), [{ owner: 'NousResearch', repo: 'hermes-agent', provider: 'github' }])
+        assert.equal(repositoryInfo.project, 'slave-agent')
+        assert.deepEqual(await getPublishConfigs(packager, null, null, true), [{ owner: 'NousResearch', repo: 'slave-agent', provider: 'github' }])
       }
     } finally { fs.rmSync(root, { recursive: true, force: true }) }
   }

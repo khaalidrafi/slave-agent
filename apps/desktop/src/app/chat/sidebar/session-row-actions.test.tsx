@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { atom } from 'nanostores'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesModule from '@/hermes'
+import type * as SlaveModule from '@/hermes'
 import type { SessionInfo } from '@/hermes'
 import type * as SessionStore from '@/store/session'
 import type * as SessionStatesStore from '@/store/session-states'
@@ -75,7 +75,7 @@ vi.mock('@/i18n', () => ({
 vi.mock('@/app/chat/profile-tag', () => ({ ProfileTag: () => null }))
 vi.mock('@/app/chat/session-drag', () => ({ startSessionDrag: vi.fn() }))
 vi.mock('@/hermes', async importOriginal => ({
-  ...(await importOriginal<typeof HermesModule>()),
+  ...(await importOriginal<typeof SlaveModule>()),
   renameSession: vi.fn(),
   setSessionUnreadRemote: vi.fn(() => Promise.resolve({ ok: true }))
 }))

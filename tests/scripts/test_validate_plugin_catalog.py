@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -194,11 +194,11 @@ def test_capabilities_list_of_non_strings_fails(tmp_path):
     )
 
 
-def test_bad_requires_hermes_spec_fails(tmp_path):
+def test_bad_requires_slave_spec_fails(tmp_path):
     _expect_error(tmp_path, {"requires_hermes": "banana"}, "requires_hermes")
 
 
-def test_comma_separated_requires_hermes_passes(tmp_path):
+def test_comma_separated_requires_slave_passes(tmp_path):
     entry = {**VALID_ENTRY, "requires_hermes": ">=0.19, <2.0"}
     path = write_entry(tmp_path, entry)
     result = run_validator(str(path))

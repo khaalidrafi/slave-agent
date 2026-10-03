@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { capabilityScoped, hermesApi, type ProfileScope, sessionReadOwnerPin } from '@/api/client'
+import { capabilityScoped, slaveApi, type ProfileScope, sessionReadOwnerPin } from '@/api/client'
 import {
   cachedTimelineIndex,
   previousPromptRowId,
@@ -54,7 +54,7 @@ export async function fetchHistoryWindow(
   // The Electron REST bridge cannot transfer AbortSignal over IPC. Cancellation
   // below releases the caller immediately and fences the eventual bounded read;
   // it does not pretend to cancel backend I/O or fall back to a full transcript.
-  const response = await hermesApi<HistoryWindowResponse>({
+  const response = await slaveApi<HistoryWindowResponse>({
     ...route,
     method: 'GET',
     path: `/api/sessions/${encodeURIComponent(storedId)}/messages/around?${query}`

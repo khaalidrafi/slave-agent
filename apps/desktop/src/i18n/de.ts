@@ -5,7 +5,7 @@ import { introDe } from './intro-de'
 
 export const deOverrides = {
   sharedMetrics: {
-    consentTitle: 'Hermes verbessern helfen?',
+    consentTitle: 'slave-agent verbessern helfen?',
     consentBody:
       'Geteilte Metriken enthalten nur begrenzte Zähler. Niemals Prompts, Dateien, Pfade oder Fehlertexte. Die Erfassung bleibt lokal. Das Senden an Nous ist eine separate Zustimmung.',
     whatIsCollected: 'Was erfasst wird',
@@ -17,9 +17,9 @@ export const deOverrides = {
     collectedReliability:
       'Update-Ergebnisse und -Dauer, Abstürze, Start- und Antwortzeiten, Zustand der Messaging-Plattformen',
     collectedUsage:
-      'Wie Hermes genutzt wird: Genauigkeit und Effizienz des Agenten (Treffer bei Bearbeitungen, Schleifen, Erholung nach Fehlern, Tokens und Tool-Aufrufe pro Aufgabe, Cache-Brüche), aktive Zeit pro Oberfläche und Desktop-Modus, welche App-Bereiche, Aktionen und Einstellungen genutzt, schnell geschlossen oder abgeschaltet werden, sowie Ergebnisse der Anbietereinrichtung',
+      'Wie slave-agent genutzt wird: Genauigkeit und Effizienz des Agenten (Treffer bei Bearbeitungen, Schleifen, Erholung nach Fehlern, Tokens und Tool-Aufrufe pro Aufgabe, Cache-Brüche), aktive Zeit pro Oberfläche und Desktop-Modus, welche App-Bereiche, Aktionen und Einstellungen genutzt, schnell geschlossen oder abgeschaltet werden, sowie Ergebnisse der Anbietereinrichtung',
     collectedMachine:
-      'Grobe Gerätedaten: RAM-Bereich, GPU-Typ, Alter und Kanal der Hermes-Version, Anzahl ausstehender Updates, ob ein lokaler Modellserver genutzt wird',
+      'Grobe Gerätedaten: RAM-Bereich, GPU-Typ, Alter und Kanal der Slave-Version, Anzahl ausstehender Updates, ob ein lokaler Modellserver genutzt wird',
     installId:
       'Beim Senden wird jedes Tagespaket an den Nous-Telemetriedienst hochgeladen. Pakete tragen die Installations-ID dieses Profils: eine feste zufällige UUID ohne persönliche Daten, zurückgesetzt durch Löschen des Shared-Metrics-Ordners.',
     consentWindow:
@@ -35,7 +35,7 @@ export const deOverrides = {
     sendLabel: 'Nutzungsstatistiken an Nous senden',
     sendDesc:
       'Jedes Tagespaket an den Nous-Telemetriedienst hochladen. Nur Daten aus einem Zustimmungsfenster werden gesendet. Erfordert aktive Erfassung.',
-    unavailable: 'Aktualisieren Sie das Hermes-Backend, um diese Einstellung zu ändern.',
+    unavailable: 'Aktualisieren Sie das Slave-Backend, um diese Einstellung zu ändern.',
     stripBody: 'Nur begrenzte Zähler, niemals Prompts oder Dateien.',
     stripChoices: { share: 'An Nous senden', local: 'Nur lokal', off: 'Nein danke' },
     stripDetails: 'Details'
@@ -65,7 +65,7 @@ export const deOverrides = {
     ownerMissing: 'Öffnen Sie diese Konversation erneut, um ihre Verbindungen zu verwalten.',
     search: 'App finden',
     empty: 'Keine passende App',
-    disclaimer: 'Das Verbinden ist freiwillig. Geben Sie nur den Apps Zugriff, die Hermes verwenden soll.',
+    disclaimer: 'Das Verbinden ist freiwillig. Geben Sie nur den Apps Zugriff, die slave-agent verwenden soll.',
     execution: 'Verbindungs-Tools',
     setup: server => `${server} einrichten`,
     openInBrowser: 'Im Browser öffnen',
@@ -98,7 +98,7 @@ export const deOverrides = {
       kindCatalog: 'MCP · Katalog',
       kindCustom: 'MCP · Benutzerdefiniert',
       kindPlugin: (plugin: string) => `MCP · Plugin ${plugin}`,
-      inCatalog: 'Im Hermes-Katalog',
+      inCatalog: 'Im Slave-Katalog',
       hostedTwin: 'Verwaltete Version verfügbar',
       alsoLocal: 'Läuft auch auf diesem Gerät',
       open: (name: string) => `${name} öffnen`,
@@ -147,7 +147,7 @@ export const deOverrides = {
       loading: 'Katalog und Server auf diesem Computer werden gelesen',
       emptyTitle: 'Noch keine Apps. Fügen Sie einen Server auf diesem Computer hinzu, um loszulegen.',
       noMatchTitle: 'Keine passenden Apps',
-      noMatchBody: 'Keine Treffer. Verweisen Sie Hermes auf Ihren eigenen MCP-Server, um ihn hinzuzufügen.',
+      noMatchBody: 'Keine Treffer. Verweisen Sie slave-agent auf Ihren eigenen MCP-Server, um ihn hinzuzufügen.',
       clearSearch: 'Suche löschen',
       hostedFailedTitle: 'Die gehosteten Apps sind nicht erreichbar.',
       hostedFailedBody:
@@ -163,7 +163,7 @@ export const deOverrides = {
       writeFailed: 'Diese Änderung wurde nicht gespeichert.',
       refreshFailed: 'Die Tool-Liste wurde nicht aktualisiert.',
       disconnectNoAccount:
-        'Hermes hat hier kein Konto zum Trennen. Aktualisieren Sie die Seite und versuchen Sie es erneut.',
+        'slave-agent hat hier kein Konto zum Trennen. Aktualisieren Sie die Seite und versuchen Sie es erneut.',
       disconnectRefused:
         'Nous kann diese Anmeldung gerade nicht entfernen. Schalten Sie die App stattdessen mit dem Schalter aus oder versuchen Sie es später erneut.'
     },
@@ -203,23 +203,23 @@ export const deOverrides = {
     dialog: {
       disconnect: 'Trennen',
       disconnectTitle: (name: string) => `${name} trennen?`,
-      disconnectBody: 'Hermes handelt nicht mehr über dieses Konto. Sie können sich jederzeit wieder verbinden.',
+      disconnectBody: 'slave-agent handelt nicht mehr über dieses Konto. Sie können sich jederzeit wieder verbinden.',
       menuRefreshTools: 'Tools aktualisieren',
       moreActions: 'Weitere Aktionen',
       removeServerTitle: (name: string) => `${name} entfernen?`,
       removeServerBody: 'Der Eintrag wird aus mcp.json auf diesem Computer entfernt. Sonst wird nichts gelöscht.',
-      appSwitch: (name: string) => `Hermes darf ${name} verwenden`,
+      appSwitch: (name: string) => `slave-agent darf ${name} verwenden`,
       waysTitle: (name: string) => `Wo ${name} läuft`,
       wayNotConnected: (name: string) => `Noch nicht verbunden. Melden Sie sich im Browser bei ${name} an.`,
       wayHosted: 'Verwaltet',
-      bothOn: (name: string) => `Beide sind an, daher sieht Hermes jedes ${name}-Tool doppelt.`,
+      bothOn: (name: string) => `Beide sind an, daher sieht slave-agent jedes ${name}-Tool doppelt.`,
       turnOffLocal: 'Lokalen Server ausschalten',
       providedByPlugin: (plugin: string) => `Bereitgestellt vom Plugin ${plugin}`,
       openPlugins: 'Tab „Plugins“ öffnen',
       nousLine: 'Nous-Apps folgen Ihrem Konto, nicht dem Profil.',
       rulesReadOnly: 'Die Regeln können gerade nicht geändert werden.',
       rulesAppOff: (name: string) => `Schalten Sie ${name} ein, um die Tools zu ändern.`,
-      rulesSignIn: 'Melden Sie sich an, um festzulegen, was Hermes hier darf.',
+      rulesSignIn: 'Melden Sie sich an, um festzulegen, was slave-agent hier darf.',
       orgNote: (count: number) => `Ihre Organisation hat ${count} Tool${count === 1 ? '' : 's'} deaktiviert.`,
       orgLink: 'Konnektor-Verwaltung öffnen',
       connectEnded: 'Die Anmeldung wurde nicht abgeschlossen.',
@@ -232,8 +232,8 @@ export const deOverrides = {
     tools: {
       title: 'Tools',
       notInstalledBody: 'Installieren Sie ihn auf diesem Gerät, um seine Tools zu sehen.',
-      summaryTitle: (name: string) => `Was Hermes mit ${name} tun darf`,
-      summaryPreviewTitle: (name: string) => `Was Hermes mit ${name} tun könnte, sobald Sie verbunden sind`,
+      summaryTitle: (name: string) => `Was slave-agent mit ${name} tun darf`,
+      summaryPreviewTitle: (name: string) => `Was slave-agent mit ${name} tun könnte, sobald Sie verbunden sind`,
       summaryCount: (count: number) => `${count} Tool${count === 1 ? '' : 's'}`,
       summaryAllTools: 'Alle Tools',
       summaryOther: 'Sonstige',
@@ -267,7 +267,7 @@ export const deOverrides = {
       retry: 'Erneut versuchen',
       goneTitle: (name: string) => `${name} ist nicht mehr im Katalog.`,
       goneBody:
-        'Hermes kann ihn nicht mehr aufrufen. Die Zeile bleibt, bis Sie sie entfernen, damit nichts verschwindet.',
+        'slave-agent kann ihn nicht mehr aufrufen. Die Zeile bleibt, bis Sie sie entfernen, damit nichts verschwindet.',
       remove: 'Entfernen',
       offTitle: (name: string) => `${name} ist aus.`,
       offBody: 'Schalten Sie ihn mit dem Schalter oben ein, um seine Tools zu laden.',
@@ -340,7 +340,7 @@ export const deOverrides = {
   },
   sessionImport: {
     title: 'Von einer anderen App fortfahren',
-    subtitle: 'Holen Sie eine Konversation in Hermes und machen Sie dort weiter, wo Sie aufgehört haben.',
+    subtitle: 'Holen Sie eine Konversation in slave-agent und machen Sie dort weiter, wo Sie aufgehört haben.',
     action: 'Session importieren',
     readingFrom: 'Lesen von',
     connectedComputer: 'dem verbundenen Computer',
@@ -359,19 +359,19 @@ export const deOverrides = {
     more: 'Weitere Sessions laden',
     messages: 'Nachrichten',
     choose: 'Eine Konversation, die sich lohnt',
-    chooseHelp: 'Wählen Sie eine Session, um ihren Verlauf zu lesen, bevor Sie sie in Hermes übernehmen.',
+    chooseHelp: 'Wählen Sie eine Session, um ihren Verlauf zu lesen, bevor Sie sie in slave-agent übernehmen.',
     previewLoading: 'Vorschau wird geöffnet',
     previewError: 'Vorschau nicht verfügbar',
     previewHelp:
       'Die Quelle wurde möglicherweise verschoben oder geändert. Aktualisieren Sie die Liste und versuchen Sie es erneut.',
     previewLimit: 'Vorschau für bessere Lesbarkeit gekürzt. Die vollständige Konversation wird importiert.',
     you: 'Sie',
-    snapshot: 'Diese Konversation ist bereits in Hermes. Öffnen Sie Ihre vorhandene Kopie, um weiterzumachen.',
+    snapshot: 'Diese Konversation ist bereits in Slave. Öffnen Sie Ihre vorhandene Kopie, um weiterzumachen.',
     copyNotice:
       'Kopiert den Konversationstext. Quelldateien bleiben unverändert. Tool-Ausgaben und Überlegungen werden nicht übernommen.',
     importing: 'Importieren…',
-    open: 'In Hermes öffnen',
-    continue: 'In Hermes fortfahren',
+    open: 'In slave-agent öffnen',
+    continue: 'In slave-agent fortfahren',
     importError: 'Diese Konversation konnte nicht importiert werden.'
   },
   common: {
@@ -438,21 +438,21 @@ export const deOverrides = {
       'Dieser Pfad befindet sich nicht auf diesem Computer, sondern auf dem Backend-Rechner. Verwenden Sie „Im Dateibaum anzeigen“.'
   },
   boot: {
-    ready: 'Hermes Desktop ist bereit',
+    ready: 'slave-agent Desktop ist bereit',
     desktopBootFailedWithMessage: message => `Desktop-Start fehlgeschlagen: ${message}`,
     steps: {
       connectingGateway: 'Live-Desktop-Gateway wird verbunden',
-      loadingSettings: 'Hermes-Einstellungen werden geladen',
+      loadingSettings: 'Slave-Einstellungen werden geladen',
       loadingSessions: 'Letzte Sessions werden geladen',
-      retryingRemoteBackend: 'Wird mit dem Remote-Hermes-Backend neu verbunden…',
+      retryingRemoteBackend: 'Wird mit dem Remote-Slave-Backend neu verbunden…',
       startingDesktopConnection: 'Desktop-Verbindung wird gestartet',
-      startingHermesDesktop: 'Hermes Desktop wird gestartet…'
+      startingSlaveDesktop: 'slave-agent Desktop wird gestartet…'
     },
     errors: {
-      backgroundExited: 'Der Hermes-Hintergrundprozess wurde beendet.',
-      backgroundExitedDuringStartup: 'Der Hermes-Hintergrundprozess wurde während des Starts beendet.',
+      backgroundExited: 'Der Slave-Hintergrundprozess wurde beendet.',
+      backgroundExitedDuringStartup: 'Der Slave-Hintergrundprozess wurde während des Starts beendet.',
       backendStopped: 'Backend gestoppt',
-      restartHermes: 'Hermes neu starten',
+      restartHermes: 'slave-agent neu starten',
       openLogs: 'Logs öffnen',
       desktopBootFailed: 'Desktop-Start fehlgeschlagen',
       gatewayConnectionLost: 'Verbindung zum Gateway verloren',
@@ -467,16 +467,16 @@ export const deOverrides = {
       ipcBridgeUnavailable: 'Der Desktop-IPC-Bridge ist nicht verfügbar.'
     },
     causes: {
-      exitedEarly: 'Der Hintergrunddienst von Hermes hat direkt nach dem Start aufgehört.',
-      timedOut: 'Der Hintergrunddienst von Hermes hat nicht rechtzeitig geantwortet.',
-      permission: 'Hermes konnte nicht in seinen Datenordner schreiben (Berechtigungsproblem).',
-      diskFull: 'Die Festplatte ist voll, deshalb konnte Hermes nicht starten.',
-      portInUse: 'Ein anderes Programm verwendet den Netzwerkport, den Hermes braucht.',
+      exitedEarly: 'Der Hintergrunddienst von slave-agent hat direkt nach dem Start aufgehört.',
+      timedOut: 'Der Hintergrunddienst von slave-agent hat nicht rechtzeitig geantwortet.',
+      permission: 'slave-agent konnte nicht in seinen Datenordner schreiben (Berechtigungsproblem).',
+      diskFull: 'Die Festplatte ist voll, deshalb konnte slave-agent nicht starten.',
+      portInUse: 'Ein anderes Programm verwendet den Netzwerkport, den slave-agent braucht.',
       installMissing:
-        'Ein Teil der Hermes-Installation fehlt. Wählen Sie „Installation reparieren“, um sie wiederherzustellen.'
+        'Ein Teil der Slave-Installation fehlt. Wählen Sie „Installation reparieren“, um sie wiederherzustellen.'
     },
     failure: {
-      title: 'Hermes konnte nicht gestartet werden',
+      title: 'slave-agent konnte nicht gestartet werden',
       description:
         'Das Hintergrund-Gateway ist nicht gestartet. Probieren Sie einen der Wiederherstellungsschritte unten. Keiner davon löscht Ihre Chats oder Einstellungen.',
       details: 'Details',
@@ -527,13 +527,13 @@ export const deOverrides = {
     copyDetailFailed: 'Notification-Detail konnte nicht kopiert werden',
     backendOutOfDateTitle: 'Backend veraltet',
     backendOutOfDateMessage:
-      'Ihr Hermes-Backend ist älter als dieser Desktop-Build und funktioniert möglicherweise nicht richtig. Aktualisieren Sie, um beide abzugleichen.',
-    desktopOutOfDateTitle: 'Hermes-App veraltet',
+      'Ihr Slave-Backend ist älter als dieser Desktop-Build und funktioniert möglicherweise nicht richtig. Aktualisieren Sie, um beide abzugleichen.',
+    desktopOutOfDateTitle: 'Slave-App veraltet',
     desktopOutOfDateMessage:
-      'Diese Hermes-App ist älter als das verbundene Backend und funktioniert möglicherweise nicht richtig. Aktualisieren Sie die App, um beide abzugleichen.',
+      'Diese Slave-App ist älter als das verbundene Backend und funktioniert möglicherweise nicht richtig. Aktualisieren Sie die App, um beide abzugleichen.',
     updateDesktopApp: 'App aktualisieren',
     installMethodUnsupportedTitle: 'Nicht unterstützte Installationsmethode',
-    updateHermes: 'Hermes aktualisieren',
+    updateHermes: 'slave-agent aktualisieren',
     updateReadyTitle: 'Update bereit',
     updateReadyMessage: count => `${count} neue Änderung${count === 1 ? '' : 'en'} verfügbar.`,
     updateReadyMessageUnknown: 'Ein neues Update ist verfügbar.',
@@ -555,10 +555,10 @@ export const deOverrides = {
       elevenLabsRejectedKey: 'ElevenLabs hat den API-Key abgelehnt (401).',
       diskFull: 'Festplatte voll – geben Sie Speicherplatz frei und versuchen Sie es dann erneut.',
       storageFailure:
-        'Hermes konnte nicht in seinen Datenordner speichern. Öffnen Sie die Wartung, um das Problem zu prüfen und zu beheben.',
+        'slave-agent konnte nicht in seinen Datenordner speichern. Öffnen Sie die Wartung, um das Problem zu prüfen und zu beheben.',
       gatewayAuthFailed: 'Gateway-Authentifizierung fehlgeschlagen – überprüfen Sie Ihren API_SERVER_KEY.',
       methodNotAllowed:
-        'Das Desktop-Backend hat diese Anfrage abgelehnt (405 Method Not Allowed). Starten Sie Hermes Desktop neu.',
+        'Das Desktop-Backend hat diese Anfrage abgelehnt (405 Method Not Allowed). Starten Sie slave-agent Desktop neu.',
       microphonePermission: 'Die Mikrofonberechtigung wurde verweigert.',
       openaiRejectedApiKey:
         'OpenAI hat Ihren API-Key abgelehnt. Aktualisieren Sie ihn unter Einstellungen → Schlüssel und versuchen Sie es erneut.',
@@ -566,10 +566,10 @@ export const deOverrides = {
       codeSkewRestartRequired:
         'Dieses Backend läuft nach einem Update mit altem Code. Starten Sie es neu, um den neuen Code zu laden.',
       rpcOutOfSync: 'App und Backend laufen in unterschiedlichen Versionen. Aktualisieren Sie beide.',
-      restartHermesFailed: 'Hermes konnte nicht neu gestartet werden'
+      restartSlaveFailed: 'slave-agent konnte nicht neu gestartet werden'
     },
     actions: {
-      restartHermes: 'Hermes neu starten',
+      restartHermes: 'slave-agent neu starten',
       openKeys: 'Schlüssel öffnen',
       openGateways: 'Gateways öffnen',
       openMaintenance: 'Wartung öffnen'
@@ -597,7 +597,7 @@ export const deOverrides = {
       liveEndedConnectionLost: 'Die Live-Sprach-Session hat die Verbindung verloren.',
       liveEndedClosed: 'Die Live-Sprach-Session wurde vom Dienst geschlossen.',
       liveError: 'Live-Sprache',
-      liveDelegationFailed: 'Anfrage konnte nicht an Hermes übergeben werden',
+      liveDelegationFailed: 'Anfrage konnte nicht an slave-agent übergeben werden',
       liveUnavailable: reason =>
         `GPT-Live-Sprachchat ist nicht verfügbar: ${reason}. Stattdessen wird Sprache-zu-Text verwendet.`
     },
@@ -608,8 +608,8 @@ export const deOverrides = {
       rejectAction: 'Ablehnen',
       inputTitle: 'Eingabe erforderlich',
       inputTitleNamed: session => `Eingabe erforderlich — ${session}`,
-      inputBody: 'Hermes wartet auf Ihre Antwort.',
-      turnDoneTitle: 'Hermes fertig',
+      inputBody: 'slave-agent wartet auf Ihre Antwort.',
+      turnDoneTitle: 'slave-agent fertig',
       turnDoneBody: '',
       turnErrorTitle: 'Turn fehlgeschlagen',
       backgroundDoneTitle: 'Hintergrundaufgabe abgeschlossen',
@@ -644,7 +644,7 @@ export const deOverrides = {
       'Ihr Paket wurde privat hochgeladen. Teilen Sie den Link unten in Ihrem Support-Thread, damit das Team Ihre Logs sehen kann.',
     failedTitle: 'Hochladen fehlgeschlagen',
     failedHint:
-      'Sie können auch `hermes debug share --nous` im Terminal ausführen oder `hermes debug share --local`, um den Bericht ohne Hochladen auszugeben.',
+      'Sie können auch `slave debug share --nous` im Terminal ausführen oder `slave debug share --local`, um den Bericht ohne Hochladen auszugeben.',
     handoffLead: 'Diskussion hier fortsetzen:',
     links: {
       github: 'GitHub Issues',
@@ -865,7 +865,7 @@ export const deOverrides = {
     exportConfig: 'Konfiguration exportieren',
     importConfig: 'Konfiguration importieren',
     resetToDefaults: 'Auf Standard zurücksetzen',
-    resetConfirm: 'Alle Einstellungen auf Hermes-Standard zurücksetzen?',
+    resetConfirm: 'Alle Einstellungen auf Slave-Standard zurücksetzen?',
     exportFailed: 'Export fehlgeschlagen',
     resetFailed: 'Zurücksetzen fehlgeschlagen',
     nav: {
@@ -920,7 +920,7 @@ export const deOverrides = {
         agentTargetLocal: (profile, dir) => `Wird in das Backend ${profile} installiert (${dir})`,
         agentTargetRemote: profile => `Installiert in das verbundene ${profile}-Backend`,
         catalogPinned: (name, sha) =>
-          `Hermes-Katalog-Eintrag „${name}" — die Agent-Komponente wird am geprüften Pin installiert${sha ? ` ${sha}` : ''}, nicht an der Spitze des Branches.`,
+          `Slave-Katalog-Eintrag „${name}" — die Agent-Komponente wird am geprüften Pin installiert${sha ? ` ${sha}` : ''}, nicht an der Spitze des Branches.`,
         reviewedHeading: 'Geprüfter Katalog-Eintrag',
         reviewedIntro:
           'Dieser Eintrag wurde an seinem gepinnten Commit von einem Menschen geprüft. Sie können den genauen Code trotzdem unten ansehen.',
@@ -961,7 +961,7 @@ export const deOverrides = {
         desktopSuccess: name => `Desktop-Plugin ${name} installiert`,
         agentFailed: 'Installation des Agent-Plugins fehlgeschlagen',
         installUncertain:
-          'Hermes wartet nicht mehr auf das Installationsergebnis, aber das Plugin wird möglicherweise noch installiert. Schließe dieses Fenster und aktualisiere die Pluginliste, bevor du die Installation erneut startest.',
+          'slave-agent wartet nicht mehr auf das Installationsergebnis, aber das Plugin wird möglicherweise noch installiert. Schließe dieses Fenster und aktualisiere die Pluginliste, bevor du die Installation erneut startest.',
         desktopFailed: 'Installation des Desktop-Plugins fehlgeschlagen',
         missingEnv: (name, vars) =>
           `${name} ist installiert, benötigt aber einen Schlüssel, um zu funktionieren: ${vars}. Fügen Sie ihn jetzt hinzu, sonst schlagen die Tools des Plugins fehl.`
@@ -1022,7 +1022,7 @@ export const deOverrides = {
       otpField: 'Authentifizierungsschlüssel',
       otpPlaceholder: 'Base32-Geheimnis oder otpauth://-Link',
       otpHint:
-        'Der „Einrichtungsschlüssel", den die Seite beim Aktivieren von 2FA anzeigt. Ist er gespeichert, erzeugt Hermes die Codes selbst.',
+        'Der „Einrichtungsschlüssel", den die Seite beim Aktivieren von 2FA anzeigt. Ist er gespeichert, erzeugt slave-agent die Codes selbst.',
       twoFactorBadge: '2FA automatisch',
       deleteTitle: 'Diesen Eintrag löschen?',
       deleteDescription: label => `„${label}" wird entfernt. Das kann nicht rückgängig gemacht werden.`,
@@ -1033,12 +1033,12 @@ export const deOverrides = {
           'Installierte Passwortmanager werden automatisch erkannt. Der Agent bittet Sie, einen zu entsperren, wenn er zum ersten Mal einen Login daraus braucht (einmal pro Session); nur ein Session-Token bleibt im Speicher, und der Agent sieht weder Ihr Master-Passwort noch einen Login.',
         toggleFailed: 'Passwortmanager konnte nicht geändert werden',
         notInstalled: name =>
-          `Nicht erkannt. Installieren Sie das ${name}-Kommandozeilenwerkzeug und melden Sie sich dort an; Hermes erkennt es automatisch.`,
-        disabledDesc: 'Erkannt, aber für Hermes ausgeschaltet.',
+          `Nicht erkannt. Installieren Sie das ${name}-Kommandozeilenwerkzeug und melden Sie sich dort an; slave-agent erkennt es automatisch.`,
+        disabledDesc: 'Erkannt, aber für slave-agent ausgeschaltet.',
         lockedDesc:
           'Erkannt. Der Agent bittet Sie, ihn zu entsperren, wenn er einen Login braucht – oder entsperren Sie ihn jetzt.',
         unlockedDesc:
-          'Für diese Session entsperrt. Sperrt automatisch nach 30 Minuten Inaktivität oder wenn Hermes geschlossen wird.',
+          'Für diese Session entsperrt. Sperrt automatisch nach 30 Minuten Inaktivität oder wenn slave-agent geschlossen wird.',
         statusLocked: 'Gesperrt',
         statusNotDetected: 'Nicht erkannt',
         statusOff: 'Aus',
@@ -1058,7 +1058,7 @@ export const deOverrides = {
       intro: 'OS-Benachrichtigungen (keine In-App-Toasts). Pro Gerät.',
       enableAll: 'Benachrichtigungen aktivieren',
       enableAllDesc: 'Aus schaltet jede Benachrichtigung unten stumm.',
-      focusedHint: 'Abschluss-Alerts feuern nur, während Hermes im Hintergrund ist.',
+      focusedHint: 'Abschluss-Alerts feuern nur, während slave-agent im Hintergrund ist.',
       kinds: {
         approval: {
           label: 'Genehmigung nötig',
@@ -1066,11 +1066,11 @@ export const deOverrides = {
         },
         input: {
           label: 'Eingabe nötig',
-          description: 'Hermes hat eine Frage gestellt oder braucht ein Passwort oder Geheimnis.'
+          description: 'slave-agent hat eine Frage gestellt oder braucht ein Passwort oder Geheimnis.'
         },
         turnDone: {
           label: 'Antwort bereit',
-          description: 'Ein Turn wurde beendet, während Hermes im Hintergrund war.'
+          description: 'Ein Turn wurde beendet, während slave-agent im Hintergrund war.'
         },
         turnError: {
           label: 'Turn fehlgeschlagen',
@@ -1086,11 +1086,11 @@ export const deOverrides = {
         },
         plugin: {
           label: 'Plugin-Benachrichtigungen',
-          description: 'Ein Desktop-Plugin hat eine Benachrichtigung gesendet, während Hermes im Hintergrund war.'
+          description: 'Ein Desktop-Plugin hat eine Benachrichtigung gesendet, während slave-agent im Hintergrund war.'
         }
       },
       test: 'Testbenachrichtigung senden',
-      testTitle: 'Hermes',
+      testTitle: 'slave-agent',
       testBody: 'Benachrichtigungen funktionieren.',
       testSent:
         'Test gesendet. Wenn nichts erscheint, überprüfen Sie die Benachrichtigungsberechtigungen Ihres Betriebssystems und Fokus/Nicht stören.',
@@ -1111,7 +1111,7 @@ export const deOverrides = {
       advanced: 'Erweitert'
     },
     searchPlaceholder: {
-      about: 'Über Hermes Desktop',
+      about: 'Über slave-agent Desktop',
       config: 'Einstellungen durchsuchen…',
       gateway: 'Gateway-Verbindung…',
       keys: 'API-Schlüssel durchsuchen…',
@@ -1139,7 +1139,7 @@ export const deOverrides = {
       title: 'Darstellung',
       intro: 'Nur für Desktop. Modus ist die Helligkeit; Theme ist Farbpalette und Chat-Design.',
       colorMode: 'Farbmodus',
-      colorModeDesc: 'Wählen Sie einen festen Modus oder lassen Sie Hermes Ihrer Systemeinstellung folgen.',
+      colorModeDesc: 'Wählen Sie einen festen Modus oder lassen Sie slave-agent Ihrer Systemeinstellung folgen.',
       toolViewTitle: 'Tool-Aufruf-Anzeige',
       toolViewDesc: 'Produkt versteckt rohe Tool-Payloads; Technisch zeigt vollständige Ein-/Ausgabe.',
       hideCodeDiffsTitle: 'Code-Diffs ausblenden',
@@ -1217,14 +1217,14 @@ export const deOverrides = {
       modelPricingDesc: 'Eingabe-, Ausgabe- und Cache-Lesepreise pro Million Tokens in der Modellauswahl anzeigen.',
       reactionsTitle: 'Nachrichten-Reaktionen',
       reactionsDesc:
-        'Emoji-Tapbacks im iMessage-Stil – reagieren Sie auf Nachrichten, und Hermes kann auf Ihre reagieren.',
+        'Emoji-Tapbacks im iMessage-Stil – reagieren Sie auf Nachrichten, und slave-agent kann auf Ihre reagieren.',
       tipsTitle: 'In-App-Tipps',
       tipsDesc:
-        'Eine kleine Blase, die auf einen Teil der App zeigt und gelegentlich im Leerlauf sowie von Hermes erscheint, wenn es hilft. Beim Schließen wird sie für immer ausgeblendet.',
+        'Eine kleine Blase, die auf einen Teil der App zeigt und gelegentlich im Leerlauf sowie von slave-agent erscheint, wenn es hilft. Beim Schließen wird sie für immer ausgeblendet.',
       tipsReset: (count: number) => `${count} geschlossene ${count === 1 ? 'Blase' : 'Blasen'} zurückholen`,
       toursTitle: 'Geführte Touren',
       toursDesc:
-        'Lassen Sie sich von Hermes durch die App führen – der Bildschirm wird abgedunkelt und jeder Schritt hervorgehoben.',
+        'Lassen Sie sich von slave-agent durch die App führen – der Bildschirm wird abgedunkelt und jeder Schritt hervorgehoben.',
       composerPopoutTitle: 'Schwebender Composer',
       composerPopoutDesc:
         'Erlaubt, den Composer aus seiner Ablage herauszuziehen. Wenn aus, bleibt er unten angedockt.',
@@ -1265,9 +1265,9 @@ export const deOverrides = {
       pet: {
         title: 'Haustier',
         intro:
-          'Adoptieren Sie ein animiertes Petdex-Maskottchen, das über der App schwebt und darauf reagiert, was Hermes gerade tut – es rennt, während Tools laufen, feiert bei Erfolg und schmollt bei Fehlern.',
+          'Adoptieren Sie ein animiertes Petdex-Maskottchen, das über der App schwebt und darauf reagiert, was slave-agent gerade tut – es rennt, während Tools laufen, feiert bei Erfolg und schmollt bei Fehlern.',
         restartHint:
-          'Haustiere erfordern einen kurzen Neustart – die laufende App wurde gestartet, bevor diese Funktion hinzugefügt wurde. Schließen Sie Hermes, öffnen Sie es erneut und kehren Sie dann hierher zurück.',
+          'Haustiere erfordern einen kurzen Neustart – die laufende App wurde gestartet, bevor diese Funktion hinzugefügt wurde. Schließen Sie slave-agent, öffnen Sie es erneut und kehren Sie dann hierher zurück.',
         scaleTitle: 'Größe',
         scaleDesc: 'Ändert die Größe des schwebenden Maskottchens. Wirkt überall sofort.',
         roamTitle: 'Herumstreifen',
@@ -1495,11 +1495,11 @@ export const deOverrides = {
       timezone: 'IANA-Zeitzonenkennung. Leer verwendet die Systemzeitzone.',
       browser: {
         useRealProfile:
-          'Lokales Browsen nutzt Ihre echten Anmeldungen. Hermes kopiert das Profil Ihres Standardbrowsers (Cookies, Anmeldungen, Einstellungen) in einen verwalteten Schnappschuss und steuert ihn mit seinem gebündelten Chromium – Ihr Live-Profil wird nie direkt geöffnet, und die Kopie wird bei jedem Lauf daraus aktualisiert. Erlaubt dem Agenten außerdem, auf Anfrage eine lokale Session mit echtem Profil zu öffnen, selbst wenn ein Cloud-Browser-Backend konfiguriert ist. Nur Chromium-Browser (Chrome, Edge, Brave, Brave Origin, Chromium) werden unterstützt; ein Nicht-Chromium-Standard schlägt mit einer klaren Meldung fehl. Standardmäßig aus.'
+          'Lokales Browsen nutzt Ihre echten Anmeldungen. slave-agent kopiert das Profil Ihres Standardbrowsers (Cookies, Anmeldungen, Einstellungen) in einen verwalteten Schnappschuss und steuert ihn mit seinem gebündelten Chromium – Ihr Live-Profil wird nie direkt geöffnet, und die Kopie wird bei jedem Lauf daraus aktualisiert. Erlaubt dem Agenten außerdem, auf Anfrage eine lokale Session mit echtem Profil zu öffnen, selbst wenn ein Cloud-Browser-Backend konfiguriert ist. Nur Chromium-Browser (Chrome, Edge, Brave, Brave Origin, Chromium) werden unterstützt; ein Nicht-Chromium-Standard schlägt mit einer klaren Meldung fehl. Standardmäßig aus.'
       },
       agent: {
         imageInputMode: 'Steuert, wie Bildanhänge an das Modell gesendet werden.',
-        maxTurns: 'Obergrenze für Tool-Aufruf-Runden, bevor Hermes einen Lauf stoppt.'
+        maxTurns: 'Obergrenze für Tool-Aufruf-Runden, bevor slave-agent einen Lauf stoppt.'
       },
       terminal: {
         cwd: 'Standard-Projektordner für Tool- und Terminal-Arbeit.',
@@ -1513,9 +1513,9 @@ export const deOverrides = {
       codeExecution: {
         mode: 'Wie streng die Code-Ausführung auf das aktuelle Projekt begrenzt ist.'
       },
-      fileReadMaxChars: 'Maximale Zeichenzahl, die Hermes aus einer Dateianfrage lesen kann.',
+      fileReadMaxChars: 'Maximale Zeichenzahl, die slave-agent aus einer Dateianfrage lesen kann.',
       approvals: {
-        mode: 'Wie Hermes Befehle behandelt, die eine explizite Genehmigung benötigen.',
+        mode: 'Wie slave-agent Befehle behandelt, die eine explizite Genehmigung benötigen.',
         timeout: 'Wie lange Genehmigungsaufforderungen warten, bevor sie ablaufen.'
       },
       security: {
@@ -1544,11 +1544,11 @@ export const deOverrides = {
       voice: {
         autoTts: 'Assistentenantworten automatisch vorlesen.',
         voiceChatMode:
-          'chained: Sprache zu Text → Hermes → Text zu Sprache mit den Anbietern unten. gpt-live: Ein Vollduplex-Sprachmodell von OpenAI (gpt-live-1) hört zu und spricht und übergibt jede echte Anfrage an Hermes – das von Ihnen gewählte Modell antwortet mit allen Tools. Erfordert einen OpenAI-API-Schlüssel; die Sprachschicht kostet 0,05 $ pro Minute.',
+          'chained: Sprache zu Text → slave-agent → Text zu Sprache mit den Anbietern unten. gpt-live: Ein Vollduplex-Sprachmodell von OpenAI (gpt-live-1) hört zu und spricht und übergibt jede echte Anfrage an slave-agent – das von Ihnen gewählte Modell antwortet mit allen Tools. Erfordert einen OpenAI-API-Schlüssel; die Sprachschicht kostet 0,05 $ pro Minute.',
         gptLive: {
           voice: 'Stimme für den GPT-Live-Modus. Eigene Stimm-IDs werden akzeptiert.',
           instructions:
-            'Zusätzliche Sätze für die Live-Sprachpersona (Ton, Tempo, Sprache). Hermes behält seinen eigenen System-Prompt.'
+            'Zusätzliche Sätze für die Live-Sprachpersona (Ton, Tempo, Sprache). slave-agent behält seinen eigenen System-Prompt.'
         }
       },
       tts: {
@@ -1575,13 +1575,13 @@ export const deOverrides = {
       },
       updates: {
         nonInteractiveLocalChanges:
-          'Wenn Hermes sich aus der App selbst aktualisiert (ohne Terminal-Aufforderung), lokale Quellcode-Änderungen behalten (stash) oder verwerfen (discard). Terminal-Updates fragen immer nach.'
+          'Wenn slave-agent sich aus der App selbst aktualisiert (ohne Terminal-Aufforderung), lokale Quellcode-Änderungen behalten (stash) oder verwerfen (discard). Terminal-Updates fragen immer nach.'
       }
     }),
     uninstallSection: {
       dangerZone: 'Gefahrenzone',
       checkingInstalled: 'Installierte Komponenten werden geprüft…',
-      uninstallHermes: 'Hermes deinstallieren',
+      uninstallHermes: 'slave-agent deinstallieren',
       chooseHowMuch:
         'Wählen Sie, wie viel entfernt werden soll. Die App wird zum Abschluss geschlossen; Sie können das Installationsprogramm jederzeit erneut öffnen, um zurückzukehren.',
       confirmUninstall: 'Deinstallation bestätigen',
@@ -1594,22 +1594,22 @@ export const deOverrides = {
         gui: {
           title: 'Nur die Chat-Oberfläche deinstallieren',
           description:
-            'Entfernt diese Desktop-App. Der Hermes-Agent, Ihre Konfiguration und Ihre Chats bleiben erhalten.',
+            'Entfernt diese Desktop-App. Der Slave-Agent, Ihre Konfiguration und Ihre Chats bleiben erhalten.',
           consequence: 'die Desktop-Chat-Oberfläche (diese App und ihre Daten)'
         },
         lite: {
           title: 'Oberfläche + Agent deinstallieren, Daten behalten',
           description:
-            'Entfernt die App und den Hermes-Agent, behält aber Konfiguration, Chats und Geheimnisse für eine spätere Neuinstallation.',
+            'Entfernt die App und den Slave-Agent, behält aber Konfiguration, Chats und Geheimnisse für eine spätere Neuinstallation.',
           consequence:
-            'die Chat-Oberfläche und den Hermes-Agent (Konfiguration, Chats und Geheimnisse bleiben erhalten)'
+            'die Chat-Oberfläche und den Slave-Agent (Konfiguration, Chats und Geheimnisse bleiben erhalten)'
         },
         full: {
           title: 'Alles deinstallieren',
           description:
             'Entfernt die App, den Agent und alle Benutzerdaten – Konfiguration, Chats, geplante Jobs, Geheimnisse, Logs.',
           consequence:
-            'ALLES – die Chat-Oberfläche, den Hermes-Agent sowie Ihre gesamte Konfiguration, Chats, Geheimnisse und Logs'
+            'ALLES – die Chat-Oberfläche, den Slave-Agent sowie Ihre gesamte Konfiguration, Chats, Geheimnisse und Logs'
         }
       }
     },
@@ -1671,7 +1671,7 @@ export const deOverrides = {
     config: {
       minimizeToTrayTitle: 'In den Infobereich minimieren',
       minimizeToTrayDesc:
-        'Beim Minimieren von Fenstern oder Schließen des Hauptfensters werden diese im Infobereich (Menüleiste unter macOS) ausgeblendet und Hermes läuft weiter. Beenden Sie über „Hermes beenden“ im Infobereich-Menü oder mit Cmd+Q. Standardmäßig aus; gilt nur für dieses Gerät.',
+        'Beim Minimieren von Fenstern oder Schließen des Hauptfensters werden diese im Infobereich (Menüleiste unter macOS) ausgeblendet und slave-agent läuft weiter. Beenden Sie über „slave-agent beenden“ im Infobereich-Menü oder mit Cmd+Q. Standardmäßig aus; gilt nur für dieses Gerät.',
       minimizeToTrayUnavailable:
         'Der Infobereich ist nicht verfügbar. Fenster werden normal minimiert und geschlossen. Schalten Sie die Option aus und wieder ein, um es erneut zu versuchen.',
       none: 'Keine',
@@ -1682,7 +1682,7 @@ export const deOverrides = {
       searchPlaceholder: 'Suchen…',
       noResults: 'Keine Ergebnisse gefunden',
       systemDefault: 'Systemstandard',
-      loading: 'Hermes-Konfiguration wird geladen...',
+      loading: 'Slave-Konfiguration wird geladen...',
       emptyTitle: 'Nichts zu konfigurieren',
       emptyDesc: 'Dieser Bereich hat keine einstellbaren Optionen.',
       failedLoad: 'Einstellungen konnten nicht geladen werden',
@@ -1709,18 +1709,18 @@ export const deOverrides = {
       description:
         'Tippen Sie kurz auf ⌘ + Option (Mac) bzw. Strg + Alt (Windows/Linux), um das HUD aus jeder App nach vorn zu holen. Standardmäßig aus; gilt nur für dieses Gerät.',
       permission:
-        'Erlauben Sie Hermes unter Systemeinstellungen → Datenschutz & Sicherheit → Eingabeüberwachung und versuchen Sie es erneut. Diese Geste zeichnet keine Tastenanschläge auf und nimmt Ihren Bildschirm nicht auf.',
+        'Erlauben Sie slave-agent unter Systemeinstellungen → Datenschutz & Sicherheit → Eingabeüberwachung und versuchen Sie es erneut. Diese Geste zeichnet keine Tastenanschläge auf und nimmt Ihren Bildschirm nicht auf.',
       unavailable:
-        'Das Hilfsprogramm für die HUD-Geste konnte nicht starten oder wurde unerwartet beendet. Versuchen Sie es erneut oder starten Sie Hermes neu. Das bestehende HUD-Tastenkürzel funktioniert innerhalb von Hermes weiterhin.',
+        'Das Hilfsprogramm für die HUD-Geste konnte nicht starten oder wurde unerwartet beendet. Versuchen Sie es erneut oder starten Sie slave-agent neu. Das bestehende HUD-Tastenkürzel funktioniert innerhalb von slave-agent weiterhin.',
       missingHelper:
-        'In dieser Hermes-Installation fehlt das Hilfsprogramm für die HUD-Geste. Aktualisieren oder installieren Sie Hermes neu und versuchen Sie es erneut.',
+        'In dieser Slave-Installation fehlt das Hilfsprogramm für die HUD-Geste. Aktualisieren oder installieren Sie slave-agent neu und versuchen Sie es erneut.',
       unsupportedSession:
         'Diese Desktop-Session unterstützt keine globalen Modifikator-Taps. Linux erfordert X11; Wayland wird nicht unterstützt.'
     },
     screenshot: {
       enabledTitle: 'Screenshot-Kurzbefehl',
       enabledDesc:
-        'Drücken Sie in einer beliebigen App beide Befehlstasten gleichzeitig, um deren vorderstes Fenster aufzunehmen und an Ihren aktuellen Hermes-Entwurf anzuhängen. Es wird nie automatisch gesendet. Standardmäßig aus; gilt nur für diesen Mac. Fensterinhalte können vertraulich sein – prüfen Sie den Anhang vor dem Senden.',
+        'Drücken Sie in einer beliebigen App beide Befehlstasten gleichzeitig, um deren vorderstes Fenster aufzunehmen und an Ihren aktuellen Slave-Entwurf anzuhängen. Es wird nie automatisch gesendet. Standardmäßig aus; gilt nur für diesen Mac. Fensterinhalte können vertraulich sein – prüfen Sie den Anhang vor dem Senden.',
       statusTitle: 'Status des Screenshot-Kurzbefehls',
       checking: 'Screenshot-Kurzbefehl wird geprüft…',
       disabled: 'Der Screenshot-Kurzbefehl ist aus.',
@@ -1728,9 +1728,9 @@ export const deOverrides = {
       ready:
         'Der Kurzbefehl ist bereit. Screenshots werden an Ihren aktuellen Entwurf angehängt, ohne gesendet zu werden.',
       inputPermission:
-        'Mit der Berechtigung „Eingabeüberwachung“ kann Hermes beide Befehlstasten erkennen, während eine andere App aktiv ist. Erlauben Sie Hermes unter Systemeinstellungen → Datenschutz & Sicherheit → Eingabeüberwachung, kehren Sie dann hierher zurück und versuchen Sie es erneut.',
+        'Mit der Berechtigung „Eingabeüberwachung“ kann slave-agent beide Befehlstasten erkennen, während eine andere App aktiv ist. Erlauben Sie slave-agent unter Systemeinstellungen → Datenschutz & Sicherheit → Eingabeüberwachung, kehren Sie dann hierher zurück und versuchen Sie es erneut.',
       screenPermission:
-        'Mit der Berechtigung „Bildschirmaufnahme“ kann Hermes das vorderste App-Fenster aufnehmen, wenn Sie diesen Kurzbefehl verwenden. Erlauben Sie Hermes unter Systemeinstellungen → Datenschutz & Sicherheit → Bildschirmaufnahme, kehren Sie dann hierher zurück und versuchen Sie es erneut. Starten Sie Hermes neu, wenn macOS dazu auffordert.',
+        'Mit der Berechtigung „Bildschirmaufnahme“ kann slave-agent das vorderste App-Fenster aufnehmen, wenn Sie diesen Kurzbefehl verwenden. Erlauben Sie slave-agent unter Systemeinstellungen → Datenschutz & Sicherheit → Bildschirmaufnahme, kehren Sie dann hierher zurück und versuchen Sie es erneut. Starten Sie slave-agent neu, wenn macOS dazu auffordert.',
       openSettings: 'Systemeinstellungen öffnen',
       retry: 'Erneut versuchen',
       unavailable: 'Der Screenshot-Kurzbefehl ist nicht verfügbar. Versuchen Sie es erneut oder schalten Sie ihn aus.',
@@ -1748,7 +1748,7 @@ export const deOverrides = {
     quickEntry: {
       enabledTitle: 'Schnelleingabe',
       enabledDesc:
-        'Öffnen Sie mit einem globalen Tastaturkürzel von überall einen kleinen Eingabebereich und senden Sie einen Prompt, ohne Hermes zu öffnen.',
+        'Öffnen Sie mit einem globalen Tastaturkürzel von überall einen kleinen Eingabebereich und senden Sie einen Prompt, ohne slave-agent zu öffnen.',
       shortcutTitle: 'Tastaturkürzel der Schnelleingabe',
       shortcutDesc: 'Benötigt mindestens eine Zusatztaste, z. B. CommandOrControl+Shift+Leertaste.',
       active: 'Das Tastaturkürzel ist aktiv.',
@@ -1778,7 +1778,7 @@ export const deOverrides = {
     connections: {
       title: 'Registrierte Gateways',
       intro:
-        'Verwalten Sie dieses Gerät und jedes Hermes Gateway, das es über Remote-, SSH- oder Cloud-Verbindungen erreichen kann.',
+        'Verwalten Sie dieses Gerät und jedes slave-agent Gateway, das es über Remote-, SSH- oder Cloud-Verbindungen erreichen kann.',
       stagedNote:
         'Wechseln Sie Gateways über Sessions. Profile, Chats, Nachrichten und Cron-Jobs bleiben bei ihrem Gateway; Arbeit auf anderen Gateways läuft weiter.',
       launchModeTitle: 'Beim Start zu Sessions auf dem zuletzt verwendeten Gateway zurückkehren',
@@ -1805,15 +1805,15 @@ export const deOverrides = {
       updateAllRunning: 'Alle Instanzen werden aktualisiert…',
       updateAllDone: 'Updates versendet',
       updateAllFailed: 'Update-Verteilung fehlgeschlagen',
-      updateSkippedCloud: 'Wird von Hermes Cloud verwaltet',
+      updateSkippedCloud: 'Wird von slave-agent Cloud verwaltet',
       kindLocal: 'Lokal',
       kindRemote: 'Remote-Gateway',
-      kindCloud: 'Hermes Cloud',
+      kindCloud: 'slave-agent Cloud',
       kindSsh: 'SSH',
-      kindLocalDesc: 'Die Hermes-Laufzeitumgebung, die von dieser App verwaltet wird.',
-      kindRemoteDesc: 'Ein Hermes Gateway, das über HTTP(S) erreichbar ist – LAN, Tailscale oder das Internet.',
-      kindCloudDesc: 'Eine gehostete Instanz, die über Ihr Hermes-Cloud-Konto gefunden wurde.',
-      kindSshDesc: 'Eine Hermes-Installation, die über SSH erreicht wird.',
+      kindLocalDesc: 'Die Slave-Laufzeitumgebung, die von dieser App verwaltet wird.',
+      kindRemoteDesc: 'Ein slave-agent Gateway, das über HTTP(S) erreichbar ist – LAN, Tailscale oder das Internet.',
+      kindCloudDesc: 'Eine gehostete Instanz, die über Ihr Slave-Cloud-Konto gefunden wurde.',
+      kindSshDesc: 'Eine Slave-Installation, die über SSH erreicht wird.',
       labelTitle: 'Name',
       labelDesc:
         'Pflichtfeld. Wird überall angezeigt, wo diese Instanz erscheint; muss eindeutig sein (z. B. „Homelab“, „Arbeitslaptop“).',
@@ -1822,7 +1822,7 @@ export const deOverrides = {
       sshHostTitle: 'SSH-Host',
       headersTitle: 'Zusätzliche Gateway-Header',
       headersDesc:
-        'Wird mit jeder HTTP- und WebSocket-Anfrage an dieses Gateway gesendet – für Zugriffs-Proxys wie Cloudflare Access (CF-Access-Client-Id / CF-Access-Client-Secret). Werte werden verschlüsselt gespeichert. Header, die Hermes verwaltet (Authorization, Cookie, Host…), werden ignoriert.',
+        'Wird mit jeder HTTP- und WebSocket-Anfrage an dieses Gateway gesendet – für Zugriffs-Proxys wie Cloudflare Access (CF-Access-Client-Id / CF-Access-Client-Secret). Werte werden verschlüsselt gespeichert. Header, die slave-agent verwaltet (Authorization, Cookie, Host…), werden ignoriert.',
       headerValuePlaceholder: 'Wert',
       headerValueSaved: 'Gespeichert – leer lassen, um zu behalten',
       headerAdd: 'Header hinzufügen',
@@ -1833,7 +1833,7 @@ export const deOverrides = {
       sameBackendHint: (label: string) => `Gleiches Backend wie „${label}“`,
       localAddHint: 'Lokal ist nicht verfügbar: Die verwaltete lokale Verbindung existiert bereits (es gibt nur eine).',
       cloudAddHint:
-        'Tipp: Die Anmeldung unter Hermes Cloud oben erkennt Ihre Agents automatisch – verwenden Sie dieses Formular nur, um eine bekannte Instanz-URL manuell zu registrieren.',
+        'Tipp: Die Anmeldung unter slave-agent Cloud oben erkennt Ihre Agents automatisch – verwenden Sie dieses Formular nur, um eine bekannte Instanz-URL manuell zu registrieren.',
       save: 'Verbindung speichern',
       saving: 'Wird gespeichert…',
       cancel: 'Abbrechen',
@@ -1865,24 +1865,24 @@ export const deOverrides = {
       title: 'Gateway-Verbindung',
       envOverride: 'ENV-Überschreibung',
       intro:
-        'Standardmäßig lokal. Verwenden Sie Remote, wenn diese App ein Hermes-Backend an einem anderen Ort steuern soll. Gateway-Verbindungen gelten pro Gerät; Profile werden von den Gateways ermittelt, mit denen Sie sich verbinden.',
+        'Standardmäßig lokal. Verwenden Sie Remote, wenn diese App ein Slave-Backend an einem anderen Ort steuern soll. Gateway-Verbindungen gelten pro Gerät; Profile werden von den Gateways ermittelt, mit denen Sie sich verbinden.',
       envOverrideTitle: 'Umgebungsvariablen steuern diese Desktop-Session.',
       envOverrideDesc:
-        'Entfernen Sie HERMES_DESKTOP_REMOTE_URL und HERMES_DESKTOP_REMOTE_TOKEN, um die unten gespeicherte Einstellung zu verwenden.',
+        'Entfernen Sie SLAVE_DESKTOP_REMOTE_URL und SLAVE_DESKTOP_REMOTE_TOKEN, um die unten gespeicherte Einstellung zu verwenden.',
       modeTitle: 'Verbindungsmodus',
       localTitle: 'Lokales Gateway',
-      localDesc: 'Startet ein privates Hermes-Backend auf localhost. Das ist der Standard und funktioniert offline.',
+      localDesc: 'Startet ein privates Slave-Backend auf localhost. Das ist der Standard und funktioniert offline.',
       remoteTitle: 'Remote-Gateway',
-      remoteDesc: 'Verbindet diese Desktop-Shell mit einem entfernten Hermes-Backend.',
+      remoteDesc: 'Verbindet diese Desktop-Shell mit einem entfernten Slave-Backend.',
       remoteAuthHint:
         'Gehostete Gateways verwenden OAuth oder Benutzername und Passwort; selbst gehostete können ein Session-Token verwenden.',
-      cloudTitle: 'Hermes Cloud',
+      cloudTitle: 'slave-agent Cloud',
       cloudDesc:
-        'Melden Sie sich einmal bei Hermes Cloud an und wählen Sie aus den Agents in Ihrem Konto – ohne eine URL einzufügen.',
-      cloudSignInTitle: 'Hermes Cloud',
-      cloudSignIn: 'Bei Hermes Cloud anmelden',
-      cloudSignedIn: 'Bei Hermes Cloud angemeldet',
-      cloudNeedsSignIn: 'Melden Sie sich bei Hermes Cloud an, um die Agents in Ihrem Konto zu finden.',
+        'Melden Sie sich einmal bei slave-agent Cloud an und wählen Sie aus den Agents in Ihrem Konto – ohne eine URL einzufügen.',
+      cloudSignInTitle: 'slave-agent Cloud',
+      cloudSignIn: 'Bei slave-agent Cloud anmelden',
+      cloudSignedIn: 'Bei slave-agent Cloud angemeldet',
+      cloudNeedsSignIn: 'Melden Sie sich bei slave-agent Cloud an, um die Agents in Ihrem Konto zu finden.',
       cloudSignedInDesc:
         'Sie sind angemeldet. Wählen Sie unten einen Agent; die Session wird automatisch aktualisiert.',
       cloudAgentsTitle: 'Ihre Agents',
@@ -1904,11 +1904,11 @@ export const deOverrides = {
       cloudUseSaved: 'Gateway verwenden',
       cloudActive: 'In diesem Fenster aktiv',
       cloudConnecting: 'Verbindung wird hergestellt…',
-      cloudDiscoverFailed: 'Ihre Hermes-Cloud-Agents konnten nicht geladen werden',
+      cloudDiscoverFailed: 'Ihre Slave-Cloud-Agents konnten nicht geladen werden',
       cloudConnectFailed: 'Keine Verbindung zu diesem Agent möglich',
-      cloudSignInFailed: 'Anmeldung bei Hermes Cloud fehlgeschlagen',
-      cloudSignedOutTitle: 'Von Hermes Cloud abgemeldet',
-      cloudSignedOutMessage: 'Die Hermes-Cloud-Session wurde geleert.',
+      cloudSignInFailed: 'Anmeldung bei slave-agent Cloud fehlgeschlagen',
+      cloudSignedOutTitle: 'Von slave-agent Cloud abgemeldet',
+      cloudSignedOutMessage: 'Die Slave-Cloud-Session wurde geleert.',
       cloudConnectedTitle: 'Verbunden',
       cloudConnectedPill: 'Verbunden',
       cloudConnectedTo: name => `Mit ${name} verbunden.`,
@@ -1964,9 +1964,9 @@ export const deOverrides = {
       restartingTitle: 'Gateway-Verbindung wird neu gestartet',
       savedTitle: 'Gateway-Einstellungen gespeichert',
       restartingMessage:
-        'Hermes Desktop stellt mit den gespeicherten Einstellungen die Verbindung wieder her — die Shell bleibt offen.',
+        'slave-agent Desktop stellt mit den gespeicherten Einstellungen die Verbindung wieder her — die Shell bleibt offen.',
       savedMessage: 'Für den nächsten Neustart gespeichert.',
-      connectedTo: (baseUrl, version) => `Verbunden mit ${baseUrl}${version ? ` · Hermes ${version}` : ''}`,
+      connectedTo: (baseUrl, version) => `Verbunden mit ${baseUrl}${version ? ` · Slave ${version}` : ''}`,
       reachableTitle: 'Remote-Gateway erreichbar',
       signedOutTitle: 'Abgemeldet',
       signedOutMessage: 'Die Remote-Gateway-Session wurde geleert.',
@@ -1978,7 +1978,7 @@ export const deOverrides = {
       saveFailed: 'Gateway-Einstellungen konnten nicht gespeichert werden',
       sshTitle: 'Über SSH verbinden',
       sshDesc:
-        'Hermes wird per SSH auf dem Remote-Gerät gestartet und in diese App getunnelt – Sie müssen nichts selbst starten oder freigeben. Erfordert funktionierenden, schlüsselbasierten SSH-Zugriff auf den Host.',
+        'slave-agent wird per SSH auf dem Remote-Gerät gestartet und in diese App getunnelt – Sie müssen nichts selbst starten oder freigeben. Erfordert funktionierenden, schlüsselbasierten SSH-Zugriff auf den Host.',
       sshTrustHint: 'Der erste präsentierte Host-Key wird vertraut und gepinnt; spätere Änderungen schlagen fehl.',
       sshHostTitle: 'Host',
       sshHostDesc: 'user@host oder ein Host-Alias aus ~/.ssh/config.',
@@ -1993,25 +1993,25 @@ export const deOverrides = {
       sshPortDesc: 'Leer = 22 oder der Port aus ~/.ssh/config.',
       sshKeyTitle: 'Identitätsdatei',
       sshKeyDesc: 'Pfad zum privaten Schlüssel. Leer = ssh-agent oder ~/.ssh/config.',
-      sshHermesPathTitle: 'Hermes-Pfad (optional)',
-      sshHermesPathDesc: 'Vollständiger Pfad zum Remote-Hermes-Binary. Leer = automatisch erkennen.',
-      sshHermesPathPlaceholder: 'automatisch erkennen',
+      sshSlavePathTitle: 'Slave-Pfad (optional)',
+      sshSlavePathDesc: 'Vollständiger Pfad zum Remote-Slave-Binary. Leer = automatisch erkennen.',
+      sshSlavePathPlaceholder: 'automatisch erkennen',
       sshTestConnection: 'SSH testen',
       sshConnect: 'Verbinden',
       sshButtonsHint: 'Speichern wird beim nächsten Start angewendet. Verbinden verbindet sofort neu.',
-      sshReachable: (host, platform) => `Erreichbar: ${host} (${platform}) — Hermes gefunden`,
+      sshReachable: (host, platform) => `Erreichbar: ${host} (${platform}) — slave-agent gefunden`,
       sshIncompleteHost: 'Geben Sie einen SSH-Host ein, bevor Sie sich verbinden.',
       sshErrUnreachable: 'Dieser Host ist über SSH nicht erreichbar. Prüfen Sie Host, Port und Ihr Netzwerk.',
       sshErrAuth:
-        'SSH-Authentifizierung fehlgeschlagen. Laden Sie Ihren Schlüssel in den ssh-agent (ssh-add) oder setzen Sie eine IdentityFile in ~/.ssh/config – Hermes führt ssh nicht interaktiv aus.',
+        'SSH-Authentifizierung fehlgeschlagen. Laden Sie Ihren Schlüssel in den ssh-agent (ssh-add) oder setzen Sie eine IdentityFile in ~/.ssh/config – slave-agent führt ssh nicht interaktiv aus.',
       sshErrHostKey:
         'Der Host-Key hat sich seit Ihrer letzten Verbindung GEÄNDERT. Prüfen Sie, ob das erwartet ist, führen Sie dann ssh-keygen -R <host> aus und verbinden Sie sich erneut.',
       sshErrNotInstalled:
-        'Hermes ist auf dem Remote-Host nicht installiert. Installieren Sie es dort (curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh) oder legen Sie den Hermes-Pfad fest.',
+        'slave-agent ist auf dem Remote-Host nicht installiert. Installieren Sie es dort (curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh) oder legen Sie den Slave-Pfad fest.',
       sshErrPlatform:
-        'Nicht unterstützte Remote-Plattform. Der Desktop-SSH-Modus von Hermes unterstützt Linux-, macOS- und Windows-Remote-Hosts.',
+        'Nicht unterstützte Remote-Plattform. Der Desktop-SSH-Modus von slave-agent unterstützt Linux-, macOS- und Windows-Remote-Hosts.',
       sshErrTimeout: 'SSH-Verbindung ist ausgelaufen. Der Host ist möglicherweise nicht erreichbar oder schläft.',
-      sshErrUpdateRequired: 'Aktualisieren Sie Hermes auf dem Remote-Host, bevor Sie sich mit Desktop-SSH verbinden.',
+      sshErrUpdateRequired: 'Aktualisieren Sie slave-agent auf dem Remote-Host, bevor Sie sich mit Desktop-SSH verbinden.',
       sshErrUnknown: 'SSH-Verbindung fehlgeschlagen.'
     },
     keys: {
@@ -2058,7 +2058,7 @@ export const deOverrides = {
       noOutput: 'Noch keine Ausgabe.',
       deepLinkTitle: 'MCP-Server hinzufügen?',
       deepLinkDescription:
-        'Ein Link möchte diesen MCP-Server zu Hermes hinzufügen. Prüfen Sie die genaue Konfiguration unten – sie stammt vom Link, nicht von Hermes.',
+        'Ein Link möchte diesen MCP-Server zu slave-agent hinzufügen. Prüfen Sie die genaue Konfiguration unten – sie stammt vom Link, nicht von Slave.',
       deepLinkStdioWarning:
         'Dieser Server führt mit dem unten angezeigten Befehl einen lokalen Prozess auf Ihrem Rechner aus. Fahren Sie nur fort, wenn Sie seiner Quelle vertrauen.',
       deepLinkConfirm: 'Server hinzufügen',
@@ -2184,7 +2184,7 @@ export const deOverrides = {
       serverRunning: 'Läuft',
       runtimeInstalled: 'llama.cpp-Laufzeit installiert',
       runtimeInstalledDetail: (tag, backend) =>
-        `Build ${tag}, ${backend}-Backend. Hermes startet und verwaltet den Server für Sie.`,
+        `Build ${tag}, ${backend}-Backend. slave-agent startet und verwaltet den Server für Sie.`,
       installTitle: 'Lokale Laufzeit installieren',
       installDetail:
         'Lädt die llama.cpp-Inferenz-Engine herunter (einige hundert MB). Heruntergeladene Modelle laufen komplett auf diesem Rechner – kein Konto, nichts verlässt Ihren Computer.',
@@ -2236,7 +2236,7 @@ export const deOverrides = {
       updating: 'Engine wird aktualisiert…',
       upToDateTitle: 'Engine aktuell',
       upToDateDetail: (tag, backend) =>
-        `llama.cpp ${tag} (${backend}) wird ausgeführt — der neueste Build, den Hermes mitliefert.`,
+        `llama.cpp ${tag} (${backend}) wird ausgeführt — der neueste Build, den slave-agent mitliefert.`,
       activeDetail: 'Neue Chats verwenden dieses Modell – es wird geladen, wenn Sie Ihre erste Nachricht senden',
       activeNotLoaded: 'Wird bei Ihrer ersten Nachricht geladen',
       loadedPill: 'Im Speicher',
@@ -2513,7 +2513,7 @@ export const deOverrides = {
         cliBillingDisabled: {
           title: 'Remote-Ausgaben sind deaktiviert',
           message:
-            'Remote-Ausgaben sind für dieses Konto deaktiviert – ein Abrechnungsadministrator kann sie auf der Hermes-Agent-Seite des Portals aktivieren.'
+            'Remote-Ausgaben sind für dieses Konto deaktiviert – ein Abrechnungsadministrator kann sie auf der Slave-Agent-Seite des Portals aktivieren.'
         },
         roleRequired: {
           title: 'Administratorrolle erforderlich',
@@ -2582,7 +2582,7 @@ export const deOverrides = {
       connectAccount: 'Ein Konto verbinden',
       haveApiKey: 'Haben Sie stattdessen einen API-Key?',
       intro:
-        'Melden Sie sich mit einem Abo an – kein API-Key zum Kopieren. Hermes übernimmt die Browser-Anmeldung für Sie, direkt hier in der App.',
+        'Melden Sie sich mit einem Abo an – kein API-Key zum Kopieren. slave-agent übernimmt die Browser-Anmeldung für Sie, direkt hier in der App.',
       connected: 'Verbunden',
       collapse: 'Einklappen',
       connectAnother: 'Weiteren Provider verbinden',
@@ -2605,7 +2605,7 @@ export const deOverrides = {
       localEndpoint: {
         title: 'Lokaler / eigener Endpoint',
         description:
-          'Verbinden Sie Hermes mit einem beliebigen OpenAI-kompatiblen Endpunkt (Zyphra, vLLM, llama.cpp, Ollama usw.).'
+          'Verbinden Sie slave-agent mit einem beliebigen OpenAI-kompatiblen Endpunkt (Zyphra, vLLM, llama.cpp, Ollama usw.).'
       },
       loading: 'Provider werden geladen…'
     },
@@ -2734,7 +2734,7 @@ export const deOverrides = {
         needsSetupConfirmAction: 'Trotzdem auswählen',
         unavailableTitle: 'Terminalbefehle sind nicht verfügbar',
         unavailableMessage: backend =>
-          `Hermes kann gerade keine Shell-Befehle ausführen: ${backend} ist nicht bereit. Wechseln Sie zu Lokal oder schließen Sie die Einrichtung von ${backend} ab und versuchen Sie es erneut.`,
+          `slave-agent kann gerade keine Shell-Befehle ausführen: ${backend} ist nicht bereit. Wechseln Sie zu Lokal oder schließen Sie die Einrichtung von ${backend} ab und versuchen Sie es erneut.`,
         openBackendSettings: 'Terminal-Einstellungen öffnen',
         useLocal: 'Lokal verwenden',
         switchedToLocal: 'Terminalbefehle laufen jetzt lokal. Gilt für neue Sessions.'
@@ -2750,7 +2750,7 @@ export const deOverrides = {
         failedSave: 'Die Echtes-Profil-Einstellung konnte nicht gespeichert werden',
         prompt: {
           title: 'Auf Ihren Websites angemeldet bleiben',
-          body: 'Lassen Sie Hermes mit einem Schnappschuss Ihres Standard-Browserprofils browsen, damit Websites bereits angemeldet öffnen.',
+          body: 'Lassen Sie slave-agent mit einem Schnappschuss Ihres Standard-Browserprofils browsen, damit Websites bereits angemeldet öffnen.',
           bulletSnapshot: 'Cookies und Anmeldungen werden in einen verwalteten Schnappschuss kopiert.',
           bulletLiveProfile: 'Ihr Live-Browserprofil wird nie direkt geöffnet.',
           bulletLocal: 'Nichts verlässt diesen Computer.',
@@ -2815,7 +2815,7 @@ export const deOverrides = {
     edit: 'Bearbeiten',
     archive: 'Archivieren',
     skillArchivedTitle: 'Skill archiviert',
-    skillArchivedMessage: 'Wiederherstellbar über „hermes curator restore“.',
+    skillArchivedMessage: 'Wiederherstellbar über „slave curator restore“.',
     tabPlugins: 'Plugins',
     plugins: {
       agentTitle: 'Agent-Plugins',
@@ -2826,7 +2826,7 @@ export const deOverrides = {
       halfDesktopHint: 'diese App, gleich für jedes Profil',
       halfAgent: 'Agent',
       halfAgentIn: profile => `Agent in ${profile}`,
-      defaultProfile: 'Hermes (Standard)',
+      defaultProfile: 'slave-agent (Standard)',
       kindAgent: 'Agent',
       kindDesktop: 'Desktop',
       kindBoth: 'Agent + Desktop',
@@ -2851,12 +2851,12 @@ export const deOverrides = {
       toolsetToggleFailed: (name: string) =>
         `Die ${name}-Agent-Tools konnten nicht umgeschaltet werden; das Desktop-Panel bleibt unverändert`,
       legacyBackend:
-        'Dieses Backend ist älter als schlüsseladressierte Plugin-Schalter — aktualisieren Sie Hermes, um es hier zu verwalten.',
+        'Dieses Backend ist älter als schlüsseladressierte Plugin-Schalter — aktualisieren Sie slave-agent, um es hier zu verwalten.',
       portableBadge: 'tragbar',
       serverStates: {
         connected: 'verbunden',
         app_not_running: 'App läuft nicht',
-        hermes_not_connected: 'MCP-Verbindung fehlt',
+        slave_not_connected: 'MCP-Verbindung fehlt',
         endpoint_unavailable: 'Endpunkt nicht verfügbar',
         no_interactive_session: 'keine interaktive Session',
         version_too_old: 'Version zu alt',
@@ -2869,7 +2869,7 @@ export const deOverrides = {
       catalogHint:
         'Klicken Sie bei einem Plugin auf „+ Zu diesem Agenten hinzufügen“ – geprüfte Einträge werden an ihrem gepinnten Commit in das gewählte Profil installiert. Gebündelte Agent+Desktop-Plugins bieten beide Hälften an.',
       alreadyInstalled: name => `${name} ist in diesem Profil bereits installiert.`,
-      catalogProvenance: sha => `Aus dem Hermes-Katalog installiert${sha ? ` am Pin ${sha}` : ''}.`,
+      catalogProvenance: sha => `Aus dem Slave-Katalog installiert${sha ? ` am Pin ${sha}` : ''}.`,
       pinnedProvenance: sha =>
         `An Commit ${sha} gepinnt. Updates werden abgelehnt, bis es mit einem neuen Pin neu installiert wird.`,
       pinnedBadge: sha => `gepinnt @ ${sha}`,
@@ -2897,9 +2897,9 @@ export const deOverrides = {
       deepLinkErrorTitle: 'Plugin-Installationslink abgelehnt',
       deepLinkCatalogInvalidName: 'Der Katalogname im Link fehlt oder ist ungültig.',
       deepLinkCatalogUnknown: (name: string) =>
-        `\u201E${name}\u201C ist nicht im Hermes-Plugin-Katalog. Es wurde nichts installiert.`,
+        `\u201E${name}\u201C ist nicht im Slave-Plugin-Katalog. Es wurde nichts installiert.`,
       deepLinkCatalogUnavailable:
-        'Der Hermes-Plugin-Katalog konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und öffnen Sie den Link erneut.',
+        'Der Slave-Plugin-Katalog konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und öffnen Sie den Link erneut.',
       settingsToggle: (name: string) => `Einstellungen: ${name}`,
       settingsForm: {
         save: 'Einstellungen speichern',
@@ -2986,7 +2986,7 @@ export const deOverrides = {
     loadFailed: 'Speichergraph konnte nicht geladen werden',
     loading: 'Wird geladen…',
     emptyTitle: 'Noch nichts gelernt',
-    emptyDesc: 'Sobald Hermes Skills und Erinnerungen zu Ihrer Arbeit aufbaut, erscheinen sie hier.',
+    emptyDesc: 'Sobald slave-agent Skills und Erinnerungen zu Ihrer Arbeit aufbaut, erscheinen sie hier.',
     share: 'Map teilen',
     shareHint:
       'Kopieren Sie den Code, um diese Map zu teilen, oder fügen Sie einen ein, um sie zu laden. Er enthält nur das Layout, nicht Ihren Speicher oder Skill-Text.',
@@ -3066,7 +3066,7 @@ export const deOverrides = {
       placeholder: 'Pets suchen…',
       loading: 'Petdex-Galerie wird geladen…',
       error: 'Die Petdex-Galerie konnte nicht erreicht werden.',
-      staleBackend: 'Starten Sie Hermes neu, um Pets zu verwenden – das Backend ist älter als diese Funktion.',
+      staleBackend: 'Starten Sie slave-agent neu, um Pets zu verwenden – das Backend ist älter als diese Funktion.',
       empty: 'Keine passenden Pets.',
       turnOff: 'Ausschalten',
       turnOn: 'Einschalten',
@@ -3093,8 +3093,8 @@ export const deOverrides = {
       hatchComposing: 'Es wird zusammengesetzt…',
       hatchSaving: 'Fast geschafft…',
       namePlaceholder: 'Geben Sie Ihrem Pet einen Namen',
-      staleBackend: 'Aktualisieren Sie Hermes, um Pets zu generieren.',
-      backgroundHint: 'Sie können dieses Fenster schließen – Hermes benachrichtigt Sie, wenn es fertig ist.',
+      staleBackend: 'Aktualisieren Sie slave-agent, um Pets zu generieren.',
+      backgroundHint: 'Sie können dieses Fenster schließen – slave-agent benachrichtigt Sie, wenn es fertig ist.',
       slowProviderHint: 'Das kann mehrere Minuten dauern',
       remix: 'Remixen',
       remixConfirmTitle: 'Dieses Design remixen?',
@@ -3134,7 +3134,7 @@ export const deOverrides = {
       },
       settings: {
         title: 'Einstellungen',
-        detail: 'Hermes Desktop konfigurieren'
+        detail: 'slave-agent Desktop konfigurieren'
       },
       capabilities: {
         title: 'Fähigkeiten',
@@ -3175,7 +3175,7 @@ export const deOverrides = {
     noSessions: 'Noch keine Sessions.',
     gatewayRunning: 'Messaging-Gateway läuft',
     gatewayStopped: 'Messaging-Gateway gestoppt',
-    hermesActiveSessions: (version, count) => `Hermes ${version} · Aktive Sessions ${count}`,
+    slaveActiveSessions: (version, count) => `slave-agent ${version} · Aktive Sessions ${count}`,
     restartGateway: 'Gateway neu starten',
     openBrowser: 'Browser umschalten',
     toggleBrowser: 'Browser umschalten',
@@ -3184,7 +3184,7 @@ export const deOverrides = {
     sharedGatewayRestartDescription: bots => `Alle Bots auf diesem Gerät verbinden sich neu: ${bots}`,
     sharedGatewayRestartConfirm: 'Alle neu starten',
     sharedGatewayRestarted: count => `Gemeinsames Gateway neu gestartet (${count} ${count === 1 ? 'Bot' : 'Bots'})`,
-    updateHermes: 'Hermes aktualisieren',
+    updateHermes: 'slave-agent aktualisieren',
     reloadWindow: 'Fenster neu laden',
     actionRunning: 'läuft',
     actionDone: 'fertig',
@@ -3350,11 +3350,11 @@ export const deOverrides = {
     telegramQr: {
       title: 'Wählen Sie, wie Sie Ihren Telegram-Bot verbinden',
       subtitle:
-        'Beide Optionen verbinden einen Bot, den Sie kontrollieren, und speichern seine Zugangsdaten nur in dieser Hermes-Installation.',
+        'Beide Optionen verbinden einen Bot, den Sie kontrollieren, und speichern seine Zugangsdaten nur in dieser Slave-Installation.',
       quickSetup: 'Schnelleinrichtung',
       recommended: 'Empfohlen',
       quickHelp:
-        'Scannen Sie einen QR-Code und bestätigen Sie in Telegram. Hermes legt den Bot an und erkennt Ihre Telegram-Benutzer-ID automatisch.',
+        'Scannen Sie einen QR-Code und bestätigen Sie in Telegram. slave-agent legt den Bot an und erkennt Ihre Telegram-Benutzer-ID automatisch.',
       createWithQr: 'Mit QR-Code anlegen',
       starting: 'Wird gestartet…',
       replaceWarning:
@@ -3600,14 +3600,14 @@ export const deOverrides = {
       switchTo: (name, gateway) => `Zu ${name} auf ${gateway} wechseln`,
       deleteOn: gateway => ` auf ${gateway}`,
       localDevice:
-        'Dieses Gerät (lokales Backend — installiert Hermes, falls es fehlt, sonst öffnet es eine neue Sitzung)',
+        'Dieses Gerät (lokales Backend — installiert slave-agent, falls es fehlt, sonst öffnet es eine neue Sitzung)',
       switchDeviceTitle: 'Zu diesem Gerät wechseln?',
       switchDeviceDesc:
         'Das öffnet eine neue Sitzung auf diesem Computer. Das aktuelle Gespräch bleibt auf dem anderen Gateway.',
       switchDeviceConfirm: 'Wechseln',
       installDeviceTitle: 'Zu diesem Gerät wechseln?',
       installDeviceDesc:
-        'Hermes wird lokal installiert und danach eine neue Sitzung auf diesem Computer geöffnet. Ohne Bestätigung startet keine Installation.',
+        'slave-agent wird lokal installiert und danach eine neue Sitzung auf diesem Computer geöffnet. Ohne Bestätigung startet keine Installation.',
       installDeviceConfirm: 'Lokal installieren',
       connectExistingInstead: 'Stattdessen vorhandenes verbinden'
     },
@@ -3622,7 +3622,7 @@ export const deOverrides = {
       badge: (host: string) => `Läuft auf ${host}`,
       title: (profile: string) => `${profile} mit einem Remote-Host verbinden`,
       description:
-        'Sessions in diesem Profil laufen auf dem von Ihnen festgelegten Remote-Hermes statt auf diesem Computer.',
+        'Sessions in diesem Profil laufen auf dem von Ihnen festgelegten Remote-Slave statt auf diesem Computer.',
       urlLabel: 'Remote-Adresse',
       urlPlaceholder: 'https://hermes.example.com',
       urlInvalid: 'Geben Sie eine vollständige Adresse ein, die mit http:// oder https:// beginnt',
@@ -3658,7 +3658,7 @@ export const deOverrides = {
     defaultProfile: 'Standardprofil',
     defaultSet: (name: string) => `${name} ist jetzt der Standard`,
     defaultDescription:
-      'Wird beim Öffnen von Hermes und für neue Chats verwendet. Bestehende Sessions bleiben in ihren Profilen.',
+      'Wird beim Öffnen von slave-agent und für neue Chats verwendet. Bestehende Sessions bleiben in ihren Profilen.',
     failedSetDefault: 'Das Standardprofil konnte nicht festgelegt werden',
     setColor: color => `Farbe ${color} setzen`,
     autoColor: 'Auto',
@@ -3695,7 +3695,7 @@ export const deOverrides = {
     deleteDescMid: ' und entfernt sein ',
     deleteDescSuffix: ' Verzeichnis. Das kann nicht rückgängig gemacht werden.',
     deleting: 'Wird gelöscht...',
-    createDesc: 'Profile sind unabhängige Hermes-Umgebungen: eigene Config, eigene Skills und eigene SOUL.md.',
+    createDesc: 'Profile sind unabhängige Slave-Umgebungen: eigene Config, eigene Skills und eigene SOUL.md.',
     nameLabel: 'Name',
     cloneFrom: 'Klonen von',
     cloneFromNone: 'Keine (leer)',
@@ -3729,7 +3729,7 @@ export const deOverrides = {
     failedRename: 'Profil konnte nicht umbenannt werden'
   },
   modelAssignment: {
-    saveFailed: 'Hermes hat diese Modelländerung nicht gespeichert.',
+    saveFailed: 'slave-agent hat diese Modelländerung nicht gespeichert.',
     confirmTitle: 'Warnung zur Modellauswahl',
     confirmDetail: 'Bestätigen Sie nur, wenn Sie diesen Kompromiss akzeptieren.',
     confirmAction: 'Bestätigen',
@@ -3797,7 +3797,7 @@ export const deOverrides = {
     everyHourAt: minute => `Jede Stunde um :${minute}`,
     newCron: 'Neuer Cron',
     emptyDescNew:
-      'Planen Sie einen Prompt, der nach einem Cron-Ausdruck ausgeführt wird. Hermes führt ihn aus und liefert die Ergebnisse an das von Ihnen gewählte Ziel.',
+      'Planen Sie einen Prompt, der nach einem Cron-Ausdruck ausgeführt wird. slave-agent führt ihn aus und liefert die Ergebnisse an das von Ihnen gewählte Ziel.',
     emptyDescSearch: 'Versuchen Sie eine breitere Suchanfrage.',
     emptyTitleNew: 'Noch keine geplanten Jobs',
     emptyTitleSearch: 'Keine Treffer',
@@ -4010,9 +4010,9 @@ export const deOverrides = {
     storageCorrupt: {
       title: 'Die Session-Datenbank ist beschädigt',
       body: (profiles: string) =>
-        `Hermes kann nicht den gesamten Session-Verlauf für ${profiles} lesen. Chats, die in dieser Liste fehlen, wurden nicht gelöscht; die Datei, in der sie gespeichert sind, ist beschädigt.`,
+        `slave-agent kann nicht den gesamten Session-Verlauf für ${profiles} lesen. Chats, die in dieser Liste fehlen, wurden nicht gelöscht; die Datei, in der sie gespeichert sind, ist beschädigt.`,
       action:
-        'Beenden Sie Hermes für dieses Profil und prüfen Sie die Datei dann, ohne sie zu ändern, oder stellen Sie einen Snapshot wieder her:',
+        'Beenden Sie slave-agent für dieses Profil und prüfen Sie die Datei dann, ohne sie zu ändern, oder stellen Sie einen Snapshot wieder her:',
       guide: 'Wiederherstellungsanleitung'
     },
     noFilterMatches: 'Keine Sessions passen zu diesen Filtern',
@@ -4057,9 +4057,9 @@ export const deOverrides = {
         'Das Projekt wurde auf der vorherigen Verbindung oder im vorherigen Profil erstellt. Wechsle zurück; IDEA.md wurde nicht geschrieben.',
       createFailed: 'Projekt konnte nicht erstellt werden',
       staleBackend:
-        'Aktualisieren Sie das Hermes-Backend, um Projekte zu erstellen – Ihr Backend ist älter als diese Desktop-App (Einstellungen → Updates → Backend).',
+        'Aktualisieren Sie das Slave-Backend, um Projekte zu erstellen – Ihr Backend ist älter als diese Desktop-App (Einstellungen → Updates → Backend).',
       deleteConfirm:
-        'Das entfernt das gespeicherte Projekt aus Hermes. Dateien, Git-Repos und Worktrees bleiben unberührt.',
+        'Das entfernt das gespeicherte Projekt aus Slave. Dateien, Git-Repos und Worktrees bleiben unberührt.',
       startWork: 'Neuer Worktree',
       newWorktreeTitle: 'Neuer Worktree',
       newWorktreeDesc: 'Benennen Sie den Branch für diesen Worktree.',
@@ -4069,7 +4069,7 @@ export const deOverrides = {
       baseBranchNone: 'Keine Branches gefunden',
       startWorkFailed: 'Worktree konnte nicht erstellt werden',
       worktreeStaleBackend:
-        'Aktualisieren Sie das Hermes-Backend, um Worktrees über diese Remote-Verbindung zu erstellen – es ist älter als die Git-Worktree-API.',
+        'Aktualisieren Sie das Slave-Backend, um Worktrees über diese Remote-Verbindung zu erstellen – es ist älter als die Git-Worktree-API.',
       worktreeProjectLabel: 'Projekt',
       worktreeProjectPlaceholder: 'Projekte durchsuchen…',
       worktreeProjectNone: 'Keine Projekte mit Ordner',
@@ -4165,12 +4165,12 @@ export const deOverrides = {
   composer: {
     message: 'Nachricht',
     wakingProfile: profile => `Wecke ${profile}…`,
-    placeholderStarting: 'Hermes wird gestartet…',
-    placeholderReconnecting: 'Verbindung zu Hermes wird wiederhergestellt…',
+    placeholderStarting: 'slave-agent wird gestartet…',
+    placeholderReconnecting: 'Verbindung zu slave-agent wird wiederhergestellt…',
     placeholderFollowUp: 'Folge senden',
     newSessionPlaceholders: [
       'Was bauen wir?',
-      'Geben Sie Hermes eine Aufgabe',
+      'Geben Sie slave-agent eine Aufgabe',
       'Was ist Ihnen wichtig?',
       'Beschreiben Sie, was Sie brauchen',
       'Was sollen wir angehen?',
@@ -4207,8 +4207,8 @@ export const deOverrides = {
     transcribingDictation: 'Transkribiert Diktat',
     voiceControls: 'Sprache',
     voiceEngine: 'Sprachchat-Engine',
-    voiceEngineChained: 'Sprache-zu-Text + Hermes-Stimme',
-    voiceEngineLive: 'GPT-Live (Vollduplex, delegiert an Hermes)',
+    voiceEngineChained: 'Sprache-zu-Text + Slave-Stimme',
+    voiceEngineLive: 'GPT-Live (Vollduplex, delegiert an slave-agent)',
     voiceEngineLiveNeedsKey: 'Benötigt einen OpenAI-API-Schlüssel',
     voiceEngineChangeFailed: 'Sprachchat-Engine konnte nicht geändert werden',
     voiceEngineChainedShort: 'Sprache-zu-Text',
@@ -4233,7 +4233,7 @@ export const deOverrides = {
       '/resume': 'Gespeicherte Session fortsetzen',
       '/details': 'Transkript-Detailgrad steuern',
       '/copy': 'Auswahl oder letzte Assistenten-Nachricht kopieren',
-      '/quit': 'hermes beenden',
+      '/quit': 'slave beenden',
       '/start': 'Start-Pings der Plattform ohne Antwort bestätigen',
       '/new': 'Neuen Desktop-Chat starten',
       '/topic': 'Telegram-DM-Themen-Sessions aktivieren oder prüfen',
@@ -4259,12 +4259,12 @@ export const deOverrides = {
       '/queue':
         'Einen Prompt für den nächsten Turn einreihen oder eingereihte Prompts auflisten/bearbeiten/entfernen/verschieben/leeren',
       '/steer': 'Nach dem nächsten Tool-Aufruf eine Nachricht einfügen, ohne zu unterbrechen',
-      '/goal': 'Ein dauerhaftes Ziel festlegen, an dem Hermes über mehrere Turns arbeitet, bis es erreicht ist',
+      '/goal': 'Ein dauerhaftes Ziel festlegen, an dem slave-agent über mehrere Turns arbeitet, bis es erreicht ist',
       '/heartbeat': 'Einen wiederkehrenden Prompt festlegen, der bei Leerlauf in diese Session zurückkehrt',
       '/refine': 'Diese Unterhaltung jetzt prüfen und Erkenntnisse in Gedächtnis/Skills speichern',
       '/review': 'Einen unabhängigen Subagent starten, der die gerade besprochene Arbeit prüft (PR, Code, Doku)',
       '/loop': 'Einen Prompt in dieser Session in regelmäßigen Abständen erneut ausführen',
-      '/plan': 'Einen Markdown-Umsetzungsplan in .hermes/plans/ schreiben, ohne etwas auszuführen',
+      '/plan': 'Einen Markdown-Umsetzungsplan in .slave/plans/ schreiben, ohne etwas auszuführen',
       '/moa': 'Einen Prompt mit der Standard-Mixture-of-Agents-Vorlage ausführen und dann Ihr Modell wiederherstellen',
       '/subgoal': 'Zusätzliche Kriterien zum aktiven Ziel hinzufügen oder verwalten',
       '/status': 'Status der aktuellen Session anzeigen',
@@ -4272,7 +4272,7 @@ export const deOverrides = {
       '/context':
         'Detaillierte Ansicht des Kontextfensters mit Nutzungsanzeige, Aufschlüsselung nach Kategorie, Komprimierungsstatistik und Durchsatz anzeigen',
       '/whoami': 'Ihren Zugriff auf Slash-Befehle anzeigen (Admin / Benutzer)',
-      '/profile': 'Aktives Hermes-Profil wechseln',
+      '/profile': 'Aktives Slave-Profil wechseln',
       '/codex-runtime': 'Codex-App-Server-Runtime für OpenAI/Codex-Modelle umschalten',
       '/personality': 'Eine vordefinierte Persönlichkeit festlegen',
       '/battery': 'Farbcodierte Akkuanzeige in der Statusleiste umschalten',
@@ -4300,7 +4300,7 @@ export const deOverrides = {
       '/subscription': 'Ihren Nous-Tarif ansehen und im Browser ändern',
       '/topup': 'Ihr Nous-Guthaben anzeigen und die Abrechnung im Portal verwalten',
       '/platform': 'Eine fehlerhafte Gateway-Plattform pausieren, fortsetzen oder auflisten',
-      '/version': 'Hermes-Agent-Version anzeigen',
+      '/version': 'Slave-Agent-Version anzeigen',
       '/debug': 'Debug-Bericht (Systeminfos + Logs) hochladen und teilbare Links erhalten',
       '/model': 'Modell für diese Session wechseln'
     },
@@ -4315,7 +4315,7 @@ export const deOverrides = {
       'composer.history': 'Popover / Verlauf durchblättern'
     },
     attachUrlTitle: 'URL anhängen',
-    attachUrlDesc: 'Hermes ruft die Seite ab und fügt sie als Kontext für diesen Turn hinzu.',
+    attachUrlDesc: 'slave-agent ruft die Seite ab und fügt sie als Kontext für diesen Turn hinzu.',
     urlPlaceholder: 'https://example.com/post',
     urlHintPre: 'Geben Sie die vollständige URL an, z. B. ',
     attach: 'Anhängen',
@@ -4569,7 +4569,7 @@ export const deOverrides = {
       createPr: 'PR erstellen',
       openPr: 'PR öffnen',
       ghMissing: 'Installieren Sie die GitHub CLI (gh) und melden Sie sich an, um PRs zu öffnen',
-      agentShip: 'Hermes bitten, einen PR zu öffnen',
+      agentShip: 'slave-agent bitten, einen PR zu öffnen',
       agentShipUnavailable: 'Der Chat, der diese Änderungen besitzt, ist nicht auf dem Bildschirm.',
       agentShipPrompt:
         'Überprüfe die aktuellen Änderungen, committe sie mit einer klaren Conventional-Commit-Message, pushe den Branch und öffne einen Pull Request.',
@@ -4581,23 +4581,23 @@ export const deOverrides = {
     }
   },
   updates: {
-    discontinuedTitle: 'Dieser Hermes-Build wird nicht mehr unterstützt',
+    discontinuedTitle: 'Dieser Slave-Build wird nicht mehr unterstützt',
     discontinuedBody:
-      'Dieser Hermes-Build wird nicht mehr unterstützt und funktioniert möglicherweise nicht mehr — deinstallieren Sie ihn. Ihre Daten bleiben auf dem Datenträger.',
+      'Dieser Slave-Build wird nicht mehr unterstützt und funktioniert möglicherweise nicht mehr — deinstallieren Sie ihn. Ihre Daten bleiben auf dem Datenträger.',
     channels: { stable: 'Stabil', canary: 'Canary' },
-    appName: 'Hermes',
+    appName: 'slave-agent',
     availableBodyRelease: tag => `Version ${tag} ist bereit zur Installation.`,
     releaseAvailable: tag => `Version ${tag} ist verfügbar.`,
     checkingShort: 'Wird geprüft…',
     availableBodyAppInstaller:
-      'Eine neue Hermes-Version ist bereit. Hermes wird geschlossen, Windows schließt das Update ab und Hermes startet automatisch neu.',
+      'Eine neue Slave-Version ist bereit. slave-agent wird geschlossen, Windows schließt das Update ab und slave-agent startet automatisch neu.',
     applyingBodyAppInstaller:
-      'Hermes wird geschlossen und Windows schließt das Update ab. Danach startet Hermes automatisch neu.',
+      'slave-agent wird geschlossen und Windows schließt das Update ab. Danach startet slave-agent automatisch neu.',
     applyingCloseAppInstaller:
-      'Dieses Fenster schließt sich, Windows schließt das Update ab und Hermes startet automatisch neu.',
+      'Dieses Fenster schließt sich, Windows schließt das Update ab und slave-agent startet automatisch neu.',
     checkUnknownTitleAppInstaller: 'Update-Check fehlgeschlagen',
     checkUnknownBodyAppInstaller:
-      'Windows konnte gerade nicht nach Updates suchen. Updates werden auch beim Neustart von Hermes automatisch installiert.',
+      'Windows konnte gerade nicht nach Updates suchen. Updates werden auch beim Neustart von slave-agent automatisch installiert.',
     versionDetailsTitle: 'Versionsdetails',
     versionDetailsBody:
       'Diese Installation wird außerhalb der App verwaltet. Aktualisieren Sie sie auf dieselbe Weise, wie Sie sie installiert haben.',
@@ -4609,9 +4609,9 @@ export const deOverrides = {
     versionDetailsDistributionDesktopMsix: 'Desktop-App (MSIX)',
     versionDetailsDistributionDesktopInstaller: 'Desktop-App (Installer)',
     versionDetailsDistributionSourceInstaller: 'Quellcode (Installationsskript)',
-    versionDetailsDistributionSourceInstallerDesktop: 'Quellcode (Installationsskript) + hermes desktop',
+    versionDetailsDistributionSourceInstallerDesktop: 'Quellcode (Installationsskript) + slave desktop',
     versionDetailsDistributionSource: 'Quellcode',
-    versionDetailsDistributionSourceDesktop: 'Quellcode + hermes desktop',
+    versionDetailsDistributionSourceDesktop: 'Quellcode + slave desktop',
     versionDetailsDistributionStore: 'Microsoft Store',
     versionDetailsRuntime: 'Laufzeit',
     versionDetailsRuntimeEmbedded: 'Eingebettete Laufzeit',
@@ -4622,12 +4622,12 @@ export const deOverrides = {
     versionUnavailable: 'Version nicht verfügbar',
     bundleOutOfSync: 'App-Build ist veraltet',
     bundleOutOfSyncDesc:
-      'Die Hermes-Laufzeit wurde aktualisiert, die Desktop-App selbst ist aber noch ein älterer Build – neue Oberflächenfunktionen (wie der Bot-Modus) fehlen, bis sie aktualisiert wird. Führen Sie das Update unten aus, um die App neu zu bauen. Falls das die Warnung nicht behebt, installieren Sie den neuesten Desktop-Installer neu.',
+      'Die Slave-Laufzeit wurde aktualisiert, die Desktop-App selbst ist aber noch ein älterer Build – neue Oberflächenfunktionen (wie der Bot-Modus) fehlen, bis sie aktualisiert wird. Führen Sie das Update unten aus, um die App neu zu bauen. Falls das die Warnung nicht behebt, installieren Sie den neuesten Desktop-Installer neu.',
     bundleOutOfSyncAction: 'Installer herunterladen',
     bundleSwapPending: 'Neustart zum Abschließen des Updates',
     bundleSwapPendingDesc:
-      'Die aktualisierte App ist bereits installiert — Hermes muss nur noch neu gestartet werden, um sie zu laden. Chats und Einstellungen bleiben unberührt.',
-    bundleSwapPendingAction: 'Hermes neu starten',
+      'Die aktualisierte App ist bereits installiert — slave-agent muss nur noch neu gestartet werden, um sie zu laden. Chats und Einstellungen bleiben unberührt.',
+    bundleSwapPendingAction: 'slave-agent neu starten',
     checkNow: 'Jetzt prüfen',
     seeWhatsNew: 'Neuigkeiten ansehen',
     releaseNotes: 'Versionshinweise',
@@ -4650,9 +4650,9 @@ export const deOverrides = {
       fetch: 'Wird heruntergeladen…',
       pull: 'Fast fertig…',
       pydeps: 'Wird abgeschlossen…',
-      update: 'Aktualisiert Hermes…',
+      update: 'Aktualisiert slave-agent…',
       rebuild: 'Baut die Desktop-App neu…',
-      restart: 'Startet Hermes neu…',
+      restart: 'Startet slave-agent neu…',
       done: 'Update abgeschlossen',
       manual: 'Über Ihr Terminal aktualisieren',
       guiSkew: 'Desktop-App aktualisieren',
@@ -4662,18 +4662,18 @@ export const deOverrides = {
     checkFailedTitle: 'Update-Check fehlgeschlagen',
     tryAgain: 'Erneut versuchen',
     notAvailableTitle: 'Kein Update verfügbar',
-    unsupportedMessage: 'Diese Hermes-Version kann sich nicht aus der App heraus aktualisieren.',
+    unsupportedMessage: 'Diese Slave-Version kann sich nicht aus der App heraus aktualisieren.',
     connectionRetry: 'Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
-    gitUnusable: 'Hermes konnte Git auf diesem Computer nicht ausführen und daher nicht nach Updates suchen.',
+    gitUnusable: 'slave-agent konnte Git auf diesem Computer nicht ausführen und daher nicht nach Updates suchen.',
     connectionSettings: 'Verbindungseinstellungen',
     openDownloadPage: 'Download-Seite öffnen',
     latestBody: 'Sie verwenden die neueste Version.',
     latestBodyBackend: 'Das Backend läuft mit der neuesten Version.',
     allSetTitle: 'Alles bereit',
     availableTitle: 'Neues Update verfügbar',
-    availableBody: 'Eine neue Hermes-Version ist bereit zur Installation.',
+    availableBody: 'Eine neue Slave-Version ist bereit zur Installation.',
     availableTitleBackend: 'Backend-Update verfügbar',
-    availableBodyBackend: 'Eine neuere Version des verbundenen Hermes-Backends ist bereit zur Installation.',
+    availableBodyBackend: 'Eine neuere Version des verbundenen Slave-Backends ist bereit zur Installation.',
     availableBodyNoChangelog:
       'Eine neuere Version ist bereit. Release-Notizen sind für diesen Installationstyp nicht verfügbar.',
     updateNow: 'Jetzt aktualisieren',
@@ -4683,32 +4683,32 @@ export const deOverrides = {
     manualTitle: 'Über Ihr Terminal aktualisieren',
     manualUnavailableTitle: 'Aktualisierung hier nicht möglich',
     manualBody:
-      'Sie haben Hermes über die Befehlszeile installiert, daher laufen Updates auch dort. Fügen Sie dies in Ihr Terminal ein:',
-    manualPickedUp: 'Hermes übernimmt die neue Version beim nächsten Start.',
+      'Sie haben slave-agent über die Befehlszeile installiert, daher laufen Updates auch dort. Fügen Sie dies in Ihr Terminal ein:',
+    manualPickedUp: 'slave-agent übernimmt die neue Version beim nächsten Start.',
     manualBodyBackend:
-      'Das Hermes-Backend wird außerhalb dieser App verwaltet. Führen Sie dies auf dem Server aus, der es hostet:',
+      'Das Slave-Backend wird außerhalb dieser App verwaltet. Führen Sie dies auf dem Server aus, der es hostet:',
     manualPickedUpBackend: 'Das Backend lädt die neue Version, sobald das Update abgeschlossen ist.',
     guiSkewTitle: 'Desktop-App aktualisieren',
     guiSkewBody:
-      'Das Backend wurde aktualisiert, aber dieses Desktop-App-Paket nicht. Aktualisieren oder installieren Sie die Hermes-Desktop-App neu (Ihr AppImage / .deb / .rpm), um beide abzugleichen.',
+      'Das Backend wurde aktualisiert, aber dieses Desktop-App-Paket nicht. Aktualisieren oder installieren Sie die Slave-Desktop-App neu (Ihr AppImage / .deb / .rpm), um beide abzugleichen.',
     copy: 'Kopieren',
     copied: 'Kopiert',
     done: 'Fertig',
     applyingBody:
-      'Der Hermes-Updater übernimmt in einem eigenen Fenster und öffnet Hermes automatisch wieder, wenn er fertig ist. Bitte öffnen Sie Hermes während des Updates nicht selbst erneut.',
+      'Der Slave-Updater übernimmt in einem eigenen Fenster und öffnet slave-agent automatisch wieder, wenn er fertig ist. Bitte öffnen Sie slave-agent während des Updates nicht selbst erneut.',
     applyingBodyBackend:
-      'Das Remote-Backend wendet das Update an und startet neu. Hermes verbindet sich automatisch wieder, wenn es zurück ist.',
-    applyingClose: 'Dieses Fenster schließt sich während des Updates, dann öffnet sich Hermes von selbst wieder.',
+      'Das Remote-Backend wendet das Update an und startet neu. slave-agent verbindet sich automatisch wieder, wenn es zurück ist.',
+    applyingClose: 'Dieses Fenster schließt sich während des Updates, dann öffnet sich slave-agent von selbst wieder.',
     errorTitle: 'Update nicht abgeschlossen',
     errorBody: 'Keine Sorge – es ging nichts verloren. Sie können es jetzt erneut versuchen.',
-    blockerTitle: 'Lokale Vorschauen schließen, um Hermes zu aktualisieren?',
+    blockerTitle: 'Lokale Vorschauen schließen, um slave-agent zu aktualisieren?',
     blockerBody:
-      'Hermes muss diese lokalen Vorschauen vor dem Update stoppen. Ihre Dateien werden dabei weder geändert noch gelöscht.',
-    foreignBlockerTitle: 'Andere Prozesse schließen, um Hermes zu aktualisieren',
+      'slave-agent muss diese lokalen Vorschauen vor dem Update stoppen. Ihre Dateien werden dabei weder geändert noch gelöscht.',
+    foreignBlockerTitle: 'Andere Prozesse schließen, um slave-agent zu aktualisieren',
     foreignBlockerBody:
-      'Hermes kann diese Prozesse nicht sicher automatisch beenden. Schließen Sie die App, das Terminal oder den Dienst, zu dem sie gehören, und versuchen Sie das Update erneut.',
+      'slave-agent kann diese Prozesse nicht sicher automatisch beenden. Schließen Sie die App, das Terminal oder den Dienst, zu dem sie gehören, und versuchen Sie das Update erneut.',
     mixedBlockerBody:
-      'Hermes kann die unten aufgeführten lokalen Vorschauen schließen. Andere Prozesse müssen manuell geschlossen werden, bevor das Update fortgesetzt werden kann.',
+      'slave-agent kann die unten aufgeführten lokalen Vorschauen schließen. Andere Prozesse müssen manuell geschlossen werden, bevor das Update fortgesetzt werden kann.',
     closePreviewsAndUpdate: 'Vorschauen schließen und aktualisieren',
     closePreviewsAndCheckAgain: 'Vorschauen schließen und erneut prüfen',
     localPreview: 'Lokale Vorschau',
@@ -4748,12 +4748,12 @@ export const deOverrides = {
     sessionsTitle: 'Jedes Profil führt seine eigenen Sessions',
     sessionsText:
       'Diese Liste gehört zum Standardprofil. „Neue Session“ startet eine im jeweils gewählten Profil. Wechseln Sie Profile über die Leiste, und die Liste ändert sich mit.',
-    stayTitle: 'Hermes ist einen Klick entfernt',
+    stayTitle: 'slave-agent ist einen Klick entfernt',
     stayText:
-      'Wechseln Sie ins Einrichtungsprofil und öffnen Sie „Willkommen bei Hermes“, wenn Sie Hilfe brauchen. Es bleibt dort.'
+      'Wechseln Sie ins Einrichtungsprofil und öffnen Sie „Willkommen bei slave-agent“, wenn Sie Hilfe brauchen. Es bleibt dort.'
   },
   guidedGreeting: {
-    line: 'Hallo und willkommen. Ich bin Hermes. Geben Sie mir zwei Minuten, um alles für Sie einzurichten, dann setzen wir mich auf etwas an, das Sie wirklich erledigt haben möchten.\\n\\nAber zuerst: Wie soll ich Sie nennen?',
+    line: 'Hallo und willkommen. Ich bin Slave. Geben Sie mir zwei Minuten, um alles für Sie einzurichten, dann setzen wir mich auf etwas an, das Sie wirklich erledigt haben möchten.\\n\\nAber zuerst: Wie soll ich Sie nennen?',
     nameSuggestion: name => `(Ich kann Sie auch einfach ${name} nennen, wenn Ihnen das lieber ist.)`
   },
   install: {
@@ -4764,7 +4764,7 @@ export const deOverrides = {
       skipped: 'Übersprungen',
       failed: 'Fehlgeschlagen'
     },
-    oneTimeTitle: 'Hermes braucht eine einmalige Installation',
+    oneTimeTitle: 'slave-agent braucht eine einmalige Installation',
     unsupportedDesc: platform =>
       `Die automatische Installation beim ersten Start ist auf ${platform} noch nicht verfügbar. Öffnen Sie ein Terminal, führen Sie den Befehl unten aus und starten Sie die App dann neu. Bei späteren Starts wird dieser Schritt übersprungen.`,
     installCommand: 'Installationsbefehl',
@@ -4772,26 +4772,26 @@ export const deOverrides = {
     viewDocs: 'Installations-Doku ansehen',
     installTo: 'Wird installiert nach',
     retryAfterRun: "Ich hab's ausgeführt – erneut versuchen",
-    setupChoiceTitle: 'Hermes Desktop einrichten',
+    setupChoiceTitle: 'slave-agent Desktop einrichten',
     setupChoiceDesc:
-      'Verbinden Sie diese App mit einem Hermes Gateway, das Sie bereits betreiben, oder installieren Sie Hermes lokal auf diesem Computer.',
-    connectExistingTitle: 'Mit bestehendem Hermes verbinden',
+      'Verbinden Sie diese App mit einem slave-agent Gateway, das Sie bereits betreiben, oder installieren Sie slave-agent lokal auf diesem Computer.',
+    connectExistingTitle: 'Mit bestehendem slave-agent verbinden',
     connectExistingShort: 'Bestehendes verbinden',
     connectExistingDesc:
       'Ein Remote-Backend mit Session-Token oder Browser-Anmeldung verwenden. Es wird keine lokale Installation gestartet.',
-    installLocalTitle: 'Hermes lokal installieren',
+    installLocalTitle: 'slave-agent lokal installieren',
     installLocalDesc:
-      'Hermes herunterladen, seine Python-Umgebung erstellen und das Backend auf diesem Computer ausführen.',
+      'slave-agent herunterladen, seine Python-Umgebung erstellen und das Backend auf diesem Computer ausführen.',
     localStartUnavailable:
-      'Die lokale Installation konnte nicht gestartet werden. Starten Sie Hermes Desktop neu und versuchen Sie es erneut.',
-    remoteSetupTitle: 'Mit bestehendem Hermes verbinden',
+      'Die lokale Installation konnte nicht gestartet werden. Starten Sie slave-agent Desktop neu und versuchen Sie es erneut.',
+    remoteSetupTitle: 'Mit bestehendem slave-agent verbinden',
     remoteSetupDesc:
-      'Geben Sie die URL Ihres Gateways ein. Hermes Desktop erkennt, ob ein Token oder eine Browser-Anmeldung nötig ist.',
+      'Geben Sie die URL Ihres Gateways ein. slave-agent Desktop erkennt, ob ein Token oder eine Browser-Anmeldung nötig ist.',
     remoteUrlTitle: 'Gateway-URL',
-    remoteUrlDesc: 'Verwenden Sie die Basis-URL des Hermes Gateways, bei Remote-Gateways einschließlich https://.',
+    remoteUrlDesc: 'Verwenden Sie die Basis-URL des slave-agent Gateways, bei Remote-Gateways einschließlich https://.',
     remoteUrlPlaceholder: 'https://gateway.example.com/hermes',
     probing: 'Gateway-Authentifizierung wird erkannt...',
-    probeError: 'Dieses Hermes Gateway konnte nicht erreicht werden.',
+    probeError: 'Dieses slave-agent Gateway konnte nicht erreicht werden.',
     probeErrorDetails: 'Details',
     identityProvider: 'Ihr Identity-Provider',
     authTitle: 'Authentifizierung',
@@ -4812,12 +4812,12 @@ export const deOverrides = {
     applyRemote: 'Übernehmen und neu verbinden',
     backToSetup: 'Zurück',
     failedTitle: 'Installation fehlgeschlagen',
-    settingUpTitle: 'Hermes Agent wird eingerichtet',
+    settingUpTitle: 'slave-agent wird eingerichtet',
     finishingTitle: 'Wird abgeschlossen',
     failedDesc:
-      'Einer der Installationsschritte ist fehlgeschlagen. Unter Windows kann das passieren, wenn eine andere Hermes-CLI- oder Desktop-Instanz läuft. Beenden Sie alle laufenden Hermes-Instanzen und versuchen Sie es dann erneut. Das vollständige Protokoll finden Sie in den Details unten oder im Desktop-Log.',
+      'Einer der Installationsschritte ist fehlgeschlagen. Unter Windows kann das passieren, wenn eine andere Slave-CLI- oder Desktop-Instanz läuft. Beenden Sie alle laufenden Slave-Instanzen und versuchen Sie es dann erneut. Das vollständige Protokoll finden Sie in den Details unten oder im Desktop-Log.',
     activeDesc:
-      'Das ist eine einmalige Einrichtung. Der Hermes-Installer lädt Abhängigkeiten herunter und konfiguriert Ihren Computer. Bei späteren Starts wird dieser Schritt übersprungen.',
+      'Das ist eine einmalige Einrichtung. Der Slave-Installer lädt Abhängigkeiten herunter und konfiguriert Ihren Computer. Bei späteren Starts wird dieser Schritt übersprungen.',
     progress: (completed, total) => `${completed} von ${total} Schritten fertig`,
     currentStage: stage => ` – gerade: ${stage}`,
     fetchingManifest: 'Installer-Manifest wird geholt...',
@@ -4835,12 +4835,12 @@ export const deOverrides = {
     openLogs: 'Logs öffnen'
   },
   onboarding: {
-    headerTitle: 'Hermes Agent für Sie einrichten',
+    headerTitle: 'slave-agent für Sie einrichten',
     headerDesc:
       'Verbinden Sie einen Modell-Anbieter, um mit dem Chatten zu beginnen. Die meisten Optionen brauchen nur einen Klick.',
     preparingInstall:
-      'Hermes schließt die Installation ab. Das dauert beim ersten Start normalerweise unter einer Minute.',
-    starting: 'Hermes wird gestartet…',
+      'slave-agent schließt die Installation ab. Das dauert beim ersten Start normalerweise unter einer Minute.',
+    starting: 'slave-agent wird gestartet…',
     lookingUpProviders: 'Anbieter werden gesucht...',
     collapse: 'Einklappen',
     otherProviders: 'Andere Anbieter',
@@ -4848,7 +4848,7 @@ export const deOverrides = {
     chooseLater: 'Ich wähle später einen Anbieter',
     recommended: 'Empfohlen',
     connected: 'Verbunden',
-    featuredPitch: 'Ein Abo, 300+ Frontier-Modelle – die empfohlene Art, Hermes zu nutzen',
+    featuredPitch: 'Ein Abo, 300+ Frontier-Modelle – die empfohlene Art, slave-agent zu nutzen',
     fireworksPitch: 'Direkte Model-API – Fireworks-gehostete Frontier-Modelle',
     localModelsTitle: 'Modelle lokal ausführen',
     localModelsPitch: 'Kein Konto nötig – laden Sie ein Modell herunter und führen Sie es auf diesem Rechner aus',
@@ -4877,7 +4877,7 @@ export const deOverrides = {
       local: {
         short: 'selbst gehostet',
         description:
-          'Verbinden Sie Hermes mit einem lokalen oder selbst gehosteten OpenAI-kompatiblen Endpunkt (vLLM, llama.cpp, Ollama usw.).'
+          'Verbinden Sie slave-agent mit einem lokalen oder selbst gehosteten OpenAI-kompatiblen Endpunkt (vLLM, llama.cpp, Ollama usw.).'
       }
     },
     backToSignIn: 'Zurück zur Anmeldung',
@@ -4891,7 +4891,7 @@ export const deOverrides = {
     update: 'Aktualisieren',
     flowSubtitles: {
       pkce: 'Öffnet Ihren Browser zur Anmeldung und fährt dann hier fort',
-      device_code: 'Öffnet eine Verifizierungsseite in Ihrem Browser – Hermes verbindet sich automatisch',
+      device_code: 'Öffnet eine Verifizierungsseite in Ihrem Browser – slave-agent verbindet sich automatisch',
       external: 'Melden Sie sich einmal in Ihrem Terminal an und kehren Sie dann zum Chatten zurück'
     },
     startingSignIn: provider => `Anmeldung für ${provider} wird gestartet...`,
@@ -4909,12 +4909,12 @@ export const deOverrides = {
     pickDifferentProvider: 'Einen anderen Anbieter wählen',
     signInWith: provider => `Mit ${provider} anmelden`,
     openedBrowser: provider => `Wir haben ${provider} in Ihrem Browser geöffnet.`,
-    authorizeThere: 'Autorisieren Sie Hermes dort.',
+    authorizeThere: 'Autorisieren Sie slave-agent dort.',
     copyAuthCode: 'Kopieren Sie den Autorisierungscode und fügen Sie ihn unten ein.',
     pasteAuthCode: 'Autorisierungscode einfügen',
     reopenAuthPage: 'Autorisierungsseite erneut öffnen',
     autoBrowser: provider =>
-      `Wir haben ${provider} in Ihrem Browser geöffnet. Autorisieren Sie Hermes dort, und Sie werden automatisch verbunden – nichts zu kopieren oder einzufügen.`,
+      `Wir haben ${provider} in Ihrem Browser geöffnet. Autorisieren Sie slave-agent dort, und Sie werden automatisch verbunden – nichts zu kopieren oder einzufügen.`,
     reopenSignInPage: 'Anmeldeseite erneut öffnen',
     waitingAuthorize: 'Warten auf Ihre Autorisierung…',
     externalPending: provider =>
@@ -4935,7 +4935,7 @@ export const deOverrides = {
   freeTier: {
     providerRowTitle: 'Nous · Gratis-Tarif',
     providerRowPitch: 'Melden Sie sich mit einem Nous-Konto an, um mehr Modelle und Tools freizuschalten.',
-    readyTitle: 'Hermes ist bereit.',
+    readyTitle: 'slave-agent ist bereit.',
     readyCaption: 'Kostenlos · Verbindungen inklusive',
     begin: 'Loslegen',
     signInInstead: 'Stattdessen mit einem Nous-Konto anmelden',
@@ -4974,20 +4974,20 @@ export const deOverrides = {
     errorBody: 'Die Anmeldung wurde nicht abgeschlossen; starten Sie sie erneut.',
     busyHeading: 'Fast geschafft',
     busyBody: wait =>
-      `Hermes konnte Ihre Anmeldung nicht abschließen, weil der Nous-Dienst ausgelastet ist. Versuchen Sie es in ${wait} erneut. Ihre Session bleibt so lange erhalten.`,
+      `slave-agent konnte Ihre Anmeldung nicht abschließen, weil der Nous-Dienst ausgelastet ist. Versuchen Sie es in ${wait} erneut. Ihre Session bleibt so lange erhalten.`,
     unreachableBody:
-      'Hermes konnte den Nous-Dienst nicht erreichen, um Ihre Anmeldung abzuschließen. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut. Ihre Session bleibt erhalten.',
+      'slave-agent konnte den Nous-Dienst nicht erreichen, um Ihre Anmeldung abzuschließen. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut. Ihre Session bleibt erhalten.',
     alreadySignedInHeading: 'Bereits angemeldet.',
-    alreadySignedInBody: 'Dieses Hermes ist bereits mit einem Nous-Konto angemeldet.',
+    alreadySignedInBody: 'Dieses slave-agent ist bereits mit einem Nous-Konto angemeldet.',
     setupFailed: {
       gateClosed:
-        'Diese Hermes-Version kann ohne Nous-Konto nicht starten. Melden Sie sich an oder legen Sie eines an – kostenlos und in einer Minute erledigt.',
+        'Diese Slave-Version kann ohne Nous-Konto nicht starten. Melden Sie sich an oder legen Sie eines an – kostenlos und in einer Minute erledigt.',
       paused:
-        'Chatten ohne Anmeldung ist vorübergehend pausiert. Hermes prüft weiter. Die Anmeldung ist kostenlos, und Sie können sofort weitermachen.',
+        'Chatten ohne Anmeldung ist vorübergehend pausiert. slave-agent prüft weiter. Die Anmeldung ist kostenlos, und Sie können sofort weitermachen.',
       rateLimited: wait =>
-        `Gerade starten sehr viele Leute, deshalb versucht Hermes es in ${wait} erneut. Die Anmeldung ist kostenlos und überspringt das Warten.`,
+        `Gerade starten sehr viele Leute, deshalb versucht slave-agent es in ${wait} erneut. Die Anmeldung ist kostenlos und überspringt das Warten.`,
       unreachable:
-        'Hermes konnte den Nous-Dienst nicht erreichen. Prüfen Sie Ihre Internetverbindung und tippen Sie dann auf „Erneut versuchen“. Oder verbinden Sie vorerst einen anderen Anbieter.',
+        'slave-agent konnte den Nous-Dienst nicht erreichen. Prüfen Sie Ihre Internetverbindung und tippen Sie dann auf „Erneut versuchen“. Oder verbinden Sie vorerst einen anderen Anbieter.',
       serverError:
         'Beim Nous-Dienst ist ein Fehler aufgetreten. Tippen Sie gleich auf „Erneut versuchen“ oder verbinden Sie vorerst einen anderen Anbieter.',
       powRequired:
@@ -4995,7 +4995,7 @@ export const deOverrides = {
       locked:
         'Diese Session kann ohne Anmeldung nicht fortgesetzt werden. Melden Sie sich an oder legen Sie ein kostenloses Nous-Konto an, um weiterzumachen.',
       generic:
-        'Hermes konnte den kostenlosen Zugang ohne Anmeldung nicht einrichten. Die Anmeldung ist kostenlos — oder verbinden Sie einen anderen Anbieter.',
+        'slave-agent konnte den kostenlosen Zugang ohne Anmeldung nicht einrichten. Die Anmeldung ist kostenlos — oder verbinden Sie einen anderen Anbieter.',
       signInBelow: 'Die Anmeldung ist kostenlos. Wählen Sie unten Nous.',
       tryAgain: 'Erneut versuchen',
       retrying: 'Wird erneut versucht…'
@@ -5105,13 +5105,13 @@ export const deOverrides = {
       update: 'Update',
       updateInProgress: 'Update läuft',
       commitsBehind: (count, branch) => `${count} commit${count === 1 ? '' : 's'} hinter ${branch}`,
-      desktopVersion: version => `Hermes Desktop v${version}`,
+      desktopVersion: version => `slave-agent Desktop v${version}`,
       backendVersion: version => `Backend v${version}`,
       clientLabel: version => `Client v${version}`,
       connectionSsh: host => `SSH: ${host}`,
       connectionRemote: host => `Remote: ${host}`,
       connectionCloud: host => `Cloud: ${host}`,
-      connectionCloudTooltip: host => `Hermes Cloud · ${host}`,
+      connectionCloudTooltip: host => `slave-agent Cloud · ${host}`,
       connectionSshTooltip: host => `SSH · ${host}`,
       connectionRemoteTooltip: host => `Remote · ${host}`,
       backendLabel: version => `Backend v${version}`,
@@ -5268,7 +5268,7 @@ export const deOverrides = {
     binaryTitle: 'Das sieht wie eine Binärdatei aus',
     binaryBody: label => `Die Vorschau von ${label} könnte unlesbaren Text zeigen.`,
     largeTitle: 'Diese Datei ist groß',
-    largeBody: (label, size) => `${label} ist ${size}. Hermes zeigt nur die ersten 512 KB an.`,
+    largeBody: (label, size) => `${label} ist ${size}. slave-agent zeigt nur die ersten 512 KB an.`,
     previewAnyway: 'Trotzdem anzeigen',
     truncated: 'Die ersten 512 KB werden angezeigt.',
     noInlineTitle: 'Keine Inline-Vorschau',
@@ -5311,11 +5311,11 @@ export const deOverrides = {
         'Diese Adresse verweist auf den Rechner, auf dem Ihr Agent läuft – nicht auf diesen. Das Browserfenster lädt Seiten lokal, daher braucht ein entfernter Entwicklungsserver eine Portweiterleitung oder einen erreichbaren Hostnamen.',
       failedToLoad: 'Vorschau konnte nicht geladen werden',
       tryAgain: 'Nochmal versuchen',
-      restarting: 'Hermes wird neu gestartet …',
-      askRestart: 'Hermes bitten, den Server neu zu starten',
-      lookingRestart: taskId => `Hermes sucht nach einem Vorschau-Server zum Neustarten (${taskId})`,
+      restarting: 'slave-agent wird neu gestartet …',
+      askRestart: 'slave-agent bitten, den Server neu zu starten',
+      lookingRestart: taskId => `slave-agent sucht nach einem Vorschau-Server zum Neustarten (${taskId})`,
       restartingTitle: 'Vorschau-Server wird neu gestartet',
-      restartingMessage: 'Hermes arbeitet im Hintergrund. Beobachte im Fortschritt die Vorschau-Konsole.',
+      restartingMessage: 'slave-agent arbeitet im Hintergrund. Beobachte im Fortschritt die Vorschau-Konsole.',
       startRestartFailed: message => `Server-Neustart konnte nicht gestartet werden: ${message}`,
       restartFailed: 'Server-Neustart fehlgeschlagen',
       hideConsole: 'Vorschau-Konsole ausblenden',
@@ -5327,16 +5327,16 @@ export const deOverrides = {
       reload: 'Seite neu laden',
       address: 'Adresse',
       addressPlaceholder: 'Adresse eingeben',
-      blankPageBody: 'Geben Sie oben eine Adresse ein, um zu browsen, oder bitten Sie Hermes, eine Seite zu öffnen.',
-      finishedRestarting: message => `Hermes hat den Vorschau-Server neu gestartet${message ? `: ${message}` : ''}`,
+      blankPageBody: 'Geben Sie oben eine Adresse ein, um zu browsen, oder bitten Sie slave-agent, eine Seite zu öffnen.',
+      finishedRestarting: message => `slave-agent hat den Vorschau-Server neu gestartet${message ? `: ${message}` : ''}`,
       failedRestarting: message => `Server-Neustart fehlgeschlagen: ${message}`,
       unknownError: 'unbekannter Fehler',
       restartedTitle: 'Vorschau-Server neu gestartet',
       reloadingNow: 'Die Vorschau wird jetzt neu geladen.',
       restartFailedTitle: 'Vorschau-Neustart fehlgeschlagen',
-      restartFailedMessage: 'Hermes konnte den Server nicht neu starten.',
+      restartFailedMessage: 'slave-agent konnte den Server nicht neu starten.',
       stillWorking:
-        'Hermes arbeitet noch, aber es ist noch kein Ergebnis des Neustarts eingetroffen. Der Server-Befehl läuft möglicherweise im Vordergrund.',
+        'slave-agent arbeitet noch, aber es ist noch kein Ergebnis des Neustarts eingetroffen. Der Server-Befehl läuft möglicherweise im Vordergrund.',
       workspaceReloading: 'Arbeitsbereich geändert, Vorschau wird neu geladen',
       fileChanged: url => `Datei geändert, Vorschau wird neu geladen: ${url}`,
       filesChanged: (count, url) => `${count} Dateiänderungen, Vorschau wird neu geladen: ${url}`,
@@ -5361,12 +5361,12 @@ export const deOverrides = {
   },
   interfaceMode: {
     title: 'Oberflächenmodus',
-    hint: 'Ändert, was angezeigt wird, nicht was Hermes kann.',
+    hint: 'Ändert, was angezeigt wird, nicht was slave-agent kann.',
     sessionNote:
       'Vom einfachen Modus festgelegt. Eine Änderung hier gilt für diese Session; wechseln Sie zu „Erweitert“, um sie dauerhaft zu übernehmen.',
     simple: {
       label: 'Einfach',
-      description: 'Zum Chatten mit Hermes. Seitenleiste und Chat; keine Terminal-, Datei- oder Diff-Bereiche.'
+      description: 'Zum Chatten mit Slave. Seitenleiste und Chat; keine Terminal-, Datei- oder Diff-Bereiche.'
     },
     advanced: {
       label: 'Erweitert',
@@ -5450,7 +5450,7 @@ export const deOverrides = {
     thread: {
       loadingSession: 'Session wird geladen',
       showEarlier: 'Frühere Nachrichten anzeigen',
-      loadingResponse: 'Hermes lädt eine Antwort',
+      loadingResponse: 'slave-agent lädt eine Antwort',
       loadingLocalModel: model => `${model} wird in den Speicher geladen`,
       processingPrompt: 'Verarbeite Prompt',
       resumeWhenBackgroundDone: count =>
@@ -5486,17 +5486,17 @@ export const deOverrides = {
         auth: 'Der KI-Dienst hat Ihre Anmeldung abgelehnt. Prüfen Sie die Zugangsdaten für diesen Anbieter und senden Sie Ihre Nachricht erneut.',
         billing:
           'Ihr Konto hat bei diesem Anbieter kein Guthaben mehr. Laden Sie Guthaben auf oder wechseln Sie den Anbieter und senden Sie erneut.',
-        disk: 'Ihre Festplatte ist voll, daher konnte Hermes dieses Gespräch nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.',
+        disk: 'Ihre Festplatte ist voll, daher konnte slave-agent dieses Gespräch nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.',
         endpoint:
-          'Hermes erreicht Ihren eigenen Modellserver nicht. Prüfen Sie, ob er läuft, und senden Sie Ihre Nachricht erneut.',
+          'slave-agent erreicht Ihren eigenen Modellserver nicht. Prüfen Sie, ob er läuft, und senden Sie Ihre Nachricht erneut.',
         gateway:
-          'Beim Starten dieser Antwort ist in Hermes ein internes Problem aufgetreten. Senden Sie Ihre Nachricht erneut; wenn es bestehen bleibt, senden Sie Diagnosedaten.',
+          'Beim Starten dieser Antwort ist in slave-agent ein internes Problem aufgetreten. Senden Sie Ihre Nachricht erneut; wenn es bestehen bleibt, senden Sie Diagnosedaten.',
         generic:
           'Beim Antworten ist etwas schiefgelaufen. Versuchen Sie es erneut oder kopieren Sie die Details, wenn es bestehen bleibt.',
         provider:
           'Der KI-Dienst konnte diese Anfrage nicht abschließen. Versuchen Sie es gleich erneut oder wechseln Sie den Anbieter.',
         runtime:
-          'Beim Starten dieser Antwort ist in Hermes ein internes Problem aufgetreten. Senden Sie Ihre Nachricht erneut; wenn es bestehen bleibt, senden Sie Diagnosedaten.',
+          'Beim Starten dieser Antwort ist in slave-agent ein internes Problem aufgetreten. Senden Sie Ihre Nachricht erneut; wenn es bestehen bleibt, senden Sie Diagnosedaten.',
         streaming:
           'Die Verbindung ist abgebrochen, bevor die Antwort fertig war. Versuchen Sie es erneut, um sie noch einmal zu senden.'
       },
@@ -5543,7 +5543,7 @@ export const deOverrides = {
         },
         no_reply: {
           title: 'Die Antwort wurde nicht fertig',
-          body: 'Hermes hat diesen Durchlauf ohne Antwort beendet. Versuchen Sie es erneut, um sie noch einmal zu senden.'
+          body: 'slave-agent hat diesen Durchlauf ohne Antwort beendet. Versuchen Sie es erneut, um sie noch einmal zu senden.'
         },
         stream_drop: {
           title: 'Die Antwort wurde abgebrochen',
@@ -5557,7 +5557,7 @@ export const deOverrides = {
         ssl_cert_verification: {
           title: 'Sichere Verbindung fehlgeschlagen',
           body: provider =>
-            `Hermes konnte die sichere Verbindung zu ${provider} nicht verifizieren. Prüfen Sie Ihre Netzwerk- oder Proxy-Einstellungen oder wechseln Sie den Anbieter und senden Sie Ihre Nachricht erneut.`
+            `slave-agent konnte die sichere Verbindung zu ${provider} nicht verifizieren. Prüfen Sie Ihre Netzwerk- oder Proxy-Einstellungen oder wechseln Sie den Anbieter und senden Sie Ihre Nachricht erneut.`
         },
         context_overflow: {
           title: 'Dieses Gespräch ist zu lang',
@@ -5594,23 +5594,23 @@ export const deOverrides = {
         invalid_response: {
           title: 'Der KI-Dienst hat eine unlesbare Antwort geschickt',
           body: provider =>
-            `${provider} hat etwas zurückgegeben, das Hermes nicht lesen konnte. Versuchen Sie es gleich erneut.`
+            `${provider} hat etwas zurückgegeben, das slave-agent nicht lesen konnte. Versuchen Sie es gleich erneut.`
         },
         empty_response: {
           title: 'Der KI-Dienst hat eine leere Antwort geschickt',
           body: provider => `${provider} hat auf diese Nachricht nichts zurückgegeben. Versuchen Sie es gleich erneut.`
         },
         loop_error: {
-          title: 'Hermes ist in einer Schleife hängen geblieben',
-          body: 'Die Antwort hat dieselben Schritte wiederholt, daher hat Hermes sie gestoppt. Versuchen Sie es erneut oder starten Sie einen neuen Chat, wenn es wieder passiert.'
+          title: 'slave-agent ist in einer Schleife hängen geblieben',
+          body: 'Die Antwort hat dieselben Schritte wiederholt, daher hat slave-agent sie gestoppt. Versuchen Sie es erneut oder starten Sie einen neuen Chat, wenn es wieder passiert.'
         },
         SESSION_NOT_OWNED: {
           title: 'Dieser Chat ist woanders offen',
-          body: 'Dieser Chat ist gerade in einem anderen Hermes-Fenster oder Terminal geöffnet. Schließen Sie ihn dort und senden Sie Ihre Nachricht erneut, oder starten Sie hier einen neuen Chat.'
+          body: 'Dieser Chat ist gerade in einem anderen Slave-Fenster oder Terminal geöffnet. Schließen Sie ihn dort und senden Sie Ihre Nachricht erneut, oder starten Sie hier einen neuen Chat.'
         },
         disk_full: {
           title: 'Festplatte voll',
-          body: 'Ihre Festplatte ist voll, daher konnte Hermes dieses Gespräch nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.'
+          body: 'Ihre Festplatte ist voll, daher konnte slave-agent dieses Gespräch nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.'
         },
         free_tier_disabled: {
           title: 'Chatten ohne Anmeldung ist gerade abgeschaltet',
@@ -5626,10 +5626,10 @@ export const deOverrides = {
         },
         free_tier_model_not_free: {
           title: 'Dieses Modell gibt es ohne Anmeldung nicht',
-          body: 'Hermes verwendet vorerst das kostenlose Modell. Melden Sie sich mit einem Nous-Konto an, um mehr Modelle zu nutzen – es ist kostenlos.'
+          body: 'slave-agent verwendet vorerst das kostenlose Modell. Melden Sie sich mit einem Nous-Konto an, um mehr Modelle zu nutzen – es ist kostenlos.'
         },
         free_tier_route: {
-          title: 'Hermes hat das kostenlose Modell über diese Route nicht erreicht',
+          title: 'slave-agent hat das kostenlose Modell über diese Route nicht erreicht',
           body: 'Melden Sie sich mit einem Nous-Konto an – es ist kostenlos – oder prüfen Sie die Einstellung NOUS_INFERENCE_BASE_URL.'
         },
         free_tier_outage: {
@@ -5637,7 +5637,7 @@ export const deOverrides = {
           body: 'Versuchen Sie in einer Minute, Ihre Nachricht erneut zu senden.'
         },
         free_tier_refused: {
-          title: 'Hermes konnte das ohne Anmeldung nicht senden',
+          title: 'slave-agent konnte das ohne Anmeldung nicht senden',
           body: 'Eine Anmeldung mit einem Nous-Konto ist kostenlos.'
         }
       },
@@ -5653,7 +5653,7 @@ export const deOverrides = {
       },
       errorDetails: 'Details',
       errorGenericProvider: 'Der KI-Dienst',
-      errorToastTitle: 'Hermes konnte die Antwort nicht fertigstellen',
+      errorToastTitle: 'slave-agent konnte die Antwort nicht fertigstellen',
       errorRetry: 'Erneut versuchen',
       errorLimitResets: (time: string) => `Limit wird um ${time} zurückgesetzt`,
       errorRetryAtReset: (time: string) => `Erneut versuchen, wenn das Limit zurückgesetzt wird (${time})`,
@@ -5664,8 +5664,8 @@ export const deOverrides = {
       errorChooseModel: 'Modell wählen',
       errorCompressConversation: 'Gespräch komprimieren',
       errorCompressFailed: 'Das Gespräch konnte nicht komprimiert werden',
-      errorOpenHermesFolder: 'Hermes-Ordner öffnen',
-      errorOpenHermesFolderFailed: 'Der Hermes-Ordner konnte nicht geöffnet werden',
+      errorOpenSlaveFolder: 'Slave-Ordner öffnen',
+      errorOpenSlaveFolderFailed: 'Der Slave-Ordner konnte nicht geöffnet werden',
       errorUpdateApiKey: 'API-Key aktualisieren',
       errorSignInAgain: provider => `Erneut bei ${provider} anmelden`,
       errorSignInFreeTier: 'Mit einem Nous-Konto anmelden',
@@ -5700,11 +5700,11 @@ export const deOverrides = {
       attachingFile: 'Hängt an…'
     },
     approval: {
-      gatewayDisconnected: 'Hermes-Gateway ist nicht verbunden',
+      gatewayDisconnected: 'Slave-Gateway ist nicht verbunden',
       sendFailed: 'Genehmigungsantwort konnte nicht gesendet werden',
       reconnect: 'Neu verbinden',
       timedOutSystemLine:
-        'Die Freigabe ist abgelaufen — der Befehl wurde nicht ausgeführt. Bitten Sie Hermes, es erneut zu versuchen, oder erhöhen Sie das Limit unter Einstellungen → Sicherheit → Freigabe-Timeout.',
+        'Die Freigabe ist abgelaufen — der Befehl wurde nicht ausgeführt. Bitten Sie slave-agent, es erneut zu versuchen, oder erhöhen Sie das Limit unter Einstellungen → Sicherheit → Freigabe-Timeout.',
       openSafetySettings: 'Sicherheitseinstellungen öffnen',
       run: 'Ausführen',
       command: 'Befehl',
@@ -5715,12 +5715,12 @@ export const deOverrides = {
       reject: 'Ablehnen',
       alwaysTitle: 'Diesen Befehl immer erlauben?',
       alwaysDescription: pattern =>
-        `Dies fügt das Muster „${pattern}“ Ihrer dauerhaften Zulassungsliste hinzu (~/.hermes/config.yaml). Hermes fragt bei solchen Befehlen nicht mehr nach – weder in dieser noch in zukünftigen Sessions.`,
+        `Dies fügt das Muster „${pattern}“ Ihrer dauerhaften Zulassungsliste hinzu (~/.slave/config.yaml). slave-agent fragt bei solchen Befehlen nicht mehr nach – weder in dieser noch in zukünftigen Sessions.`,
       alwaysAllow: 'Immer erlauben'
     },
     clarify: {
       notReady: 'Klärungsanfrage ist noch nicht bereit',
-      gatewayDisconnected: 'Hermes-Gateway ist nicht verbunden',
+      gatewayDisconnected: 'Slave-Gateway ist nicht verbunden',
       sendFailed: 'Klärungsantwort konnte nicht gesendet werden',
       loadingQuestion: 'Frage wird geladen…',
       other: 'Anderes (Antwort eingeben)',
@@ -5784,7 +5784,7 @@ export const deOverrides = {
       sendFailed: 'MCP-Einrichtungsantwort konnte nicht gesendet werden',
       reloadFailed:
         'Server gespeichert, aber das Neuladen der MCP-Tools schlug fehl — sie laden in der nächsten Session',
-      gatewayDisconnected: 'Hermes-Gateway ist nicht verbunden'
+      gatewayDisconnected: 'Slave-Gateway ist nicht verbunden'
     },
     tool: {
       copyCode: 'Code kopieren',
@@ -5969,20 +5969,20 @@ export const deOverrides = {
     }
   },
   prompts: {
-    gatewayDisconnected: 'Das Hermes-Gateway ist nicht verbunden',
+    gatewayDisconnected: 'Das Slave-Gateway ist nicht verbunden',
     reconnect: 'Neu verbinden',
     sudoSendFailed: 'Sudo-Passwort konnte nicht gesendet werden',
     secretSendFailed: 'Geheimnis konnte nicht gesendet werden',
     sudoTitle: 'Administrator-Passwort',
     sudoDesc:
-      'Hermes benötigt Ihr Sudo-Passwort, um einen privilegierten Befehl auszuführen. Es wird nur an Ihren lokalen Agenten gesendet.',
+      'slave-agent benötigt Ihr Sudo-Passwort, um einen privilegierten Befehl auszuführen. Es wird nur an Ihren lokalen Agenten gesendet.',
     sudoCommandUnavailable:
       'Dieser Agent hat den Befehl nicht mitgeliefert. Brechen Sie ab, wenn Sie ihn im Gespräch nicht überprüfen können.',
     sudoInstallDesc:
-      'Hermes benötigt Ihr sudo-Passwort, um die Bot-Screen-Pakete (TigerVNC + Xfce) auf dem Gateway-Host zu installieren. Es wird nur an diesen Host gesendet.',
+      'slave-agent benötigt Ihr sudo-Passwort, um die Bot-Screen-Pakete (TigerVNC + Xfce) auf dem Gateway-Host zu installieren. Es wird nur an diesen Host gesendet.',
     sudoPlaceholder: 'Sudo-Passwort',
     secretTitle: 'Geheimnis erforderlich',
-    secretDesc: 'Hermes benötigt eine Zugangsdaten, um fortzufahren.',
+    secretDesc: 'slave-agent benötigt eine Zugangsdaten, um fortzufahren.',
     secretPlaceholder: 'Geheimnis-Wert',
     vaultUnlockSendFailed: 'Master-Passwort konnte nicht gesendet werden',
     vaultUnlockTitle: name => `${name} entsperren`,
@@ -5994,7 +5994,7 @@ export const deOverrides = {
     vaultSaveSendFailed: 'Login konnte nicht gespeichert werden',
     vaultSaveTitle: site => `${site}-Login speichern?`,
     vaultSaveDesc: origin =>
-      `Hermes ist auf eine Anmeldeseite unter ${origin} gestoßen und hat dafür keinen Login. Geben Sie ihn einmal hier ein; er wird auf diesem Rechner verschlüsselt und in die Seite eingetragen, ohne dass das Modell das Passwort je sieht.`,
+      `slave-agent ist auf eine Anmeldeseite unter ${origin} gestoßen und hat dafür keinen Login. Geben Sie ihn einmal hier ein; er wird auf diesem Rechner verschlüsselt und in die Seite eingetragen, ohne dass das Modell das Passwort je sieht.`,
     vaultSaveIdentifierLabel: 'E-Mail oder Benutzername',
     vaultSaveIdentifierPlaceholder: 'name@example.com',
     vaultSavePasswordPlaceholder: 'Passwort',
@@ -6004,10 +6004,10 @@ export const deOverrides = {
     vaultCodeSendFailed: 'Code konnte nicht gesendet werden',
     vaultCodeTitle: site => `Bestätigungscode für ${site}`,
     vaultCodeDesc: site =>
-      `${site} verlangt einen Einmalcode (SMS, E-Mail oder Authenticator-App). Geben Sie ihn hier ein, Hermes trägt ihn in die Seite ein; das Modell sieht ihn nie.`,
+      `${site} verlangt einen Einmalcode (SMS, E-Mail oder Authenticator-App). Geben Sie ihn hier ein, slave-agent trägt ihn in die Seite ein; das Modell sieht ihn nie.`,
     vaultCodeLabel: 'Code',
     vaultCodeFootnote:
-      'Tipp: Speichern Sie den Authentifizierungsschlüssel zusammen mit diesem Login unter Einstellungen → Passwörter & Logins, dann gibt Hermes die Codes für Sie ein.',
+      'Tipp: Speichern Sie den Authentifizierungsschlüssel zusammen mit diesem Login unter Einstellungen → Passwörter & Logins, dann gibt slave-agent die Codes für Sie ein.',
     vaultCodeSkip: 'Überspringen',
     vaultCodeConfirm: 'Code eingeben'
   },
@@ -6081,8 +6081,8 @@ export const deOverrides = {
     sessionExportFailed: 'Session konnte nicht exportiert werden',
     imageSaved: 'Bild gespeichert',
     downloadStarted: 'Download gestartet',
-    restartToUseSaveImage: 'Starten Sie Hermes Desktop neu, um „Bild speichern“ zu verwenden.',
-    restartToSaveImages: 'Starten Sie Hermes Desktop neu, um Bilder zu speichern',
+    restartToUseSaveImage: 'Starten Sie slave-agent Desktop neu, um „Bild speichern“ zu verwenden.',
+    restartToSaveImages: 'Starten Sie slave-agent Desktop neu, um Bilder zu speichern',
     imageDownloadFailed: 'Bild-Download fehlgeschlagen',
     openImage: 'Bild öffnen',
     downloadImage: 'Bild herunterladen',
@@ -6103,7 +6103,7 @@ export const deOverrides = {
       success: platform => `Übergeben an ${platform}. Jederzeit hier fortsetzen.`,
       systemNote: platform => `↻ Übergeben an ${platform} — jederzeit hier fortsetzen.`,
       failed: error => `Übergabe fehlgeschlagen: ${error}`,
-      timedOut: 'Zeitüberschreitung beim Warten auf das Gateway. Läuft `hermes gateway`?',
+      timedOut: 'Zeitüberschreitung beim Warten auf das Gateway. Läuft `slave gateway`?',
       startMessaging: 'Messaging starten'
     }
   },
@@ -6116,14 +6116,14 @@ export const deOverrides = {
       },
       skills: {
         title: 'Einmal beibringen',
-        text: 'Skills sind Ordner mit Anweisungen, die Hermes lädt, wenn die Arbeit danach verlangt.'
+        text: 'Skills sind Ordner mit Anweisungen, die slave-agent lädt, wenn die Arbeit danach verlangt.'
       },
       messaging: {
-        title: 'Hermes abseits Ihres Schreibtischs',
+        title: 'slave-agent abseits Ihres Schreibtischs',
         text: 'Verbinden Sie Telegram, Discord, Slack und mehr – derselbe Agent, dasselbe Gedächtnis.'
       },
       artifacts: {
-        title: 'Alles, was Hermes gemacht hat',
+        title: 'Alles, was slave-agent gemacht hat',
         text: 'Bilder, Dateien und Links aus jeder Session, an einem Ort indexiert.'
       },
       cron: {
@@ -6136,7 +6136,7 @@ export const deOverrides = {
       },
       profiles: {
         title: 'Profile sind getrennt',
-        text: 'Jedes ist sein eigenes Hermes — eigene Schlüssel, eigenes Gedächtnis, eigene Sessions.'
+        text: 'Jedes ist sein eigenes slave-agent — eigene Schlüssel, eigenes Gedächtnis, eigene Sessions.'
       },
       'composer-mentions': {
         title: 'Anhängen und befehlen',

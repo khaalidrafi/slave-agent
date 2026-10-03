@@ -124,7 +124,7 @@ const fixtures: FixtureTurn[] = [
     {
       args: { path: '~' },
       argsText: '{"path":"~"}',
-      result: { entries: ['hermes-short-session-fixture.txt'], ok: true },
+      result: { entries: ['slave-short-session-fixture.txt'], ok: true },
       toolCallId: 'short-session-tool-8',
       toolName: 'list_directory',
       type: 'tool-call'

@@ -7,7 +7,7 @@ description: >-
   Local Markdown memory provider with multilingual lexical recall and profile-local
   durable notes. Create-only writes are limited to primary agent contexts. Uses
   published birkin-mnemosyne 0.4.0; no API key, network service, telemetry or
-  automatic conversation capture. Native Hermes memory files remain separate.
+  automatic conversation capture. Native slave-agent memory files remain separate.
 maintainer: ashmoonori-afk
 tier: community
 category: memory

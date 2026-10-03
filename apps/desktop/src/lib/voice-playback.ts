@@ -1,4 +1,4 @@
-import { resolveGatewayWsUrl } from '@hermes/shared'
+import { resolveGatewayWsUrl } from '@slave-agent/shared'
 
 import type { OwnerScope } from '@/api/client'
 import { getApiRequestConnection, getApiRequestProfile, speakText } from '@/hermes'
@@ -126,7 +126,7 @@ export function stopVoicePlayback() {
 /** Exported for tests: the (connection, profile) routing contract below is
  *  exactly what broke in the desktop-remote voice report — keep it pinned. */
 export async function resolveSpeakStreamUrl(owner?: OwnerScope): Promise<null | string> {
-  const desktop = window.hermesDesktop
+  const desktop = window.slaveDesktop
 
   if (!desktop?.getConnection) {
     return null

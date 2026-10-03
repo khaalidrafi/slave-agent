@@ -21,9 +21,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
-import hermes_cli.model_selection_guards as guards
+import slave_cli.model_selection_guards as guards
 import tui_gateway.server as srv
 
 GUARDED_MODEL = "muse-spark-1.2-contributor"
@@ -32,17 +32,17 @@ GUARD_MESSAGE = "CONTRIBUTOR TIER: this model may train on your data."
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    slave_home = tmp_path / ".slave"
+    slave_home.mkdir()
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
     # The profile write now validates through ``switch_model`` (catalog + credentials); these
     # tests pin the guard handshake, so echo the pick back as an accepted route.
-    from hermes_cli.model_switch import ModelSwitchResult
+    from slave_cli.model_switch import ModelSwitchResult
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "slave_cli.model_switch.switch_model",
         lambda *, raw_input, explicit_provider, **_kw: ModelSwitchResult(
             success=True, new_model=raw_input, target_provider=explicit_provider))
-    return hermes_home
+    return slave_home
 
 
 @pytest.fixture
@@ -97,11 +97,11 @@ def test_confirmed_resend_writes_the_guarded_model(home, contributor_guard):
 
 
 def test_unguarded_model_still_writes_without_confirmation(home, contributor_guard):
-    result = _configure({"model": "hermes-4.5-405b", "provider": "nous"})
+    result = _configure({"model": "slave-4.5-405b", "provider": "nous"})
 
     assert not result.get("confirm_required")
     assert result["applied"].get("model") is True
-    assert _profile_model(home) == "hermes-4.5-405b"
+    assert _profile_model(home) == "slave-4.5-405b"
 
 
 def test_other_sections_still_apply_while_model_awaits_confirmation(home, contributor_guard):

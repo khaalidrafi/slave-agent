@@ -14,7 +14,7 @@ import {
 const homes: string[] = []
 
 function makeHome(): string {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-dp-root-'))
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'slave-dp-root-'))
   homes.push(home)
 
   return home

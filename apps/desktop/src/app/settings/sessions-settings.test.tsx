@@ -13,7 +13,7 @@ vi.mock('@/i18n', () => ({ useI18n: () => ({ t: en }) }))
 
 vi.mock('@/hermes', async importOriginal => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  getHermesConfigRecord: vi.fn().mockResolvedValue({ config: {} }),
+  getSlaveConfigRecord: vi.fn().mockResolvedValue({ config: {} }),
   listAllProfileSessions: vi.fn(),
   setSessionArchived: vi.fn().mockResolvedValue(undefined)
 }))
