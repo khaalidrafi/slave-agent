@@ -116,6 +116,76 @@ transitively -- those are someone else's names, not our branding.
       upstream releases. Once the updater is gone the path still has to stay (it is our
       ~origin~ remote), but reword that comment -- it currently states a reason that no
       longer holds.
-- [ ] Which subsystems move from core to plugin. Measure first: dependency closure, LOC per
-      directory, gateway platform adapters, ~tools/~ and ~plugins/~ inventories. Then propose,
-      and let the user pick what to install.
+- [ ] Execute the removal queue in ~* Bloat removal queue~ below, one commit per subsystem,
+      P0 first. Which of P1 (desktop), P7 (dashboard) and P8 (meetings/voice) the master
+      actually wants installed is his call -- removal is the default, keeping costs a merge
+      conflict on a path we no longer defend.
+
+* Bloat removal queue
+
+Measured on ~ai/light-core~ (Oct 2026) with ~scripts/ci/kernel_floor.py --record~ plus
+~git ls-tree -r --long~ (bytes of tracked content). The floor baseline is committed in
+~scripts/ci/kernel_floor.json~; every removal below should show up as a lower number there.
+
+** Where the weight actually is
+
+| Path                |     bytes | files | What it is |
+|---------------------+-----------+-------+------------------------------------------------|
+| ~tests/~            |  52.4 MB  | 5,709 | Pytest suite -- shrinks in step with each removal |
+| ~apps/~             |  44.2 MB  | 3,792 | Electron desktop + Tauri bootstrap installer |
+| ~website/~          |  27.3 MB  |   828 | Docusaurus docs portal |
+| ~hermes_cli/~       |  12.3 MB  |   639 | CLI, incl. updater, dashboard routers, kanban, skins |
+| ~optional-skills/~  |  10.3 MB  |   790 | Shipped-but-inactive skill catalogue |
+| ~plugins/~          |   7.7 MB  |   363 | 18 in-tree plugin dirs |
+| ~tools/~            |   6.9 MB  |   349 | Model-facing tool implementations |
+| ~locales/~          |   6.7 MB  |    35 | UI translation packs |
+| ~agent/~            |   6.7 MB  |   317 | Turn loop, providers, memory, compression |
+| ~gateway/~          |   5.2 MB  |   179 | 42 platform adapters + session machinery |
+| ~ui-tui/~ ~web/~    |  6.6 MB   |   750 | Ink terminal UI, dashboard SPA |
+
+The core, as the floor defines it, is **671,198 lines of Python in 1,627 files**, with
+**45 always-installed dependencies**, **42 gateway platform adapters** and **342 tool
+files**. So the doctrine was already written and the tree says we are ~671k lines away
+from it. That is the honest starting point.
+
+** Two kinds of bloat, two different cuts
+
+- *Runtime bloat* -- what imports before the first token, what must download, what sits in
+  RAM. Fixed by gating, not by deleting: ~check_fn~ service gates, named toolsets,
+  ~[project.optional-dependencies]~ extras (55 exist), lazy discovery, plugin directories.
+  This is the one the master feels on a 4 GB machine.
+- *Tree bloat* -- files we must merge upstream into forever. Fixed only by deletion, and
+  deletion costs merges (see *How removals stay mergeable*). Measured above in bytes.
+
+A capability that is merely *useful* goes through both: gate it so it costs nothing at
+runtime, then delete it from the tree so it costs nothing at merge time.
+
+** The queue
+
+Order is doctrine-fit x cost paid, cheapest review first. Each item is ONE commit.
+
+| # | Subsystem | Cut | Why it is bloat |
+|---+-------------------------------------+---------------------------+------------------------------------------|
+| P0 | self-update (~37 modules, 13,854 lines, plus ~tests/e2e/core/upgrade/~ and ~scripts/update-test/~) | delete | Fights Guix/Nix: wants a write into a read-only store path, re-resolves a dep closure we did not choose; ~hermes update~ becomes a pointer to the package manager |
+| P1 | ~apps/~ desktop + bootstrap installer | delete | A self-installing GUI product on a distro that owns installs; the installer is the thing already proven broken here (non-FHS). ~44 MB~ |
+| P2 | ~website/~ Docusaurus | replace | We ship a package, not a docs portal. Small ~docs/*.org~ set instead, which the fork can actually keep current |
+| P3 | ~locales/~ | delete after P1/P7 | 6.7 MB of strings for UI surfaces that are gone |
+| P4 | ~optional-skills/~ | delete | Shipped but inactive: 10.3 MB of catalogue the user does not have installed |
+| P5 | 42 platform adapters -> opt-in | gate + move | Keep the channels the master uses; the rest are ~plugins/platforms/<name>/adapter.py~ the plugin system already supports |
+| P6 | ~tools/~ 342 files | gate | Narrow waist keeps terminal/file/web/search/clarify; the long tail goes ~check_fn~-gated or plugin |
+| P7 | dashboard: ~web/~ SPA + ~hermes_cli/web_routers~ | gate + delete | FastAPI surface for a GUI we are not shipping |
+| P8 | meetings, voice, wake-word, ~image_gen~, ~video_gen~ | gate | Heavy deps, narrow use; already plugin-shaped, so the work is making them off by default |
+| P9 | ~evals/~ | delete | Dev-only benchmark harness |
+
+Kept on purpose: ~LICENSE~ and ~contributors/~ (attribution), ~nix/~ + ~docker/~ (how a
+package manager gets the thing installed), ~pm/~ (dependency provisioning is how we do NOT
+self-update), and ~tui_gateway/~ + ~ui-tui/~ (the terminal is the interface on this machine).
+
+** Verification per removal
+
+The fork does not launch on this box yet, so each deletion is proven three ways before it is
+committed, in this order:
+1. ~python3 scripts/ci/kernel_floor.py --check-imports~ -- nothing still imports a removed path;
+2. ~python3 -m compileall -q .~ -- the tree is still syntactically loadable;
+3. ~scripts/run_tests.sh <the affected test dirs>~ -- survivors pass, when an interpreter exists.
+Then ~--record~ the lowered floor in the same commit, so the diff shows the size of the cut.
