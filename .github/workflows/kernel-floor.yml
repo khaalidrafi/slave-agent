@@ -1,0 +1,36 @@
+# Fork-only guard: the light core stays light, and a subsystem removal never leaves a dangling import.
+# Two numbers, one rule -- the floor is DOWN-ONLY (see FORK.org's product doctrine). Raising a number
+# in scripts/ci/kernel_floor.json is a deliberate act that shows up in a diff and gets reviewed;
+# absorbing core growth silently in a feature PR is what this run catches.
+# The import scan is the deletion safety net: this fork does not launch on the dev machine, so a
+# module removed from under an import would otherwise first show up as a crash for a user.
+name: kernel-floor
+
+on:
+  push:
+    branches: ["ai/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor:
+    if: github.repository != 'NousResearch/hermes-agent'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: core floor vs recorded baseline (down-only)
+        run: python3 scripts/ci/kernel_floor.py --floor
+
+      - name: no dangling import of our own modules
+        run: python3 scripts/ci/kernel_floor.py --check-imports --quiet
+
+      - name: the checker's own logic
+        run: python3 -m pytest -q tests/scripts/test_kernel_floor.py
