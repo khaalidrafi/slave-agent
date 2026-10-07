@@ -22,6 +22,65 @@ Tauri installers), most of which exists to recover from half-finished updates --
 checkouts, stashes, restart handoffs, Windows app-installer and store channels. We ship a
 package; the user's package manager does the rest. ~README~ and the docs say so.
 
+** Who it is for decides what gets deleted, not just what gets gated
+
+The audience is devs, hackers and power users -- and businesses that want a fully
+personalizable agent built out of this one. That splits upstream's bulk two ways:
+
+- A convenience that exists to spare a *novice* is not "off by default", it is wrong for
+  this audience, and gets deleted. Self-update is the case in point: a power user upgrades
+  through a package manager and does not want an agent rewriting its own source tree.
+- Anything that is merely *not needed by everyone* becomes a plugin, so the base stays
+  minimal and the user decides which of upstream's bulk they actually want installed.
+  Businesses customize from there: the plugin surface is the product they build on, so
+  keeping it generic is worth more than shipping every feature by default.
+
+** Optimizations are on; stock Hermes is one setting away
+
+Borrow OpenHuman's /direction/ -- light, fast, token-efficient -- not its code: different
+licence (GPL-3.0 against MIT), different language, and the merge model above depends on
+carrying upstream rather than forking away from it. So every optimization lands as a
+*config default*, never as a second code path:
+
+- they are on by default;
+- ~hermes_compat: true~ pins every one of those knobs back to upstream's value, so the fork
+  can behave exactly like Hermes.
+
+Backwards compatibility with Hermes is a requirement, not a courtesy: turning the
+optimizations off must reproduce stock behaviour, knob for knob. An explicit per-knob
+setting always beats both switches -- ~hermes_compat~ rewrites defaults, it never overrides
+a choice the user made.
+
+** Emacs is a first-class surface, not a client we happen to support
+
+~slave-acp~ (the adapter's own stdio server, ~acp_adapter.entry:main~) is how Emacs reaches
+the agent. The master's ~agent-org~ package (~/agent-org~) drives any ACP agent into an Org
+chat buffer -- transcripts, session resume over ~session/list~ + ~session/load~, per-turn
+cost clocks -- and registers slave-agent as a provider, so ~M-x
+agent-org-slave-agent-start-agent~ consults this agent the way it consults Qoder or Goose.
+
+Org mode is the interface /and/ the substrate: the agent's notes, memory and task state are
+Org trees a human can read, edit and version, and the next step is features powered by
+that (see *Emacs and Org roadmap*).
+
+** Emacs and Org roadmap
+
+Each step is a separate deliverable; R1 is wired, the rest are ordered by how much they
+change what the master can do in Emacs.
+
+| # | Step | What it buys |
+|---+--------------------------------------------------+--------------------------------------------|
+| R1 | slave-agent as an ~agent-org~ provider (~:command '("slave-acp")~) | Consult the agent from Emacs, with Org transcripts and resumed sessions, like any other agent |
+| R2 | ~ob-slave-agent~ -- Org Babel blocks whose body is the prompt (#+begin_src slave-agent) | Reproducible, cached, literate agent calls inside a config or research note; the block /is/ the recipe |
+| R3 | Org as the agent's memory substrate -- memory and skills stored as Org trees, read and written through ~org-element~, answers cited as ~file.org::*Heading~ | The master can open the agent's mind in Emacs and fix a wrong belief by hand; memory diffs in git |
+| R4 | ~slave-agent-consult~ -- one key, any buffer: ask about the region or the project, answer inline | The "Grok bot" shape: the agent is ambient in Emacs, not a window you go sit in |
+| R5 | The agenda as a job queue -- the agent works ~TODO~ headings, writes ~CLOCK~ ranges and results back under each | Scheduled and ad-hoc work become the same Org file the master already plans in |
+| R6 | Emacs introspection tools for the agent (eval elisp in the live session, read buffer state) | Emacs becomes an agent-driven environment: it can operate on the editor, not only talk about it |
+
+R6 is the one to review carefully before building: it hands the agent a powerful primitive
+(an interpreter inside the master's editor), so it lands behind the same approval gate the
+terminal tool uses, not a new one.
+
 ** How removals stay mergeable
 
 Deleting upstream files is the one edit that *does* cost merges: upstream keeps committing
@@ -120,6 +179,14 @@ transitively -- those are someone else's names, not our branding.
       P0 first. Which of P1 (desktop), P7 (dashboard) and P8 (meetings/voice) the master
       actually wants installed is his call -- removal is the default, keeping costs a merge
       conflict on a path we no longer defend.
+- [ ] ~hermes_compat~ is doctrine, not code yet. Implementing it means: pick the knobs the
+      fork turns (deferred tool bridge, ~tool_output~ caps, listing budget, eager toolset),
+      give each the lean default, and make ~hermes_compat: true~ restore the upstream value
+      for all of them. The test is knob-for-knob against ~config_defaults.py~, A/B, not a
+      snapshot of the lean numbers.
+- [ ] R2-R6 of the *Emacs and Org roadmap* are unbuilt. R1 is wired into ~agent-org~ but not
+      yet run against a live ~slave-acp~ -- this box cannot start the fork, and its Emacs is
+      too loaded to run the package's own suite, so the provider tests are unverified here.
 
 * Bloat removal queue
 
