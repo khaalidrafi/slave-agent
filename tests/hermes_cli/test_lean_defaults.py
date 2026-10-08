@@ -171,11 +171,16 @@ dashboard or ``hermes config set`` rewrote the file."""
     config_module.save_config(config_module.load_config())
     assert config_module.read_raw_config().get(COMPAT_KEY) is True
 
+
+def test_load_config_applies_the_overlay_end_to_end(tmp_path, monkeypatch):
     """Real ``load_config()``, real file: proves the call site, not just the helper.
 
-A/B on one home -- lean values, then the same file plus ``hermes_compat: true`` -- because
-a one-sided test would also pass if the overlay ran on every load regardless of the switch.
-"""
+    Three states of one file, because each proves a different edge of the precedence rule:
+    a bare file (everything lean), a named knob (that leaf stays the user's, its siblings
+    go lean), and the compat switch (every knob back on upstream, and a knob the user
+    named stays theirs even then). One A/B pair alone would also pass if the overlay
+    ignored ``hermes_compat``, or if compat restored the user's own values too.
+    """
     from hermes_cli import config as config_module
 
     home = tmp_path / ".hermes"
@@ -183,14 +188,24 @@ a one-sided test would also pass if the overlay ran on every load regardless of 
     monkeypatch.setenv("HERMES_HOME", str(home))
     config_file = home / "config.yaml"
 
+    config_file.write_text("", encoding="utf-8")
+    loaded = config_module.load_config()
+    for path, lean in LEAN_DEFAULTS.items():
+        assert _at(loaded, path) == lean, path
+
     config_file.write_text("tool_output:\n  max_bytes: 99999\n", encoding="utf-8")
     loaded = config_module.load_config()
     assert loaded["tool_output"]["max_bytes"] == 99_999, "the user's own value must survive"
     assert loaded["tool_output"]["max_lines"] == LEAN_DEFAULTS[("tool_output", "max_lines")]
 
-    config_file.write_text(
-        "hermes_compat: true\ntool_output:\n  max_bytes: 99999\n", encoding="utf-8")
+    config_file.write_text("hermes_compat: true\n", encoding="utf-8")
     stock = config_module.load_config()
     for path in LEAN_DEFAULTS:
         assert _at(stock, path) == _at(DEFAULT_CONFIG, path), path
-    assert stock["tool_output"]["max_bytes"] == 99_999, "compat restores defaults, not the user"
+
+    config_file.write_text(
+        "hermes_compat: true\ntool_output:\n  max_bytes: 99999\n", encoding="utf-8")
+    mixed = config_module.load_config()
+    assert mixed["tool_output"]["max_bytes"] == 99_999, "compat restores defaults, not the user"
+    assert _at(mixed, ("tool_output", "max_lines")) == _at(
+        DEFAULT_CONFIG, ("tool_output", "max_lines"))

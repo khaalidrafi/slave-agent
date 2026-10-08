@@ -179,14 +179,28 @@ transitively -- those are someone else's names, not our branding.
       P0 first. Which of P1 (desktop), P7 (dashboard) and P8 (meetings/voice) the master
       actually wants installed is his call -- removal is the default, keeping costs a merge
       conflict on a path we no longer defend.
-- [ ] ~hermes_compat~ is doctrine, not code yet. Implementing it means: pick the knobs the
-      fork turns (deferred tool bridge, ~tool_output~ caps, listing budget, eager toolset),
-      give each the lean default, and make ~hermes_compat: true~ restore the upstream value
-      for all of them. The test is knob-for-knob against ~config_defaults.py~, A/B, not a
-      snapshot of the lean numbers.
-- [ ] R2-R6 of the *Emacs and Org roadmap* are unbuilt. R1 is wired into ~agent-org~ but not
-      yet run against a live ~slave-acp~ -- this box cannot start the fork, and its Emacs is
-      too loaded to run the package's own suite, so the provider tests are unverified here.
+- [X] ~hermes_compat~ landed as code, not just doctrine: ~hermes_cli/lean_defaults.py~ holds
+      the lean values (~tool_output~ caps, tool-search listing budget, MCP auto-reload off) and
+      ~hermes_compat: true~ restores upstream's value for every one of them. ~config_defaults.py~
+      is still untouched, so the compat story stays a subtraction. Tests are knob-for-knob A/B
+      against ~DEFAULT_CONFIG~, never a snapshot of the lean numbers. More knobs join the table
+      in ~LEAN_DEFAULTS~; each one is then covered by the compat test automatically, because it
+      iterates the table.
+- [ ] The PM tool store assumes an FHS host. ~setup-hermes.sh~ stages vendored uv,
+      python-build-standalone CPython and BtbN ffmpeg -- all dynamic glibc binaries whose
+      PT_INTERP is ~/lib64/ld-linux-x86-64.so.2~, which Guix and Nix have no such path for. The
+      failure reads as "cannot execute: required file not found" and, for ffmpeg, as a staging
+      verification error, so the whole bootstrap dies before a ~.venv~ exists. Fixed by hand here
+      (the ~patchelf~ already in the store: ~--set-interpreter~ to glibc's ~ld-linux~,
+      ~--set-rpath~ to glibc plus ~/run/current-system/profile/lib~ for ~libgcc_s~), but the fork
+      should not need that: on a distro that owns package installation, ~pm~ must prefer the
+      system ~ffmpeg~ / ~node~ on ~PATH~ and a system interpreter over a vendored download, which
+      is the same argument that deleted the self-updater.
+- [ ] R2-R6 of the *Emacs and Org roadmap* are unbuilt. R1 is wired into ~agent-org~ and
+      ~slave-acp~ now answers the handshake on this box (~initialize~ reports
+      ~loadSession: true~ plus ~session/list~/~resume~, which is what resume needs), but the
+      Emacs chat itself is still unexercised and ~agent-org~'s own suite is entangled with
+      another session's in-flight edits.
 
 * Bloat removal queue
 
