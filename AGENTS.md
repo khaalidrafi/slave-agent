@@ -28,6 +28,15 @@ Two invariants shape almost every design decision and are the lens for reviewing
   every API call, so the bar for a new *core* tool is high. New capability should arrive as a
   CLI command + skill, a service-gated tool, or a plugin — not as core surface.
 
+- **Absolute Backwards Compatibility (The slave-agent fork guarantee).** This fork (slave-agent)
+  actively de-bloats and optimizes the core for light, fast, and token-efficient execution.
+  However, it preserves absolute, strict backwards compatibility with stock Hermes Agent. Setting
+  `hermes_compat: true` in the user configuration (or configuring the corresponding individual toggles)
+  MUST revert every optimization, default override, and behavioral customization back to the
+  upstream values. It must be completely possible to reproduce stock Hermes Agent behavior, knob
+  for knob, and by loading upstream plugins if desired. Every optimization or lean default overlay we
+  add must be accompanied by a clear mapping back to upstream values under the compat mode.
+
 ## Contribution Rubric — What We Want / What We Don't
 
 The project's intent layer. It serves humans aiming a contribution AND the automated triage

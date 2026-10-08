@@ -2385,10 +2385,15 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
 
         config = copy.deepcopy(DEFAULT_CONFIG)
 
+        # Kept for the lean overlay below: what the user's own file spells out. None means
+        # there is no readable file yet, in which case every knob is overlayable.
+        raw_user_config: Optional[Dict[str, Any]] = None
+
         if user_sig is not None:
             try:
                 with open(config_path, encoding="utf-8-sig") as f:
                     user_config = fast_safe_load(f) or {}
+                raw_user_config = user_config
                 _CONFIG_PARSE_FAILURES.pop(path_key, None)  # the file reads now (a transient error left the record)
 
                 if "max_turns" in user_config:
@@ -2415,6 +2420,14 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
                 if cache_sig is not None:
                     _LOAD_CONFIG_CACHE[path_key] = (*cache_sig, fallback, {})
                 return copy.deepcopy(fallback) if want_deepcopy else fallback
+
+        # This fork's lean overlay (hermes_cli/lean_defaults.py), and the one switch that
+        # turns it off. Runs on the merged config and only on paths the user's file did not
+        # name, so precedence is explicit-user-value > lean > upstream with no special
+        # cases. A config that fails to parse above returns early and keeps upstream
+        # values: the overlay is for the defaults we ship, not a repair mechanism.
+        from hermes_cli.lean_defaults import apply_lean_defaults
+        config = apply_lean_defaults(config, raw_user_config)
 
         normalized = _canonicalize_config(config)
         expanded, managed_config = _merge_managed_overlay(_expand_env_vars(normalized))
@@ -2506,6 +2519,20 @@ def _commented_sections_for_save(normalized: Dict[str, Any]) -> Optional[str]:
     return "".join(parts) or None
 
 
+def _save_defaults(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """What this fork treats as a default when writing config.yaml: upstream's, plus the
+    lean overlay the loader applied.
+
+``_strip_default_values`` only keeps what differs from the defaults it is handed, so passing
+plain ``DEFAULT_CONFIG`` here would write an injected lean value into the user's file -- a
+value they never typed, which then reads back as an explicit choice and survives
+``hermes_compat: true``. Comparing against the same overlay the loader used makes the write
+path and the read path agree about what is default and what is the user's."""
+    from hermes_cli.lean_defaults import apply_lean_defaults
+
+    return apply_lean_defaults(copy.deepcopy(DEFAULT_CONFIG), raw)
+
+
 def save_config(
     config: Dict[str, Any], *, strip_defaults: bool = True,
     preserve_keys: Optional[Set[Tuple[str, ...]]] = None, merge_existing: bool = False):
@@ -2543,7 +2570,8 @@ def save_config(
         if strip_defaults:
             # ``_strip_default_values`` always preserves ``_config_version`` itself.
             effective_preserve_keys = _explicit_config_paths(_raw_for_paths) | set(preserve_keys or ())
-            normalized = _strip_default_values(normalized, DEFAULT_CONFIG, preserve_keys=effective_preserve_keys)
+            normalized = _strip_default_values(normalized, _save_defaults(_raw_for_paths),
+                                               preserve_keys=effective_preserve_keys)
 
         atomic_config_replace(config_path, normalized, extra_content_on_create=_commented_sections_for_save(normalized))
         _secure_file(config_path)
