@@ -1,0 +1,147 @@
+#+TITLE:  slave-agent -- branch handoff
+#+STARTUP: show2levels
+#+begin_quote
+A public working note for ~ai/light-core~: what this fork is, where the branch stands, and
+what the next contributor should do first. Long-form doctrine is in ~FORK.org~; per-area
+rules are in each directory's ~AGENTS.md~ (routing table at the end of the root one).
+#+end_quote
+
+* What this fork is
+
+A deliberately *light* fork of upstream ~NousResearch/hermes-agent~: same agent core, less
+bulk, cheaper conversations. Three commitments hold it together.
+
+- **Light core, optional bulk.** Capability lives at the edges (plugins, skills, gated
+  tools), not in the model's tool schema. ~scripts/ci/kernel_floor.py~ records the size of
+  the core so growth is visible instead of accidental.
+- **Absolute backwards compatibility.** ~hermes_compat: true~ (going to ~slave_compat~)
+  reverts every lean default to upstream's value, knob for knob. An optimization without a
+  documented way back is a bug.
+- **Branding is generated, never hand-edited.** ~brand.py~ states the vocabulary,
+  ~scripts/rebrand.py~ applies it. Dev branches keep upstream's names on purpose so an
+  upstream merge resolves against real code instead of 32,000 renames; the branded branch is
+  base + exactly one generated commit.
+
+* State of the branch
+
+Three commits land the work in flight, one topic each:
+
+| Commit       | Subject |
+|--------------+--------------------------------------------------------------|
+| ~0bbd3f41cd~ | ~refactor(p0)~: finish the self-update removal |
+| ~e3edc4e6d3~ | ~brand~: wordmark, generator formats, CI lanes |
+| ~51e1d196c8~ | ~feat(shop)~: storefront adapter contract + shop toolset |
+
+** P0: the updater is gone, and the survivors were rewired
+
+Upstream's ~self-update~ subsystem was deleted in ~ba9da5d86f~ (it fights a package manager:
+it wants to write into a read-only store path and re-resolve a dependency closure nobody
+chose). ~0bbd3f41cd~ is the tail:
+
+- ~hermes update~ is now a pointer to the package manager (~hermes_cli/subcommands/update.py~);
+  the ~/update~ slash command stays harmless instead of crashing.
+- The post-install maintenance tail that installers and source builds share was re-homed into
+  ~hermes_cli/install_maint.py~ (state-db guard, release history, catalog seeds, skills sync,
+  per-profile sync, config migration, notices) minus the updater-only parts.
+- One question the dashboard still needs from the deleted fleet module got its own home:
+  ~hermes_cli/gateway_systemd.py~ ("can this user elevate without prompting?" -- ~sudo -n true~
+  first, then a targeted probe, because a scoped NOPASSWD entry rejects the blanket one).
+- ~hermes_cli/main.py~ lost its PEP-562 frozen updater surface (-317 lines) that existed only
+  so deleted siblings could resolve names off it.
+- ~scripts/ci/classify_changes.py~ re-armed the ~desktop_updater~ CI lane on the Electron
+  shell's own updater, which is what still performs an update here.
+
+** Brand: what a rename now costs
+
+Measured on this branch, dry-run over the committed tree:
+
+| Number                       | Meaning |
+|------------------------------+------------------------------------------------------|
+| 4,622 files / 32,566 replacements | the ~brand~ tier's bill (prose inside literals)    |
+| 46 -> 0 blind files            | formats no tier read                                 |
+| 1 -> 0 hand-typed brand words  | names a human typed instead of generating             |
+
+The blind count is the one worth reading: an extension missing from the generator's tables
+was not *skipped*, it was *invisible* -- the old name reached users through ~.html~, ~.css~,
+~.svg~, ~.vue~, ~.nix~, ~.plist~, ~.jsonl~, ~.cmd~ and the ~.js~ / ~.rs~ family while ~--check~
+said nothing. ~scripts/rebrand.py --blind~ and ~--lint~ make that measurable, and
+~.github/workflows/fork-brand-consistency.yml~ runs them on every branch and PR. Full-tree
+cleanliness (plus "no old-vocabulary imports") is asserted only for the branded branch.
+
+The ~HERMES AGENT~ block-art logo is dead in both hosts: ~hermes_cli/banner.py~ spells the
+nameplate from ~brand.PRODUCT~ / ~brand.TAGLINE~, ~ui-tui/src/banner.ts~ builds the same plate
+from a literal (TypeScript cannot import ~brand.py~, and a visible literal is what the
+generator can rewrite). Six rows of glyphs survived every rename the generator performed,
+because a rule over words cannot see ~██╗  ██╗~.
+
+** Storefront capability
+
+~plugins/shop/~ gives the agent a *read-only* view of a real shop: a ~StorefrontAdapter~ ABC
+plus a REST implementation, four tools (~shop_queue~, ~shop_orders~, ~shop_order~,
+~shop_catalog~), ~hermes shop~ and ~/shop~. It is deliberately not a bespoke integration: the
+shop's URL, path layout, filter names, status vocabulary and page shape are all
+~plugins.entries.shop.settings~ in the profile's ~config.yaml~, so one plugin serves any
+REST-shaped order queue.
+
+Two rules are structural, not advisory:
+- **Money never routes through a model.** Every number a tool returns is the shop's own API
+  field; the only arithmetic in the plugin is counting rows, and each count carries its
+  provenance (~source: api~ for the shop's total vs ~source: page~ for a tally over the page
+  the model is looking at).
+- **Read-only by construction.** There is no write path, and none will land before an
+  approve-before-send gate exists. Outward-facing social channels stay out of scope.
+
+The tools exist only for a profile that configured a shop: ~base_url~ set *and* the secret
+scope holding the token. The token is read through ~agent.secret_scope~ at call time, never at
+import, because one process serves many profiles and an import-time read would silently bind
+whoever launched it. Adapters cache per (settings, token), so a second profile cannot inherit
+the first's connection.
+
+* Known-red tests, and why
+
+~tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission~ -- 5 tests still import
+~hermes_cli.update_contract~, which P0 deleted. They are the last visible part of the updater
+cleanup, not a regression from the brand or shop work. Everything else touched here passes
+(~50/50~ brand + steward with those 5 attributed, ~23/23~ shop, generator agreement and banner
+tests green).
+
+* How to run things
+
+#+begin_src bash
+source ./activate                                   # PM tools + deps, then env activation
+scripts/run_tests.sh tests/plugins/test_shop_plugin.py   # never bare pytest (CI parity)
+python3 scripts/rebrand.py --lint                   # every word-carrying format is read
+python3 scripts/rebrand.py --blind                  # nothing ships a name silently
+python3 scripts/rebrand.py --tier brand --apply --dry-run   # what the branded tree looks like
+#+end_src
+
+On a non-FHS distro the test runner needs an interpreter told to it explicitly:
+~HERMES_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh ...~ (the PM bootstrap stages
+binaries whose ELF interpreter does not exist there).
+
+* What to do next
+
+- [ ] Produce the branded branch for real: ~scripts/fork-sync.sh~ -> ~ai/slave-agent~.
+- [ ] Decide which third-party names must *not* be rewritten (package manager names,
+      container images, model IDs that belong to upstream) and encode that as a shape rule in
+      ~KEEP_RE~ with tests -- the generator must not eat someone else's brand.
+- [ ] ~slave_compat~ as the canonical key while ~hermes_compat~ keeps working; a state-dir
+      read-fallback plus a one-shot ~slave migrate-state~; launcher path default moving to the
+      new command name with the old one still resolving.
+- [ ] Our own release URL and our own mark (icon / ~☤~), then regenerate skins.
+- [ ] The Emacs/Org roadmap ~R2~–~R6~ in ~FORK.org~ -- the pillar is declared, not built.
+- [ ] Group-chat capabilities on top of the shop toolset: ~~/recap~, chat-to-cron reminders,
+      a PII redactor at the prompt boundary, one-command persona install.
+- [ ] Publish the lean-vs-compat token cost table, so "lighter" is a number, not a claim.
+
+* Reviewing this work
+
+Easiest entry points, in order:
+1. ~scripts/rebrand.py~ ~blindspots()~ / ~hand_brands()~ and
+   ~tests/scripts/test_rebrand_brand_agreement.py~ -- the brand invariant, made executable.
+2. ~hermes_cli/banner.py~ ~_brand_wordmark()~ + ~tests/hermes_cli/test_banner.py~ -- the plate
+   is text now, so a rename cannot leave a stale logo behind.
+3. ~plugins/shop/adapter.py~ -- the ABC and the settings table; check that no number is
+   computed from anything but the shop's own fields.
+4. ~hermes_cli/install_maint.py~ -- read its docstring first; it explains which updater parts
+   were kept as maintenance and which were dropped.
