@@ -19,7 +19,7 @@ description: >
   Tools appear only for a profile that set `base_url` and whose secret scope
   has the token (`token_env`, default `SHOP_API_TOKEN`); an unconfigured
   profile sends no shop schemas at all.
-author: "Khalid Rafi (slave-agent)"
+author: "Khalid Rafi"
 kind: backend
 provides_tools:
   - shop_queue

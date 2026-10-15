@@ -176,7 +176,7 @@ SELF_PATHS = {"brand.py", "scripts/rebrand.py",
 # vocabulary *on purpose* (FORK.org: you resolve real code, never brand noise), so a
 # hand-typed brand is a second spelling no pass regenerates and one more hunk that
 # conflicts on the next upstream merge. ``--lint`` is that rule, executable.
-BRAND_LITERAL_ALLOW = SELF_PATHS | {"scripts/fork-sync.sh", "FORK.org"}
+BRAND_LITERAL_ALLOW = SELF_PATHS | {"scripts/fork-sync.sh", "FORK.org", "HANDOFF.org"}
 
 
 def tracked_files(tier: str) -> list[Path]:

@@ -154,6 +154,27 @@ still reads upstream releases), the upstream docs and installer host, the contri
 email domain, and Meta's ~hermes-parser~ / ~hermes-estree~ JS packages pulled in
 transitively -- those are someone else's names, not our branding.
 
+* What the generator actually costs, measured
+
+First real measurement on ~ai/light-core~ (Oct 2026), dry-run over the committed tree:
+
+| Number                                     | Meaning |
+|--------------------------------------------+-----------------------------------------------------|
+| 4,622 files / 32,566 replacements            | the ~brand~ tier's bill: prose inside literals        |
+| 46 -> 0 blind files                           | formats no tier read (see below)                      |
+| 1 -> 0 hand-typed brand literals              | names a human had typed instead of generating         |
+| 663 ~NousResearch/hermes-agent~ / 79 image refs | protected upstream facts, deliberately unchanged     |
+
+The blind count is the one that mattered. An extension missing from ~PROSE_EXTS~ /
+~CODE_EXTS~ was not *skipped*, it was *invisible*: the old name reached users through
+~.html~, ~.css~, ~.svg~, ~.vue~, ~.nix~, ~.plist~, ~.jsonl~, ~.cmd~ and the ~.js~ / ~.rs~
+family, and ~--check~ reported nothing. ~blindspots()~ (behind ~--blind~) now diffs the
+extensions a tier reads against the extensions the tree actually carries the word in, and
+~hand_brands()~ (behind ~--lint~) finds brand words a person typed by hand. Both run in the
+~lint~ job of ~.github/workflows/fork-brand-consistency.yml~ on every ~ai/**~ branch, while
+full tree cleanliness is asserted only on the branded branch — a dev branch is supposed to
+still speak upstream's names.
+
 * Known costs of this design
 
 - ~ai/slave-agent~ history is one commit deep. Review brand changes by reading the
