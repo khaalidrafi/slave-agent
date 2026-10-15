@@ -15,7 +15,14 @@ PRODUCT: str = "slave-agent"
 SLUG: str = "slave-agent"            # PyPI / npm / repository directory name
 MODULE: str = "slave_agent"          # python identifier form
 CLI: str = "slave"                   # primary console command
-HOME_ENV: str = "SLAVE_AGENT_HOME"   # preferred override for the state dir
+# The state dir's override variable. This is NOT free choice: the identity tier of
+# ``scripts/rebrand.py`` rewrites ``HERMES_*`` by a mechanical, case-preserving
+# swap of the token (``HERMES`` -> ``SLAVE``), so the branded tree reads
+# ``SLAVE_HOME`` and ``SLAVE_RUNTIME_DIR``. A name the generator cannot emit
+# (``SLAVE_AGENT_HOME``) would silently disagree with every ``HERMES_HOME``
+# occurrence in ~10k files — the source of truth has to be the generator's answer.
+# Pinned by tests/scripts/test_rebrand_brand_agreement.py.
+HOME_ENV: str = "SLAVE_HOME"         # preferred override for the state dir
 UPSTREAM: str = "NousResearch/hermes-agent"
 TAGLINE: str = "the agent that learns its master"
 

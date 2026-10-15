@@ -43,14 +43,23 @@ export function parseRichMarkup(markup: string): Line[] {
   return lines
 }
 
-const LOGO_ART = [
-  '██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗',
-  '██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝',
-  '███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   ',
-  '██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   ',
-  '██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   ',
-  '╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   '
-]
+// The nameplate is spelled from this word, not drawn in block glyphs. Six rows of
+// `██╗` looked like branding to a human and like nothing at all to
+// `scripts/rebrand.py`, which rewrites *words* — so a re-branded build kept
+// spelling the upstream name in its own logo. A plain literal is the shape the
+// generator can see (its JS engine rewrites quoted regions), which is why this
+// file hand-writes the word instead of importing it: TypeScript cannot import
+// `brand.py`, and the fork's rule is that branding is generated, not hand-carried.
+// `hermes_cli/banner.py` renders the same plate from `brand.PRODUCT`.
+const BRAND_NAME = 'Hermes Agent'
+
+// ╔═╗/║/╚═╝ around the name, so the plate is one box the theme colours in rows.
+const nameplate = (name: string): string[] => {
+  const rule = '═'.repeat(name.length + 2)
+  return [`╔${rule}╗`, `║ ${name} ║`, `╚${rule}╝`]
+}
+
+const LOGO_ART = nameplate(BRAND_NAME)
 
 const CADUCEUS_ART = [
   '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',
@@ -70,7 +79,7 @@ const CADUCEUS_ART = [
   '⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀'
 ]
 
-const LOGO_GRADIENT = [0, 0, 1, 1, 2, 2] as const
+const LOGO_GRADIENT = [0, 1, 2] as const
 const CADUC_GRADIENT = [2, 2, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 3, 3, 3] as const
 
 const colorize = (art: string[], gradient: readonly number[], c: ThemeColors): Line[] => {

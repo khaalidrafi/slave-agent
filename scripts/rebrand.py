@@ -10,12 +10,16 @@ each merge. Run it, ``git diff``, commit; upstream code stays recognisable.
     python3 scripts/rebrand.py --apply             # both tiers, in place
     python3 scripts/rebrand.py --tier brand --apply
     python3 scripts/rebrand.py --apply --dry-run   # count per file, write nothing
+    python3 scripts/rebrand.py --blind             # files no tier can reach (CI gate)
+    python3 scripts/rebrand.py --lint              # + hand-typed brand literals
 
 Two tiers, because the two kinds of occurrence have different risks:
 
   brand     the product NAME as it appears to a human: string literals, docs, configs.
-            ``.py`` files are scanned with ``tokenize`` and ``.ts/.tsx/.json`` with a
-            literal regex, so only quoted text changes. Safe to re-run constantly.
+            ``.py`` is scanned with ``tokenize`` and ``.ts/.tsx/.js/.mjs/.cjs`` with a
+            quoted-region regex, so only literals change; the prose formats (docs,
+            config, ``.html/.css/.svg/.vue``) are rewritten whole-text, which their
+            lookaround guards keep away from code-shaped tokens. Safe to re-run.
   identity  the internal vocabulary: ``hermes_cli`` modules, ``HERMES_*`` env vars,
             the ``~/.hermes`` state dir, the ``hermes-agent`` dist name — plus the
             2.8k tracked paths named after them, which are ``git mv``-ed. Whole-text
@@ -125,8 +129,37 @@ def rewrite_identity(text: str) -> tuple[str, int]:
 # --- file selection and engines --------------------------------------------------
 PROSE_EXTS = {".md", ".markdown", ".txt", ".org", ".yaml", ".yml", ".toml",
               ".po", ".pot", ".json", ".sh", ".bash", ".fish", ".ps1", ".nsi",
-              ".nsh", ".service", ".desktop", ".env", ".example", ".cfg", ".ini"}
-CODE_EXTS = {".py": "py", ".ts": "js", ".tsx": "js", ".jsx": "js", ".mjs": "js", ".cjs": "js"}
+              ".nsh", ".service", ".desktop", ".env", ".example", ".cfg", ".ini",
+              # Everything below was a silent leak, not a skipped file: an extension
+              # absent from these tables is never read, so the old name survives the
+              # branded artifact and no ``--check`` reports it. ``rebrand --blind``
+              # is the inventory of exactly this, and the fork-brand CI gates on it.
+              # Text and config languages — rewritten whole-text, their guards keep
+              # the prose rules off code-shaped tokens:
+              ".nix", ".mdx", ".xml", ".plist", ".manifest", ".jsonl", ".tmpl",
+              ".cmd", ".ahk", ".dockerfile",
+              # Web text formats: the dashboard's own stylesheet and index HTML were
+              # carrying the product word to the user with no tier able to change it.
+              ".html", ".css", ".svg", ".vue"}
+CODE_EXTS = {".py": "py", ".ts": "js", ".tsx": "js", ".jsx": "js", ".mjs": "js",
+             ".cjs": "js",
+             # Plain ``.js`` was absent from the table while being the most common
+             # extension in the desktop plugin runtimes — a typo-shaped blind spot.
+             ".js": "js",
+             # Languages whose user-visible words live in quoted regions: give them the
+             # quoted engine, so a bare identifier that happens to read like the brand
+             # (a Rust fn name, a C type) is never turned into prose. The identity tier
+             # still renames identifiers whole-text, which is what keeps a build honest.
+             ".rs": "js", ".mts": "js", ".cts": "js", ".h": "js", ".cs": "js"}
+# Plain ``.js`` was absent from the table while being the most common
+# extension in the desktop plugin runtimes — a typo-shaped blind spot.
+# Files the identity tier alone opens (no prose, so only names/env/paths apply).
+IDENTITY_ONLY_EXTS = {".lock", ""}
+
+
+def covered_extensions() -> set[str]:
+    """Every extension at least one tier reads — the CI's blind-spot denominator."""
+    return PROSE_EXTS | set(CODE_EXTS) | IDENTITY_ONLY_EXTS
 # LICENSE is a legal notice we must not alter; contributors/ is attribution data;
 # native/ is vendored. Lockfiles carry our dist name too, so the identity tier
 # includes them (they have no prose, so only identity rules could ever apply).
@@ -136,6 +169,14 @@ NEVER_RE = re.compile(r"^(LICENSE|contributors/|native/|node_modules/)|(^|/)\.gi
 # fork-brand CI asserts that no old import survives.
 SELF_PATHS = {"brand.py", "scripts/rebrand.py",
               ".github/workflows/fork-brand-consistency.yml"}
+
+# On top of ``SELF_PATHS``, the only files allowed to type this fork's own vocabulary
+# by hand: the sync script that runs the generator, and the fork's document about the
+# fork. Everywhere else a branded word is drift — a dev branch keeps upstream's
+# vocabulary *on purpose* (FORK.org: you resolve real code, never brand noise), so a
+# hand-typed brand is a second spelling no pass regenerates and one more hunk that
+# conflicts on the next upstream merge. ``--lint`` is that rule, executable.
+BRAND_LITERAL_ALLOW = SELF_PATHS | {"scripts/fork-sync.sh", "FORK.org"}
 
 
 def tracked_files(tier: str) -> list[Path]:
@@ -325,6 +366,71 @@ def show_mapping() -> int:
     return 0
 
 
+# --- blind spots -----------------------------------------------------------------
+def blindspots() -> list[str]:
+    """Tracked text files that carry a brand word in a format no tier opens.
+
+    An extension missing from the tables above does not fail a run and does not show
+    up in ``--check``: it silently keeps the old name in the branded artifact. That is
+    the failure mode this reports — the dashboard's stylesheet, not a Python literal.
+    Binary files are skipped (``-I``): nothing here can rewrite a PNG anyway.
+    """
+    listing = subprocess.run(
+        ["git", "-C", str(ROOT), "grep", "-l", "-I", "-i", "-e", "hermes", "--", "."],
+        capture_output=True, text=True).stdout.splitlines()
+    covered = covered_extensions()
+    found = []
+    for rel in listing:
+        if NEVER_RE.match(rel) or rel in SELF_PATHS:
+            continue
+        if Path(rel).suffix.lower() in covered:
+            continue
+        found.append(rel)
+    return found
+
+
+def report_blindspots() -> int:
+    """Print the blind spots; nonzero exit so CI can gate on generator coverage."""
+    found = blindspots()
+    for rel in found:
+        print(f"[rebrand blind] {rel}")
+    print(f"[rebrand blind] {len(found)} files carry the word in a format no tier reads")
+    return 1 if found else 0
+
+
+def hand_brands() -> list[str]:
+    """Tracked lines that type the branded vocabulary by hand, outside the allow-list.
+
+    Case-sensitive on purpose: the words searched are the *answer* the generator
+    produces, so finding one in the working tree means someone wrote the output rather
+    than the rule.
+    """
+    words = [brand.SLUG, brand.MODULE, f"{brand.CLI.upper()}_"]
+    argv = ["git", "-C", str(ROOT), "grep", "-n", "-I", "-F"]
+    for word in words:
+        argv += ["-e", word]
+    hits = subprocess.run(argv + ["--", "."], capture_output=True, text=True).stdout
+    found = []
+    for line in hits.splitlines():
+        path = line.partition(":")[0]
+        if path in BRAND_LITERAL_ALLOW or f"{path}/" in BRAND_LITERAL_ALLOW:
+            continue
+        found.append(line[:200])
+    return found
+
+
+def report_lint() -> int:
+    """The two invariants that hold on *every* branch, cheap enough to run per PR."""
+    blind, typed = blindspots(), hand_brands()
+    for rel in blind:
+        print(f"[rebrand blind] {rel}")
+    for line in typed:
+        print(f"[rebrand hand-written] {line}")
+    print(f"[rebrand lint] {len(blind)} files no tier reads, "
+          f"{len(typed)} hand-typed brand literals")
+    return 1 if (blind or typed) else 0
+
+
 # --- verification ---------------------------------------------------------------
 def verify() -> list[str]:
     """Static checks that the identity rename is self-consistent.
@@ -382,6 +488,10 @@ def main() -> int:
     g.add_argument("--apply", action="store_true", help="rewrite files in place")
     g.add_argument("--mapping", action="store_true",
                    help="print the name table (what changes, what is protected) and exit")
+    g.add_argument("--blind", action="store_true",
+                   help="list tracked files no tier can reach (fails if any) and exit")
+    g.add_argument("--lint", action="store_true",
+                   help="blind-spot scan + hand-typed brand scan (the per-PR gate)")
     ap.add_argument("--tier", choices=("brand", "identity", "all"), default="all",
                     help="brand = visible name only; identity = + modules/env/paths (default all)")
     ap.add_argument("--dry-run", action="store_true", help="with --apply: count, don't write")
@@ -390,6 +500,10 @@ def main() -> int:
     args = ap.parse_args()
     if args.mapping:
         return show_mapping()
+    if args.blind:
+        return report_blindspots()
+    if args.lint:
+        return report_lint()
 
     tiers = ("brand", "identity") if args.tier == "all" else (args.tier,)
     failures: list[str] = []

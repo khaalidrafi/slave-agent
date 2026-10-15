@@ -90,3 +90,27 @@ def test_baked_banner_uses_live_identity(monkeypatch):
 
     monkeypatch.setattr(version_info, "get_code_identity", lambda: {"short_sha": "a1b2c3d4"})
     assert banner._baked_banner_state() == {"upstream": "a1b2c3d4", "local": "a1b2c3d4", "ahead": 0}
+
+
+def test_default_logo_is_spelled_from_brand_not_drawn_in_glyphs():
+    """The banner's nameplate has to survive a rename, and drawn art cannot.
+
+    ``HERMES_AGENT_LOGO`` used to be six rows of ``██``-glyph block art spelling the
+    upstream name. ``scripts/rebrand.py`` rewrites *words*, so the branded build
+    shipped that shape untouched: the fork's own logo was the one brand string the
+    generator was blind to. The plate is built from ``brand`` now, which makes the
+    name a value a test can compare against the source of truth — and makes a
+    regression visible as a wrong word rather than as pixels nobody checks.
+    """
+    import re
+
+    import brand
+
+    plain = re.sub(r"\[/?[a-zA-Z #0-9]+\]", "", banner._brand_wordmark())
+
+    assert brand.PRODUCT in plain
+    assert brand.TAGLINE in plain
+    # Full-block glyphs are how the old art drew its letters. The caduceus is braille,
+    # so this catches word-art specifically, not every piece of art in the banner.
+    assert "█" not in plain
+    assert len(plain.splitlines()) == 3, "the plate is a box: rule, name, rule"

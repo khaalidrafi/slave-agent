@@ -167,3 +167,34 @@ class TestUpdateAdmission:
             "hermes_cli.config.detect_install_method", lambda *a, **k: "unknown"
         )
         assert evaluate_update_admission(root) is None
+
+
+class TestBrandVocabularyInRefusalText:
+    """A refusal that tells you what to uninstall must name the real package.
+
+    Two names live in this file's text and only one of them is ours. The Guix
+    channel is this fork's, so its package name is a fact about the tree rather
+    than prose: it comes from ``brand.SLUG`` (FORK.org forbids hand-writing a
+    brand string, and a hand-written one goes stale on the next rename — a stale
+    name in a refusal is an instruction the user cannot run).
+
+    Asserting the rendered text contains the slug is the cheap half. The half
+    worth a red test is that the Guix text tracks ``brand`` at all: if someone
+    types the spelling back in, the fork renames and this text silently stops
+    matching the package anyone can install.
+    """
+
+    def test_our_channel_names_the_package_brand_advertises(self):
+        import brand
+
+        from hermes_cli.steward import (
+            STEWARD_GUIX,
+            steward_uninstall_message,
+            steward_update_message,
+        )
+
+        for text in (
+            steward_update_message(STEWARD_GUIX),
+            steward_uninstall_message(STEWARD_GUIX),
+        ):
+            assert brand.SLUG in text

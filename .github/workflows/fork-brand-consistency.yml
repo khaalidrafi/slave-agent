@@ -1,8 +1,17 @@
 # Fork-only guard: the brand must stay *derived*, never hand-edited.
-# Runs the generator over the committed branded tree and requires it to be a no-op.
-# A red run here means someone typed a product name into a file instead of changing
-# brand.py / scripts/rebrand.py, which is exactly the drift that makes an upstream
-# merge unresolvable. See FORK.org.
+#
+# Two jobs, because "clean" means two different things on two different branches.
+# The working tree keeps upstream's vocabulary ON PURPOSE (FORK.org: a dev branch that
+# is already rebranded makes every upstream merge a conflict over names instead of a
+# conflict over code), so the old word surviving there is not a bug. What must be true
+# everywhere is that the *generator* can see and reach every occurrence — that is the
+# `lint` job, and it is cheap enough to run on every PR.
+#
+# Full cleanliness is a property of the generated artifact (`ai/slave-agent`, produced
+# by scripts/fork-sync.sh as $BRANCH_BASE + exactly one brand commit), so the
+# `artifact` job runs there and only there. It used to run on every `ai/**` push, which
+# made it red by design on every work branch — and a check that is red by design trains
+# everyone to ignore red.
 name: fork-brand-consistency
 
 on:
@@ -15,9 +24,44 @@ permissions:
   contents: read
 
 jobs:
-  brand:
-    # Skip on the upstream repository itself; this is our fork's contract.
+  lint:
     if: github.repository != 'NousResearch/hermes-agent'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+
+      - name: the generator reaches every file that carries the word
+        # A format missing from rebrand.py's extension tables is not skipped, it is
+        # invisible: the branded tree keeps the old name through that channel and no
+        # --check reports it. 46 such files existed the day this gate was written
+        # (dashboard CSS/HTML, Nix packaging, the Rust installer, Windows manifests).
+        run: python3 scripts/rebrand.py --lint
+
+      - name: no drawn logo
+        # Block word-art cannot be maintained by a tool that rewrites *words*: the
+        # default banner spelled the upstream name in six rows of drawn letters for
+        # the whole life of the generator, and shipped it that way. A drawn name is a
+        # brand string nobody can regenerate, so the nameplate is built from
+        # brand.PRODUCT and this gate keeps the old drawing from coming back.
+        #
+        # The pattern is the first row of the deleted art — the six drawn letters of
+        # the upstream name. Skins legitimately draw their own names (ARES, POSEIDON,
+        # SISYPHUS) in the same font, which is why the guard is that row and not "any
+        # block glyph". A *new* word-mark is allowed, but it has to come from brand.py.
+        run: |
+          if git grep -I -l -F '██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗' -- .; then
+            echo "drawn word-art is back; build the nameplate from brand.PRODUCT" >&2
+            exit 1
+          fi
+
+  artifact:
+    # The branch names are literals because a job-level `if:` cannot read `env`, and
+    # they must match BRANCH_BRAND in scripts/fork-sync.sh. This file is exempt from
+    # the generator (SELF_PATHS: it carries the words the generator searches for), so
+    # typing the name here is the tool's own vocabulary, not drift.
+    if: >-
+      github.repository != 'NousResearch/hermes-agent' &&
+      (github.ref == 'refs/heads/ai/slave-agent' || github.head_ref == 'ai/slave-agent')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1

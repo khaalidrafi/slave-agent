@@ -25,7 +25,7 @@ class SkinConfig:
     branding: Dict[str, str] = field(default_factory=dict)
     tool_prefix: str = "┊"
     tool_emojis: Dict[str, str] = field(default_factory=dict)  # per-tool emoji overrides
-    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces HERMES_AGENT_LOGO)
+    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces banner._brand_wordmark)
     banner_hero: str = ""    # Rich-markup hero art (replaces HERMES_CADUCEUS)
     custom_css: str = ""     # Raw CSS injected as a <style> tag on the desktop GUI (32 KiB cap)
 
