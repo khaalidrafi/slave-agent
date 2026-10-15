@@ -15,11 +15,9 @@ When the store interpreter has not materialized yet, a runtime-resolving
 ``.cmd`` delegator is staged that finds the store python at boot and fails
 with a clear message until ``hermes pm install`` lands it; legacy copied
 venv trampolines (detected by their embedded interpreter path) are replaced.
-``migrate_windows_bin_path`` moves an existing install's PATH to the
-canonical layout from the ``hermes update`` tail. Platform verdict, PATH
-values, and registry I/O are injected parameters (same pattern as
-``hermes_constants.venv_bin_dir``), so these tests are host-independent
-input→output checks, not host fakes.
+Platform verdict, PATH values, and registry I/O are injected parameters (same
+pattern as ``hermes_constants.venv_bin_dir``), so these tests are
+host-independent input→output checks, not host fakes.
 """
 
 from pathlib import Path
@@ -31,11 +29,10 @@ import pytest
 # Real launcher serialization is host-dependent, despite injectable registry I/O.
 pytestmark = pytest.mark.platforms("windows")
 
-from hermes_cli._install_repair import (
-    _WINDOWS_BIN_LAUNCHERS,
+from hermes_cli._launchers import (
+    WINDOWS_BIN_LAUNCHERS,
     _normalize_windows_path,
     ensure_windows_bin_launchers,
-    migrate_windows_bin_path,
 )
 
 
@@ -125,8 +122,8 @@ def test_store_python_launcher_boot_the_store_not_the_venv(tmp_path, monkeypatch
 
     restored = ensure_windows_bin_launchers(root, windows=True, user_path_entries=[])
 
-    assert len(restored) == len(_WINDOWS_BIN_LAUNCHERS)
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    assert len(restored) == len(WINDOWS_BIN_LAUNCHERS)
+    for name in WINDOWS_BIN_LAUNCHERS:
         staged = [p for p in map(Path, restored) if p.stem == name]
         assert staged, name
         _assert_boot_is_store_not_venv(staged[0], root, store)
@@ -142,15 +139,15 @@ def test_legacy_venv_trampoline_is_replaced_by_store_launcher(
     bin_dir = home / "bin"
     bin_dir.mkdir()
     venv_python = str(root / "venv" / "Scripts" / "python.exe")
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    for name in WINDOWS_BIN_LAUNCHERS:
         (bin_dir / f"{name}.exe").write_bytes(
             b"MZ legacy trampoline " + venv_python.encode("utf-8")
         )
 
     restored = ensure_windows_bin_launchers(root, windows=True, user_path_entries=[])
 
-    assert set(Path(p).stem for p in map(Path, restored)) == set(_WINDOWS_BIN_LAUNCHERS)
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    assert set(Path(p).stem for p in map(Path, restored)) == set(WINDOWS_BIN_LAUNCHERS)
+    for name in WINDOWS_BIN_LAUNCHERS:
         exe = bin_dir / f"{name}.exe"
         launcher = exe if exe.exists() and b"legacy trampoline" not in exe.read_bytes() else bin_dir / f"{name}.cmd"
         _assert_boot_is_store_not_venv(launcher, root, store)
@@ -163,14 +160,14 @@ def test_healthy_store_launcher_is_a_noop(tmp_path, monkeypatch):
     bin_dir.mkdir()
     local = root / ".hermes" / "bin"
     local.mkdir(parents=True)
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    for name in WINDOWS_BIN_LAUNCHERS:
         # A launcher that does NOT embed the venv interpreter counts as
         # present, whatever wrote it.
         (bin_dir / f"{name}.exe").write_bytes(b"MZ already-staged launcher")
         (local / f"{name}.exe").write_bytes(b"MZ already-staged launcher")
 
     assert ensure_windows_bin_launchers(root, windows=True, user_path_entries=[]) == []
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    for name in WINDOWS_BIN_LAUNCHERS:
         assert (bin_dir / f"{name}.exe").read_bytes() == b"MZ already-staged launcher"
 
 
@@ -188,7 +185,7 @@ def test_healthy_canonical_layout_with_placeholder_cmds_gets_upgraded(
 
     ensure_windows_bin_launchers(root, windows=True, user_path_entries=[])
 
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    for name in WINDOWS_BIN_LAUNCHERS:
         exe = bin_dir / f"{name}.exe"
         launcher = exe if exe.exists() and b"legacy trampoline" not in exe.read_bytes() else bin_dir / f"{name}.cmd"
         _assert_boot_is_store_not_venv(launcher, root, store)
@@ -203,8 +200,8 @@ def test_legacy_bin_restaged_only_while_on_user_path(managed_install):
     )
 
     stems = {Path(p).stem for p in map(Path, restored)}
-    assert set(_WINDOWS_BIN_LAUNCHERS) <= stems
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    assert set(WINDOWS_BIN_LAUNCHERS) <= stems
+    for name in WINDOWS_BIN_LAUNCHERS:
         assert _launcher_files(legacy, name)
         assert _launcher_files(home / "bin", name)
 
@@ -250,8 +247,8 @@ def test_profile_session_still_heals_the_shared_bin(tmp_path, monkeypatch):
 
     restored = ensure_windows_bin_launchers(root, windows=True, user_path_entries=[])
 
-    assert len(restored) == len(_WINDOWS_BIN_LAUNCHERS)
-    for name in _WINDOWS_BIN_LAUNCHERS:
+    assert len(restored) == len(WINDOWS_BIN_LAUNCHERS)
+    for name in WINDOWS_BIN_LAUNCHERS:
         assert _launcher_files(home / "bin", name)
     assert not (home / "profiles" / "work" / "bin").exists()
 
@@ -265,125 +262,6 @@ def test_no_staging_litter_left_behind(managed_install):
         p.name for p in (home / "bin").iterdir() if ".stage." in p.name or ".heal." in p.name
     ]
     assert leftovers == []
-
-
-# ---------------------------------------------------------------------------
-# migrate_windows_bin_path — the `hermes update` tail migration
-# ---------------------------------------------------------------------------
-
-
-def _fake_registry(initial: list[str]):
-    """In-memory user-PATH store standing in for the HKCU registry value."""
-    state = {"entries": list(initial), "kind": 2, "writes": 0}
-
-    def read():
-        return list(state["entries"]), state["kind"]
-
-    def write(entries, kind):
-        state["entries"] = list(entries)
-        state["kind"] = kind
-        state["writes"] += 1
-
-    return state, read, write
-
-
-def test_migration_moves_path_to_home_bin_and_strips_legacy(managed_install):
-    home, root = managed_install
-    legacy_bin = str(root / "bin")
-    legacy_scripts = str(root / "venv" / "Scripts")
-    state, read, write = _fake_registry(
-        [legacy_bin, legacy_scripts, r"C:\Windows\system32"]
-    )
-    (root / "bin").mkdir()
-    (root / "bin" / "hermes.cmd").write_text("@echo off\r\n", encoding="ascii")
-
-    ok = migrate_windows_bin_path(
-        root, windows=True, read_user_path=read, write_user_path=write
-    )
-
-    assert ok
-    keys = [_normalize_windows_path(e) for e in state["entries"]]
-    assert _normalize_windows_path(home / "bin") in keys
-    assert _normalize_windows_path(legacy_bin) not in keys
-    assert _normalize_windows_path(legacy_scripts) not in keys
-    assert _normalize_windows_path(r"C:\Windows\system32") in keys  # untouched
-    for name in _WINDOWS_BIN_LAUNCHERS:
-        assert _launcher_files(home / "bin", name)
-    # Legacy FILES stay: editor/ACP configs holding absolute launcher paths
-    # keep working. Only the PATH entry (the sweepable resolution route) goes.
-    assert (root / "bin" / "hermes.cmd").exists()
-
-
-def test_migration_works_when_only_legacy_copy_exists(tmp_path, monkeypatch):
-    home, root = _make_managed(tmp_path, monkeypatch)
-    _make_store(tmp_path, monkeypatch)
-    state, read, write = _fake_registry([str(root / "bin")])
-
-    ok = migrate_windows_bin_path(
-        root, windows=True, read_user_path=read, write_user_path=write
-    )
-
-    assert ok
-    for name in _WINDOWS_BIN_LAUNCHERS:
-        assert _launcher_files(home / "bin", name)
-    keys = [_normalize_windows_path(e) for e in state["entries"]]
-    assert _normalize_windows_path(home / "bin") in keys
-
-
-def test_migration_is_idempotent(managed_install):
-    home, root = managed_install
-    state, read, write = _fake_registry([str(home / "bin"), r"C:\Windows\system32"])
-
-    assert migrate_windows_bin_path(
-        root, windows=True, read_user_path=read, write_user_path=write
-    )
-    first_entries = list(state["entries"])
-    first_writes = state["writes"]
-
-    assert migrate_windows_bin_path(
-        root, windows=True, read_user_path=read, write_user_path=write
-    )
-    assert state["entries"] == first_entries
-    assert state["writes"] == first_writes  # no redundant registry write
-
-
-def test_migration_refuses_empty_store_without_changing_path(tmp_path, monkeypatch):
-    """Never point PATH at commands that cannot start."""
-    home = tmp_path / "hermes"
-    root = home / "hermes-agent"
-    (root / "venv" / "Scripts").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    (tmp_path / "empty-store").mkdir()
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "empty-store"))
-    state, read, write = _fake_registry([str(root / "bin"), r"C:\Windows\system32"])
-
-    ok = migrate_windows_bin_path(
-        root, windows=True, read_user_path=read, write_user_path=write
-    )
-
-    assert not ok
-    assert state["writes"] == 0
-
-
-def test_migration_skips_source_checkouts(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
-    home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "empty-store"))
-    root = tmp_path / "src" / "hermes-agent"
-    (root / "venv" / "Scripts").mkdir(parents=True)
-    state, read, write = _fake_registry([r"C:\Windows\system32"])
-
-    assert not migrate_windows_bin_path(
-        root, windows=True, read_user_path=read, write_user_path=write
-    )
-    assert state["writes"] == 0
-
-
-def test_migration_noop_on_posix(managed_install):
-    home, root = managed_install
-
-    assert not migrate_windows_bin_path(root, windows=False)
 
 
 def test_normalize_windows_path_equivalences():

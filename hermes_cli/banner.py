@@ -1,17 +1,52 @@
-"""Welcome banner, ASCII art, skills summary, and update check for the CLI."""
+"""Welcome banner, ASCII art, skills summary, and version label for the CLI."""
 import json
 import logging
 import os
 import re
 import shutil
+import subprocess
 import sys
 import threading
 from pathlib import Path
-from hermes_cli import source_check
-# Historical updater import (tests/compat/old_updater_surface.json). In-tree callers use the owner.
-from hermes_cli.source_check import _github_compare_behind  # noqa: F401
+import brand  # this fork's brand vocabulary — the only place a name may be spelled
 from hermes_constants import get_hermes_home
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+# Read-only git probes for the banner's version line. Copied here from the
+# removed update-check vertical (FORK.org P0): no network, no fetch, bounded.
+_GIT_TEXT_KW = {"text": True, "encoding": "utf-8", "errors": "replace"}
+
+
+def _banner_git_env() -> dict[str, str]:
+    from hermes_cli._subprocess_compat import NO_LAZY_FETCH_ENV, noninteractive_git_env
+
+    env = noninteractive_git_env()
+    for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE",
+                "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_SHALLOW_FILE", "GIT_NAMESPACE"):
+        env.pop(key, None)
+    env["GIT_OPTIONAL_LOCKS"] = "0"
+    env.update(NO_LAZY_FETCH_ENV)
+    return env
+
+
+def _git_stdout(args: list[str], *, cwd: Path, timeout: int = 5) -> Optional[str]:
+    from hermes_cli._subprocess_compat import windows_hide_flags
+
+    try:
+        result = subprocess.run(["git", *args], capture_output=True, timeout=timeout,
+                                cwd=str(cwd), stdin=subprocess.DEVNULL,
+                                creationflags=windows_hide_flags(), env=_banner_git_env(),
+                                **_GIT_TEXT_KW)
+    except Exception:
+        return None
+    if result.returncode != 0:
+        return None
+    return (result.stdout or "").strip()
+
+
+def _git_count(args: list[str], *, cwd: Path) -> Optional[int]:
+    out = _git_stdout(args, cwd=cwd)
+    return _quiet(lambda: int(out)) if out is not None else None
 
 # rich and prompt_toolkit are imported lazily: this module sits on the TUI gateway's critical
 # startup path purely for the lightweight update-check helpers, and eager rich/prompt_toolkit
@@ -70,12 +105,28 @@ def _skin_color(key: str, fallback: str) -> str:
 from hermes_cli import __release_date__ as RELEASE_DATE
 from hermes_cli.version_info import get_version_info
 
-HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
-[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
-[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
-[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
-[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
-[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
+
+def _brand_wordmark() -> str:
+    """The banner's nameplate, spelled from ``brand.py`` rather than drawn in pixels.
+
+    Block word-art is the one brand surface no generator can maintain: the fork's
+    design (FORK.org) is that branding is *generated*, never hand-edited, and a rule
+    over text cannot see a drawn letter. So the plate is built from the two words the
+    brand file owns — ``PRODUCT`` and ``TAGLINE`` — which makes a rename cost zero
+    art, and makes this file's claim about the product's name checkable by a test.
+
+    Art actually *designed* for this name belongs to the own-mark task in FORK.org
+    (icon / caduceus), where it can be judged as design instead of as code.
+    """
+    inner = f"{brand.PRODUCT} — {brand.TAGLINE}"
+    rule = "═" * (len(inner) + 2)
+    return (
+        f"[bold #FFD700]╔{rule}╗[/]\n"
+        f"[bold #FFD700]║[/] [bold #FFBF00]{brand.PRODUCT}[/]"
+        f"[#CD7F32] — [/][#FFD700]{brand.TAGLINE}[/] [bold #CD7F32]║[/]\n"
+        f"[bold #CD7F32]╚{rule}╝[/]"
+    )
+
 
 HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
@@ -179,11 +230,11 @@ def _compute_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]
     repo_dir = repo_dir or _resolve_repo_dir()
     if repo_dir is None:
         return _baked_banner_state()
-    upstream, local = (source_check._git_stdout(["rev-parse", "--short=8", rev], cwd=repo_dir) for rev in ("origin/main", "HEAD"))
+    upstream, local = (_git_stdout(["rev-parse", "--short=8", rev], cwd=repo_dir) for rev in ("origin/main", "HEAD"))
     if not upstream or not local:
         # Live-git lookup failed (e.g. shallow clone without origin/main).
         return _baked_banner_state()
-    ahead = source_check._git_count(["rev-list", "--count", "origin/main..HEAD"], cwd=repo_dir) or 0
+    ahead = _git_count(["rev-list", "--count", "origin/main..HEAD"], cwd=repo_dir) or 0
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
@@ -197,7 +248,7 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """
     def _compute():
         rd = repo_dir or _resolve_repo_dir()
-        tag = source_check._git_stdout(["describe", "--tags", "--abbrev=0"], cwd=rd, timeout=3) if rd else None
+        tag = _git_stdout(["describe", "--tags", "--abbrev=0"], cwd=rd, timeout=3) if rd else None
         return (tag, f"{_RELEASE_URL_BASE}/{tag}") if tag else None
     return _memo("_latest_release_cache", _compute)
 
@@ -206,7 +257,7 @@ def format_banner_version_label() -> str:
     """Return the version label shown in the startup banner title."""
     from hermes_cli.config import get_project_root
     from hermes_cli.steward import read_install_stamp
-    from hermes_cli.update_channel import is_canary_tag
+    from hermes_cli.release_channels import is_canary_tag
 
     stamp = read_install_stamp(get_project_root())
     if stamp.get("distribution") == "desktop-app":
@@ -224,13 +275,8 @@ def format_banner_version_label() -> str:
         return label
 
     base = f"Hermes Agent v{get_version_info().derived_version} ({RELEASE_DATE})"
-    from hermes_cli.config import load_config
-    from hermes_cli.update_channel import resolve_update_channel
-
-    channel = resolve_update_channel(_quiet(load_config), get_project_root())
-    if channel != "main":
-        head = source_check._git_stdout(["rev-parse", "HEAD"], cwd=get_project_root())
-        return f"{base} · {channel}" + (f" · local {head[:12]}" if head else "")
+    # No update-channel display: the per-install channel records went out with
+    # the updater (FORK.org P0); the checkout's git state is the only truth.
     state = get_git_banner_state()
     if not state:
         return base
@@ -272,19 +318,12 @@ def _skip_background_prefetch() -> bool:
 
 
 def prefetch_update_check():
-    """Kick off update check in a background daemon thread.
+    """No-op: this build performs no update check (FORK.org P0, no self-update).
 
-    No-op under pytest — see ``_skip_background_prefetch``.
+    Kept as a seam because the CLI boot path calls it; it just completes the
+    event so ``get_update_result`` returns instantly with nothing to render.
     """
-    if _skip_background_prefetch():
-        _update_check_done.set()
-        return
-
-    def _run():
-        global _update_result
-        _update_result = source_check.check_for_updates(passive=True).get("behind")
-        _update_check_done.set()
-    _daemon(None, _run)
+    _update_check_done.set()
 
 
 _banner_data_prefetch_started = False
@@ -773,6 +812,6 @@ def build_welcome_banner(
         border_style=_skin_color("banner_border", "#CD7F32"), padding=(0, 2))
     console.print()
     if shutil.get_terminal_size().columns >= 95:
-        console.print(getattr(_bskin, "banner_logo", None) or HERMES_AGENT_LOGO)
+        console.print(getattr(_bskin, "banner_logo", None) or _brand_wordmark())
         console.print()
     console.print(outer_panel)

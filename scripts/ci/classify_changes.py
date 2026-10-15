@@ -30,12 +30,13 @@ Lanes:
 * ``npm_lock``    — semantic package-lock.json diff PR comment.
 * ``bootstrap``   — the bootstrap installer lane: install.sh sandbox install,
   pin-fragment drift check, and shipped version-stamp verification.
-* ``desktop_updater`` — the Windows desktop-update hand-off script and the
-  tests that drive the REAL ``windows.ps1`` (``-SelfTestUi`` / pipe drain /
-  retry policy). These are integration tests of a PowerShell process on a
-  shared runner; running them on every Python PR made their timing noise
-  everyone's problem. They still run on push (fail-open) and whenever the
-  script, its siblings, or their tests change.
+* ``desktop_updater`` — the Electron shell's own updater and the tests that drive
+  it. The Windows PowerShell hand-off script this lane was named for shipped with
+  the Python-side updater and went with it (FORK.org P0); the Electron updater is
+  what still performs an update here. These are integration tests on a shared
+  runner; running them on every Python PR made their timing noise everyone's
+  problem. They still run on push (fail-open) and whenever the updater, its
+  siblings, or their tests change.
 * ``rust``        — ``cargo test`` for the Tauri bootstrap installer. ``.rs``
   lives under ``apps/``, so without this lane a Rust change matched ``frontend``
   and only the TypeScript matrix ran.
@@ -77,8 +78,6 @@ import subprocess
 import sys
 
 _FRONTEND = ("ui-tui/", "web/", "apps/")  # TS typecheck-matrix packages
-# Shipped page outside those packages, exercised by the desktop Electron suite.
-_FRONTEND_FILES = {"scripts/desktop-update/ui.html"}
 _ROOT_NPM = {"package.json", "package-lock.json"}  # shifts every package's tree
 _DOCKER_META = ("docker/", ".hadolint.yaml", "Dockerfile", ".dockerignore") # docker setup
 _NIX_PATHS = ("nix/",) # nix files
@@ -128,10 +127,16 @@ _SCAN_FILES = {"setup.cfg", "pyproject.toml"}
 _BOOTSTRAP_PATHS = ("apps/bootstrap-installer/",)
 _BOOTSTRAP_FILES = {"scripts/install.sh", "setup-hermes.sh"}
 # Windows desktop-update hand-off (scripts/desktop-update/windows.ps1 + the
-# Electron side that launches it) and the pytest files that spawn it.
+# Electron side that launches it) and the pytest files that spawn it. The PowerShell
+# hand-off and its python suite went with the updater (FORK.org P0); what still ships an
+# update is the Electron shell's own TS updater, so that is what re-arms this lane now.
 # tests/_fixtures/ holds the conftest's platform gating, so it re-arms the lane too.
-_DESKTOP_UPDATER_PATHS = ("scripts/desktop-update/", "tests/_fixtures/")
-_DESKTOP_UPDATER_TEST_PREFIX = "tests/scripts/desktop_update/"
+_DESKTOP_UPDATER_PATHS = (
+    "tests/_fixtures/",
+    "apps/desktop/electron/updater",
+    "apps/desktop/electron/app-updater",
+)
+_DESKTOP_UPDATER_TEST_PREFIX = "tests/desktop/"
 _DESKTOP_UPDATER_FILES = {
     "apps/desktop/electron/updater-process.ts",
     "apps/desktop/electron/managed-ssh-update.ts",
@@ -185,22 +190,20 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
     "e2e_upgrade": (
         *_PY_TEST_HARNESS,
         *_DEP_MANIFESTS,
-        "tests/e2e/core/upgrade/",
-        "tests/e2e/core/windows_update/",
         "tests/compat/",
         "pm/",
         "scripts/install.",
         "setup-hermes.sh",
-        "hermes_cli/update_",
-        "hermes_cli/_update_",
-        "hermes_cli/old_updater",
-        "hermes_cli/_old_updater",
-        "hermes_cli/post_update",
+        # What is left of "getting this tree onto a newer revision": the package-manager
+        # pointer, the install/maintenance tail, launcher publication, the steward ladder
+        # and the build stamp. The in-place updater these paths used to name was removed
+        # in FORK.org P0.
         "hermes_cli/config_migrations",
         "hermes_cli/subcommands/update",
-        "hermes_cli/install_",
-        "hermes_cli/_install_",
-        "hermes_cli/main_install",
+        "hermes_cli/install_maint.py",
+        "hermes_cli/_launchers.py",
+        "hermes_cli/steward.py",
+        "scripts/write_install_stamp.py",
     ),
     "e2e_desktop_core": (
         *_DESKTOP_E2E_SHARED,
@@ -219,16 +222,18 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "apps/desktop/electron/gateway-stop-before-update",
         "apps/desktop/electron/pre-update-",
         "apps/desktop/electron/install-stamp",
-        "scripts/desktop-update/",
+        # The last three entries named the Python-side updater (scripts/desktop-update/,
+        # hermes_cli/desktop_update*, hermes_cli/update_*), which this fork deleted in
+        # FORK.org P0. The Electron shell's updater is intact and owns this lane; the
+        # desktop app never updates the Python backend in place, so no Python path
+        # belongs here except the shared installer it shells out to.
         "scripts/install.sh",
-        "hermes_cli/desktop_update",
-        "hermes_cli/update_",
     ),
 }
 # The upgrade journeys are their own lane; editing one does not start ``e2e``.
 # The update suite shares apps/desktop/e2e/ with the core suite but not its specs.
 _E2E_LANE_EXCLUDES = {
-    "e2e": ("tests/e2e/core/upgrade/", "tests/e2e/core/windows_update/"),
+    # The desktop updater owns its own e2e suite; the core lane must not fire on it.
     "e2e_desktop_core": ("apps/desktop/e2e/update/",),
 }
 _DOCKER_PATHS = (*_DOCKER_META, *_DEP_MANIFESTS, *_NPM_MANIFESTS, "pm/", "tests/docker/")

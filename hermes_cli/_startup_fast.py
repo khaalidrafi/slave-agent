@@ -218,22 +218,10 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
     print(f"OpenAI SDK: {openai_version}" if openai_version else "OpenAI SDK: Not installed")
     if not check_updates:
         return
-    # Synchronous update status — bounded by check_for_updates' own subprocess/network timeouts
-    # and its 6-hour cache; any failure prints nothing.
-    try:
-        from hermes_cli.source_check import UPDATE_AVAILABLE_NO_COUNT, check_for_updates
-        from hermes_cli.config import recommended_update_command
-
-        behind = check_for_updates(passive=True).get("behind")
-        if behind == UPDATE_AVAILABLE_NO_COUNT:
-            print(f"Update available — run '{recommended_update_command()}'")
-        elif behind and behind > 0:
-            commits_word = "commit" if behind == 1 else "commits"
-            print(f"Update available: {behind} {commits_word} behind — run '{recommended_update_command()}'")
-        elif behind == 0:
-            print("Up to date")
-    except Exception:
-        pass
+    # No update status to report: this build does not self-update (FORK.org
+    # P0). Name the mechanism instead of silently omitting the line that
+    # ``hermes --version`` used to print from the update check.
+    print("Updates: managed by your package manager (this build does not self-update)")
 
 
 def try_fast_version(argv: list[str] | None = None) -> bool:

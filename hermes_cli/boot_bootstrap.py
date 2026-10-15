@@ -217,7 +217,7 @@ class _RecordLock:
 
 def run_boot_bootstrap(project_root: Path) -> dict:
     """Bound home maintenance to one attempt per installed revision."""
-    from hermes_cli import post_update
+    from hermes_cli import install_maint
 
     identity = needs_bootstrap(project_root)
     if not identity:
@@ -231,7 +231,7 @@ def run_boot_bootstrap(project_root: Path) -> dict:
         if read_last_known(record).get("identity") == identity:
             return {"home": "done-by-other"}
         logger.info("home maintenance: code changed to %s, running steps", identity[:12])
-        results = post_update.run_steps(post_update.BOOT_HOME_STEPS)
+        results = install_maint.run_steps(install_maint.BOOT_HOME_STEPS)
         _write_record(record, identity, results)
         return {"home": results}
     finally:

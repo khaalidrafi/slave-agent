@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from hermes_cli.steward import UPDATE_MECHANISMS
-from hermes_cli.update_channel import STABLE_TAG_RE
+from hermes_cli.release_channels import STABLE_TAG_RE
 
 
 @dataclass(frozen=True)

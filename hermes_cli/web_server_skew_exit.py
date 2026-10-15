@@ -1,16 +1,16 @@
 """Code-skew retirement for Desktop-owned ``hermes serve --isolated`` backends reached over SSH.
 
-Such a backend belongs to a Desktop on another machine: the host's updater never restarts it (only
-the remote client holds its token and owner nonce), so after ``hermes update`` it keeps serving the
-code it imported at startup against a tree that has moved on, and lazily imports new modules into
+Such a backend belongs to a Desktop on another machine: nothing on the host restarts it (only
+the remote client holds its token and owner nonce), so after its checkout moves on it keeps serving
+the code it imported at startup against a tree that has moved, and lazily imports new modules into
 an old process. The idle watchdog (``web_server_idle_exit``) only fires once every client has left,
 which a connected Desktop never does.
 
 This watchdog polls ``gateway.code_skew`` (the boot revision the serve lifespan records, compared
-with the checkout on disk) and, once no update is in flight and the retirement fence proves the
-backend idle (and closes admission so no turn can start mid-teardown), exits cleanly. The client's
-reconnect path respawns it from the new code. Every uncertain read (unknown revision, busy or
-indeterminate ledgers, a live update) keeps the process up.
+with the checkout on disk) and, once the retirement fence proves the backend idle (and closes
+admission so no turn can start mid-teardown), exits cleanly. The client's reconnect path respawns it
+from the new code. Every uncertain read (unknown revision, busy or indeterminate ledgers) keeps the
+process up.
 """
 
 from __future__ import annotations
@@ -37,12 +37,15 @@ def should_retire_for_skew(*, skew: Skew, update_in_progress: bool) -> bool:
 
 
 def _update_in_progress() -> bool:
-    try:
-        from hermes_cli.update_lock import read_live_update
+    """False: nothing swaps this tree in place any more.
 
-        return read_live_update() is not None
-    except Exception:
-        return True  # cannot prove the swap is over: wait
+    The probe used to read the updater's live-update lock, because ``hermes
+    update`` rewrote the checkout under a running backend and retiring into a
+    half-written tree was the failure to avoid. The self-update subsystem is
+    gone (FORK.org P0); a tree moves only by a package manager, which replaces
+    the install and restarts the service rather than editing it live.
+    """
+    return False
 
 
 def start_code_skew_watchdog(server, *, skew_fn: Optional[Callable[[], Skew]] = None,

@@ -385,26 +385,6 @@
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/update_abort_recovery.py",
-    "symbol": "_run_fresh_recovery_process",
-    "kind": "bare_which"
-  },
-  {
-    "path": "hermes_cli/update_abort_recovery.py",
-    "symbol": "_serve_unit_recovery_available",
-    "kind": "bare_which"
-  },
-  {
-    "path": "hermes_cli/update_restart_recovery.py",
-    "symbol": "_systemctl_scopes",
-    "kind": "bare_which"
-  },
-  {
-    "path": "hermes_cli/update_restart_recovery.py",
-    "symbol": "_systemd_verified_active",
-    "kind": "bare_which"
-  },
-  {
     "path": "hermes_cli/web_git.py",
     "symbol": "_gh",
     "kind": "bare_which"

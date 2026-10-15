@@ -99,7 +99,7 @@ def match_accepted_packages(manifest: dict, accepted: dict) -> None:
 
 
 def canary_windows_version(tag: str) -> str:
-    from hermes_cli.update_channel import canary_timestamp
+    from hermes_cli.release_channels import canary_timestamp
 
     stamp = canary_timestamp(tag)
     if stamp is None:
@@ -113,7 +113,7 @@ def admit_transaction(policy: str, env: dict, *, require_published: bool = False
     """A callable CLI is not permission to bypass the existing workflow gate."""
     from scripts.releases.semver import is_release_version
     from hermes_cli.release_channels import require_commit, validate_repository
-    from hermes_cli.update_channel import is_canary_tag
+    from hermes_cli.release_channels import is_canary_tag
 
     repository = validate_repository(env.get("GITHUB_REPOSITORY"))
     tag = env.get("RELEASE_TAG", "")
@@ -257,7 +257,7 @@ def verify_bootstrap(request: dict, manifest: dict, base: str, repository: str) 
     tag = request.get("releaseTag", "")
     if not tag or manifest.get("request") != request:
         raise ChannelError("Bootstrap requires published release metadata")
-    from hermes_cli.update_channel import is_canary_tag
+    from hermes_cli.release_channels import is_canary_tag
     canary = is_canary_tag(tag)
     reader = ChannelReader(base, repository)
     payload_tag = tag

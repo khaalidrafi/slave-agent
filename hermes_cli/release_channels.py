@@ -18,6 +18,50 @@ _POLICIES = ("preview", "stable-release", "canary-release", "source-branch")
 _RESERVED = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)),
              *(f"lpt{i}" for i in range(1, 10))}
 
+# Source-release tag shapes, re-homed here when the self-update subsystem was
+# removed (FORK.org P0). Producers (scripts/releases/*) and consumers
+# (banner/version labels) import these rather than re-typing the rule.
+CHANNEL_MAIN = "main"
+CHANNEL_STABLE = "stable"
+CHANNEL_CANARY = "canary"
+
+# A canary source identity: the exact stable version plus a full UTC build
+# timestamp in SemVer build metadata. Build metadata is precedence-invisible,
+# so channel movement comes only from the R2 head, never version comparison.
+_CANARY_TAG_RE = re.compile(
+    r"^v(?:0|[1-9]\d{0,2})\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
+    r"\+canary\.20\d{6}T\d{6}Z$"
+)
+
+# A stable release tag: v<major>.<minor>.<patch>, no suffix. The major is
+# capped at three digits so historical CalVer tags can never pass as SemVer
+# and reach a stable feed or a Docker publish.
+STABLE_TAG_RE = re.compile(r"^v(?:0|[1-9]\d{0,2})\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$")
+
+
+def is_canary_tag(tag: object) -> bool:
+    """True for a canonical canary source identity."""
+    if not isinstance(tag, str):
+        return False
+    return bool(_CANARY_TAG_RE.fullmatch(tag.strip()))
+
+
+def canary_timestamp(tag: object) -> str | None:
+    """Return the UTC receipt stamp from a canonical canary tag."""
+    if not is_canary_tag(tag):
+        return None
+    return tag.strip().split("+canary.", 1)[1]  # type: ignore[union-attr]
+
+
+def canary_tag_for_date(version: str, date_utc: str) -> str:
+    """Return ``v<stable>+canary.<full UTC timestamp>``."""
+    core = version.removeprefix("v")
+    if not STABLE_TAG_RE.fullmatch("v" + core):
+        raise ValueError(f"invalid stable version for canary: {version!r}")
+    if not re.fullmatch(r"20\d{6}T\d{6}Z", date_utc):
+        raise ValueError(f"invalid canary UTC timestamp: {date_utc!r}")
+    return f"v{core}+canary.{date_utc}"
+
 
 class ChannelError(ValueError):
     """Invalid, unavailable, or untrusted channel metadata (never a fallback)."""

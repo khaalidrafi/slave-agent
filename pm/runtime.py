@@ -59,6 +59,7 @@ def is_runtime() -> bool:
 
 
 def _resident_runtime() -> tuple[Path, Path] | None:
+    from hermes_constants import PACKAGED_RUNTIMES
     from pm.paths import repo_root
 
     project = repo_root()
@@ -75,7 +76,7 @@ def _resident_runtime() -> tuple[Path, Path] | None:
             return None
         except (OSError, ValueError) as exc:
             raise InstallError("pm-runtime", "invalid package install stamp", "reinstall this application") from exc
-        if stamp.get("distribution") not in ("nix", "docker"):
+        if stamp.get("distribution") not in PACKAGED_RUNTIMES:
             return None
         value = stamp.get("pmRuntime")
         if not isinstance(value, str) or not Path(value).is_absolute():
@@ -87,8 +88,8 @@ def _resident_runtime() -> tuple[Path, Path] | None:
         site = (runtime / marker["sitePackages"]).resolve()
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise InstallError("pm-runtime", "packaged PM runtime is missing or invalid", "reinstall this application") from exc
-    # Native payloads must remain self-contained. Nix's independent derivation
-    # instead refers to its immutable interpreter/dependencies in /nix/store.
+    # Native payloads must remain self-contained. A package-manager derivation (nix, guix)
+    # instead refers to its immutable interpreter/dependencies in that distro's store.
     if (not python.is_file() or not site.is_dir()
             or (payload is not None and (not python.is_relative_to(payload) or not site.is_relative_to(runtime)))):
         raise InstallError("pm-runtime", "packaged PM paths are missing or escape the payload", "reinstall this application")

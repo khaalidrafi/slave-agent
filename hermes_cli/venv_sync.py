@@ -101,8 +101,6 @@ def publish_launchers(project_root: Path, *, create: bool = True) -> None:
 
 def sync(project_root: Path | None = None, *, check: bool = False) -> dict:
     """Report or sync dependencies. A malformed install stamp is a build error."""
-    from hermes_cli.update_stage import publish_stage
-
     root = Path(project_root) if project_root is not None else _project_root()
     if _is_sealed(root):
         return {"state": "sealed", "ok": True}
@@ -117,7 +115,7 @@ def sync(project_root: Path | None = None, *, check: bool = False) -> dict:
             return {"state": "current", "ok": True}
         if check:
             return {"state": "would-sync", "ok": True}
-        publish_stage("Updating Python dependencies")
+        print("hermes: updating Python dependencies...", file=sys.stderr, flush=True)
         refuse_foreign_owned_venv(root)
         pm.sync_venv(explicit=True, project_root=root, evict_incompatible_plugins=True)
         collect_superseded_generations(root)
@@ -287,7 +285,10 @@ def refuse_foreign_owned_venv(project_root: Path) -> None:
 #: The completion tails import the CLI (so prepare_launch) while the pending marker is armed.
 #: The lock-ancestry check covers that only under a live claim; an unwritable, expired or
 #: absent one (an installer run) would start a tail inside the tail, recursively.
-_TAIL_SCRIPTS = frozenset({"source_completion.py", "update_completion.py"})
+#: The completion tail imports the CLI (so prepare_launch) while the pending marker is armed.
+#: The lock-ancestry check covers that only under a live claim; an unwritable, expired or
+#: absent one (an installer run) would start a tail inside the tail, recursively.
+_TAIL_SCRIPTS = frozenset({"source_completion.py"})
 
 
 def _is_tail_script(root: Path, argv0: str) -> bool:
@@ -367,16 +368,12 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
         return None
     stamp = read_install_stamp(root)
     if not stamp:
-        from hermes_cli.post_update import step_adopt_blessed_checkout
-
-        step_adopt_blessed_checkout(root)
-        stamp = read_install_stamp(root)
-    if stamp.get("updateMechanism") != "self":
+        return None  # No install stamp: nothing here is owned by an updater.
+    if not stamp.get("updateMechanism") == "self":
         return None  # Developer checkouts and packaged runtimes retain their owner.
 
     import pm
     from hermes_cli._launchers import resolve_store_python
-    from hermes_cli.update_lock import UpdateLock, read_live_update
 
     current = pm.venv_is_current(project_root=root)
     pending = completion_pending_path(root)
@@ -385,10 +382,10 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     if not _may_retry and _attempts >= COMPLETION_RETRY_MAX_ATTEMPTS:
         # The tail has failed often enough that every relaunch re-running it
         # does more harm than good (#122206: "every launch burns ~4 minutes").
-        # Leave the marker for an explicit `hermes update`; say so once.
+        # Leave the marker for an explicit repair; say so once.
         print(
             f"hermes: a source update could not be finished automatically "
-            f"({_attempts} attempts); run `hermes update` from a shell to finish it",
+            f"({_attempts} attempts); run `hermes pm sync` from a shell to finish it",
             file=sys.stderr, flush=True,
         )
     elif not _may_retry:
@@ -396,26 +393,10 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
         # noise (the record's age tracks the wait), leaving the marker armed.
         pass
     elif not owed_to_cli and (not current or pending.is_file()):
-        lock = UpdateLock()
-        if not lock.acquire():
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
-        try:
-            # Under the launching update's own claim (its pid is our ancestor) a process it
-            # spawned owes no tail: that obligation is the updater's.
-            if not lock.acquired and read_live_update() is not None:
-                if current:
-                    return None
-                # A process the update spawns before its dependencies are current (a restarted
-                # gateway) would boot on a tree built for another interpreter. Sync — never the
-                # tail, which is the updater's — then relaunch below into a current install.
-                _sync_source_dependencies(root, arm=False)
-                if not pm.venv_is_current(project_root=root):
-                    # Relaunching would land back here and sync again, forever.
-                    raise RuntimeError("dependency sync left this install out of date")
-            else:
-                _finish_source_update(root, current=current, pending=pending)
-        finally:
-            lock.release()
+        # The updater that used to own this claim is gone (FORK.org P0): the
+        # launch itself owes the sync. Finish the tail when the venv is
+        # current; otherwise sync first, then relaunch below into it.
+        _finish_source_update(root, current=current, pending=pending)
     python = resolve_store_python(root)
     if python is None:
         raise RuntimeError("source update has no managed Python; run `hermes pm install`")

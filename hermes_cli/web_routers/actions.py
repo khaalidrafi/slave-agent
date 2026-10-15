@@ -1,4 +1,4 @@
-"""Gateway restart/drain, Hermes update and background-action status dashboard routes.
+"""Gateway restart/drain, Hermes update refusal and background-action status dashboard routes.
 
 Extracted from ``hermes_cli.web_server``; helpers/state that tests monkeypatch on
 ``web_server`` stay there and are late-bound (cycle-safe).
@@ -7,17 +7,14 @@ Extracted from ``hermes_cli.web_server``; helpers/state that tests monkeypatch o
 import asyncio
 import contextlib
 import logging
-import re
-import secrets
-import subprocess
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 
-from hermes_cli.config import format_docker_update_message, recommended_update_command_for_method
-from hermes_cli.update_contract import COMMIT_BUILD_UPDATE_MESSAGE, is_commit_build
+from hermes_cli.config import recommended_update_command_for_method
+from hermes_cli.steward import is_commit_build, update_guidance
 from hermes_cli.version_info import get_version_info
 from hermes_cli.web_deps import LateState, late
 from hermes_cli.web_server_gateway import _ACTION_LOG_FILES
@@ -28,12 +25,8 @@ router = APIRouter()
 status_router = APIRouter()
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_dashboard_local_update_managed_externally = late("_dashboard_local_update_managed_externally", "hermes_cli.web_server_files")
 _spawn_gateway_restart = late("_spawn_gateway_restart")
-_spawn_hermes_action = late("_spawn_hermes_action", "hermes_cli.web_server_gateway")
 detect_install_method = late("detect_install_method", "hermes_cli.config")
-get_hermes_home = late("get_hermes_home", "hermes_cli.config")
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
 _ACTION_COMMANDS = LateState("_ACTION_COMMANDS", "hermes_cli.web_server_gateway")
 _ACTION_IDS = LateState("_ACTION_IDS", "hermes_cli.web_server_gateway")
 _ACTION_PROCS = LateState("_ACTION_PROCS", "hermes_cli.web_server_gateway")
@@ -51,17 +44,6 @@ def _server_path(name: str) -> Path:
 _ACTION_LOG_TAIL_MAX_BYTES = 256 * 1024
 _ACTION_LOG_TAIL_INITIAL_CHUNK_BYTES = 8 * 1024
 _ACTION_LOG_TAIL_MAX_CHUNK_BYTES = 64 * 1024
-
-_UPDATE_ACTION_COMPLETED_RE = re.compile(r"^=== hermes-update completed ([0-9a-f]{32}) ===$")
-
-_MANAGED_EXTERNALLY_MESSAGE = "Hermes updates are managed outside this dashboard in containerized environments."
-
-# Per-kind dashboard error codes the UI keys on, by admission-refusal code.
-_UPDATE_REFUSAL_ERROR_CODES = {
-    "docker": "docker_update_unsupported", "image-marker": "docker_update_unsupported",
-    "image-marker-invalid": "docker_update_unsupported", "apt": "apt_update_required",
-    "nix": "nix_update_unsupported",
-}
 
 
 def _finish_action(name: str, exit_code: Optional[int], pid: Optional[int]) -> None:
@@ -118,23 +100,6 @@ def _tail_lines(path: Path, n: int) -> List[str]:
     if drop_partial_first_line and lines:
         lines = lines[1:]
     return lines[-n:]
-
-
-def _durable_completed_update_action_id(lines: List[str]) -> Optional[str]:
-    """Latest successful update id from ``update.log`` — the durable record that survives
-    the update restarting the dashboard (losing the in-memory ``Popen``/result registries).
-    Only a completion marker after the latest start marker counts, so a stale success
-    cannot mask a newer failed attempt."""
-    last_start = last_completed = -1
-    completed_action_id: Optional[str] = None
-    for index, line in enumerate(lines):
-        if line.startswith("=== hermes update started "):
-            last_start = index
-        match = _UPDATE_ACTION_COMPLETED_RE.fullmatch(line.strip())
-        if match:
-            last_completed = index
-            completed_action_id = match.group(1)
-    return completed_action_id if completed_action_id and last_completed > last_start else None
 
 
 @router.post("/api/gateway/restart")
@@ -209,138 +174,57 @@ async def gateway_drain(request: Request):
     }
 
 
-def _update_refused(error: str, message: str, update_command: str) -> Dict[str, Any]:
-    _record_completed_action("hermes-update", message, exit_code=1)
+def _update_state() -> Dict[str, Any]:
+    """What this install is, and the one honest answer about updating it.
+
+    Shared by the check (GET) and the apply (POST): a build with no updater must not
+    describe itself differently depending on which button was pressed. ``behind`` is
+    always None because no update source is consulted any more — the checker went with
+    the updater (FORK.org P0) — so ``update_available`` and ``can_apply`` are False.
+    """
+    root = _server_path("PROJECT_ROOT")
+    install_method = "desktop-app" if is_commit_build(root) else detect_install_method(root)
     return {
-        "ok": False, "pid": None, "name": "hermes-update", "error": error, "message": message,
-        "update_command": update_command,
+        "install_method": install_method,
+        "current_version": get_version_info().derived_version,
+        "behind": None,
+        "update_available": False, "can_apply": False,
+        "update_command": recommended_update_command_for_method(install_method),
+        "message": update_guidance(root),
+    }
+
+
+def _update_refused(state: Dict[str, Any]) -> Dict[str, Any]:
+    """The refusal, logged as a completed action so a client polling the status
+    sees the tile finish (exit 1) instead of waiting on a process that never ran."""
+    _record_completed_action("hermes-update", state["message"], exit_code=1)
+    return {
+        "ok": False, "pid": None, "name": "hermes-update", "error": "update_not_in_place",
+        "message": state["message"], "update_command": state["update_command"],
     }
 
 
 @router.post("/api/hermes/update")
 async def update_hermes():
-    """Kick off ``hermes update`` in the background."""
-    if is_commit_build(_server_path("PROJECT_ROOT")):
-        return _update_refused("commit-build", COMMIT_BUILD_UPDATE_MESSAGE, "")
+    """Refuse to update: this build has no in-place updater (FORK.org P0).
 
-    if _dashboard_local_update_managed_externally():
-        message = _MANAGED_EXTERNALLY_MESSAGE + " The built-in local updater is disabled here."
-        # No runnable command exists here: the outer launcher/image owns updates.
-        return _update_refused("dashboard_update_managed_externally", message, "")
-
-    # Shared admission gate: marker-first, then the docker/nix/apt heuristics —
-    # one decision with the CLI paths.
-    from hermes_cli.update_contract import evaluate_update_admission, record_refusal_receipt
-
-    refusal = evaluate_update_admission(_server_path("PROJECT_ROOT"))
-    if refusal is not None:
-        response = _update_refused(
-            _UPDATE_REFUSAL_ERROR_CODES.get(refusal.code, "update_not_in_place"), refusal.message, refusal.update_command,
-        )
-        record_refusal_receipt(refusal)
-        return response
-
-    existing = _ACTION_PROCS.get("hermes-update")
-    if existing is not None and existing.poll() is None:
-        response = {"ok": True, "pid": existing.pid, "name": "hermes-update", "already_running": True}
-        action_id = _ACTION_IDS.get("hermes-update")
-        if action_id:
-            response["action_id"] = action_id
-        return response
-
-    action_id = secrets.token_hex(16)
-    with http_failure("Failed to spawn hermes update", 500, "Failed to start update"):
-        proc = _spawn_hermes_action(["update"], "hermes-update", env_overrides={"HERMES_ACTION_ID": action_id})
-    return {"ok": True, "pid": proc.pid, "name": "hermes-update", "action_id": action_id}
-
-
-_NON_APPLYABLE_MESSAGES = {
-    "docker": format_docker_update_message,
-    "apt": lambda: "Hermes is managed by Termux APT; run `pkg upgrade hermes-agent`.",
-}
+    The tile still answers, because Desktop and the dashboard both hold an Update button.
+    It reports the same thing ``hermes update`` prints — the package manager that owns
+    this install — instead of spawning a process whose whole job is to print that.
+    """
+    return _update_refused(_update_state())
 
 
 @router.get("/api/hermes/update/check")
-async def check_hermes_update(force: bool = False, profile: Optional[str] = None):
-    """Report whether a Hermes update is available, without applying it.
+async def check_hermes_update():
+    """Report what this install is, and that nothing here can update it.
 
     Returns install_method ('apt'|'git'|'docker'|'nix'|'nixos'|'unknown'),
-    current_version, behind (commits behind, 0 = up to date, -1 = unknown count,
-    null = check could not run), update_available, can_apply (git only — the
-    dashboard button can apply in place), update_command, message (guidance for
-    non-applyable methods) and, for git installs that are behind, commits
-    [{sha, summary, author, at}] (additive; existing consumers ignore it).
+    current_version, and the refusal the POST side gives: ``message`` names the package
+    manager that owns the tree. ``force`` and ``profile`` query args are still sent by
+    clients and ignored — they used to bust the 24h GitHub cache and scope the check.
     """
-    if is_commit_build(_server_path("PROJECT_ROOT")):
-        return {
-            "install_method": "desktop-app",
-            "current_version": get_version_info().derived_version,
-            "behind": None, "update_available": False, "can_apply": False,
-            "update_command": "", "message": COMMIT_BUILD_UPDATE_MESSAGE,
-        }
-
-    if _dashboard_local_update_managed_externally():
-        return {
-            "install_method": "managed-runtime",
-            "current_version": get_version_info().derived_version,
-            "behind": None,
-            "update_available": False, "can_apply": False,
-            "update_command": "", "message": _MANAGED_EXTERNALLY_MESSAGE,
-        }
-
-    install_method = detect_install_method(_server_path("PROJECT_ROOT"))
-    payload: Dict[str, Any] = {
-        "install_method": install_method,
-        "current_version": get_version_info().derived_version,
-        "behind": None,
-        "update_available": False, "can_apply": install_method == "git",
-        "update_command": recommended_update_command_for_method(install_method), "message": None,
-    }
-    non_applyable = _NON_APPLYABLE_MESSAGES.get(install_method)
-    if non_applyable is not None:
-        payload["message"] = non_applyable()
-        return payload
-
-    # source_check.check_for_updates() handles git / nix-revision paths through the GitHub API and
-    # caches the result for 24h. ``force`` busts the cache so "Check now" reflects reality.
-    try:
-        from hermes_cli.source_check import check_for_updates
-
-        with _config_profile_scope(profile):
-            status = await asyncio.to_thread(check_for_updates, force=force)
-        behind = status.get("behind")
-    except Exception:
-        _log.exception("Update check failed")
-        behind = None
-
-    payload["behind"] = behind
-    if behind is None:
-        payload["message"] = "Couldn't reach the update source — try again later."
-    elif behind == 0:
-        payload["message"] = "You're on the latest version."
-    else:
-        payload["update_available"] = True
-        # "What's changed" for the desktop's remote update overlay; best-effort
-        # (empty list on any failure).
-        payload["commits"] = [{**row, "sha": row["sha"][:7], "at": row["at"] // 1000}
-                              for row in status.get("commits", [])[:20]]
-    return payload
-
-
-def _completed_exit_code(
-    result: Optional[Dict[str, Any]], durable_action_id: Optional[str], receipt: Optional[Dict[str, Any]],
-) -> Optional[int]:
-    """Exit code for an action with no live process: in-memory result, else durable evidence."""
-    if result is not None:
-        return result.get("exit_code")
-    if durable_action_id:
-        return 0
-    if receipt is not None and receipt.get("outcome") in ("success", "partial"):
-        # No in-memory result and no log marker (e.g. log rotated), but the
-        # receipt proves a completed run: report its outcome rather than a
-        # null clients time out on. ``partial`` maps to exit 1 like the CLI.
-        return 0 if receipt["outcome"] == "success" else 1
-    return None
+    return _update_state()
 
 
 @status_router.get("/api/actions/{name}/status")
@@ -351,30 +235,16 @@ async def get_action_status(name: str, lines: int = 200):
         raise HTTPException(status_code=404, detail=f"Unknown action: {name}")
 
     log_dir = _server_path("_ACTION_LOG_DIR")
-    requested_lines = min(max(lines, 1), 2000)
-    tail = _tail_lines(log_dir / log_file_name, requested_lines)
-
-    durable_update_action_id = None
-    update_receipt_summary = None
-    if name == "hermes-update":
-        durable_update_action_id = _durable_completed_update_action_id(_tail_lines(log_dir / "update.log", 2000))
-        if durable_update_action_id:
-            marker = f"=== hermes-update completed {durable_update_action_id} ==="
-            if marker not in tail:
-                tail = [*tail, marker][-requested_lines:]
-        # The update receipt is the durable, structured truth about the last
-        # update (written by every run, incl. refused/failed; survives the
-        # dashboard restarting itself mid-action). Surface it so clients READ
-        # the outcome instead of inferring it from liveness probes.
-        # See #81193, #87359, #91277.
-        update_receipt_summary = _latest_update_receipt_summary()
+    tail = _tail_lines(log_dir / log_file_name, min(max(lines, 1), 2000))
 
     proc = _ACTION_PROCS.get(name)
     if proc is None:
+        # No live process: the recorded result is the whole story. An update
+        # never had one here — the POST refuses without spawning (FORK.org P0).
         result = _ACTION_RESULTS.get(name)
         running = False
         pid = result.get("pid") if result else None
-        exit_code = _completed_exit_code(result, durable_update_action_id, update_receipt_summary)
+        exit_code = result.get("exit_code") if result else None
     else:
         exit_code = proc.poll()
         running = exit_code is None
@@ -384,57 +254,15 @@ async def get_action_status(name: str, lines: int = 200):
                 proc.wait(timeout=1)
             _finish_action(name, exit_code, pid)
 
-    response = {"name": name, "running": running, "exit_code": exit_code, "pid": pid, "lines": tail}
-    if durable_update_action_id:
-        response["action_id"] = durable_update_action_id
-    if update_receipt_summary is not None:
-        response["receipt"] = update_receipt_summary
-    return response
-
-
-def _read_latest_receipt() -> Optional[Dict[str, Any]]:
-    """Latest update receipt, or None on any failure (never raises)."""
-    try:
-        from hermes_cli.update_receipt import read_latest_receipt
-        return read_latest_receipt() or None
-    except Exception:
-        return None
-
-
-def _latest_update_receipt_summary() -> Optional[Dict[str, Any]]:
-    """Compact summary of the latest receipt (written by EVERY ``hermes update`` run,
-    incl. refused/failed), or None; never raises. Steps/skips stay in the full endpoint.
-
-    Phase-1 bullet 3 (#91277): the receipt (written by EVERY ``hermes update`` run since #91283, including
-    refused and failed ones, with a ``latest.json`` pointer) is the durable success signal the Desktop and
-    dashboard should read instead of inferring outcomes from liveness probes across the update's stop/start
-    gap (#81193, #87359).
-    """
-    receipt = _read_latest_receipt()
-    if not receipt:
-        return None
-    try:
-        post = receipt.get("post_update") or {}
-        return {
-            **{k: receipt.get(k) for k in ("outcome", "started_at", "finished_at")},
-            "pre_sha": (receipt.get("pre_update") or {}).get("sha"),
-            "post_sha": post.get("sha"), "post_version": post.get("version"),
-            "fleet_states": sorted({str(e.get("state")) for e in receipt.get("fleet") or [] if isinstance(e, dict)}),
-        }
-    except Exception:
-        return None
+    return {"name": name, "running": running, "exit_code": exit_code, "pid": pid, "lines": tail}
 
 
 @status_router.get("/api/hermes/update/receipt")
 async def get_update_receipt():
-    """The FULL latest update receipt (steps, skips, gateway restart outcome, fleet
-    matrix) plus a compact ``summary``; 404 when no update has run since receipts landed.
-    Clients read this instead of inferring success from backend liveness, which misread
-    the update's own restart gap as a failed update/boot.
+    """Always 404: this build writes no update receipts, because it has no updater.
 
-    See #81193, #87359, #91277.
+    The route exists so a client that still polls it gets a sentence explaining
+    why there is nothing to read, rather than FastAPI's bare "Not Found".
     """
-    receipt = _read_latest_receipt()
-    if not receipt:
-        raise HTTPException(status_code=404, detail="No update receipt found (no `hermes update` run recorded).")
-    return {"receipt": receipt, "summary": _latest_update_receipt_summary()}
+    raise HTTPException(status_code=404, detail="This build does not update in place, so it records no receipts.")
+

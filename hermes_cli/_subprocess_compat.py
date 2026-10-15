@@ -58,10 +58,9 @@ _GIT_VALUE_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exe
 
 
 def run(cmd, **kwargs) -> NoReturn:
-    # Shim to suppress old updater work until relaunch. Do not start its installer.
-    from hermes_cli._old_updater import stop_for_relaunch
-
-    stop_for_relaunch()
+    # Retired shim: the historical updater used to reach process spawn through
+    # this name; the updater is gone (FORK.org P0), so fail loudly instead.
+    raise RuntimeError("hermes_cli._subprocess_compat.run is retired; use subprocess directly")
 
 
 def harden_git_argv(args: Sequence[str]) -> list[str]:

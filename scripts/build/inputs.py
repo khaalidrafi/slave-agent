@@ -102,8 +102,12 @@ class AgentInputs:
         if not pm_python.is_file() or not pm_site.is_dir():
             raise ValueError("prepared PM runtime is incomplete")
         if self.stamp is not None:
+            from hermes_constants import PACKAGED_RUNTIMES
+
             stamp = json.loads(self.stamp.read_text(encoding="utf-8-sig"))
-            if stamp.get("distribution") in ("nix", "docker") and stamp.get("pmRuntime") != str(self.pm_runtime):
+            # A sealed Python environment must name the PM runtime the assembler was
+            # given, or the tree points at a runtime that was never built with it.
+            if stamp.get("distribution") in PACKAGED_RUNTIMES and stamp.get("pmRuntime") != str(self.pm_runtime):
                 raise ValueError("install stamp must reference the supplied independent PM runtime")
         if self.placement == "contained":
             for path in (self.python, self.site_packages, self.environment, self.pm_runtime, self.tools):

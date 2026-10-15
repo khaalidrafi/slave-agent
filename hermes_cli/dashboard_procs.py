@@ -759,17 +759,6 @@ def _norm_exe(path) -> str:
         return str(path).lower()
 
 
-def _detect_concurrent_hermes_instances(
-    scripts_dir: Path, *, exclude_pid: int | None = None) -> list[tuple[int, str]]:
-    """Historical main export: stop old updaters without scanning live shims.
-
-    PM stages a fresh generation instead of replacing a mapped hermes.exe.
-    Returning an empty list would let old callers continue into that mutation.
-    """
-    from hermes_cli._old_updater import stop_for_relaunch
-    stop_for_relaunch()
-
-
 def _is_desktop_local_serve_cmdline(command: str) -> bool:
     """True for the Desktop-local shape ``hermes serve [--isolated] --host 127.0.0.1 --port 0``.
 

@@ -1,12 +1,10 @@
 """pm sync receipts: the machine-readable surface for venv operations.
 
 Every pm venv sync — startup, plugin install, update rebuild — writes a
-receipt with the SAME schema the updater's receipts use
-(hermes_cli.update_receipt), into the same
-``<HERMES_HOME>/logs/update_receipts/`` dir with a ``kind`` field
-separating kinds. One reader (``hermes pm status``, desktop IPC) serves
-every surface: a failed venv rebuild is as reportable as a failed
-update.
+receipt into ``<HERMES_HOME>/logs/update_receipts/`` (the historical dir
+name; ``hermes pm status`` and the desktop IPC read it from there). The
+updater that once wrote the sibling kind here was removed (FORK.org P0), so
+pm is the only producer; the ``kind`` field still separates records.
 
 The in-flight receipt lives in a ContextVar, not a module global: the
 sync cadence and dependency preparation can overlap across threads, and a
@@ -24,14 +22,13 @@ Two hazards of ContextVar state are handled explicitly:
   discarding it. The ambient no-token begin→finalize stays as-is (the
   existing linear consumers — pm sync, the plugin-check cadence).
 
-Correlation: ``begin`` stamps the receipt with the ambient update
-correlation id (derived from the open update receipt's own identity in
-the same context). ``finalize`` files the finished receipt under that
-id in a per-context map, and the updater embeds only the entry carrying
-ITS OWN id (``last_for_update``), never latest.json — a sync that
-finished before the update began, a standalone sync, or one from a
-concurrent thread cannot be misattributed to it, and a nested update's
-sync never displaces the outer update's entry.
+Correlation: ``worker_context(update_id)`` stamps a sync's receipt with the
+id of the worker run that owns it, and ``finalize`` files the finished
+receipt under that id in a per-context map. ``last_for_update`` hands the
+entry back to the owning worker only when the id matches ITS OWN id, never
+latest.json — a sync that finished before the worker began, a standalone
+sync, or one from a concurrent thread cannot be misattributed to it, and a
+nested worker's sync never displaces the outer worker's entry.
 """
 
 from __future__ import annotations
@@ -104,17 +101,11 @@ def accept_worker_receipt(data: Optional[dict[str, Any]], update_id: Optional[st
 def _ambient_update_id() -> Optional[str]:
     """The update correlation id in force in this context, or None.
 
-    Lazy import: hermes_cli.update_receipt imports pm.receipt at embed
-    time, so this direction must stay function-scoped. Never raises."""
+    Only a worker run carries one now: the id used to also be read from the
+    open updater receipt, and that subsystem was removed (FORK.org P0). A pm
+    sync outside a worker therefore stands alone, which is the truth."""
     worker = _worker_update.get()
-    if worker is not None:
-        return worker[0]
-    try:
-        from hermes_cli.update_receipt import current_correlation_id
-
-        return current_correlation_id()
-    except Exception:
-        return None
+    return worker[0] if worker is not None else None
 
 
 def _utc_now_iso() -> str:

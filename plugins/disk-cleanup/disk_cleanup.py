@@ -13,6 +13,7 @@ import functools
 import json
 import logging
 import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
@@ -376,10 +377,20 @@ def _git_tracks(path: Path) -> bool:
     ``:(literal)`` stops git globbing the name (``test_[1].py`` must not match ``test_1.py``).
     Git missing / not a repo / file untracked all mean "not tracked".
     """
-    from hermes_cli.source_check import _git_ok
+    from hermes_cli.boot_bootstrap import _git_binary
 
-    return _git_ok(["-C", str(path.parent), "ls-files", "--error-unmatch", "--",
-                    ":(literal)" + path.name], timeout=5)
+    git = _git_binary()
+    if git is None:
+        return False
+    try:
+        result = subprocess.run(
+            [git, "-C", str(path.parent), "ls-files", "--error-unmatch", "--",
+             ":(literal)" + path.name],
+            capture_output=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0
 
 
 def _inside_git_worktree(path: Path) -> bool:

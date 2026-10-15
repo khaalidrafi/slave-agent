@@ -62,13 +62,24 @@ def _project_root() -> Path:
 
 
 def release_channel(config: dict[str, Any]) -> str:
-    """The channel this install follows: a package's baked channel, a source install's channel
-    record, else the checkout's branch (``main`` for main/master, ``dev`` for any other)."""
-    from hermes_cli.update_channel import _package_channel, _read_stamp, resolve_update_channel
+    """The channel this install tracks: a package's baked channel from its
+    stamp tag, else the checkout's branch (``main`` for main/master, ``dev``
+    for any other). The per-install update-channel *records* were removed with
+    the updater (FORK.org P0); source installs simply follow the checkout."""
+    from hermes_cli.release_channels import (
+        CHANNEL_CANARY, CHANNEL_MAIN, CHANNEL_STABLE, is_canary_tag,
+    )
+    from hermes_cli.steward import read_install_stamp
 
-    root = _project_root()
-    resolved = resolve_update_channel(config, root)
-    if resolved != "main" or _package_channel(_read_stamp(root)):
+    stamp = read_install_stamp(_project_root())
+    packaged = (stamp.get("payload") in ("bundled", "light", "runtime")
+                or stamp.get("updateMechanism")
+                in ("electron-updater", "app-installer", "microsoft-store"))
+    if packaged:
+        resolved = CHANNEL_CANARY if is_canary_tag(stamp.get("tag")) else CHANNEL_STABLE
+    else:
+        resolved = CHANNEL_MAIN
+    if resolved != CHANNEL_MAIN:
         return _CHANNELS.get(resolved, "unknown")
     branch = _version_info().branch
     if not branch:
@@ -87,11 +98,11 @@ def version_age_bucket(now: float | None = None) -> str:
 
 def behind_bucket(home: Path | None = None, now: float | None = None) -> str:
     """Commits/releases behind, from the update check's cached result for this exact revision."""
-    from hermes_cli.update_channel import install_id
+    from pm.environments import install_key
     from hermes_constants import get_hermes_home
 
     root = _project_root()
-    cache_file = (home or get_hermes_home()) / "source-checks" / f"{install_id(root)}.json"
+    cache_file = (home or get_hermes_home()) / "source-checks" / f"{install_key(Path(root))}.json"
     try:
         cached = json.loads(cache_file.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):

@@ -495,7 +495,7 @@ def supersedes(existing_page: str | None, tag: str) -> bool:
     recorded = recorded_build(existing_page)
     if not recorded:
         return True
-    from hermes_cli.update_channel import canary_timestamp, is_canary_tag
+    from hermes_cli.release_channels import canary_timestamp, is_canary_tag
     if is_canary_tag(recorded) != is_canary_tag(tag):
         return False
     if is_canary_tag(tag):

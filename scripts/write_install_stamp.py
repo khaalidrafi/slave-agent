@@ -35,15 +35,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Bootstrap the repo root onto sys.path so the canary tag shape can come
-# from hermes_cli.update_channel — the single authority — instead of a
+# from hermes_cli.release_channels — the single authority — instead of a
 # re-typed regex (hermes_cli/__init__.py is import-light).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from hermes_cli import update_channel  # noqa: E402
+from hermes_cli import release_channels  # noqa: E402
 from hermes_cli.steward import UPDATE_MECHANISMS  # noqa: E402
+from hermes_constants import PACKAGED_RUNTIMES  # noqa: E402
 
 STAMP_SCHEMA_VERSION = 2
 _REPO_ROOT = Path(__file__).parent.parent.resolve()
+
+# Who owns the tree, as ``--distribution``. Derived from the one vocabulary the runtime
+# reads (``PACKAGED_RUNTIMES``) plus the two sealed artifact kinds that ship no Python
+# environment of their own, so a label the stamp writer cannot emit is never one PM has
+# to honour, and vice versa.
+DISTRIBUTION_CHOICES = tuple(sorted(PACKAGED_RUNTIMES | {"desktop-app", "apt-termux"}))
 
 # Who applies the next update to the tree this stamp describes. REQUIRED —
 # stamp readers hard-fail a stamp without it.
@@ -241,9 +248,9 @@ def build_stamp(
     payload = "bundled" if variant == "store" else (variant or "bootstrap")
     tag = os.environ.get("HERMES_PAYLOAD_TAG") or None
 
-    _stable_tag = re.compile(r"^v(0|[1-9]\d{0,2})\.\d+\.\d+$")
     if payload != "bootstrap" and not commit_build and channel_request is None and not (
-        tag and (_stable_tag.match(tag) or update_channel.is_canary_tag(tag))
+        tag and (release_channels.STABLE_TAG_RE.match(tag)
+                 or release_channels.is_canary_tag(tag))
     ):
         raise SystemExit(
             f"write_install_stamp: HERMES_DESKTOP_VARIANT={payload} requires "
@@ -297,7 +304,7 @@ def main() -> int:
     parser.add_argument("--source", default="local", help="Stamp source label")
     parser.add_argument(
         "--distribution",
-        choices=("docker", "nix", "desktop-app", "apt-termux"),
+        choices=DISTRIBUTION_CHOICES,
         help="Package distribution (the steward that replaces this tree)",
     )
     parser.add_argument(

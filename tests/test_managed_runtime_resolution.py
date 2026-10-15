@@ -11,8 +11,10 @@ code has two failure modes:
   how a generated systemd unit or launchd plist can bake a system Node in and
   keep resolving it across reboots.
 
-The fix per call site is one of ``find_node_executable()``,
-``iter_hermes_node_dirs()``, ``resolve_uv()``, or ``ensure_uv()``. This test is
+The fix per call site is ``find_node_executable()``,
+``iter_hermes_node_dirs()``, or a PM-composed environment (``pm.ensure("uv")``);
+managed uv helpers retired with the self-update subsystem (FORK.org P0).
+This test is
 the ratchet that stops a new bare lookup from being added back.
 
 Reading source is normally banned (see AGENTS.md). It is the right tool here and
@@ -324,7 +326,8 @@ def test_no_unreviewed_bare_managed_runtime_lookups():
         "arbitrary process's PATH, so this resolves a system copy — or nothing "
         "— on an install that has a managed one.\n"
         "Use instead:\n"
-        "  uv       -> managed_uv.resolve_uv() (lookup) or ensure_uv() (may install)\n"
+        "  uv       -> PM owns managed uv (see pm/_uv.py); a bare lookup here "
+        "needs an explicit exemption\n"
         "  node/npm -> hermes_constants.find_node_executable()\n"
         "  PATH env -> hermes_constants.iter_hermes_node_dirs()\n"
         "If PATH really is the right question, add the site to _ALLOWED with a "
@@ -357,14 +360,3 @@ def test_managed_node_helpers_exist(helper):
     import hermes_constants
 
     assert callable(getattr(hermes_constants, helper))
-
-
-def test_managed_uv_helpers_exist():
-    """The old managed_uv module is a retirement shim on the PM branch: it
-    exists only so the frozen historical updater fixture can import it, and
-    its entry points route to relaunch instead of doing venv work. PM owns
-    real uv resolution now; the module itself must keep the names live."""
-    from hermes_cli import managed_uv
-
-    assert callable(managed_uv.resolve_uv)
-    assert callable(managed_uv.ensure_uv)

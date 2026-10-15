@@ -86,12 +86,6 @@ def _web_ui_build_needed(web_dir: Path) -> bool:
     return not source_product_current(_web_project_root(web_dir), "web", _web_dist_dir(web_dir))
 
 
-def _write_web_ui_build_stamp(project_root: Path, web_dir: Path) -> None:
-    """Historical updater entrypoint; current builders publish their own receipts."""
-    from hermes_cli._old_updater import stop_for_relaunch
-    stop_for_relaunch()
-
-
 def _console_print(text: str) -> None:
     """print() that survives cp1252-style consoles (arrow/check glyphs) via errors="replace"."""
     try:
@@ -99,28 +93,6 @@ def _console_print(text: str) -> None:
     except UnicodeEncodeError:
         encoding = getattr(sys.stdout, "encoding", None) or "ascii"
         print(text.encode(encoding, errors="replace").decode(encoding, errors="replace"))
-
-
-def _run_with_idle_timeout(
-    cmd: list[str], cwd: Path, *, idle_timeout_seconds: int = 180, indent: str = "    ",
-    env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
-    """Stop an old updater instead of running the retired build path."""
-    from hermes_cli._old_updater import stop_for_relaunch
-    stop_for_relaunch()
-
-
-def _nixos_build_env() -> dict[str, str] | None:
-    """Stop an old updater instead of running the retired build path."""
-    from hermes_cli._old_updater import stop_for_relaunch
-    stop_for_relaunch()
-
-
-def _run_npm_install_deterministic(
-    npm: str, cwd: Path, *, extra_args: tuple[str, ...] = (), capture_output: bool = True,
-    env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
-    """Stop an old updater instead of running the retired build path."""
-    from hermes_cli._old_updater import stop_for_relaunch
-    stop_for_relaunch()
 
 
 def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:

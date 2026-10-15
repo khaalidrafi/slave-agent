@@ -766,6 +766,17 @@ def socket_safe_tmpdir() -> str:
     return "/tmp"  # no-tmp: ok — AF_UNIX 108-byte socket path limit on Linux
 
 
+# ---- Packaged Python environments ----
+# Distributions that ship a *sealed* Python environment plus the PM runtime beside it
+# (``pm-runtime.json`` naming an interpreter and its site-packages). There the package
+# manager owns the closure, so PM resolves tools against that interpreter instead of
+# downloading uv and a python-build-standalone interpreter — which is also the only way a
+# non-FHS distro (Guix, and anything else without /lib64/ld-linux) can run PM at all.
+# A stamp with any other distribution label means "PM provisions its own runtime".
+# Read by :func:`pm.runtime._resident_runtime`, the build assembler and the stamp writer;
+# a new packager adds its label HERE and nowhere else.
+PACKAGED_RUNTIMES = frozenset({"nix", "docker", "guix"})
+
 # ---- Managed mode (NixOS declarative config) ----
 # Canonical home of "is this install package-manager managed": ``hermes_cli.config`` re-exports
 # these, and :func:`apply_secure_dir_policy` below reads them. Lives here because constants

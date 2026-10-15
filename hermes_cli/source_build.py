@@ -99,20 +99,22 @@ def source_frontends(project_root: Path) -> tuple[str, ...]:
     return tuple(name for name in ("ui-tui", "web") if (project_root / name / "package.json").is_file())
 
 
-def build_update_products(project_root: Path, *, desktop: bool) -> None:
-    """Prepare the selected union once; a failed product aborts the update."""
-    # Both current updates and historical takeover reach this in a fresh target
-    # interpreter, never in the updater's pre-sync import graph.
-    from hermes_cli.main_install_repair import _install_configured_features_missing_deps
-    from hermes_cli.update_stage import publish_stage
+def _stage(message: str) -> None:
+    """Announce a build stage. The updater's status-file channel died with the
+    self-update subsystem (FORK.org P0); the tail's stdout is the reader now."""
+    print(f"→ {message}...")
 
-    _install_configured_features_missing_deps(project_root)
+
+def build_update_products(project_root: Path, *, desktop: bool) -> None:
+    """Prepare the selected union once; a failed product aborts the build."""
+    # Feature extras are PM's job now (``hermes pm sync`` / launch activation);
+    # the removed updater repaired them here on every completion.
     frontends = source_frontends(project_root)
     if not frontends:
         return
     env = source_build_env(explicit=True)
     workspaces = frontends + (("apps/desktop",) if desktop else ())
-    publish_stage("Updating Node dependencies")
+    _stage("Updating Node dependencies")
     prepare_source_dependencies(project_root, workspaces, env=env, explicit=True)
     # An update that changed no TUI/web input reuses the receipted output, as the
     # launch path already does; recompiling it produces the same bytes. Desktop
@@ -123,13 +125,13 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
         if source_product_current(project_root, "tui", project_root / "ui-tui/dist"):
             print("  ✓ TUI is up to date")
         else:
-            publish_stage("Building the TUI")
+            _stage("Building the TUI")
             build_source_tui(project_root, env=env)
     if "web" in frontends:
         if source_product_current(project_root, "web", project_root / "hermes_cli/web_dist"):
             print("  ✓ Web UI is up to date")
         else:
-            publish_stage("Building the web UI")
+            _stage("Building the web UI")
             build_source_web(project_root, env=env)
     if desktop:
         from hermes_cli.main_desktop import (
@@ -139,7 +141,7 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
         if _packaged_desktop_current_for_head(desktop_dir, project_root):
             print("  ✓ Desktop app is up to date")
         else:
-            publish_stage("Building the desktop app")
+            _stage("Building the desktop app")
             # The desktop build mutates checkout-scoped node_modules and
             # apps/desktop/release; serialize it against a concurrent manual
             # `hermes desktop` (#93940). The update path waits rather than exits:

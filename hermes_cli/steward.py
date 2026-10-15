@@ -24,17 +24,38 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# The fork's brand vocabulary. Two strings in this file name OUR package (the Guix
+# one below), and a package name is a fact about the tree, not prose: it has to be
+# right in the working branch too, because `guix install` is typed at a shell and
+# nothing regenerates it. So it comes from brand.py, per FORK.org's rule that a
+# brand string is never hand-written. `brand` is a root module and setup.py ships
+# every root module, so this import works in an installed wheel as well.
+#
+# What does NOT come from brand: the Termux APT name `hermes-agent` further down.
+# That is upstream's real published package, so it is a functional KEEP — the same
+# class as the `NousResearch/hermes-agent` remote and Meta's `hermes-parser`. The
+# generator protects it, and so does this comment.
+import brand  # noqa: E402
+
 UPDATE_MECHANISMS = ("self", "app-installer", "electron-updater", "external", "microsoft-store")
 
 STEWARD_DESKTOP = "desktop-app"
 STEWARD_DOCKER = "docker"
 STEWARD_NIX = "nix"
 STEWARD_APT_TERMUX = "apt-termux"
+STEWARD_GUIX = "guix"
 
-# What `hermes update` says in a sealed tree, per steward — the refusal
-# table shared by the update admission gate. The fallback covers stewards
-# this build does not know (a newer package-manager value read by older
-# code).
+# A commit build was never published anywhere, so it has no channel to name. Re-homed here
+# with the update ladder (FORK.org P0); the Electron shell keeps its own copy of this line in
+# ``apps/desktop/electron/updater/external.ts`` because TS cannot import Python.
+COMMIT_BUILD_UPDATE_MESSAGE = (
+    "This build doesn't get updates. Ask the developer who gave it to you for a new build."
+)
+
+# What a sealed tree says when asked to update itself. The updater that used to consult
+# this table is gone (FORK.org P0); ``hermes update`` and the dashboard's update tile now
+# print these lines instead of doing work. The fallback covers stewards this build does
+# not know (a newer package-manager value read by older code).
 STEWARD_UPDATE_MESSAGES = {
     STEWARD_DESKTOP: (
         "✗ This Hermes runs from inside the desktop app bundle.\n"
@@ -54,6 +75,12 @@ STEWARD_UPDATE_MESSAGES = {
         "\n"
         "The package manager owns the code tree. Update with:\n"
         "  pkg upgrade hermes-agent"
+    ),
+    STEWARD_GUIX: (
+        "✗ This Hermes runs from the Guix store.\n"
+        "\n"
+        "The store path is immutable. Update through your channel:\n"
+        f"  guix pull && guix install {brand.SLUG}"
     ),
 }
 
@@ -114,6 +141,16 @@ _STEWARD_UNINSTALL_MESSAGES = {
         _STEWARD_DELETE_DATA_PREAMBLE +
         _STEWARD_DELETE_DATA_CLI
     ),
+    STEWARD_GUIX: (
+        "✗ This Hermes was installed by Guix.\n"
+        "\n"
+        "The store path is immutable — uninstall it the same way you\n"
+        f"installed it: remove {brand.SLUG} from your manifest or profile\n"
+        "(e.g. `guix package -u` / edit your `guix` channel config), then reconfigure.\n"
+        "\n" +
+        _STEWARD_DELETE_DATA_PREAMBLE +
+        _STEWARD_DELETE_DATA_CLI
+    ),
 }
 
 _STEWARD_MANAGED_BY_DESKTOP = "✗ Hermes is managed by the desktop app.\n"
@@ -158,11 +195,31 @@ _STEWARD_UNINSTALL_FALLBACK = (
 
 
 def steward_update_message(steward: str) -> str:
-    """The `hermes update` refusal text for a sealed tree."""
+    """How to upgrade a sealed tree — a message, never an action."""
     message = STEWARD_UPDATE_MESSAGES.get(steward)
     if message is not None:
         return message
     return _STEWARD_UPDATE_FALLBACK.format(steward=steward)
+
+
+# A git checkout belongs to no package manager, so the CLI's own verb owns its text.
+def update_guidance(project_root: Path) -> str:
+    """How the install at ``project_root`` gets upgraded, given that it cannot do it itself.
+
+    The one answer every surface prints: the CLI's ``update`` verb, the dashboard's update
+    tile and the installed-package proofs all call this. Sealed trees name their package
+    manager; a checkout names the manager its owner chose; a commit build has no channel at
+    all and says so even when it arrived through a package manager (it was never published
+    to one). Mirrors the Electron shell's ``updater/external.ts`` branch for the same stamp.
+    """
+    from hermes_cli.subcommands.update import UPDATE_POINTER
+
+    if is_commit_build(project_root):
+        return COMMIT_BUILD_UPDATE_MESSAGE
+    steward = sealed_steward(project_root)
+    if steward is None:
+        return UPDATE_POINTER
+    return steward_update_message(steward)
 
 
 def steward_uninstall_message(steward: str, platform: "str | None" = None) -> str:
@@ -205,6 +262,16 @@ def is_bundled_payload(project_root: Path) -> bool:
         return read_install_stamp(Path(project_root)).get("payload") == "bundled"
     except Exception:  # noqa: BLE001 — a bad stamp must not take a caller down
         return False
+
+
+def is_commit_build(project_root: Path) -> bool:
+    """True when ``project_root`` was built from a commit, not a release tag.
+
+    Re-homed here (FORK.org P0) with the callers that survived the updater's removal: a
+    commit artifact has no release feed to compare against, so the dashboard and the
+    Termux install proof must both treat it as its own shape.
+    """
+    return read_install_stamp(Path(project_root)).get("source") == "commit-build"
 
 
 def sealed_steward(project_root: Path) -> Optional[str]:

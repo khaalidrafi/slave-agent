@@ -11,6 +11,7 @@ interpreter before it publishes either command.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shlex
@@ -85,7 +86,7 @@ def installation_command(repo_root: Path, args=(), *, module: str = "hermes_cli.
     return [str(root / ".hermes" / "bin" / "hermes"), *prefix, *args]
 
 #: Launcher command names — keep in lockstep with scripts/install.ps1
-#: Publish-UserCommand and hermes_cli/_install_repair.py.
+#: Publish-UserCommand and ensure_windows_bin_launchers below.
 WINDOWS_BIN_LAUNCHERS = ("hermes", "hermes-acp")
 
 #: command name -> (entry module, callable) — mirrors pyproject.toml
@@ -596,6 +597,189 @@ def _symlink_sealed_launchers(payload_bin) -> dict:
     except OSError as exc:
         return {"ok": False, "error": str(exc)}
     return {"ok": True, "written": written, "mode": "sealed-symlinks"}
+
+
+# ---------------------------------------------------------------------------
+# Windows boot-time self-heal (re-homed here from the deleted _install_repair)
+# ---------------------------------------------------------------------------
+
+def _normalize_windows_path(value) -> str:
+    """Windows path equality key: backslashes, no trailing separator, lowered.
+
+    Lowercase via ``.lower()`` (what ``ntpath.normcase`` does) rather than
+    ``os.path.normcase`` — that is an identity function on POSIX, and this
+    comparison must behave Windows-correct even when tests exercise the
+    Windows branch from another host (same rationale as
+    ``venv_bin_dir(windows=...)``).
+    """
+    return str(value).replace("/", "\\").rstrip("\\").lower()
+
+
+def _windows_user_path_entries() -> list[str]:
+    """User PATH entries from the registry — the value install.ps1 writes.
+
+    Falls back to the process PATH when the registry is unreadable. Only
+    called on Windows.
+    """
+    try:
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            raw, _kind = winreg.QueryValueEx(key, "Path")
+        value = os.path.expandvars(str(raw))
+    except (OSError, ImportError):
+        value = os.environ.get("PATH", "")
+    return [entry for entry in value.split(";") if entry.strip()]
+
+
+def ensure_windows_bin_launchers(
+    root,
+    *,
+    windows: bool | None = None,
+    user_path_entries: list[str] | None = None,
+) -> list[str]:
+    """Re-stage the Windows ``hermes`` launchers when they vanish or when
+    they still boot through the venv.
+
+    On Windows, ``hermes`` resolves through staged launchers — never
+    ``venv\\Scripts`` itself on PATH, which would shadow the user's
+    ``python`` (#83797) — and under pm the launchers boot the pm STORE
+    python with ``PYTHONPATH=<repo>;<venv>/site-packages``, never the venv
+    interpreter (no-boot-through-venv; ``pyvenv.cfg`` is inert dead
+    config). The canonical launcher home is the managed binary dir — the
+    default Hermes root's ``bin`` (``%LOCALAPPDATA%\\hermes\\bin``, next to
+    the managed uv) — which lives OUTSIDE the git checkout so no git
+    operation can ever touch it. It is a per-machine dir shared by every
+    profile: ``get_hermes_home()`` would point inside ``profiles\\<name>``
+    under ``hermes -p``, so the anchor here is
+    :func:`hermes_constants.get_default_hermes_root`.
+
+    Earlier installer versions staged them at ``<checkout>\\bin`` instead —
+    inside the git working tree. That layout is re-staged too, during the
+    transition, for installs whose user PATH still resolves through it.
+
+    A name counts as present when an exe exists that does NOT boot the venv
+    interpreter — legacy copied-venv trampolines (detected by their
+    embedded interpreter path) and placeholder .cmd delegators are replaced
+    with a store-python launcher as soon as one can be minted.
+
+    Two targets, two gates, both failing toward inaction:
+
+    - canonical managed binary dir: only when *root* is the managed clone
+      (``root.parent == get_default_hermes_root()``), so source checkouts
+      elsewhere never gain launchers;
+    - legacy ``<root>\\bin``: only when that dir is on the user PATH
+      (registry value, process PATH as fallback), i.e. the install opted
+      into the old layout and still resolves through it.
+
+    Writes go through a staging name + ``os.replace`` so concurrent process
+    starts cannot tear a launcher. Never raises; returns the restored paths.
+
+    *windows* and *user_path_entries* are injectable for tests, same pattern
+    as ``hermes_constants.venv_bin_dir``.
+    """
+    if windows is None:
+        windows = _is_windows()
+    if not windows:
+        return []
+
+    root = Path(root)
+
+    # Per-machine anchor: the DEFAULT Hermes root, not get_hermes_home() —
+    # under ``hermes -p <name>`` that returns ``profiles\\<name>``, which
+    # would fail the managed-clone gate below and silently skip the heal
+    # for profile users. The launcher dir serves the whole machine.
+    from hermes_constants import get_default_hermes_root
+
+    try:
+        home = Path(get_default_hermes_root())
+    except Exception:
+        return []
+
+    def _launcher_present(target: Path, name: str) -> bool:
+        return (target / f"{name}.exe").exists() or (target / f"{name}.cmd").exists()
+
+    # Only the launch producer knows the executable/boot contract. Old venv
+    # paths below identify obsolete artifacts; they never select dependencies.
+    from hermes_constants import project_venv_dir
+
+    venv_dir = project_venv_dir(root)
+
+    def _needs_attention(target: Path, name: str) -> bool:
+        """Missing, a placeholder .cmd, or a launcher that still boots the
+        venv interpreter — anything the store-python launcher should replace."""
+        exe = target / f"{name}.exe"
+        if not exe.exists():
+            return not ((target / f"{name}.cmd").is_file()
+                        and _launcher_present(root / ".hermes" / "bin", name))
+        return exe_is_venv_bound(exe, venv_dir)
+
+    targets: list[Path] = []
+    restored: list[str] = []
+
+    # Canonical target — gate on the managed-clone shape. This runs at
+    # every hermes_cli.main process start (right after the profile
+    # override), so the healthy path must stay at a couple of stat calls.
+    if _normalize_windows_path(root.parent) == _normalize_windows_path(home):
+        canonical = home / "bin"
+        local = root / ".hermes" / "bin"
+        if any(not _launcher_present(local, name) for name in WINDOWS_BIN_LAUNCHERS):
+            # Upgrade existing PM installs too: their healthy external launcher
+            # predates the exact-install command and may lack the runtime query.
+            try:
+                canonical.mkdir(parents=True, exist_ok=True)
+                restored.extend(ensure_install_launchers(root, canonical))
+            except OSError:
+                return []
+        if not restored and any(
+            _needs_attention(canonical, name) for name in WINDOWS_BIN_LAUNCHERS
+        ):
+            targets.append(canonical)
+
+    # Legacy transition target — the pre-migration in-checkout dir. Only
+    # re-staged while the user PATH still points at it (consent), compared
+    # as normalized literal strings: the installer wrote the long literal
+    # path, and realpath'ing arbitrary PATH entries could hang on dead
+    # network shares. An entry stored some other way (8.3 short path,
+    # subst drive) misses the re-stage, which fails safe: no-op.
+    legacy = root / "bin"
+    if any(_needs_attention(legacy, name) for name in WINDOWS_BIN_LAUNCHERS):
+        if user_path_entries is None:
+            user_path_entries = _windows_user_path_entries()
+        configured = {_normalize_windows_path(entry) for entry in user_path_entries}
+        if _normalize_windows_path(legacy) in configured:
+            targets.append(legacy)
+
+    if not targets:
+        return restored
+
+    for target in targets:
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            continue
+        for name in WINDOWS_BIN_LAUNCHERS:
+            if not _needs_attention(target, name):
+                # Already a store-python launcher (or a form this heal does
+                # not understand but that does not boot the venv): leave it.
+                continue
+            final = stage_launcher(name, root, target)
+            if final is not None:
+                # Windows resolves .exe before .cmd. A surviving venv-bound
+                # launcher would shadow the successfully staged fallback.
+                obsolete = target / f"{name}.exe"
+                if final.suffix == ".cmd" and exe_is_venv_bound(obsolete, venv_dir):
+                    obsolete.unlink()
+                restored.append(str(final))
+    if restored:
+        # Guarded like everything else in this never-raises helper: a
+        # closed/broken stderr must not turn a successful heal into a crash.
+        with contextlib.suppress(OSError, ValueError):
+            print(
+                "  ✓ Restored hermes launcher(s): " + ", ".join(restored),
+                file=sys.stderr,
+            )
+    return restored
 
 
 if __name__ == "__main__":
