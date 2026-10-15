@@ -1,0 +1,28 @@
+name: shop
+version: 0.1.0
+description: >
+  Storefront toolset — an agent that can read a real shop. Four tools
+  (shop_queue, shop_orders, shop_order, shop_catalog) over one adapter
+  contract, plus `hermes shop` and `/shop`. The adapter is configured by
+  `plugins.entries.shop.settings` in the profile's config.yaml, so the shop's
+  URL, path layout, filter names and status vocabulary are data, not code:
+  one plugin serves an organic-food shop, a clinic's appointment API, or a
+  print shop's order queue.
+
+  Read-only by construction and honest about money: every number a tool
+  returns is the shop's own API field, never a figure the model derived. The
+  only arithmetic in the plugin is counting rows, and each count carries its
+  provenance (`source: api` for the shop's total, `source: page` for a tally
+  over the recent page). There is no write path until an approve-before-send
+  gate exists.
+
+  Tools appear only for a profile that set `base_url` and whose secret scope
+  has the token (`token_env`, default `SHOP_API_TOKEN`); an unconfigured
+  profile sends no shop schemas at all.
+author: "Khalid Rafi (slave-agent)"
+kind: backend
+provides_tools:
+  - shop_queue
+  - shop_orders
+  - shop_order
+  - shop_catalog
