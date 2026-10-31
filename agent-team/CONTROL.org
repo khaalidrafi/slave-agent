@@ -1,0 +1,5 @@
+#+TITLE: CONTROL.org — slave-agent switches (Lead-owned)
+#+OBJECTIVE: prepare slave-agent as the general assistant core and serve the AdminEverywhere integration from generic surfaces only
+#+OBJECTIVE-STATE: OPEN
+#+KILL-SWITCH: OFF
+#+TURN: deepseek-v4.1-flash@codebuddy
