@@ -9,8 +9,16 @@
      on origin — only the handoff docs island is.
    - Executor: Platform/CI Engineer (qwen3.8-flash@qoder) with the
      Owner (push the branch, or the seat re-derives per FORK.org).
-   - Evidence: ai/main present on origin with the three commits;
-     generated ai/slave-agent branch produced by scripts/fork-sync.sh.
+   - Status 10-31 15:30Z: island UNREACHABLE on every channel —
+     slave-agent origin carries handoff only; agent-team.el ai/main
+     (all branches fetched), packages, agent-org and the local disks
+     hold none of the three commits; upstream hermes-agent is at
+     c419cf7c pristine.
+   - Booted: upstream base is live on origin as =upstream/main=
+     (c419cf7c) so the re-derive path starts from real base.
+   - Evidence: =upstream/main= on origin; whoever holds ai/light-core
+     pushes it, else the Software Engineer re-derives the three topics
+     per the HANDOFF.org table.
 
 ** TODO slave_compat as the canonical key + state migration
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
