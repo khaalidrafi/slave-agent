@@ -1,0 +1,43 @@
+#+TITLE: MEMBERS.org — ranked members, ordered by roles
+#+UPDATED: 2026-11-01 — teamify seed; roster inherited from the umbrella audit
+#+ROUND-4-LAW: Owner orders 2026-10-20, ALL applied here: (1) NO @actions —
+        every seat is a REAL model@agent pair; (2) per-seat hiring evidence =
+        MODEL REASON + AGENT REASON, stated separately; (3) full-form role
+        names; (4) the Owner's z.ai subscription is NOT shared; (5) expiring
+        models hire as ACTING with expiry on record; (6) Lark = per-role bots;
+        (7) GoModel gateway is health-gated, seats go DIRECT by repo-secret keys.
+#+ID-FORM: PROVIDER/MODEL@PLATFORM (PROVIDER/ only for API-served models;
+        after @ is a REAL agent harness: opencode, goose, qoder, cline, devin).
+#+CANON: full hiring evidence (benchmarks, hands-on trials, HIRING-LOG) lives
+        in khaalidrafi/agent-team.el agent-team/MEMBERS.org — one canonical
+        copy; this file carries the roster + seat duties only, no re-cited
+        numbers (drift law).
+#+PROJECT: khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; the AdminEverywhere panel assistant core, first deployment Freshorama via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org).
+
+* Team Lead + Director of Engineering — z.ai-agent (COMBINED SEAT, umbrella)
+  - APPOINTMENT (Owner 2026-10-29 05:12Z #hq): one umbrella Lead across
+    agent-org / agent-team.el and every teamified repo.
+  - Duties: specs, dispatch, audit, merge authority; LEAD DOESN'T CODE.
+
+* CI ROTATION (the engine seats — .github/workflows/agent-team.yml round)
+  - Principal Engineer — openrouter/poolside/laguna-s-2.1:free@opencode
+  - Software Engineer — deepseek-v4.1-flash@codebuddy (free-offer
+    hire, Owner 2026-10-22; lane form proven in the admineverywhere
+    probe + kit BODIES)
+  - Quality Assurance Engineer — zai/glm-4.7-flash@opencode
+  - Release Engineer — groq/qwen3.8-27b@goose
+  - Platform / CI Engineer — qwen3.8-flash@qoder
+  - Fallback chains per seat: agent-team.el MEMBERS.org FALLBACK CHAINS
+    (nemotron-3.5-lightning:free ranks first on the SW/Release chain).
+
+* STANDING HIRES (off-rotation specialists, umbrella-wide)
+  - Senior Emacs Lisp Engineer — glm-5.3@chat.z.ai (web seat, hands-on only)
+  - QA + Docs Engineer — nvidia/nemotron-3.5-lightning:free@cline
+  - Cloud Agent — devin@devin.ai (provisional, Owner fiat)
+  - Port Engineer — antling/Ling-3.1-flash@opencode (strongest PROVEN free
+    coding brain; hired 2026-11-01 00:08 #hq after the poolside family
+    delisting killed the opencode body lane)
+  - Build Engineer — SERVICE STAFFED AT khaalidrafi/packages (Owner ruling)
+
+* SECRET LAW + SESSION LAW (Owner 2026-10-21 18:27Z #hq): credentials travel
+  ONLY as env var NAMES between members; sessions preserved in .agent-org/.

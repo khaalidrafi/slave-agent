@@ -1,0 +1,20 @@
+#+TITLE: STATE.org — repo state (audit snapshot, kept current by the team)
+* PROJECT
+  - khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; the AdminEverywhere panel assistant core, first deployment Freshorama via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org).
+  - Language: Python (agent core, plugins, CLI) + the Emacs/Org surface
+    (slave-acp); branch model per FORK.org (ai/main work, generated
+    ai/slave-agent brand commit).
+* GATE
+  - python3 -m compileall -q . (the fork's own three-way verification
+    floor; heavier gates join as the bloat-removal queue lands)
+  - CI: .github/workflows/agent-team.yml — test -> probe -> turn -> finalize,
+    self-dispatching while #+OBJECTIVE-STATE is OPEN and #+KILL-SWITCH: OFF.
+* DEPLOY
+  - None: Emacs package for the Owner's setup (MELPA-style layout, no service).
+* TEAM LAYER (landed 2026-11-01)
+  - agent-team/ board + .github/workflows/agent-team.yml + ci/ kit submodule
+    (khaalidrafi/agent-team-ci @ main) + docker/harness thin layer
+    (FROM agent-team-harness-base:local — bodies preinstalled, kit law).
+* HYGIENE AT ADOPTION
+  - Branch ai/main = team truth; members work ai/turn-* branches; CHAT.org
+    merges union.  Compliance audit of the whole repo is TODO-001.

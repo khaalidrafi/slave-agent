@@ -1,0 +1,1591 @@
+name: Agent Team Chain
+
+# Cloud CI is the Owner's P0: it is what keeps the team alive when the local
+# box goes off.  Rules: (1) CI must verify the same things we verify locally
+# -- the compileall floor gate over the whole tree, nothing else.  (2) CI must
+# never fail for a reason unrelated to the code: every network-facing step
+# is guarded, so a missing secret is reported and skipped instead of failing
+# the run.  (3) The team RUNS CONTINUOUSLY, IN TURNS (Owner order
+# 2026-10-20): the scheduled `turn` job rotates the real-agent seats
+# (model@agent pairs from agent-team/MEMBERS.org) through one
+# work segment per run, until the OBJECTIVE in agent-team/CONTROL.org
+# is marked COMPLETE or the Owner flips #+KILL-SWITCH: ON.  (4) AGENTS ARE
+# PREINSTALLED IN A DOCKER CONTAINER (Owner order 2026-10-20 #hq: "Use
+# Docker containers with agents preinstalled. Don't install in CI. That's
+# a waste of time. You'll have to make agent configs, too, and reuse
+# them."): the `harness` job builds ci/docker/harness/ (the canonical
+# harness Dockerfile from the agent-team-ci SUBMODULE — Owner order 2026-10-27
+# #hq: the CI kit is a submodule every repo consumes) (OpenCode + Goose +
+# baked configs, NO keys baked) and pushes ghcr.io/khaalidrafi/
+# agent-team-harness:latest; every turn runs its segment inside that image
+# (local rebuild hits the gha layer cache, ~seconds).  (5) A real agent,
+# not a bare key: each seat's brain is reached directly by its provider
+# key from repo secrets -- there is no @actions body (Owner order
+# 2026-10-20).  (6) REPORTS: the BOARD (agent-team/TODOS.org)
+# is the report channel for DEMO runs only (Owner order 2026-10-20 #hq);
+# REAL runs use the Lark group through PER-ROLE custom-bot webhooks
+# (LARK_WEBHOOK_<ROLE>) written by the members themselves.  The GoModel
+# gateway rides as a HEALTH-GATED LANE (Owner order re-issued 2026-10-21
+# 08:25Z: "Use gomodel via khaalidrafi/llmfisher on your CI"): turn health
+# step + Jev judgment on finalize, lane-fallback law when the box is down.
+# The repo is PUBLIC (unlimited Linux Actions minutes).
+# (7) PEER MESH + SELF-CHAINING RUNS (Owner order 2026-10-20 #hq 14:52:
+# "agents talk to each other ... automatically send and receive messages
+# and keep working ... CI runs unlimited ... until objective complete to
+# its finest"): members talk in agent-team/CHAT.org — ONE
+# append-only chat buffer readable from a single Org buffer, direct
+# @pings between seats, no inbox relay (Owner order 2026-10-20 16:55
+# #hq: team chat = one Org file; "one agent should be able to directly
+# ping another, not through mailbox"; .gitattributes union-merges
+# appends so concurrent messages are never lost).  The turn brief makes
+# every seat scan the chat tail for pings to it FIRST and post its
+# report/peer messages there after its segment.  The
+# `finalize` job AUTO-MERGES the turn branch into ai/main behind a
+# compileall gate, advances #+STALL-COUNT (0 on progress, +1 on a
+# no-progress segment), and then RE-DISPATCHES the next run itself
+# while #+OBJECTIVE-STATE is not COMPLETE and #+KILL-SWITCH is OFF --
+# the agents decide how many runs an objective takes.  The stall guard
+# stops the chain after 4 consecutive no-progress segments; only the
+# Lead (verifying against the objective) sets COMPLETE; the Owner
+# audits and keeps the kill switch.
+
+on:
+  push:
+    branches: [ai/main]
+  pull_request:
+    branches: [ai/main]
+  schedule:
+    # Six turns/day on the public repo (unlimited Linux minutes):
+    # 01:17 / 05:17 / 09:17 / 13:17 / 17:17 / 21:17 UTC.
+    - cron: '17 1,5,9,13,17,21 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  packages: write
+  actions: write   # self-chain: finalize re-dispatches the next turn
+  # NO `workflows: write` here — GitHub rejects the key at workflow-creation
+  # time: every run after 22bb587 startup-FAILED with zero jobs (runs
+  # 39455051426 + 39455277702 evidence). Seats therefore NEVER touch
+  # .github/workflows/* (brief law #10: Lead-owned files, cite in mail).
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run the landing gate (compileall floor)
+        run: |
+          python3 -m compileall -q .
+
+
+  # Seat-liveness heartbeat. One real completion per accountable API seat,
+  # direct to the provider. Results land in the run summary; NOTHING here can
+  # fail the workflow -- a dead seat is an operational fact to read in the
+  # summary, never a red run. The gomodel/Jev lane is health-gated in `turn`
+  # + `finalize` (08:25Z order); seats go DIRECT to providers here.
+  probe:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: Probe accountable seats (direct provider keys)
+        continue-on-error: true
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+        run: |
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          echo "## Seat probe — ${GITHUB_SHA::7} (${{ github.event_name }})" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+          echo "| seat brain | probe | HTTP | evidence (first 120 chars) |" >> "$SUMMARY"
+          echo "|---|---|---|---|" >> "$SUMMARY"
+
+          probe() {
+            local name="$1" url="$2" model="$3" key="$4" extra="${5:-}"
+            if [ -z "$key" ]; then
+              echo "| $name | SKIP | - | key not set in repo secrets |" >> "$SUMMARY"
+              return 0
+            fi
+            local body code
+            body=$(mktemp)
+            code=$(curl -sS -m 45 -o "$body" -w '%{http_code}' -X POST "$url" \
+              -H 'Content-Type: application/json' \
+              -H "Authorization: Bearer $key" $extra \
+              -d "{\"model\":\"$model\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with the single word: alive\"}],\"max_tokens\":16}" \
+              || echo 000)
+            local snippet
+            snippet=$(head -c 120 "$body" | tr '\n' ' ' | tr -d '|')
+            echo "| $name | $url | $code | \`$snippet\` |" >> "$SUMMARY"
+            rm -f "$body"
+            sleep 2   # space calls: bursts stress shared free tiers
+          }
+
+          # Principal Engineer brain — poolside/laguna-s-2.1 (OpenMDW-1.1)
+          probe "openrouter/poolside/laguna-s-2.1:free" \
+            "https://openrouter.ai/api/v1/chat/completions" \
+            "poolside/laguna-s-2.1:free" "$OPENROUTER_API_KEY"
+
+          # Software Engineer + Release Engineer brain — qwen3.8-27b
+          # (Apache-2.0, published caps 30 RPM / 200K tok/day)
+          probe "groq/qwen3.8-27b" \
+            "https://api.groq.com/openai/v1/chat/completions" \
+            "qwen/qwen3.8-27b" "$GROQ_API_KEY"
+
+          # Quality Assurance Engineer brain — glm-4.7-flash (MIT, free tier)
+          probe "zai/glm-4.7-flash" \
+            "https://api.z.ai/api/paas/v4/chat/completions" \
+            "glm-4.7-flash" "$ZAI_API_KEY"
+
+          # Fallback lane — nemotron-3.5-lightning:free (Software rank-3 /
+          # Release rank-1 fallback; active goose lane during demo/01)
+          probe "openrouter/nvidia/nemotron-3.5-lightning:free" \
+            "https://openrouter.ai/api/v1/chat/completions" \
+            "nvidia/nemotron-3.5-lightning:free" "$OPENROUTER_API_KEY"
+
+          echo "" >> "$SUMMARY"
+          echo "Law: a probe row is evidence of the RUNTIME, not of quality —" >> "$SUMMARY"
+          echo "seat ranks live in agent-team/MEMBERS.org." >> "$SUMMARY"
+
+  # Build + publish the PREINSTALLED agent harness image (Owner order
+  # 2026-10-20 #hq). Agents and configs are baked; keys are NEVER baked.
+  # Owner order 2026-10-30 #hq ("Can't it just reuse a built image?"):
+  # built ONCE per kit version — the job skips entirely when
+  # full-<kitsha> is already in the registry, so an equal-kit push costs
+  # zero build minutes. The modular run path additionally pulls
+  # per-body stages via harness_run_build.sh -r.
+  harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Kit sha (image version pin)
+        run: echo "KIT_SHA=$(git -C ci rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: GHCR login (private manifest reads + push)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Reuse check — skip when this kit version is already published
+        run: |
+          if docker manifest inspect "ghcr.io/khaalidrafi/agent-team-harness:full-${KIT_SHA}" >/dev/null 2>&1; then
+            echo "SKIP=true" >> "$GITHUB_ENV"
+            echo "harness full-${KIT_SHA} already published — reusing, zero build"
+          else
+            echo "SKIP=false" >> "$GITHUB_ENV"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: env.SKIP != 'true'
+
+      - uses: docker/build-push-action@v6
+        if: env.SKIP != 'true'
+        # The GHCR package `agent-team-harness' is bound to its first
+        # publisher repo — sibling repos get write_package denied (run
+        # 41281219347 evidence). The prebuild is cache-warm only: the turn
+        # job builds the image in-run, so a denied push must not redden the
+        # run or stop the chain.
+        continue-on-error: true
+        with:
+          context: .
+          file: ci/docker/harness/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/khaalidrafi/agent-team-harness:latest
+            ghcr.io/khaalidrafi/agent-team-harness:full-${{ env.KIT_SHA }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ONE TURN OF WORK (Owner order 2026-10-20). Reads agent-team/CONTROL.org:
+  #   #+KILL-SWITCH: ON        -> stop everything, exit green.
+  #   #+OBJECTIVE-STATE: COMPLETE -> objective closed, exit green.
+  #   #+OBJECTIVE: empty       -> no work defined; suite stays green, skip.
+  #   otherwise                -> run the on-turn member's REAL agent
+  #                               (preinstalled in the harness container)
+  #                               for one segment toward the objective,
+  #                               advance the rotation, commit.
+  # The seat's branch is auto-merged into ai/main by the `finalize` job
+  # (compileall gate + union-merged team chat) so chat propagates
+  # seat-to-seat with NO Lead in the loop; the Lead audits every landed
+  # branch and gates OBJECTIVE completion.  A dead seat logs BLOCKED and
+  # the rotation advances -- a run NEVER fails on a seat problem.
+  turn:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: [test, probe]
+    outputs:
+      turn_branch: ${{ steps.push.outputs.branch }}
+      seg_result: ${{ steps.seg.outputs.result }}
+      tg_chat: ${{ steps.ingest.outputs.chat_id }}   # owner-locked chat id (secret TELEGRAM_OWNER_ID)
+      base_sha: ${{ steps.control.outputs.base_sha }} # ai/main before this segment — the Discord chat-mirror diff base
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+      # Acting Platform Engineer's key (Owner delivered the PAT 2026-10-21).
+      QODER_PERSONAL_ACCESS_TOKEN: ${{ secrets.QODER_PERSONAL_ACCESS_TOKEN }}
+      # CodeBuddy seat (Owner order 2026-10-21: auth on Lead box, cred ->
+      # repo secrets). OAuth token from www.codebuddy.ai (Bearer JWT).
+      CODEBUDDY_AUTH_TOKEN: ${{ secrets.CODEBUDDY_AUTH_TOKEN }}
+      # Copilot CLI auth — the Owner's fine-grained PAT (Copilot
+      # Requests permission, live-verified 2026-10-27); ask-first body.
+      GH_TOKEN: ${{ secrets.GH_PAT }}
+      # Cursor CLI body — the Owner's API key (key exchange + live probe
+      # verified 2026-10-28); ask-first body, env-injected, never baked.
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+      # GoModel lane via the Owner's llmfisher gateway (Owner order, LONG
+      # standing, re-issued 2026-10-21 08:25Z: "Use gomodel via
+      # khaalidrafi/llmfisher on your CI"). Jev = the chain's judgment
+      # layer. Health-gated: gateway down -> lane fallback law, never red.
+      GOMODEL_MASTER_KEY: ${{ secrets.GOMODEL_MASTER_KEY }}
+      # Per-role Lark custom-bot webhooks (Owner order 2026-10-20): the
+      # on-turn MEMBER writes its own DISPATCH/REPORT to the Lark Agent Team
+      # group through ITS role's bot. No generic CI notifications exist.
+      # DEMO runs (Owner order 2026-10-20 #hq) report on the BOARD instead.
+      LARK_WEBHOOK_PRINCIPAL_ENGINEER: ${{ secrets.LARK_WEBHOOK_PRINCIPAL_ENGINEER }}
+      LARK_WEBHOOK_SOFTWARE_ENGINEER: ${{ secrets.LARK_WEBHOOK_SOFTWARE_ENGINEER }}
+      LARK_WEBHOOK_QUALITY_ASSURANCE_ENGINEER: ${{ secrets.LARK_WEBHOOK_QUALITY_ASSURANCE_ENGINEER }}
+      LARK_WEBHOOK_RELEASE_ENGINEER: ${{ secrets.LARK_WEBHOOK_RELEASE_ENGINEER }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Read control file (kill switch / objective / turn)
+        id: control
+        run: |
+          CTL=agent-team/CONTROL.org
+          KILL=$(grep -oP '^\#\+KILL-SWITCH:\s*\K\w+' "$CTL" | head -1 || true)
+          OBJSTATE=$(grep -oP '^\#\+OBJECTIVE-STATE:\s*\K\w+' "$CTL" | head -1 || true)
+          OBJECTIVE=$(grep -oP '^\#\+OBJECTIVE:\s*\K.*' "$CTL" | head -1 || true)
+          TURN=$(grep -oP '^\#\+TURN:\s*\K.*' "$CTL" | head -1 | xargs)
+          echo "kill=${KILL:-OFF} objstate=${OBJSTATE:-OPEN} turn='${TURN}'"
+          # Pre-segment ai/main tip: the Discord chat mirror diffs CHAT.org
+          # from here to post-merge HEAD to extract THIS segment's GLM chats.
+          echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ "${KILL:-OFF}" = "ON" ]; then
+            echo "mode=killed" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${OBJSTATE:-OPEN}" = "COMPLETE" ]; then
+            echo "mode=complete" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Placeholder objective = nothing specified by the Owner yet.
+          if [ -z "$OBJECTIVE" ] || echo "$OBJECTIVE" | grep -q "the Owner writes"; then
+            echo "mode=no-objective" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "mode=work" >> "$GITHUB_OUTPUT"
+          echo "objective=$OBJECTIVE" >> "$GITHUB_OUTPUT"
+          # Turn pointer: NONE -> head of the rotation.
+          case "$TURN" in
+            openrouter/poolside/laguna-s-2.1:free@opencode*) NEXT_SEAT=principal-engineer ;;
+            groq/qwen3.8-27b@goose*Software*)                NEXT_SEAT=software-engineer ;;
+            zai/glm-4.7-flash@opencode*)                     NEXT_SEAT=quality-assurance-engineer ;;
+            groq/qwen3.8-27b@goose*Release*)                 NEXT_SEAT=release-engineer ;;
+            qwen3.8-flash@qoder*)                            NEXT_SEAT=platform-engineer ;;
+            deepseek-v4.1-flash@codebuddy*)                  NEXT_SEAT=software-engineer ;;   # v2 PRIMARY (admincraft-proven form)
+            codebuddy/deepseek-v4.1-flash@codebuddy*)        NEXT_SEAT=software-engineer ;;   # v1 alias
+            *)                                               NEXT_SEAT=principal-engineer ;;
+          esac
+          echo "seat=$NEXT_SEAT" >> "$GITHUB_OUTPUT"
+
+      - name: Stop notice (kill switch / complete / no objective)
+        if: steps.control.outputs.mode != 'work'
+        run: |
+          MODE="${{ steps.control.outputs.mode }}"
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          case "$MODE" in
+            killed)       MSG="TEAM STOPPED BY KILL SWITCH — no turns run until #+KILL-SWITCH: OFF" ;;
+            complete)     MSG="OBJECTIVE COMPLETE — team standing down (set #+OBJECTIVE-STATE: OPEN with a new objective to restart)" ;;
+            no-objective) MSG="NO OBJECTIVE SET — write one line into #+OBJECTIVE in agent-team/CONTROL.org; rotation idle until then" ;;
+          esac
+          echo "$MSG" >> "$SUMMARY"
+
+      - name: Resolve gateway (override -> deployment -> local -> boot — Owner order 2026-10-22)
+        if: steps.control.outputs.mode == 'work'
+        env:
+          GOMODEL_MASTER_KEY: ${{ secrets.GOMODEL_MASTER_KEY }}
+          GOMODEL_GATEWAY_OVERRIDE: ${{ vars.GOMODEL_GATEWAY_URL }}
+        run: |
+          set -u
+          # Owner resolution law (2026-10-22): 1) vars.GOMODEL_GATEWAY_URL
+          # override wins when set; 2) https://ai.khalidrafi.tech — the
+          # deployment; 3) http://localhost:8080 — an already-running
+          # listener; 4) ONLY when nothing answers does the next step boot
+          # gomodel inside the runner (nothing answers == no deployment is
+          # active right now). Every tier uses the ping contract
+          # (agent-team-gateway-ping): GET / -> 404/200 = UP, else down.
+          # The judgment lane is BINARY and rides no provider chain: Jev
+          # via the resolved gateway when it is up, else the chain decides
+          # directly (local rules) — never red.
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          ping() {
+            curl -s -o /dev/null -m 20 -w '%{http_code}' \
+              -H "Authorization: Bearer ${GOMODEL_MASTER_KEY:-}" "$1/" || echo 000
+          }
+          if [ -n "${GOMODEL_GATEWAY_OVERRIDE:-}" ]; then
+            echo "GOMODEL_GATEWAY_URL=${GOMODEL_GATEWAY_OVERRIDE}" >> "$GITHUB_ENV"
+            echo "GOMODEL_BOOT=skip" >> "$GITHUB_ENV"
+            echo "gateway: vars.GOMODEL_GATEWAY_URL override in force (${GOMODEL_GATEWAY_OVERRIDE}) — health step still gates it" >> "$SUMMARY"
+            exit 0
+          fi
+          CODE=$(ping "https://ai.khalidrafi.tech")
+          if [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; then
+            echo "GOMODEL_GATEWAY_URL=https://ai.khalidrafi.tech" >> "$GITHUB_ENV"
+            echo "GOMODEL_BOOT=skip" >> "$GITHUB_ENV"
+            echo "gateway: deployment UP at ai.khalidrafi.tech (HTTP $CODE) — in-runner boot skipped" >> "$SUMMARY"
+            exit 0
+          fi
+          REMOTE_CODE="$CODE"
+          CODE=$(ping "http://localhost:8080")
+          if [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; then
+            echo "GOMODEL_GATEWAY_URL=http://localhost:8080" >> "$GITHUB_ENV"
+            echo "GOMODEL_BOOT=skip" >> "$GITHUB_ENV"
+            echo "gateway: local listener UP at localhost:8080 (HTTP $CODE) — in-runner boot skipped" >> "$SUMMARY"
+            exit 0
+          fi
+          echo "GOMODEL_GATEWAY_URL=http://localhost:8080" >> "$GITHUB_ENV"
+          echo "GOMODEL_BOOT=boot" >> "$GITHUB_ENV"
+          echo "gateway: nothing answers (ai.khalidrafi.tech HTTP ${REMOTE_CODE}, localhost:8080 HTTP ${CODE}) — next step boots gomodel in-runner (last resort)" >> "$SUMMARY"
+          exit 0
+
+      - name: GoModel gateway up (inside the runner — Owner order 2026-10-22)
+        if: steps.control.outputs.mode == 'work' && env.GOMODEL_BOOT != 'skip'
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GOMODEL_MASTER_KEY: ${{ secrets.GOMODEL_MASTER_KEY }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          ANTLING_API_KEY: ${{ secrets.ANTLING_API_KEY }}
+          MOONMATH_API_KEY: ${{ secrets.MOONMATH_API_KEY }}
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          if [ -z "${GH_PAT:-}" ]; then
+            echo "::warning::GH_PAT missing — cannot clone khaalidrafi/llmfisher for the gateway config; gomodel lane stays DOWN -> fallback (never red)"
+            exit 0
+          fi
+          rm -rf /tmp/llmfisher-src
+          git clone --quiet --depth 1 \
+            "https://x-access-token:${GH_PAT}@github.com/khaalidrafi/llmfisher" \
+            /tmp/llmfisher-src
+          docker rm -f gomodel >/dev/null 2>&1 || true
+          # Tuned env block = llmfisher docker-compose.yml gomodel service
+          # verbatim (field types checked per the GoModel source; a wrong
+          # shape is a crash loop, not a warning). Keys ride as env only
+          # (env-var law): nothing baked, nothing printed, nothing in git.
+          # 2026-11-01 (Owner: "gomodel is used in agent-team-ci"): provider
+          # creds ride here too — zai/groq/openrouter/gemini/opencode-zen/
+          # antling/moonmath/cloudflare; retry 5x10s per the 00:08 order so
+          # 429s are absorbed at the gateway, never surfaced to seats.
+          export JEV_API_KEY="${TYPESAFE_API_KEY:-}"
+          docker run -d --name gomodel -p 127.0.0.1:8080:8080 \
+            -v /tmp/llmfisher-src/config:/app/config:ro \
+            -v gomodel_data:/app/data \
+            -e SQLITE_PATH=/app/data/gomodel.db \
+            -e CONFIGURED_PROVIDER_MODELS_MODE=allowlist \
+            -e FAILOVER_RETRY_ON_STATUSES=4xx,5xx \
+            -e FAILOVER_MAX_ATTEMPTS=5 \
+            -e RETRY_MAX_RETRIES=5 \
+            -e RETRY_INITIAL_BACKOFF=10s \
+            -e CIRCUIT_BREAKER_SCOPE=model \
+            -e HTTP_RESPONSE_HEADER_TIMEOUT=30 \
+            -e CACHE_REFRESH_INTERVAL=21600 \
+            -e PROVIDER_RECHECK_INTERVAL=300 \
+            -e LOG_LEVEL=info \
+            -e PROVIDER_PROMPT_CACHE_PLANNER_ENABLED=false \
+            -e GOMODEL_DEMO_MODE=false \
+            -e GOMODEL_MASTER_KEY -e JEV_API_KEY \
+            -e ZAI_API_KEY -e GROQ_API_KEY -e OPENROUTER_API_KEY \
+            -e GEMINI_API_KEY -e OPENCODE_API_KEY -e ANTLING_API_KEY \
+            -e MOONMATH_API_KEY -e CLOUDFLARE_API_KEY \
+            -e CLOUDFLARE_ACCOUNT_ID \
+            enterpilot/gomodel >/dev/null
+          ok=""
+          for i in $(seq 1 30); do
+            CODE=$(curl -s -o /dev/null -m 2 -w '%{http_code}' \
+              -H "Authorization: Bearer ${GOMODEL_MASTER_KEY:-}" \
+              "http://localhost:8080/" || echo 000)
+            if [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; then
+              echo "GoModel gateway UP inside the runner (HTTP $CODE, ping contract)"
+              ok=1; break
+            fi
+            sleep 1
+          done
+          if [ -z "$ok" ]; then
+            echo "::warning::gomodel container did not answer in 30s — lane stays DOWN -> fallback (never red)"
+            docker logs --tail 20 gomodel 2>&1 \
+              | sed 's/[A-Za-z0-9+/=_-]\{20,\}/[redacted]/g' || true
+          fi
+          exit 0
+
+      - name: GoModel lane health (llmfisher gateway — Jev judgment layer)
+        if: steps.control.outputs.mode == 'work'
+        run: |
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          # Owner gateway contract (agent-team.el agent-team-gateway-ping):
+          # GET / answers HTTP 404 when the ORIGIN is up; 530/000 = tunnel down.
+          CODE=$(curl -s -o /dev/null -m 20 -w '%{http_code}' \
+                  -H "Authorization: Bearer ${GOMODEL_MASTER_KEY}" \
+                  "${GOMODEL_GATEWAY_URL}/" || echo 000)
+          if [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; then
+            echo "GOMODEL_UP=true" >> "$GITHUB_ENV"
+            echo "gomodel lane: UP (gateway HTTP $CODE) — Jev available to this turn and finalize" >> "$SUMMARY"
+          else
+            echo "GOMODEL_UP=false" >> "$GITHUB_ENV"
+            echo "gomodel lane: DOWN (HTTP $CODE) — lane-fallback law active (turn proceeds on direct provider lanes; auto-reuses gomodel the moment the box answers)" >> "$SUMMARY"
+          fi
+
+      - name: Log in to GHCR (prebuilt image reuse)
+        if: steps.control.outputs.mode == 'work'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build harness image (MODULAR — only this run's agent bodies)
+        if: steps.control.outputs.mode == 'work'
+        env:
+          SEAT: ${{ steps.control.outputs.seat }}
+        run: |
+          # Owner order 2026-10-30 #hq: "on each CI run, only agents needed
+          # by that run can be built/used." Seat map mirrors BOTH the
+          # agent-org batch lane (opencode/goose/qoder ACP per seat) AND
+          # the direct-CLI fallback chains below. Unknown seat -> empty
+          # list -> harness_run_build.sh fails safe to the FULL harness
+          # build. The kit union lands on agent-team-harness-base:local
+          # (what docker/harness/Dockerfile FROMs); the thin repo layer
+          # (emacs + acp + agent-org) stays unchanged.
+          case "$SEAT" in
+            principal-engineer)                                            BODIES="opencode goose codebuddy qoder" ;;
+            quality-assurance-engineer|software-engineer|release-engineer) BODIES="opencode goose codebuddy qoder" ;;
+            platform-engineer)                                             BODIES="qoder goose codebuddy" ;;
+            *)                                                             BODIES="" ;;
+          esac
+          bash ci/bin/harness_run_build.sh \
+            -b agent-team-el-kit-base:local \
+            -o agent-team-harness-base:local \
+            -r ghcr.io/khaalidrafi/agent-team-harness \
+            -- $BODIES
+          docker buildx build --load \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            -f docker/harness/Dockerfile \
+            -t agent-team-harness:local \
+            .
+
+      - name: Prepare git identity
+        if: steps.control.outputs.mode == 'work'
+        run: |
+          git config user.name "agent-team-ci"
+          git config user.email "agent-team-ci@users.noreply.github.com"
+          git remote set-url --push origin \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+
+      # Owner channel — INBOUND leg (Owner order 2026-10-21 #hq: "You and
+      # any team member should contact me through this [Telegram bot]. And,
+      # my reply should get recorded in CHAT.org"; 17:47Z addendum:
+      # "Keep bridge bot restricted to my chat ID — else anyone can
+      # impersonate me"). Only messages from the Owner's chat (secret
+      # TELEGRAM_OWNER_ID) are recorded VERBATIM into the team chat as an
+      # @owner entry BEFORE the segment runs; every OTHER chat is DROPPED
+      # and counted in the run log — impersonation impossible. Until the
+      # secret is set, even a first contact is dropped and surfaced only in
+      # the run summary as a claim for the Lead to verify and activate.
+      # The tg_chat job output therefore only ever carries the OWNER's id.
+      # Runs even when the chain is idle/killed — the chat is the record.
+      - name: Telegram bridge — ingest Owner replies into the team chat (owner-locked)
+        id: ingest
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_ID: ${{ secrets.TELEGRAM_OWNER_ID }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || { echo "telegram: no token — silent"; exit 0; }
+          # OWNER LOCK (Owner order 17:47Z): nothing is ingested unless the
+          # message comes from the Owner's chat id (secret). Others: counted
+          # + dropped, never reach the team chat. Unset secret = even the
+          # first contact is dropped, only a claim is printed for the Lead.
+          OWNER="${TELEGRAM_OWNER_ID:-${TELEGRAM_CHAT_ID}}"
+          git config user.name "agent-team-ci"
+          git config user.email "agent-team-ci@users.noreply.github.com"
+          git remote set-url --push origin \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          CHAT=agent-team/CHAT.org
+          UPD=$(curl -sS --max-time 20 \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?allowed_updates=%5B%22message%22%5D&limit=20") || UPD=""
+          echo "$UPD" | jq -e '.ok == true' >/dev/null 2>&1 || { echo "telegram: API error or empty — skip"; exit 0; }
+          if [ -z "$OWNER" ]; then
+            CLAIM=$(echo "$UPD" | jq -r '[.result[] | select(.message.chat.type=="private") | .message.chat.id] | first // empty')
+            if [ -n "$CLAIM" ]; then
+              echo "::warning::telegram lock ENGAGED, TELEGRAM_OWNER_ID unset — first-contact claim from chat ${CLAIM} DROPPED (nothing reached the team chat; the Lead verifies and sets the secret)"
+              {
+                echo "### Telegram bridge — LOCKED, claim pending"
+                echo "First-contact claim from chat \`${CLAIM}\` was DROPPED (owner lock engaged, secret unset)."
+                echo "The Lead verifies the claim is really the Owner, then sets the TELEGRAM_OWNER_ID secret. Until then NOTHING is ingested — impersonation impossible."
+              } >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "telegram: lock engaged (no owner secret yet), no pending messages"
+            fi
+            exit 0
+          fi
+          COUNT=$(echo "$UPD" | jq --arg owner "$OWNER" '[.result[] | select(.message.chat.type=="private") and (.message.text != null) and ((.message.chat.id | tostring) == $owner)] | length')
+          REJECT=$(echo "$UPD" | jq --arg owner "$OWNER" '[.result[] | select(.message.chat.type=="private") and ((.message.chat.id | tostring) != $owner)] | length')
+          if [ "$REJECT" -gt 0 ]; then
+            echo "::warning::telegram: DROPPED ${REJECT} message(s) from non-owner chat(s) — logged here, never ingested (owner lock)"
+          fi
+          if [ "$COUNT" -eq 0 ]; then echo "telegram: no pending OWNER messages (dropped ${REJECT} non-owner)"; exit 0; fi
+          LAST_ID=$(echo "$UPD" | jq '[.result[].update_id] | max')
+          CHAT_ID="$OWNER"
+          TS=$(date -u '+%Y-%m-%d %a %H:%M UTC')
+          {
+            echo ""
+            echo "* MSG owner (tg) -> @lead :note:                    :msg:owner:lead:note:"
+            echo ":PROPERTIES:"
+            echo ":FROM: owner"
+            echo ":TO: lead"
+            echo ":KIND: note"
+            echo ":WHEN: [${TS}]"
+            echo ":CHANNEL: telegram"
+            echo ":END:"
+            echo "  [Telegram bridge — Owner's message, recorded verbatim per Owner"
+            echo "   order 2026-10-21 #hq: \"my reply should get recorded in CHAT.org\"]"
+            echo "$UPD" | jq -r '.result[] | select(.message.chat.type=="private") | select(.message.text) |
+                     "  >> " + (.message.text | gsub("\n"; "\n  >> "))'
+          } >> "$CHAT"
+          # SECRET GUARD (Owner order 18:27Z): his message is recorded
+          # VERBATIM — but a credential pasted by mistake must never reach
+          # git history. Redact in place, then commit.
+          bash .github/scripts/secret-guard.sh file "$CHAT"
+          git add "$CHAT"
+          git commit -m "tg-ingest: ${COUNT} Owner message(s) -> team chat" \
+            -m "Co-authored-by: z.ai-agent <z.ai-agent@z.ai>" \
+            -m "Co-authored-by: Khalid Rafi <khaalidrafi@gmail.com>" \
+            || echo "::notice::nothing to commit"
+          # Race-proof push (Lead pushes move ai/main mid-run): rebase + retry.
+          PUSHED=no
+          for i in 1 2 3; do
+            if git push origin "ai/main"; then PUSHED=yes; break; fi
+            git fetch origin ai/main && git rebase origin/ai/main || git rebase --abort
+          done
+          if [ "$PUSHED" = "yes" ] && [ -n "$LAST_ID" ]; then
+            curl -sS -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=$((LAST_ID+1))"
+            echo "telegram: ingested ${COUNT} message(s), chat_id=${CHAT_ID:-unlearned}, offset confirmed"
+          else
+            git checkout -- "$CHAT" || true
+            echo "::warning::telegram ingest push failed — messages left unconfirmed for the next run"
+          fi
+          if [ -n "$CHAT_ID" ]; then
+            echo "chat_id=${CHAT_ID}" >> "$GITHUB_OUTPUT"
+            echo "TG_LEARNED_CHAT=${CHAT_ID}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Restore previous session of this seat (resume context)
+        id: sess-restore
+        if: steps.control.outputs.mode == 'work'
+        env:
+          SEAT: ${{ steps.control.outputs.seat }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ART_ID=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?per_page=100" \
+            | jq -r --arg p "sessions-${SEAT}-" \
+              '[.artifacts[] | select(.name | startswith($p))] | sort_by(.id) | last | .id // empty')
+          [ -n "$ART_ID" ] || { echo "sessions: no previous artifact for ${SEAT} — cold start"; exit 0; }
+          curl -sSL -H "Authorization: Bearer $GH_TOKEN" -o "$PWD/.sessions-prev.zip" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${ART_ID}/zip"
+          mkdir -p "$PWD/.sessions-restore"
+          unzip -q -o "$PWD/.sessions-prev.zip" -d "$PWD/.sessions-restore" || true
+          TGZ=$(ls "$PWD"/.sessions-restore/sessions-*.tgz 2>/dev/null | head -1)
+          if [ -n "${TGZ:-}" ]; then
+            rm -rf /tmp/sessx && mkdir -p /tmp/sessx
+            tar xzf "$TGZ" -C /tmp/sessx 2>/dev/null || true
+            rm -rf "$PWD/.sessions-restore" && mv /tmp/sessx "$PWD/.sessions-restore"
+          fi
+          rm -f "$PWD/.sessions-prev.zip"
+          echo "sessions: restored artifact ${ART_ID} for seat ${SEAT}"
+
+      - name: Run the turn (one segment, preinstalled agent in container)
+        id: seg
+        if: steps.control.outputs.mode == 'work'
+        timeout-minutes: 14   # a hung harness fails THIS step, not the rotation
+        run: |
+          SEAT="${{ steps.control.outputs.seat }}"
+          # Read the objective FROM THE FILE, never by template substitution:
+          # an objective containing quotes/dollars/backticks must never be
+          # rendered into the script by the workflow template (mesh/01 turn
+          # 1-5: quoted objective text broke bash parsing -> exit 127 before
+          # any agent ran).
+          OBJECTIVE=$(grep -oP '^\#\+OBJECTIVE:\s*\K.*' agent-team/CONTROL.org | head -1 || true)
+          BOARD=agent-team/TODOS.org
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          TOP=$(grep -E '^\*\* (TODO|PROGRESS|BLOCKED)' "$BOARD" | head -3 | sed 's/^\*\* //' || true)
+          BRANCH="ai/turn-$(date -u +%Y%m%d-%H%M)"
+          git checkout -b "$BRANCH"
+          echo "TURN_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+          BRIEF="You are the on-turn member of the Agent Team, seat ${SEAT}.
+          TEAM OBJECTIVE (from agent-team/CONTROL.org): ${OBJECTIVE}
+          Law: templates/COMMON.org. Board: agent-team/TODOS.org.
+          Roster: agent-team/MEMBERS.org. Repo facts: README.org, STATE.org.
+          PEER MESH — ONE CHAT, COMMAND-MAINTAINED (Owner orders
+          2026-10-20 + 2026-10-27: members talk to each other through
+          agent-team/CHAT.org; the file is auto-maintained by
+          agent-team.el — NEVER hand-written. You send chat through
+          the command, which enforces the ONE comms protocol: the
+          headline carries FROM; the :PROPERTIES: drawer carries
+          FROM/TO/KIND/REPO/PRIORITY/RISK/WHEN — the same fields as a
+          TEAM-UPDATE):
+          - Send a message (CLI seats — this includes you):
+            AGENT_CHAT_FROM=${SEAT} AGENT_CHAT_TO=<to|all> AGENT_CHAT_KIND=<dispatch|report|request|escalation|review|note> AGENT_CHAT_BODY=\"<message body>\" team-chat
+            (the harness bakes team-chat — a batch emacs call of
+            agent-team-chat-send-batch; the entry lands at EOF).
+          - Emacs members: M-x agent-team-chat-send (prompts for TO,
+            KIND, PRIORITY, RISK, body; FROM and REPO fill themselves).
+          - Read first: scan the chat tail for @${SEAT} pings before
+            picking work (Emacs: M-x agent-team-chat-tail or
+            M-x agent-team-chat-pings-to; CLI: read the file tail).
+          Never edit or delete existing entries — append only (the
+          command does the appending). Any Owner-bound message MUST
+          open its body with \"FROM: <seat>\" and \"TO: @owner\" lines
+          (Owner law 17:55) — the Lead reads the chat and couriers it
+          to #hq verbatim. Handles: @principal-engineer
+          @software-engineer @quality-assurance-engineer
+          @release-engineer @lead @owner. mailbox/ is a frozen
+          archive — NEVER write there.
+          TOP BOARD ITEMS:
+          ${TOP}
+          WORK ONE SEGMENT (time-boxed, max 3 self-attempts per MEMBER LAWS):
+          1. READ THE TEAM CHAT FIRST (agent-team/CHAT.org): scan the
+             tail for @${SEAT} pings you have not answered — do the work,
+             answer it, or reply BLOCKED with evidence, by appending your
+             reply to the chat. Never edit or delete an existing entry;
+             never touch other seats' entries.
+          2. Pick your work toward the TEAM OBJECTIVE: the oldest open board
+             item that serves it and matches your role, or any task a peer
+             pinged to you in the chat; if none matches, do the smallest
+             verifiable improvement that does (docs, tests, CI repair).
+          3. Do the work IN THIS BRANCH. Small, verifiable, committed.
+          4. POST TO THE TEAM CHAT (agent-team/CHAT.org, append at
+             EOF, one headline per message, direct @pings): dispatch
+             downstream work to peers, report upstream results with
+             evidence (file:line, commit sha), and send :request: /
+             :escalation: @lead after 2 failed self-attempts. Taking a
+             peer's help IS encouraged — ping them directly.
+          5. Append a :LOGBOOK: note to the board item you touched: what
+             changed + evidence (file:line, commit sha). Never mark DONE
+             (that is the Lead's gate).
+          6. Commit everything on this branch. WRITE THE COMMIT MESSAGE
+             YOURSELF: subject <= 72 chars naming WHAT changed (files/
+             behavior + effect) — never 'turn(${SEAT})', 'ci turn', 'wip',
+             'stall' or any label that could head any commit; the body
+             adds what the diff cannot say. The finalize gate rejects
+             mechanical subjects and undoes the merge (global AGENTS.md
+             commit-substance law, Owner order 2026-10-27).
+          7. REPORT: append your report to agent-team/CHAT.org as
+             '${SEAT} -> @lead :report:' (RESULT: DONE | PARTIAL | BLOCKED,
+             evidence included).
+             Real runs ALSO post it to YOUR role's Lark custom-bot webhook
+             in env ROLE_LARK_WEBHOOK
+             (JSON {\"msg_type\":\"text\",\"content\":{\"text\":\"REPORT — <task-id>: <title>\\nFROM: <role> — <model@agent>\\nRESULT: DONE | PARTIAL | BLOCKED\\nEVIDENCE: <file:line / commit sha>\\nNEXT: <what remains>\"}})
+             only if it is non-empty; if empty, skip silently and note it
+             in the board LOGBOOK. Never put credentials in any message.
+          8. Never claim the OBJECTIVE complete yourself: a completion claim
+             goes to the chat as '${SEAT} -> @lead :report:'; the Lead
+             verifies against the objective and only the Lead sets
+             OBJECTIVE-STATE: COMPLETE.
+          9. Do NOT push to ai/main; the CI self-chain auto-merges your
+             branch right after the segment (your chat posts must
+             propagate).
+          10. LEAD-OWNED FILES — never edit, only read and cite:
+             .github/workflows/*, agent-team/CONTROL.org,
+             .gitattributes. Verify plumbing facts with file:line evidence
+             in your mail/report instead. (Editing them breaks the chain's
+             git permissions and the rotation pointer.)
+          Boundaries: no spend; no destructive actions; stay in scope of
+          the item you picked.
+          SECRET LAW (Owner order 2026-10-21 18:27Z #hq): credentials
+          NEVER travel in chat, files, commits, or messages — they live
+          in ENV VARS (repo secrets -> process env, e.g.
+          QODER_PERSONAL_ACCESS_TOKEN). If you need a credential a peer
+          holds, ask for its ENV VAR NAME; the peer replies with the NAME
+          and a has-it confirmation, NEVER the value; you read it from
+          your OWN environment (Emacs members: (getenv "NAME")). Never
+          echo a secret value anywhere. The SECRET GUARD
+          (.github/scripts/secret-guard.sh) redacts leaked values from
+          every commit, chat entry, and session artifact before they
+          reach git history.
+          SESSION LAW (same Owner order — session files matter): your CLI
+          session files are collected at the end of the turn, SCRUBBED of
+          secrets, and uploaded as artifact 'sessions-<seat>-<run>'
+          (30-day retention). The next turn of YOUR seat restores them
+          before you run — resume your context (codebuddy -c / goose /
+          opencode session files) instead of starting cold."
+
+          # DUAL-LAW BRIEF (Owner order 2026-10-27 #hq: ALL agents in
+          # Docker read BOTH laws): the segment brief rides as a FILE
+          # (env-var quoting must never carry law text), composed by
+          # ci/bin/law_brief.sh from the agent-team-ci submodule = GLOBAL LAW
+          # (ci/AGENTS.md) + LOCAL LAW (root AGENTS.md) + segment brief.
+          printf '%s\n' "$BRIEF" > /tmp/segment-brief.txt
+          # Compose to a DIFFERENT file then move: redirecting stdout onto
+          # the script's own input file truncates it mid-read and cat dies
+          # with "input file is output file" under bash -e — that exact bug
+          # failed every turn since before 2026-11-01 00:47 (runs
+          # 41258286434/41258716980/41271534879 evidence).
+          bash ci/bin/law_brief.sh /tmp/segment-brief.txt "$PWD" > /tmp/segment-brief.composed.txt
+          mv /tmp/segment-brief.composed.txt /tmp/segment-brief.txt
+
+          # Seat -> body command. Brains come from the baked configs; keys
+          # come from repo secrets via env. The harness image has BOTH
+          # bodies preinstalled (Owner order: containers, not CI installs).
+          # The script lives IN the workspace so the container reads it via
+          # the mount; the verdict is written back as .turn-result.txt —
+          # NO shell pipelines anywhere (CI runs bash -o pipefail: a grep
+          # with no match would silently kill the step — demo/01 turn 5).
+          cat > "$PWD/.turn-inside.sh" <<'INNER'
+          #!/usr/bin/env bash
+          set +e
+          # DUAL-LAW BRIEF: the host composed global + local + segment
+          # via ci/bin/law_brief.sh into /tmp/segment-brief.txt (mounted
+          # read-only). Env BRIEF stays as the fallback only.
+          if [ -s /tmp/segment-brief.txt ]; then
+            BRIEF="$(cat /tmp/segment-brief.txt)"
+          fi
+          # SESSION RESTORE (Owner order 18:27Z: session files are
+          # important — resume with context): the host mounted the seat's
+          # previous SCRUBBED session tree at /sessions-restore; drop it
+          # into $HOME before anything runs.
+          if [ -d /sessions-restore ]; then
+            mkdir -p "$HOME"
+            if [ -d /sessions-restore/home/agent ]; then
+              cp -a /sessions-restore/home/agent/. "$HOME/" 2>/dev/null || true
+            else
+              cp -a /sessions-restore/. "$HOME/" 2>/dev/null || true
+            fi
+          fi
+          # AGENT-ORG BATCH LANE — the PRIMARY send (Owner R-2-77 endgame:
+          # CI sends go THROUGH agent-org; Owner 2026-10-27 #hq: REUSE the
+          # SAME agent-org session per team member so context survives
+          # turns, and the auto-generated .agent-org/ transcripts are
+          # preserved + committed). Best-effort by contract: exit 42 (or a
+          # missing bake) falls through to the proven direct CLI case
+          # below — the batch path only ADDS a working send.
+          SID_DIR=/workspace/.agent-org/sessions
+          SID_FILE="$SID_DIR/${SEAT}.sid"
+          SID=""; [ -s "$SID_FILE" ] && SID="$(cat "$SID_FILE")"
+          mkdir -p "$SID_DIR"
+          printf '%s\n' "$BRIEF" > /tmp/segment-brief.txt
+          case "$SEAT" in
+            principal-engineer)
+              BATCH_PROVIDER=opencode
+              BATCH_MODEL="openrouter/poolside/laguna-s-2.1:free"
+              BATCH_CMD="opencode acp" ;;
+            software-engineer)
+              BATCH_PROVIDER="" ;;   # SW: direct CLI lane (codebuddy first); batch ACP unproven for codebuddy
+            release-engineer)
+              BATCH_PROVIDER=goose
+              BATCH_MODEL="glm-4.7-flash"
+              BATCH_CMD="env GOOSE_PROVIDER=openai GOOSE_MODEL=glm-4.7-flash OPENAI_API_KEY=$ZAI_API_KEY OPENAI_HOST=https://api.z.ai OPENAI_BASE_PATH=/api/paas/v4/chat/completions goose acp" ;;
+            quality-assurance-engineer)
+              BATCH_PROVIDER=opencode
+              BATCH_MODEL="zai/glm-4.7-flash"
+              BATCH_CMD="opencode acp" ;;
+            platform-engineer)
+              BATCH_PROVIDER=qoder
+              BATCH_MODEL=""
+              BATCH_CMD="env HOME=/usr/local/lib/qoder-home qoder --acp" ;;
+            *) BATCH_PROVIDER="" ;;
+          esac
+          if [ -n "$BATCH_PROVIDER" ] && command -v emacs >/dev/null 2>&1 \
+             && [ -f /opt/acp-site/acp.el ] && [ -f /opt/agent-org/agent-org-batch.el ]; then
+            if env AGENT_ORG_PROVIDER="$BATCH_PROVIDER" \
+                   AGENT_ORG_PROVIDER_COMMAND="$BATCH_CMD" \
+                   AGENT_ORG_MODEL="$BATCH_MODEL" \
+                   AGENT_ORG_PROMPT=/tmp/segment-brief.txt \
+                   AGENT_ORG_OUT=/tmp/.batch-out.txt \
+                   AGENT_ORG_SESSION_ID="$SID" \
+                   AGENT_ORG_SESSION_OUT="$SID_FILE" \
+                   AGENT_ORG_TRANSCRIPT_DIR=/workspace/.agent-org \
+                   AGENT_ORG_LOAD_PATH=/opt/acp-site:/opt/agent-org \
+                   AGENT_ORG_TIMEOUT=720 \
+                   emacs --batch -l /opt/agent-org/agent-org-batch.el \
+                     --eval '(agent-org-batch-send)' \
+                   > /tmp/.batch-log.txt 2>&1; then
+              echo "TURN_RESULT=agent-org batch OK (lane: ${BATCH_PROVIDER} ACP through agent-org; session reuse ON, transcripts preserved)"
+              sed -n '1,40p' /tmp/.batch-out.txt
+              BATCH_DONE=1
+            else
+              echo "agent-org batch lane unavailable (exit 42) — falling back to the direct CLI lane"
+              tail -3 /tmp/.batch-log.txt 2>/dev/null || true
+            fi
+          else
+            echo "agent-org batch lane not baked in this image — direct CLI lane"
+          fi
+          if [ "${BATCH_DONE:-0}" != "1" ]; then
+          case "$SEAT" in
+            principal-engineer)
+              # OpenCode body + poolside: OpenCode cannot host the model
+              # (absent from its models.dev catalog — demo/01 evidence) and
+              # OpenRouter's free quota is exhausted. Attempt order:
+              # 1. opencode (in case the catalog/defect is repaired);
+              # 2. goose via OpenRouter poolside — SELF-HEALS the moment the
+              #    Owner adds ~10 credits (harness/01 item 1/2); OpenRouter
+              #    normalizes Goose's developer role server-side (demo/01
+              #    evidence: qwen3.8-27b worked via OpenRouter, Groq didn't).
+              if opencode run --print-logs --model "openrouter/poolside/laguna-s-2.1:free" "$BRIEF"; then
+                echo "TURN_RESULT=opencode run OK"
+              elif env GOOSE_PROVIDER=openai GOOSE_MODEL="poolside/laguna-s-2.1:free" \
+                   OPENAI_API_KEY="$OPENROUTER_API_KEY" \
+                   OPENAI_HOST="https://openrouter.ai/api/v1" \
+                   goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (lane: openrouter/poolside@goose — credits landed)"
+              elif env GOOSE_PROVIDER=openai GOOSE_MODEL=minimax/minimax-m3.1-flash:free \
+                   OPENAI_API_KEY="$OPENROUTER_API_KEY" \
+                   OPENAI_HOST="https://openrouter.ai/api/v1" \
+                   goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (lane: minimax-m3.1-flash:free@goose — promo hire 05:33Z)"
+              elif codebuddy -p "$BRIEF"; then
+                echo "TURN_RESULT=codebuddy run OK (lane: fallback codebuddy@cli — poolside dead)"
+              elif env HOME=/usr/local/lib/qoder-home \
+                   qoder -p "$BRIEF" --output-format json \
+                   --permission-mode accept_edits --max-turns 100; then
+                echo "TURN_RESULT=qoder run OK (lane: fallback qwen3.8@qoder — poolside dead)"
+              else
+                echo "TURN_RESULT=BLOCKED (poolside dead on opencode+goose, fallbacks codebuddy+qoder dead too — harness/01)"
+              fi
+              ;;
+            software-engineer)
+              # SW PRIMARY LANE: deepseek-v4.1-flash@codebuddy (free-offer
+              # hire, Owner 2026-10-22; command form proven in the
+              # admineverywhere probe lane + kit BODIES list). Fallbacks:
+              # the shared zai goose lane, then default-model codebuddy.
+              if env CODEBUDDY_IS_SANDBOX=1 codebuddy -p "$BRIEF" -y \
+                   --permission-mode bypassPermissions --max-turns 40 \
+                   --model deepseek-v4.1-flash; then
+                echo "TURN_RESULT=codebuddy run OK (lane: deepseek-v4.1-flash@codebuddy)"
+              elif env GOOSE_PROVIDER=openai GOOSE_MODEL=glm-4.7-flash \
+                   OPENAI_API_KEY="$ZAI_API_KEY" \
+                   OPENAI_HOST="https://api.z.ai" \
+                   OPENAI_BASE_PATH="/api/paas/v4/chat/completions" \
+                   goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (lane: zai/glm-4.7-flash@goose — SW fallback)"
+              elif codebuddy -p "$BRIEF"; then
+                echo "TURN_RESULT=codebuddy run OK (lane: default-model codebuddy@cli)"
+              else
+                echo "TURN_RESULT=BLOCKED (SW: codebuddy + zai lanes dead)"
+                exit 1
+              fi ;;
+            quality-assurance-engineer|release-engineer)
+              # LANE (mesh/01 repair, Lead, 2026-10-20 15:45Z): every lane on
+              # the hired/fallback brains is dead — Groq rejects the
+              # `developer` role Goose sends (400, req_01m5cqbghke9),
+              # OpenRouter free-models-per-day exhausted (chain evidence:
+              # "Add 10 credits"), OpenCode body headless-defective. The ONE
+              # live lane with its own quota: ZAI glm-4.7-flash — same
+              # OpenAI-compatible schema. Goose goes through its openai
+              # provider with OPENAI_HOST pointed at ZAI. Fallback: the
+              # rostered nemotron lane (in case OpenRouter quota resets).
+              if env GOOSE_PROVIDER=openai GOOSE_MODEL=glm-4.7-flash \
+                   OPENAI_API_KEY="$ZAI_API_KEY" \
+                   OPENAI_HOST="https://api.z.ai" \
+                   OPENAI_BASE_PATH="/api/paas/v4/chat/completions" \
+                   goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (lane: zai/glm-4.7-flash@goose)"
+              elif env GOOSE_PROVIDER=openai GOOSE_MODEL=minimax/minimax-m3.1-flash:free \
+                   OPENAI_API_KEY="$OPENROUTER_API_KEY" \
+                   OPENAI_HOST="https://openrouter.ai/api/v1" \
+                   goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (lane: minimax-m3.1-flash:free@goose — OpenRouter promo hire 05:33Z)"
+              elif goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (lane: ${GOOSE_MODEL} — OpenRouter quota recovered)"
+              elif codebuddy -p "$BRIEF"; then
+                echo "TURN_RESULT=codebuddy run OK (lane: fallback codebuddy@cli — zai+openrouter dead)"
+              elif env HOME=/usr/local/lib/qoder-home \
+                   qoder -p "$BRIEF" --output-format json \
+                   --permission-mode accept_edits --max-turns 100; then
+                echo "TURN_RESULT=qoder run OK (lane: fallback qwen3.8@qoder — zai+openrouter dead)"
+              else
+                echo "TURN_RESULT=BLOCKED (all rostered lanes dead: zai+openrouter+codebuddy+qoder — harness/01)"
+              fi
+              ;;
+            platform-engineer)
+              # Acting Platform Engineer qwen3.8-flash@qoder — Qoder-on-CI
+              # PROOF dispatch (AUTH-READY 2026-10-21: Owner delivered the
+              # PAT; repo secret QODER_PERSONAL_ACCESS_TOKEN). The CLI
+              # auto-detects CI and uses the PAT — no browser. HOME is
+              # pinned to the install dir: the `qoder` launcher resolves
+              # its CLI under ITS HOME (proof run 39467719908 failed with
+              # the default /home/agent — "Qoder CLI is not installed").
+              # Fallback lane per roster: zai/glm-4.7-flash@goose (acting).
+              if env HOME=/usr/local/lib/qoder-home \
+                   qoder -p "$BRIEF" --output-format json \
+                   --permission-mode accept_edits --max-turns 100; then
+                echo "TURN_RESULT=qoder run OK (lane: qwen3.8-flash@qoder — body PROVEN on CI)"
+              elif env GOOSE_PROVIDER=openai GOOSE_MODEL=glm-4.7-flash \
+                   OPENAI_API_KEY="$ZAI_API_KEY" \
+                   OPENAI_HOST="https://api.z.ai" \
+                   OPENAI_BASE_PATH="/api/paas/v4/chat/completions" \
+                   goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (acting lane: zai/glm-4.7-flash@goose — qoder CLI failed)"
+              elif env GOOSE_PROVIDER=openai GOOSE_MODEL=minimax/minimax-m3.1-flash:free \
+                   OPENAI_API_KEY="$OPENROUTER_API_KEY" \
+                   OPENAI_HOST="https://openrouter.ai/api/v1" \
+                   goose run --no-session -t "$BRIEF"; then
+                echo "TURN_RESULT=goose run OK (lane: minimax-m3.1-flash:free@goose — promo hire 05:33Z)"
+              elif codebuddy -p "$BRIEF"; then
+                echo "TURN_RESULT=codebuddy run OK (lane: fallback codebuddy@cli — qoder+zai dead)"
+              else
+                echo "TURN_RESULT=BLOCKED (qoder+zai+codebuddy all failed — harness/01)"
+              fi
+              ;;
+          esac
+          fi
+          # SESSION COLLECT (Owner order 18:27Z): persist THIS turn's CLI
+          # session files — the container is --rm, they die here unless
+          # captured. Scrubbing happens on the host before upload.
+          SESS="/workspace/.turn-sessions.tgz"
+          rm -f "$SESS"
+          tar czf "$SESS" -C / \
+            "${HOME#/}/.qoder" \
+            "${HOME#/}/.config/goose/sessions" \
+            "${HOME#/}/.local/share/opencode" \
+            "${HOME#/}/.codebuddy/projects" \
+            "${HOME#/}/.codebuddy/sessions" \
+            "usr/local/lib/qoder-home/.qoder" \
+            2>/dev/null || true
+          [ -s "$SESS" ] || echo "sessions: nothing collected this turn" >&2
+          INNER
+
+          # SEAT/BRIEF are shell assignments, NOT exported env vars —
+          # `docker run -e NAME` (bare) reads the CLI process env and passed
+          # EMPTY strings into the container (smoke test 14:18: SEAT=[]), so
+          # the inner case matched nothing and exited silently. Pass values
+          # explicitly instead.
+          mkdir -p "$PWD/.sessions-restore"
+          if docker run --rm --user 1001:1001 \
+            -v "$PWD":/workspace -w /workspace \
+            -v "$PWD/.sessions-restore":/sessions-restore:ro \
+            -v /tmp/segment-brief.txt:/tmp/segment-brief.txt:ro \
+            -e SEAT="${SEAT}" -e BRIEF="${BRIEF}" \
+            -e OPENROUTER_API_KEY -e ZAI_API_KEY -e GROQ_API_KEY \
+            -e CODEBUDDY_AUTH_TOKEN -e QODER_PERSONAL_ACCESS_TOKEN \
+            -e GH_TOKEN -e CURSOR_API_KEY \
+            agent-team-harness:local bash /workspace/.turn-inside.sh \
+            > /tmp/.turn-out.txt 2>&1; then
+            echo "container verdict captured"
+          else
+            echo "docker run failed — see output below for the cause"
+            tail -30 /tmp/.turn-out.txt || true
+            echo "TURN_RESULT=BLOCKED (docker run failed — see log)" > "$PWD/.turn-result.txt"
+          fi
+          sed -n '/TURN_RESULT=/p' /tmp/.turn-out.txt > /tmp/.turn-result.tmp || true
+          if [ -s /tmp/.turn-result.tmp ]; then
+            cp /tmp/.turn-result.tmp "$PWD/.turn-result.txt"
+          fi
+          [ -s "$PWD/.turn-result.txt" ] || echo "TURN_RESULT=BLOCKED (container wrote no verdict — see log)" > "$PWD/.turn-result.txt"
+          cat "$PWD/.turn-result.txt" >> "$GITHUB_ENV"
+          echo "---- container output (up to 80 lines) ----"
+          sed -n '1,80p' /tmp/.turn-out.txt || true
+
+          TURN_RESULT=$(sed 's/^TURN_RESULT=//' "$PWD/.turn-result.txt" | tail -1)
+          echo "result=${TURN_RESULT}" >> "$GITHUB_OUTPUT"
+          echo "## Turn — ${SEAT} @ ${GITHUB_SHA::7}" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+          echo "objective: ${OBJECTIVE}" >> "$SUMMARY"
+          echo "branch: ${BRANCH}" >> "$SUMMARY"
+          echo "result: ${TURN_RESULT}" >> "$SUMMARY"
+          echo "TURN_SEAT=$SEAT" >> "$GITHUB_ENV"
+          rm -f "$PWD/.turn-inside.sh" "$PWD/.turn-result.txt" /tmp/.turn-out.txt /tmp/.turn-result.tmp
+
+      # SESSION FILES (Owner order 2026-10-21 18:27Z "how will you handle
+      # agents' session files? ... We need the session files to resume with
+      # context for a team member. They are important."): the container is
+      # --rm, so sessions die with it unless collected. The seat's tarball
+      # is scrubbed file-by-file by the SECRET GUARD (a session that
+      # swallowed a token must not leak it into the artifact), re-packed
+      # and uploaded. Resume: the next turn of THIS seat downloads the
+      # newest artifact and mounts it back into the container's $HOME.
+      - name: Persist session files (scrub -> artifact)
+        id: sess
+        if: always() && steps.control.outputs.mode == 'work'
+        env:
+          SEAT: ${{ steps.control.outputs.seat }}
+        run: |
+          echo "found=no" >> "$GITHUB_OUTPUT"
+          [ -s "$PWD/.turn-sessions.tgz" ] || { echo "sessions: nothing collected"; exit 0; }
+          rm -rf /tmp/sess && mkdir -p /tmp/sess
+          tar xzf "$PWD/.turn-sessions.tgz" -C /tmp/sess 2>/dev/null || true
+          N=0
+          while IFS= read -r f; do
+            if out=$(bash .github/scripts/secret-guard.sh file "$f"); then N=$((N+1)); fi
+          done < <(find /tmp/sess -type f 2>/dev/null)
+          tar czf "/tmp/sessions-${SEAT}-${GITHUB_RUN_NUMBER}.tgz" -C /tmp/sess . 2>/dev/null || true
+          if [ -s "/tmp/sessions-${SEAT}-${GITHUB_RUN_NUMBER}.tgz" ]; then
+            echo "found=yes" >> "$GITHUB_OUTPUT"
+            echo "sessions: ${N} file(s) had secret hits — redacted before upload" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          rm -f "$PWD/.turn-sessions.tgz"
+
+      - name: Upload session artifact (30-day retention)
+        if: always() && steps.sess.outputs.found == 'yes'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sessions-${{ steps.control.outputs.seat }}-${{ github.run_number }}
+          path: /tmp/sessions-*.tgz
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # Peer-mesh law: the seat's branch is auto-merged by `finalize` right
+      # after this step; ONLY the control-file pointer lands on ai/main here.
+      - name: Push work branch, advance rotation, commit control file
+        id: push
+        if: always() && steps.control.outputs.mode == 'work'   # never stall the rotation on a step failure
+        run: |
+          # SECRET GUARD (Owner order 18:27Z): scan the whole branch diff
+          # for leaked credential values and amend them out BEFORE push.
+          bash .github/scripts/secret-guard.sh branch origin/ai/main
+          git push origin "${TURN_BRANCH:-ai/turn-orphan}" || echo "::notice::no work branch to push"
+          echo "branch=${TURN_BRANCH:-}" >> "$GITHUB_OUTPUT"
+          CTL=agent-team/CONTROL.org
+          case "${{ steps.control.outputs.seat }}" in
+            principal-engineer)          NEXT="qwen3.8-flash@qoder (Platform Engineer)" ;;
+            software-engineer)           NEXT="zai/glm-4.7-flash@opencode (Quality Assurance Engineer)" ;;
+            quality-assurance-engineer)  NEXT="groq/qwen3.8-27b@goose (Release Engineer)" ;;
+            release-engineer)            NEXT="qwen3.8-flash@qoder (Platform Engineer)" ;;
+            # One-off Lead-paced proof dispatch (AUTH-READY 2026-10-21):
+            # after the Platform segment the rotation returns to the top.
+            # Fuel law 2026-10-30: poolside@opencode is the documented-
+            # defective body — rotation re-arms the LIVE Qoder lane instead
+            # (paid qoder ids stay dead until the Owner refuels).
+            platform-engineer)          NEXT="qwen3.8-flash@qoder (Platform Engineer)" ;;
+          esac
+          git checkout -f ai/main
+          # Race-proof the control commit: my (Lead's) pushes or another
+          # finalize can move ai/main while this segment ran — a plain push
+          # would be rejected (fetch first) and the rotation pointer lost
+          # (QA segment 15:57Z evidence). Reset to origin and re-apply.
+          git fetch origin ai/main
+          git reset --hard origin/ai/main
+          sed -i "s|^\#+TURN:.*|\#+TURN: ${NEXT}|" "$CTL"
+          git add "$CTL"
+          git commit -m "control: rotate #+TURN to next seat after ${TURN_SEAT:-previous seat} segment" \
+            -m "next seat: ${NEXT}" \
+            -m "segment result: ${TURN_RESULT:-unknown}" \
+            -m "Co-authored-by: z.ai-agent <z.ai-agent@z.ai>" \
+            -m "Co-authored-by: Khalid Rafi <khaalidrafi@gmail.com>" \
+            || echo "::notice::nothing to commit"
+          git push origin "ai/main" || echo "::warning::control push failed"
+
+  # SELF-CHAIN — the last link of every turn (Owner order 2026-10-20 #hq
+  # 14:52: unlimited runs, agents decide how many runs an objective takes).
+  # After every segment:
+  #   1. AUTO-MERGE the seat's work branch into ai/main. Team chat and
+  #      board notes propagate seat-to-seat with NO Lead in the loop
+  #      (CHAT.org is union-merged via .gitattributes, so concurrent
+  #      appends never conflict). A compileall gate runs on the merged
+  #      tree: red work never lands (merge is undone, branch stays).
+  #   2. Advance #+STALL-COUNT: +1 on a no-progress segment (dead seat,
+  #      BLOCKED, conflict, gate red), reset to 0 when work lands.
+  #   3. DISPATCH the next run itself while the objective is open and the
+  #      kill switch is OFF. The chain stops ONLY on: KILL-SWITCH ON,
+  #      OBJECTIVE-STATE COMPLETE, no objective. A no-progress streak
+  #      (stall >= 4: dead provider, transient overload) does NOT kill the
+  #      chain -- it shifts to BACKOFF (next dispatch delayed 5 min per
+  #      cycle, evidence keeps counting in #+STALL-COUNT) so a recovering
+  #      lane is picked up automatically and the team keeps working
+  #      (Owner law: keep working until the objective is complete).
+  finalize:
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    needs: [test, turn]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ai/main
+          submodules: recursive
+
+      - name: Auto-merge the turn branch (peer mail propagation)
+        id: merge
+        run: |
+          git config user.name "agent-team-ci"
+          git config user.email "agent-team-ci@users.noreply.github.com"
+          git remote set-url --push origin \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          BRANCH="${{ needs.turn.outputs.turn_branch }}"
+          RESULT="${{ needs.turn.outputs.seg_result }}"
+          OUTCOME="no-branch"
+          if [ -n "$BRANCH" ] && git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            if git merge --no-ff --no-edit "origin/$BRANCH"; then
+              OUTCOME="merged"
+            else
+              git merge --abort || true
+              OUTCOME="conflict-left-for-lead"
+            fi
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "outcome=$OUTCOME" >> "$GITHUB_OUTPUT"
+          echo "MERGE: $OUTCOME (branch: ${BRANCH:-none}, segment result: ${RESULT:-none})"
+
+      - name: Landing gate (compileall floor), land the merge
+        id: gate
+        run: |
+          if [ "${{ steps.merge.outputs.outcome }}" != "merged" ]; then
+            echo "gate=skipped" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if python3 -m compileall -q .; then
+
+            # COMMIT-MSG GUARD (Owner order 2026-10-27: subjects describe
+            # the change — mechanical subjects undo the merge, same as a
+            # red byte-compile). Range = everything the merge landed.
+            if bash ci/bin/commit_msg_guard.sh \
+                 "${{ needs.turn.outputs.base_sha }}..HEAD"; then
+              echo "gate=green" >> "$GITHUB_OUTPUT"
+              bash .github/scripts/secret-guard.sh staged
+              git push origin "ai/main"
+              git push origin --delete "${{ steps.merge.outputs.branch }}" || true
+            else
+              git reset --hard origin/ai/main
+              echo "gate=red-commit-msg-merge-undone" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            git reset --hard origin/ai/main
+            echo "gate=red-merge-undone" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve gateway (override -> deployment -> local -> boot — Owner order 2026-10-22)
+        if: always()
+        env:
+          GOMODEL_MASTER_KEY: ${{ secrets.GOMODEL_MASTER_KEY }}
+          GOMODEL_GATEWAY_OVERRIDE: ${{ vars.GOMODEL_GATEWAY_URL }}
+        run: |
+          set -u
+          # Owner resolution law (2026-10-22): 1) vars.GOMODEL_GATEWAY_URL
+          # override wins when set; 2) https://ai.khalidrafi.tech — the
+          # deployment; 3) http://localhost:8080 — an already-running
+          # listener; 4) ONLY when nothing answers does the next step boot
+          # gomodel inside the runner (nothing answers == no deployment is
+          # active right now). Every tier uses the ping contract
+          # (agent-team-gateway-ping): GET / -> 404/200 = UP, else down.
+          # The judgment lane is BINARY and rides no provider chain: Jev
+          # via the resolved gateway when it is up, else the chain decides
+          # directly (local rules) — never red.
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          ping() {
+            curl -s -o /dev/null -m 20 -w '%{http_code}' \
+              -H "Authorization: Bearer ${GOMODEL_MASTER_KEY:-}" "$1/" || echo 000
+          }
+          if [ -n "${GOMODEL_GATEWAY_OVERRIDE:-}" ]; then
+            echo "GOMODEL_GATEWAY_URL=${GOMODEL_GATEWAY_OVERRIDE}" >> "$GITHUB_ENV"
+            echo "GOMODEL_BOOT=skip" >> "$GITHUB_ENV"
+            echo "gateway: vars.GOMODEL_GATEWAY_URL override in force (${GOMODEL_GATEWAY_OVERRIDE}) — health step still gates it" >> "$SUMMARY"
+            exit 0
+          fi
+          CODE=$(ping "https://ai.khalidrafi.tech")
+          if [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; then
+            echo "GOMODEL_GATEWAY_URL=https://ai.khalidrafi.tech" >> "$GITHUB_ENV"
+            echo "GOMODEL_BOOT=skip" >> "$GITHUB_ENV"
+            echo "gateway: deployment UP at ai.khalidrafi.tech (HTTP $CODE) — in-runner boot skipped" >> "$SUMMARY"
+            exit 0
+          fi
+          REMOTE_CODE="$CODE"
+          CODE=$(ping "http://localhost:8080")
+          if [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; then
+            echo "GOMODEL_GATEWAY_URL=http://localhost:8080" >> "$GITHUB_ENV"
+            echo "GOMODEL_BOOT=skip" >> "$GITHUB_ENV"
+            echo "gateway: local listener UP at localhost:8080 (HTTP $CODE) — in-runner boot skipped" >> "$SUMMARY"
+            exit 0
+          fi
+          echo "GOMODEL_GATEWAY_URL=http://localhost:8080" >> "$GITHUB_ENV"
+          echo "GOMODEL_BOOT=boot" >> "$GITHUB_ENV"
+          echo "gateway: nothing answers (ai.khalidrafi.tech HTTP ${REMOTE_CODE}, localhost:8080 HTTP ${CODE}) — next step boots gomodel in-runner (last resort)" >> "$SUMMARY"
+          exit 0
+
+      - name: GoModel gateway up (inside the runner — Owner order 2026-10-22)
+        if: always() && env.GOMODEL_BOOT != 'skip'
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GOMODEL_MASTER_KEY: ${{ secrets.GOMODEL_MASTER_KEY }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          ANTLING_API_KEY: ${{ secrets.ANTLING_API_KEY }}
+          MOONMATH_API_KEY: ${{ secrets.MOONMATH_API_KEY }}
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          if [ -z "${GH_PAT:-}" ]; then
+            echo "::warning::GH_PAT missing — cannot clone khaalidrafi/llmfisher for the gateway config; gomodel lane stays DOWN -> fallback (never red)"
+            exit 0
+          fi
+          rm -rf /tmp/llmfisher-src
+          git clone --quiet --depth 1 \
+            "https://x-access-token:${GH_PAT}@github.com/khaalidrafi/llmfisher" \
+            /tmp/llmfisher-src
+          docker rm -f gomodel >/dev/null 2>&1 || true
+          # Tuned env block = llmfisher docker-compose.yml gomodel service
+          # verbatim (field types checked per the GoModel source; a wrong
+          # shape is a crash loop, not a warning). Keys ride as env only
+          # (env-var law): nothing baked, nothing printed, nothing in git.
+          # 2026-11-01 (Owner: "gomodel is used in agent-team-ci"): provider
+          # creds ride here too — zai/groq/openrouter/gemini/opencode-zen/
+          # antling/moonmath/cloudflare; retry 5x10s per the 00:08 order so
+          # 429s are absorbed at the gateway, never surfaced to seats.
+          export JEV_API_KEY="${TYPESAFE_API_KEY:-}"
+          docker run -d --name gomodel -p 127.0.0.1:8080:8080 \
+            -v /tmp/llmfisher-src/config:/app/config:ro \
+            -v gomodel_data:/app/data \
+            -e SQLITE_PATH=/app/data/gomodel.db \
+            -e CONFIGURED_PROVIDER_MODELS_MODE=allowlist \
+            -e FAILOVER_RETRY_ON_STATUSES=4xx,5xx \
+            -e FAILOVER_MAX_ATTEMPTS=5 \
+            -e RETRY_MAX_RETRIES=5 \
+            -e RETRY_INITIAL_BACKOFF=10s \
+            -e CIRCUIT_BREAKER_SCOPE=model \
+            -e HTTP_RESPONSE_HEADER_TIMEOUT=30 \
+            -e CACHE_REFRESH_INTERVAL=21600 \
+            -e PROVIDER_RECHECK_INTERVAL=300 \
+            -e LOG_LEVEL=info \
+            -e PROVIDER_PROMPT_CACHE_PLANNER_ENABLED=false \
+            -e GOMODEL_DEMO_MODE=false \
+            -e GOMODEL_MASTER_KEY -e JEV_API_KEY \
+            -e ZAI_API_KEY -e GROQ_API_KEY -e OPENROUTER_API_KEY \
+            -e GEMINI_API_KEY -e OPENCODE_API_KEY -e ANTLING_API_KEY \
+            -e MOONMATH_API_KEY -e CLOUDFLARE_API_KEY \
+            -e CLOUDFLARE_ACCOUNT_ID \
+            enterpilot/gomodel >/dev/null
+          ok=""
+          for i in $(seq 1 30); do
+            CODE=$(curl -s -o /dev/null -m 2 -w '%{http_code}' \
+              -H "Authorization: Bearer ${GOMODEL_MASTER_KEY:-}" \
+              "http://localhost:8080/" || echo 000)
+            if [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; then
+              echo "GoModel gateway UP inside the runner (HTTP $CODE, ping contract)"
+              ok=1; break
+            fi
+            sleep 1
+          done
+          if [ -z "$ok" ]; then
+            echo "::warning::gomodel container did not answer in 30s — lane stays DOWN -> fallback (never red)"
+            docker logs --tail 20 gomodel 2>&1 \
+              | sed 's/[A-Za-z0-9+/=_-]\{20,\}/[redacted]/g' || true
+          fi
+          exit 0
+
+      - name: Jev judgment (GoModel via llmfisher gateway — chain decision layer)
+        if: always()
+        env:
+          GOMODEL_MASTER_KEY: ${{ secrets.GOMODEL_MASTER_KEY }}
+        run: |
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          # Owner order (re-issued 2026-10-21 08:25Z): use gomodel via
+          # khaalidrafi/llmfisher on CI. Jev (model jev-1.13.0, POST
+          # /v1/systemone) is the chain's calibrated judgment layer — it
+          # weighs the stall state for the dispatch decision. Payload
+          # mirrors agent-team.el agent-team--jev-payload byte-for-byte.
+          CODE=$(curl -s -o /dev/null -m 20 -w '%{http_code}' \
+                  -H "Authorization: Bearer ${GOMODEL_MASTER_KEY}" \
+                  "${GOMODEL_GATEWAY_URL}/" || echo 000)
+          if [ "$CODE" != "404" ] && [ "$CODE" != "200" ]; then
+            echo "jev: gateway DOWN (HTTP $CODE) — local rules decided the chain step (lane-fallback law; gomodel auto-resumes when the box answers)" >> "$SUMMARY"
+            exit 0
+          fi
+          RESULT="${{ needs.turn.outputs.seg_result }}"
+          OUTCOME="${{ steps.merge.outputs.outcome }}"
+          STATE="stall state: segment result ${RESULT:-none}, merge outcome ${OUTCOME:-none}, CI chain deciding whether to dispatch the next turn now or back off."
+          BODY=$(jq -nc --arg s "$STATE" \
+            --arg q "Dispatch the next agent-team CI turn immediately (yes) or back off (no)?" \
+            '{state: $s, model: "jev-1.13.0", questions: {q: {type: "noul", instructions: $q}}}')
+          RESP=$(curl -s -m 90 -X POST \
+                  -H "Authorization: Bearer ${GOMODEL_MASTER_KEY}" \
+                  -H "Content-Type: application/json" \
+                  -d "$BODY" \
+                  "${GOMODEL_GATEWAY_URL}/v1/systemone" || echo '{}')
+          # jq dies (exit 5) on a non-JSON gateway body — and pipefail+bash -e
+          # then kills the whole finalize (run 41272000332 finalize evidence,
+          # stale box tier answered garbage). Empty default = local rules.
+          P=$(echo "$RESP" | jq -r '.answers.q.noul // empty' 2>/dev/null) || P=""
+          if [ -n "$P" ]; then
+            VERDICT=$(awk -v p="$P" 'BEGIN{print (p>=0.5) ? "yes" : "no"}')
+            echo "jev: ${P} -> ${VERDICT} (gomodel via llmfisher gateway, HTTP $CODE)" >> "$SUMMARY"
+          else
+            echo "jev: gateway answered but no noul in response — local rules decided (never block the chain on a judgment lane)" >> "$SUMMARY"
+          fi
+
+      - name: Stall accounting + dispatch the next run (self-chain)
+        run: |
+          CTL=agent-team/CONTROL.org
+          RESULT="${{ needs.turn.outputs.seg_result }}"
+          OUTCOME="${{ steps.merge.outputs.outcome }}"
+          GATE="${{ steps.gate.outputs.gate }}"
+          STALL=$(grep -oP '^\#\+STALL-COUNT:\s*\K\d+' "$CTL" | head -1 || true); STALL=${STALL:-0}
+          PROGRESS=no
+          if [ "$OUTCOME" = "merged" ] && [ "$GATE" = "green" ]; then PROGRESS=yes; fi
+          case "$RESULT" in *BLOCKED*) PROGRESS=no ;; esac
+          if [ "$PROGRESS" = "yes" ]; then NEW=0; else NEW=$((STALL+1)); fi
+          if [ "$NEW" != "$STALL" ]; then
+            # Race-proof (Lead pushes can move ai/main mid-run — same class
+            # as the 15:57Z fetch-first rejection): reset, re-apply, commit.
+            git fetch origin ai/main
+            git reset --hard origin/ai/main
+            sed -i "s|^\#+STALL-COUNT:.*|\#+STALL-COUNT: ${NEW}|" "$CTL"
+            git add "$CTL"
+            git commit -m "control: set #+STALL-COUNT to ${NEW} after ${OUTCOME} segment" \
+              -m "segment result: ${RESULT:-none}" \
+              -m "Co-authored-by: z.ai-agent <z.ai-agent@z.ai>" \
+              -m "Co-authored-by: Khalid Rafi <khaalidrafi@gmail.com>" \
+              || echo "::notice::stall commit empty"
+            git push origin "ai/main" || echo "::warning::stall push failed"
+          fi
+          # Decide the next link in the chain
+          KILL=$(grep -oP '^\#\+KILL-SWITCH:\s*\K\w+' "$CTL" | head -1 || true)
+          OBJSTATE=$(grep -oP '^\#\+OBJECTIVE-STATE:\s*\K\w+' "$CTL" | head -1 || true)
+          OBJECTIVE=$(grep -oP '^\#\+OBJECTIVE:\s*\K.*' "$CTL" | head -1 || true)
+          DECISION="dispatch"
+          if [ "${KILL:-OFF}" = "ON" ]; then DECISION="kill-switch"; fi
+          if [ "${OBJSTATE:-OPEN}" = "COMPLETE" ]; then DECISION="objective-complete"; fi
+          if [ -z "$OBJECTIVE" ] || echo "$OBJECTIVE" | grep -q "the Owner writes"; then
+            DECISION="no-objective"
+          fi
+          # Tests red = no agent can even run (turn needs a green suite):
+          # chaining would spin red forever. Halt and page the Lead.
+          if [ "${{ needs.test.result }}" = "failure" ]; then
+            DECISION="tests-red-halt"
+          fi
+          if [ "$NEW" -ge 4 ] && [ "$DECISION" = "dispatch" ]; then
+            DECISION="backoff-dispatch"   # slow-poll: transient dead lanes recover on their own
+          fi
+          # Export for the Telegram mirror step below (same job, later step).
+          echo "CHAIN_DECISION=$DECISION" >> "$GITHUB_ENV"
+          echo "CHAIN_STALL=$NEW" >> "$GITHUB_ENV"
+          DISPATCH_CODE="n/a"
+          if [ "$DECISION" = "dispatch" ] || [ "$DECISION" = "backoff-dispatch" ]; then
+            if [ "$DECISION" = "backoff-dispatch" ]; then
+              echo "backoff: lane dead ${NEW} segments straight — waiting 5 min before the next attempt" 
+              sleep 300
+            else
+              sleep 20   # let the control push settle; the concurrency group serializes anyway
+            fi
+            DISPATCH_CODE=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/agent-team.yml/dispatches" \
+              -d '{"ref":"ai/main"}')
+          fi
+          SUMMARY="$GITHUB_STEP_SUMMARY"
+          echo "## Chain — finalize" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+          echo "- merge: ${OUTCOME} (${{ steps.merge.outputs.branch }})" >> "$SUMMARY"
+          echo "- byte-compile gate: ${GATE:-skipped}" >> "$SUMMARY"
+          echo "- stall count: ${NEW} (>=4 = 5-min backoff mode)" >> "$SUMMARY"
+          echo "- chain decision: **${DECISION}** (dispatch HTTP ${DISPATCH_CODE})" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+          echo "kill=${KILL:-OFF} state=${OBJSTATE:-OPEN}" >> "$SUMMARY"
+
+      # Owner channel — OUTBOUND leg (Owner order 2026-10-21 #hq: contact
+      # over Telegram; 17:47Z: locked to HIS chat id). Mirrors every chain
+      # verdict to the Owner's chat ONLY: TELEGRAM_OWNER_ID secret, else
+      # TELEGRAM_CHAT_ID, else the owner-locked learned id (tg_chat
+      # output — it only ever carries the verified Owner id). SILENT until
+      # the lock is activated by the Lead.
+      - name: Mirror chain verdict to Telegram (silent without secrets, deduped) — now with the GLM chat
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_ID: ${{ secrets.TELEGRAM_OWNER_ID }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TG_LEARNED_CHAT: ${{ needs.turn.outputs.tg_chat }}
+        run: |
+          # OWNER LOCK (17:47Z): verdicts go ONLY to the Owner's chat —
+          # secret id first, then the owner-locked learned id. No other
+          # destination exists.
+          # TG DEDUPE LAW (Owner 2026-10-21 03:53Z: "I keep getting the
+          # same msgs on Telegram"): fire ONLY when a segment actually
+          # RAN and the verdict differs from #+LAST-VERDICT in the
+          # control file. Hourly safety-net no-ops are silent.
+          SEG="${{ needs.turn.outputs.seg_result }}"
+          [ -n "$SEG" ] || { echo "telegram mirror: turn skipped — silent (dedupe law)"; exit 0; }
+          CHAT="${TELEGRAM_OWNER_ID:-${TELEGRAM_CHAT_ID:-${TG_LEARNED_CHAT}}}"
+          [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$CHAT" ] || { echo "telegram mirror: silent (no token or chat id yet)"; exit 0; }
+          CTL=agent-team/CONTROL.org
+          # GLM CHAT MIRROR (Owner 2026-10-21 #hq: "I can't see team chat
+          # on Telegram — it keeps sending FROM: team-lead msgs"): the
+          # segment's NEW CHAT.org entries go to the Owner too, each
+          # block under its REAL :FROM: seat. Char-safe chunking under TG's
+          # 4096 cap; deduped via #+LAST-CHAT. Runs BEFORE the BLOCKED
+          # verdict cap so chat flows even when the verdict is throttled.
+          ADDED=""
+          BASE="${{ needs.turn.outputs.base_sha }}"
+          if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null; then
+            # grep no-match on a chat-less diff exits 1 -> pipefail+bash -e
+            # killed the mirror step silently (runs 41272748867 + 41272986014
+            # finalize evidence). Empty CHAT.org delta is a normal outcome.
+            ADDED=$(git diff "$BASE" HEAD -- agent-team/CHAT.org 2>/dev/null \
+              | grep '^+' | grep -v '^+++' | sed 's/^+//' || true)
+          fi
+          CH=""
+          if [ -n "$ADDED" ]; then
+            CH=$(printf '%s' "$ADDED" | sha256sum | cut -c1-12)
+            LASTC=$(grep -oP '^\#\+LAST-CHAT:\s*\K[0-9a-f]+' "$CTL" | head -1 || true)
+            if [ "$CH" != "$LASTC" ]; then
+              SEAT=$(printf '%s\n' "$ADDED" | grep -oP '^\s*:FROM:\s*\K.*' | head -1 || true)
+              SEAT="${SEAT:-team-lead}"
+              export ADDED
+              python3 -c 'import os,sys; added=os.environ["ADDED"]; sys.stdout.write("\x1f".join(added[i:i+3800] for i in range(0, len(added), 3800)))' > /tmp/tg-chunks.txt
+              while IFS= read -r -d $'\x1f' CHUNK || [ -n "$CHUNK" ]; do
+                [ -n "$CHUNK" ] || continue
+                curl -sS -o /dev/null -w 'telegram chat mirror: HTTP %{http_code}\n' \
+                  "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                  --data-urlencode "chat_id=${CHAT}" \
+                  --data-urlencode "text=$(printf 'FROM: %s\nTO: @owner\n\nteam chat — new this segment\n---\n%s' "$SEAT" "$CHUNK")" || true
+                CHUNK=""
+              done < /tmp/tg-chunks.txt
+              rm -f /tmp/tg-chunks.txt
+            else
+              echo "telegram chat mirror: already mirrored this segment — silent (dedupe)"
+            fi
+          else
+            echo "telegram chat mirror: no new chat entries this segment"
+          fi
+          case "$SEG" in
+            *BLOCKED*)
+              # DEDUPE LAW v2 (Owner 2026-10-21 05:24Z: the same BLOCKED msg
+              # kept arriving every ~5 min): a BLOCKED situation pages the
+              # Owner AT MOST ONCE PER HOUR. Seat wording and the stall
+              # counter never reset the cap — only a real state change or
+              # the hourly heartbeat does. DONE/PARTIAL (fresh work) is
+              # NEVER throttled.
+              NOW=$(date +%s)
+              LASTB=$(grep -oP '^\#\+LAST-BLOCKED-NOTIFY:\s*\K[0-9]+' "$CTL" | head -1 || true)
+              [ -n "$LASTB" ] || LASTB=0
+              if [ "$((NOW - LASTB))" -lt 3600 ]; then
+                echo "telegram mirror: BLOCKED already mirrored <1h ago — silent (dedupe law v2)"
+                exit 0
+              fi
+              ;;
+          esac
+          VH=$(printf '%s' "$SEG" | sha256sum | cut -c1-12)
+          # TELEGRAM LAW (Owner order 17:55Z): every message to the TG bot
+          # MUST contain FROM and TO — they open the text.
+          TXT="$(printf 'FROM: team-lead (glm-5.3-flash, Agent Team)\nTO: @owner\n\nsegment done\nbranch: %s\nresult: %s\nmerge: %s\ngate: %s\nstall: %s\ndecision: %s' \
+            "${{ needs.turn.outputs.turn_branch }}" \
+            "$SEG" \
+            "${{ steps.merge.outputs.outcome }}" \
+            "${{ steps.gate.outputs.gate }}" \
+            "${CHAIN_STALL:-?}" \
+            "${CHAIN_DECISION:-unknown}")"
+          CODE=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT}" \
+            --data-urlencode "text=${TXT}") || CODE="curl-failed"
+          echo "telegram mirror: HTTP ${CODE}"
+          git config user.name "agent-team-ci" 2>/dev/null || true
+          git config user.email "agent-team-ci@users.noreply.github.com" 2>/dev/null || true
+          git remote set-url --push origin \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          # SED BUG FIX (root cause of the 5-min TG spam): the old pattern
+          # '^\#\+LAST-VERDICT:' is GNU BRE — '\+' = one-or-more of '#', so it
+          # NEVER matched the org line '#+LAST-VERDICT:' (literal '#' then
+          # '+'). sed no-oped -> empty commit -> exit 0 -> the marker never
+          # landed on ai/main -> every run re-mirrored. Fixed: '^#+...'.
+          write_markers() {
+            grep -q '^#+LAST-BLOCKED-NOTIFY:' "$CTL" || printf '#+LAST-BLOCKED-NOTIFY: 0\n' >> "$CTL"
+            sed -i "s|^#+LAST-VERDICT:.*|#+LAST-VERDICT: ${VH}|" "$CTL"
+            if [ -n "${CH:-}" ]; then
+              grep -q '^#+LAST-CHAT:' "$CTL" || printf '#+LAST-CHAT: 0\n' >> "$CTL"
+              sed -i "s|^#+LAST-CHAT:.*|#+LAST-CHAT: ${CH}|" "$CTL"
+            fi
+            case "$SEG" in
+              *BLOCKED*) sed -i "s|^#+LAST-BLOCKED-NOTIFY:.*|#+LAST-BLOCKED-NOTIFY: $(date +%s)|" "$CTL" ;;
+            esac
+          }
+          git fetch origin ai/main && git reset --hard origin/ai/main
+          write_markers
+          git add "$CTL"
+          git commit -m "control: record segment verdict ${VH} in #+LAST-VERDICT" \
+            -m "Co-authored-by: z.ai-agent <z.ai-agent@z.ai>" \
+            -m "Co-authored-by: Khalid Rafi <khaalidrafi@gmail.com>" || exit 0
+          for i in 1 2 3; do git push origin "ai/main" && break; git fetch origin ai/main && git reset --hard origin/ai/main; write_markers; git add "$CTL"; git commit -m "control: record segment verdict ${VH} in #+LAST-VERDICT" -m "Co-authored-by: z.ai-agent <z.ai-agent@z.ai>" -m "Co-authored-by: Khalid Rafi <khaalidrafi@gmail.com>" || exit 0; done
+
+      # Owner order 2026-10-20 19:56Z: "You serve as the lead of both repos.
+      # Their GLM chats go to their respective Discord channels." This repo's
+      # channel = #hq (secret DISCORD_WEBHOOK_TEAM_HQ, a Discord channel
+      # webhook the Owner creates in one click). Mirrors (1) the chain
+      # verdict and (2) every CHAT.org message this segment appended —
+      # the GLM chats — diffed base_sha..post-merge HEAD. SILENT until the
+      # webhook secret exists. FROM/TO law applies to every mirrored block.
+      - name: Mirror verdict + new GLM chats to Discord (silent without secret)
+        env:
+          DISCORD_WEBHOOK_TEAM: ${{ secrets.DISCORD_WEBHOOK_TEAM_HQ }}
+          BASE_SHA: ${{ needs.turn.outputs.base_sha }}
+          TURN_BRANCH: ${{ needs.turn.outputs.turn_branch }}
+          SEG_RESULT: ${{ needs.turn.outputs.seg_result }}
+        run: |
+          [ -n "$DISCORD_WEBHOOK_TEAM" ] || { echo "discord mirror: silent (no DISCORD_WEBHOOK_TEAM_HQ secret yet)"; exit 0; }
+          post() { # chunk to Discord's 2000-char cap
+            local txt="$1"
+            while [ -n "$txt" ]; do
+              local chunk="${txt:0:1900}"; txt="${txt:1900}"
+              curl -sS -o /dev/null -w 'discord mirror: HTTP %{http_code}\n' \
+                "$DISCORD_WEBHOOK_TEAM" \
+                -H 'Content-Type: application/json' \
+                -d "$(python3 -c 'import json,sys; print(json.dumps({"content": sys.stdin.read()}))' <<< "$chunk")" || true
+            done
+          }
+          FROM="FROM: team-lead (glm-5.3-flash, Agent Team @khaalidrafi/slave-agent)"
+          post "$(printf '%s\nTO: @team (discord #hq)\n\nsegment done\nbranch: %s\nresult: %s\ndecision: %s\nstall: %s' \
+            "$FROM" "${TURN_BRANCH:-?}" "${SEG_RESULT:-?}" "${CHAIN_DECISION:-unknown}" "${CHAIN_STALL:-?}")"
+          # The GLM chats this segment appended (merge landed them in ai/main):
+          if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            ADDED=$(git diff "$BASE_SHA" HEAD -- agent-team/CHAT.org 2>/dev/null \
+              | grep '^+' | grep -v '^+++' | sed 's/^+//')
+            if [ -n "$ADDED" ]; then
+              post "$(printf '%s\nTO: @team (discord #hq)\n--- GLM chat, this segment ---\n%s' "$FROM" "$ADDED")"
+            else
+              echo "discord mirror: no new chat entries this segment"
+            fi
+          else
+            echo "discord mirror: base sha unavailable — verdict only"
+          fi
