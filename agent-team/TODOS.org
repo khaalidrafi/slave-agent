@@ -51,12 +51,18 @@
    - Evidence: scripts/ci/kernel_floor.json monotonically lower per
      cut; compileall green.
 
-** TODO OpenAI-compatible serving mode (general)
+** PROGRESS OpenAI-compatible serving mode (general)
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
    - Scope: =slave serve= streaming /v1/chat/completions so any host
      panel (AdminEverywhere included) embeds the agent generically;
      no client-specific code in-tree (purity law).
    - Evidence: contract test + CI curl smoke.
+   - PROGRESS 2026-11-01 (z.ai-agent, Lead): serve surface contract
+     pinned — tests/gateway/platforms/test_serve_openai_contract.py
+     green (4 cases: non-stream JSON shape, SSE stream + [DONE]
+     reassembly, auth 401s; inference stubbed, no paid calls) and
+     scripts/ci/serve_curl_smoke.sh ready for a CI lane. Remaining:
+     wire the smoke into CI (Platform seat) + docs entry.
 
 ** TODO Group-chat capabilities
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
