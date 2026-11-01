@@ -1,0 +1,8 @@
+#+TITLE: CANDIDATES.org — model inventory (list, not recommendation)
+# ADD-FREEZE: rows land once per model from the fetch law; staffing filters
+# this inventory — it never edits it.
+# FETCH LAW: the live roster (GET /v1/models on the GoModel gateway) is the
+# only authority on API model existence; the box is small — space the calls.
+# STATUS: seeded empty at teamify (2026-11-01); the first staffing cycle
+# fills it from the gateway roster + the umbrella's batch trials
+# (khaalidrafi/agent-team.el agent-team/CANDIDATES.org batch evidence).

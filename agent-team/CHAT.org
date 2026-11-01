@@ -1,0 +1,4 @@
+#+TITLE: CHAT.org — one team chat buffer (direct @pings)
+#+FORMAT: headline carries FROM; fields ride Org tags + :PROPERTIES:;
+          append AT EOF only; never edit or delete an existing entry.
+#+STARTED: 2026-11-01 — chain installed on ai/main (Lead, teamify)

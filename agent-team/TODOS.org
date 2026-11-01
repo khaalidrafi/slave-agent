@@ -1,0 +1,93 @@
+#+TITLE: TODOS.org — slave-agent work board
+#+STARTUP: overview
+
+* Board
+
+** TODO Transfer the ai/light-core code island into this repo
+   - The three work commits quoted in HANDOFF.org (0bbd3f41cd updater
+     tail, e3edc4e6d3 brand generator, 51e1d196c8 shop plugin) are not
+     on origin — only the handoff docs island is.
+   - Executor: Platform/CI Engineer (qwen3.8-flash@qoder) with the
+     Owner (push the branch, or the seat re-derives per FORK.org).
+   - Evidence: ai/main present on origin with the three commits;
+     generated ai/slave-agent branch produced by scripts/fork-sync.sh.
+   - PROGRESS 2026-11-01 (z.ai-agent, Lead): island fetched; ai/main
+     established on origin at the island tip (4255916) carrying the
+     three work commits; chain installed on ai/main (workflow + ci
+     submodule + harness + sealed secrets). Remaining for this item:
+     scripts/fork-sync.sh -> generated ai/slave-agent branch.
+
+** TODO slave_compat as the canonical key + state migration
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
+   - Scope: slave_compat canonical while hermes_compat keeps working;
+     state-dir read-fallback; one-shot =slave migrate-state=; launcher
+     path default moves, old name still resolves.
+   - Evidence: knob-for-knob compat tests green; migration test green.
+
+** TODO KEEP_RE third-party shape rules + tests
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
+   - Scope: encode the names the generator must never rewrite (package
+     managers, container images, upstream model IDs) as shape rules
+     with tests; reword the stale updater comment on the upstream repo
+     path entry.
+   - Evidence: rebrand --lint / --blind fixture cases green.
+
+** TODO Fix the 5 known-red steward tests
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
+   - Scope: tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission
+     still imports hermes_cli.update_contract, deleted by P0.
+   - Evidence: scripts/run_tests.sh green on the touched dirs.
+
+** TODO Execute the bloat removal queue P0-P9
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy),
+     exhaustively — this is the fork's main implementation lane.
+   - Scope: FORK.org queue, ONE commit per subsystem, three-way
+     verification per removal (check-imports, compileall, survivor
+     tests), kernel_floor --record in the same commit.
+   - Evidence: scripts/ci/kernel_floor.json monotonically lower per
+     cut; compileall green.
+
+** TODO OpenAI-compatible serving mode (general)
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
+   - Scope: =slave serve= streaming /v1/chat/completions so any host
+     panel (AdminEverywhere included) embeds the agent generically;
+     no client-specific code in-tree (purity law).
+   - Evidence: contract test + CI curl smoke.
+
+** TODO Group-chat capabilities
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
+   - Scope: /recap, chat-to-cron reminders, PII redactor at the prompt
+     boundary, one-command persona install (persona = config profile).
+   - Evidence: tests + docs entries.
+
+** TODO Design: Emacs/Org roadmap R2-R6 + panel embedding
+   - Executor: Software Architect (glm-5.3@chat.z.ai).
+   - Scope: R2-R6 design per FORK.org; the serve-vs-ACP embedding
+     architecture, session model and per-user profile design for
+     panel hosts.
+   - Evidence: design doc under docs/.
+
+** TODO Release URL, mark, token-cost table
+   - Executor: QA + Docs Engineer (nvidia/nemotron-3.5-lightning:free@cline).
+   - Scope: our own release URL + installer pointer, icon regeneration
+     via scripts/generate_icons.py, the lean-vs-compat token cost
+     table ("lighter" as a number).
+   - Evidence: docs updated; table committed.
+
+** TODO CI wiring + review lane
+   - Executor: Platform/CI Engineer (qwen3.8-flash@qoder).
+   - Scope: port the umbrella CI kit pattern (self-check, brand
+     consistency lanes); EVERY branch/PR routes through the Copilot CR
+     lane before the Lead merge (Owner 2026-10-31: burn this month's
+     CR). Seal FRESHORAMA_WEBSITE_PAT as a repo secret once the
+     Owner's PAT scope covers this repo (value held by the Owner
+     meanwhile).
+   - Evidence: green self-check runs on ai/**; CR comments visible on
+     open PRs.
+
+* Org cheat sheet
+  - =* Board= holds every work item as =** KEYWORD title=.
+  - Add new work ONLY under Board; the cheat sheet stays last and
+    never carries work items.
+  - Keyword cycle: TODO -> PROGRESS -> REVIEW -> PENDING (delivered,
+    awaiting Lead merge) -> DONE (Lead-only).
