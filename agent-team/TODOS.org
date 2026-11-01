@@ -32,10 +32,14 @@
      path entry.
    - Evidence: rebrand --lint / --blind fixture cases green.
 
-** TODO Fix the 5 known-red steward tests
+** TODO Fix the known-red imports (steward tests + CI dangling refs)
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
    - Scope: tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission
-     still imports hermes_cli.update_contract, deleted by P0.
+     still imports hermes_cli.update_contract, deleted by P0; PLUS the full
+     DANGLING list from kernel_floor --check-imports (pm tls fixture,
+     update_lock, fetch_models base_url, public surface, icon flavors,
+     release tags, termux deb version, tui_gateway render) so the
+     kernel-floor CI lane goes green end to end.
    - Evidence: scripts/run_tests.sh green on the touched dirs.
 
 ** TODO Execute the bloat removal queue P0-P9

@@ -49,7 +49,9 @@ jobs:
         # SISYPHUS) in the same font, which is why the guard is that row and not "any
         # block glyph". A *new* word-mark is allowed, but it has to come from brand.py.
         run: |
-          if git grep -I -l -F '██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗' -- .; then
+          # exclude this file: the guard's own pattern literal lives here and
+          # would self-match (the lane has been red since the island landed)
+          if git grep -I -l -F '██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗' -- . ':(exclude).github/workflows/fork-brand-consistency.yml'; then
             echo "drawn word-art is back; build the nameplate from brand.PRODUCT" >&2
             exit 1
           fi
