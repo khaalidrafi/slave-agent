@@ -101,3 +101,19 @@
     never carries work items.
   - Keyword cycle: TODO -> PROGRESS -> REVIEW -> PENDING (delivered,
     awaiting Lead merge) -> DONE (Lead-only).
+
+** DONE Serve-side brand persona for business deployments (Freshorama)
+   - Owner order 2026-11-02 #hq: "complete preparing slave-agent so that
+     Freshorama team can customize it as their business assistant."
+   - Scope landed: gateway/platforms/api_server_brand.py (brand JSON ->
+     compiled default persona, fail-fast on malformed files);
+     API_SERVER_BRAND_FILE / platforms.api_server.brand_file wired into
+     APIServerAdapter; /v1/chat/completions applies it only when the
+     request carries no system message (a request system message wins);
+     deploy/freshorama/ kit (brand.example.json + integrator README
+     with env surface, systemd unit, security notes).
+   - Evidence: tests/gateway/platforms/test_serve_openai_contract.py
+     extended 4 -> 9 cases, 9 passed (persona applied, request
+     override, malformed/missing fail-fast, no-file unchanged); FR
+     decisions still open in admineverywhere#18.
+   - PROGRESS 2026-11-02 (z.ai-agent, Lead): landed on ai/main.

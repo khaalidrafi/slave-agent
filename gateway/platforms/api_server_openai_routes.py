@@ -675,6 +675,12 @@ class OpenAICompatRoutesMixin:
         history = conversation_messages[:-1]
         if not _content_has_visible_payload(user_message):
             return _invalid_request("No user message found in messages")
+        # Server-side default persona (brand file, business deployments): only
+        # when the request carries no system message — an explicit system
+        # message from the caller always wins.  Included before session-id
+        # derivation so fingerprints stay stable per persona.
+        if system_prompt is None and getattr(self, "_brand_default_prompt", ""):
+            system_prompt = self._brand_default_prompt
 
         # X-Hermes-Session-Key scopes long-term memory per channel; independent of
         # X-Hermes-Session-Id (the key persists across transcripts, the id rotates on /new).
