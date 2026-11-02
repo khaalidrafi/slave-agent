@@ -26,16 +26,19 @@ def _isolated_hermes_home(tmp_path, monkeypatch):
     (tmp_path / "hermes-home").mkdir(exist_ok=True)
 
 
-def _build_adapter(tmp_path):
+def _build_adapter(tmp_path, extra=None, calls=None):
     from gateway.config import PlatformConfig
     from gateway.platforms.api_server import APIServerAdapter
     from hermes_state import SessionDB
 
     db = SessionDB(db_path=Path(tmp_path) / "state.db")
-    adapter = APIServerAdapter(PlatformConfig(enabled=True, extra={"key": API_KEY}))
+    adapter = APIServerAdapter(
+        PlatformConfig(enabled=True, extra={"key": API_KEY, **(extra or {})}))
     adapter._session_db = db
 
     def create_agent(**kwargs):
+        if calls is not None:
+            calls.append(kwargs)
         agent = MagicMock()
         agent.session_id = kwargs.get("session_id")
         agent.session_prompt_tokens = agent.session_completion_tokens = 0
@@ -126,3 +129,71 @@ async def test_chat_completions_rejects_bad_auth(tmp_path, headers):
             json={"messages": [{"role": "user", "content": "hi"}]},
         )
         assert resp.status == 401
+
+
+# --- brand/default persona (business deployments, deploy/freshorama) -------
+
+
+@pytest.mark.asyncio
+async def test_brand_default_persona_applied_when_request_has_no_system(tmp_path):
+    """No system message + brand file -> agent runs with the compiled persona."""
+    brand = tmp_path / "brand.json"
+    brand.write_text(json.dumps({
+        "name": "Freshorama Assistant",
+        "facts": ["Ships from Lagos daily"],
+        "never_do": ["give medical advice"],
+    }), encoding="utf-8")
+    calls: list = []
+    adapter = _build_adapter(tmp_path, extra={"brand_file": str(brand)}, calls=calls)
+    async with _client(adapter) as client:
+        resp = await client.post(
+            "/v1/chat/completions",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            json={"messages": [{"role": "user", "content": "hi"}]},
+        )
+        assert resp.status == 200
+    assert len(calls) == 1
+    prompt = calls[0].get("ephemeral_system_prompt") or ""
+    assert "You are Freshorama Assistant." in prompt
+    assert "- Ships from Lagos daily" in prompt
+    assert "- give medical advice" in prompt
+
+
+@pytest.mark.asyncio
+async def test_request_system_message_overrides_brand(tmp_path):
+    """An explicit system message wins over the server-side brand persona."""
+    brand = tmp_path / "brand.json"
+    brand.write_text(json.dumps({"name": "Freshorama Assistant"}), encoding="utf-8")
+    calls: list = []
+    adapter = _build_adapter(tmp_path, extra={"brand_file": str(brand)}, calls=calls)
+    async with _client(adapter) as client:
+        resp = await client.post(
+            "/v1/chat/completions",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            json={"messages": [
+                {"role": "system", "content": "You are Kiosk-7."},
+                {"role": "user", "content": "hi"},
+            ]},
+        )
+        assert resp.status == 200
+    assert calls[0].get("ephemeral_system_prompt") == "You are Kiosk-7."
+
+
+def test_brand_file_malformed_fails_fast(tmp_path):
+    """A broken brand file must refuse to boot the adapter, not half-apply."""
+    brand = tmp_path / "brand.json"
+    brand.write_text("{not json", encoding="utf-8")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        _build_adapter(tmp_path, extra={"brand_file": str(brand)})
+
+
+def test_brand_file_missing_fails_fast(tmp_path):
+    with pytest.raises(ValueError, match="brand file not found"):
+        _build_adapter(tmp_path, extra={"brand_file": str(tmp_path / "nope.json")})
+
+
+def test_no_brand_file_means_no_default_prompt(tmp_path):
+    """Without a brand file the adapter behavior is unchanged (prompt None)."""
+    calls: list = []
+    adapter = _build_adapter(tmp_path, calls=calls)
+    assert adapter._brand_default_prompt == ""
