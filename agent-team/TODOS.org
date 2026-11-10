@@ -15,7 +15,8 @@
        docs/INTEGRATION-ADMINEVERYWHERE.org (in-process library
        amendment), agent-team/CONTROL.org (TURN hand); the rest is
        superseded by newer ai/main copies. Island archived as tag
-       island/handoff-final; branch deletion deferred — see below.
+       island/handoff-final; branch deleted once the default moved
+       (below) — push --delete 2026-11-11, tag keeps the history.
      - origin/ai/slave-agent (69ea0cd2b7): KEPT, NOT merged —
        scripts/fork-sync.sh law: ai/main + exactly ONE generated
        brand commit, never edited; merging it would seed the rename
@@ -23,10 +24,10 @@
      - origin/upstream/main (c419cf7c): tracker, KEPT — ~1 month of
        upstream drift since fork point bd0affe5e5; catch-up is a
        fork-sync.sh rebase, not a branch merge (awaits Owner order).
-   - Default branch: still handoff — the App token lacks repo admin
-     (PATCH default_branch: 403 Resource not accessible by
-     integration). Owner flips Settings → default to ai/main (or
-     grants administration); handoff deletion follows next pass.
+   - Default branch: ai/main (Owner flipped in Settings 2026-11-11;
+     the App keeps Contents-only, no administration granted). Then
+     handoff deleted under plain Contents R/W. Resolution complete:
+     origin = ai/main + ai/slave-agent + upstream/main + archive tag.
 
 ** TODO Mobile phase 1 — Termux bootstrap + bionic wheel audit
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
