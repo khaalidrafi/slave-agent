@@ -16,6 +16,10 @@
      three work commits; chain installed on ai/main (workflow + ci
      submodule + harness + sealed secrets). Remaining for this item:
      scripts/fork-sync.sh -> generated ai/slave-agent branch.
+  - EVIDENCE 2026-11-11 (z.ai-agent, Lead): the Owner's machine holds
+    ai/slave-agent locally (69ea0cd2b7, regenerated for upstream
+    bd0affe5e5 — Qoder transcript), origin has NO such branch yet
+    (ls-remote 2026-11-11). Push it or re-derive per the row law.
 
 ** TODO slave_compat as the canonical key + state migration
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
@@ -31,6 +35,21 @@
      with tests; reword the stale updater comment on the upstream repo
      path entry.
    - Evidence: rebrand --lint / --blind fixture cases green.
+  - EVIDENCE 2026-11-11 (z.ai-agent, Lead; Owner's Qoder transcripts,
+    verified on origin/ai/main): three concrete hazards close this
+    row's scope —
+    (1) hermes_cli/steward.py ships lowercase
+    =nousresearch/hermes-agent= (the docker rmi line) while KEEP_RE
+    is case-sensitive, so the identity tier rewrites it to
+    =nousresearch/slave-agent= on the branded branch — a name we do
+    not own;
+    (2) steward.py's Termux (=pkg uninstall hermes-agent=) and Nix
+    (=remove hermes-agent from your flake=) strings name upstream's
+    published packages — decide: functional KEEPs, or brand-sourced
+    ours;
+    (3) add the steward relationship test: the Guix refusals must
+    name brand.SLUG (already landed in ai/main steward.py) and no
+    second spelling may hardcode it.
 
 ** TODO Fix the known-red imports (steward tests + CI dangling refs)
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
@@ -41,6 +60,10 @@
      release tags, termux deb version, tui_gateway render) so the
      kernel-floor CI lane goes green end to end.
    - Evidence: scripts/run_tests.sh green on the touched dirs.
+  - EVIDENCE 2026-11-11 (z.ai-agent, Lead): hermes_cli/update_contract
+    confirmed absent on origin/ai/main; stale refs verified by git
+    grep — test_steward_detection.py x5, test_commit_build_updates.py
+    x1, test_check_store_update.py x1, test_shallow_graft_prune.py x1.
 
 ** TODO Execute the bloat removal queue P0-P9
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy),
@@ -76,6 +99,9 @@
      architecture, session model and per-user profile design for
      panel hosts.
    - Evidence: design doc under docs/.
+  - PROGRESS 2026-11-11 (z.ai-agent, Lead): R1 landed in agent-org —
+    the live interactive Emacs chat exercised end to end (agent-org
+    ea1cfa1, DISPATCH #10).
 
 ** TODO Release URL, mark, token-cost table
    - Executor: QA + Docs Engineer (nvidia/nemotron-3.5-lightning:free@cline).
