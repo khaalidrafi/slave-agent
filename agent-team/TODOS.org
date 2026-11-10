@@ -3,7 +3,44 @@
 
 * Board
 
-** TODO Transfer the ai/light-core code island into this repo
+** DONE Branch resolution — every branch folded into ai/main
+   - Owner 2026-11-11 #hq: "Resolve ALL branches and merge them into
+     ai/main." Dispositions (SHAs verified on a fresh full clone):
+     - origin/ai/light-core (4255916): 0 unique commits, contained in
+       ai/main — deleted.
+     - origin/ai/turn-20261101-0838 (e1819f16): 0 unique commits,
+       contained in ai/main — deleted.
+     - origin/handoff (6c01cf81, disjoint island, 12 unique commits):
+       unique content absorbed — docs/MOBILE-PORT.org,
+       docs/INTEGRATION-ADMINEVERYWHERE.org (in-process library
+       amendment), agent-team/CONTROL.org (TURN hand); the rest is
+       superseded by newer ai/main copies. Island archived as tag
+       island/handoff-final; branch deletion deferred — see below.
+     - origin/ai/slave-agent (69ea0cd2b7): KEPT, NOT merged —
+       scripts/fork-sync.sh law: ai/main + exactly ONE generated
+       brand commit, never edited; merging it would seed the rename
+       into the dev line and break every upstream merge (FORK.org).
+     - origin/upstream/main (c419cf7c): tracker, KEPT — ~1 month of
+       upstream drift since fork point bd0affe5e5; catch-up is a
+       fork-sync.sh rebase, not a branch merge (awaits Owner order).
+   - Default branch: still handoff — the App token lacks repo admin
+     (PATCH default_branch: 403 Resource not accessible by
+     integration). Owner flips Settings → default to ai/main (or
+     grants administration); handoff deletion follows next pass.
+
+** TODO Mobile phase 1 — Termux bootstrap + bionic wheel audit
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
+   - Contract: docs/MOBILE-PORT.org (absorbed from the island,
+     Owner 2026-11-05 17:01 Asia/Dhaka #hq).
+   - Scope: mobile/bootstrap-termux.sh (pkg installs, clone, venv,
+     lean extra, compile smoke) + run the contract's dependency-audit
+     commands; record the bionic/binary classification in
+     MOBILE-PORT.org. Phase 2 stays BLOCKED on the audit (contract).
+   - Effort: ~0.5 day. Deadline: 2026-11-14 (Lead-set, TIME
+     DISCIPLINE LAW).
+   - Evidence: bootstrap smoke green on aarch64; audit table filled.
+
+** DONE Transfer the ai/light-core code island into this repo
    - The three work commits quoted in HANDOFF.org (0bbd3f41cd updater
      tail, e3edc4e6d3 brand generator, 51e1d196c8 shop plugin) are not
      on origin — only the handoff docs island is.
@@ -20,6 +57,11 @@
     ai/slave-agent locally (69ea0cd2b7, regenerated for upstream
     bd0affe5e5 — Qoder transcript), origin has NO such branch yet
     (ls-remote 2026-11-11). Push it or re-derive per the row law.
+  - CLOSED 2026-11-11 (z.ai-agent, Lead): the Owner pushed
+    ai/slave-agent (69ea0cd2b7, "brand: regenerate for upstream
+    bd0affe5e5") — ls-remote verified on origin. Both evidence halves
+    now stand: ai/main carries the work, the generated brand branch
+    is live. Row complete.
 
 ** TODO slave_compat as the canonical key + state migration
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
@@ -74,7 +116,7 @@
    - Evidence: scripts/ci/kernel_floor.json monotonically lower per
      cut; compileall green.
 
-** PROGRESS OpenAI-compatible serving mode (general)
+** RETIRED OpenAI-compatible serving mode (general)
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
    - Scope: =slave serve= streaming /v1/chat/completions so any host
      panel (AdminEverywhere included) embeds the agent generically;
@@ -86,6 +128,13 @@
      reassembly, auth 401s; inference stubbed, no paid calls) and
      scripts/ci/serve_curl_smoke.sh ready for a CI lane. Remaining:
      wire the smoke into CI (Platform seat) + docs entry.
+  - RETIRED 2026-11-11 (z.ai-agent, Lead) per Owner 2026-11-05 17:01
+    Asia/Dhaka #hq (island commit e26cc078cb, absorbed into ai/main):
+    the admin-app embedding is IN-PROCESS — the agent core ships as a
+    Python library via the admineverywhere[agent] extra; the serving
+    endpoint item is retired by that order. Landed work (8d4b1ed7
+    contract pin + smoke) stands as history; the CI-wiring remainder
+    no longer applies. ACP stays the first-class external surface.
 
 ** TODO Group-chat capabilities
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
