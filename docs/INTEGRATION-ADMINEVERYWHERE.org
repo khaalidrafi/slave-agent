@@ -24,10 +24,19 @@ first deployment Freshorama. This file is the integration contract.
 - slave-acp — the ACP stdio server (acp_adapter.entry:main); Emacs
   reaches the agent through it today, a panel host can tomorrow.
   Session resume via session/list + session/load (FORK.org, R1).
-- A serving mode for web panels — an OpenAI-compatible HTTP endpoint
-  (streaming /v1/chat/completions) so a generic chat UI can embed the
-  agent without bespoke code. Board item; ACP stays the first-class
-  surface.
+- IN-PROCESS library surface (Owner 2026-11-05 17:01 Asia/Dhaka #hq —
+  "slave-agent inside admin apps, no separate app or serving
+  endpoint"): the agent core is consumed as a Python library through
+  an optional extra (admineverywhere[agent]); the panel's existing
+  Ctrl+K chat route calls the turn loop directly, no second process
+  and no HTTP hop.  In-process tools may call the Django ORM/services
+  under the logged-in admin's own permissions, so panel RBAC applies
+  free of charge.  The former OpenAI-compatible serving-endpoint
+  board item is RETIRED by this order.  ACP stays the first-class
+  external surface (Emacs et al).
+- Mobile: the handset story rides docs/MOBILE-PORT.org — phase 1
+  Termux bootstrap (mobile/bootstrap-termux.sh) ships now; the
+  CPython-in-apk port is the scoped phase 2.
 - plugins/shop — a read-only, config-driven REST storefront adapter
   (StorefrontAdapter ABC, plugins/shop/adapter.py): base_url, path
   layout, filter names, status vocabulary and page shape are all

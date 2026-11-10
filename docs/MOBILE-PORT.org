@@ -1,0 +1,88 @@
+#+TITLE: MOBILE-PORT.org — slave-agent on handsets (two-phase contract)
+#+STARTUP: overview
+
+* Directive
+
+Owner 2026-11-05 17:01 Asia/Dhaka #hq: "Can you make a mobile version
+of slave-agent!!!?" — following the same-tick clarification that the
+admin-app embedding is IN-PROCESS ("no separate app or serving
+endpoint").  This file is the mobile contract: what ships now, what is
+scoped, and what stays OPEN with its blocking fact named (AGENTS.md
+docs-first law).
+
+* Law (unchanged by mobile)
+
+- Mobile is a PROFILE + bootstrap of the same packages — never a fork.
+- Purity law holds: no client code or brand enters this tree; the
+  client is configuration (INTEGRATION-ADMINEVERYWHERE.org).
+- No order writes until the approve-before-send gate exists.
+- Secrets travel as env var NAMES; a handset is a weaker keychain than
+  a server — the mobile profile stores tokens in Termux/android
+  keystore where available, never in plaintext config.
+
+* Phase 1 — Termux bootstrap (shippable NOW)
+
+The model already runs in the cloud; the agent core is orchestration
++ tools, which a modern handset carries.  Phase 1 = agent ON the
+phone via Termux (f-droid), no Tauri build required:
+
+- ~mobile/bootstrap-termux.sh~: pkg installs (python, git, clang,
+  rust, libffi, openssl — binary deps build from source on aarch64
+  because manylinux wheels do not apply to Termux's bionic libc),
+  clone, venv, install the lean extra, compile smoke.
+- What works after bootstrap: the TUI / ~slave-acp~ stdio server,
+  plugins/shop read-only tools against a configured storefront, Org
+  memory in the repo tree.
+- Known handset constraints (disclosed, not solved by bootstrap):
+  Android kills background processes — long sessions need a Termux
+  wakelock (~termux-wake-lock~); battery/heat on long turns; the
+  Emacs surface does not apply on the phone.
+
+* Phase 2 — the agent inside the admin .apk (scoped, big lift)
+
+The admin app (khaalidrafi/admineverywhere) is Tauri 2 + Svelte 5 and
+already ships an Android universal .apk.  Phase 2 embeds the agent
+runtime in that apk so the phone needs nothing else:
+
+- Runtime: CPython bundled via a Rust JNI bridge plugin (Chaquopy is
+  Gradle-only, so it does not drop into the Tauri build); agent code
+  rides as plain Python assets, imported by the bundled interpreter.
+- Dependency reality: Android has no manylinux.  Pure-Python wheels
+  (py3-none-any) are fine; every C-extension dependency must be
+  rebuilt against bionic or replaced by a pure-Python alternative.
+  The P1–P8 bloat-removal queue (FORK.org) is the mitigation — the
+  mobile profile ships only the shop/admin toolset.
+- App-side requirements: foreground service + notification for
+  long-lived sessions, keystore-backed secrets, loopback-only IPC to
+  the panel UI (no listening socket on the LAN).
+
+* OPEN (blocking facts named)
+
+- [ ] Bionic/ARM wheel audit of the ~45 always-on dependencies —
+  BLOCKED: the fork code tree is not in the relay sandbox; the audit
+  commands below are specified for the fork-side crew to run first.
+- [ ] Phase-2 JNI bridge spike — BLOCKED on the audit landing; no
+  code may start before the dependency map says what must be rebuilt.
+- [ ] Mobile profile toolset list sign-off (Owner) — proposed: shop
+  (read-only) + admin MCP equivalents + memory/Org; terminal and
+  desktop tools excluded.
+
+* Dependency audit (fork-side, exact commands)
+
+#+begin_src bash
+# 1. classify the always-on set: pure-Python vs binary
+python - <<'PY'
+from importlib.metadata import distributions
+for d in sorted(distributions(), key=lambda x: x.metadata["Name"] or ""):
+    print(d.metadata["Name"], d.version)
+PY
+# 2. for each dist in the lean set, record its wheel tag from the lock:
+uv pip compile pyproject.toml --python-platform aarch64-unknown-linux-gnu \
+   --python-version 3.11 -o /tmp/arm64.txt   # existence probe, NOT bionic truth
+# 3. any dist resolving only to platform wheels -> must rebuild against
+#    bionic (or swap for a pure-Python dep); record in this file.
+#+end_src
+
+The manylinux probe is a FIRST FILTER only — a green line there still
+needs a bionic build on Android; the real truth comes from phase-2
+build attempts recorded here.
