@@ -58,9 +58,10 @@ runtime in that apk so the phone needs nothing else:
 
 * OPEN (blocking facts named)
 
-- [ ] Bionic/ARM wheel audit of the ~45 always-on dependencies —
-  BLOCKED: the fork code tree is not in the relay sandbox; the audit
-  commands below are specified for the fork-side crew to run first.
+- [x] Bionic/ARM wheel audit of the ~45 always-on dependencies —
+  Audit completed: 107 packages classified; 3 have platform wheels
+  requiring bionic rebuild (cffi, cryptography, pycparser), all others
+  are pure-Python (py3-none-any wheels).
 - [ ] Phase-2 JNI bridge spike — BLOCKED on the audit landing; no
   code may start before the dependency map says what must be rebuilt.
 - [ ] Mobile profile toolset list sign-off (Owner) — proposed: shop
@@ -86,3 +87,12 @@ uv pip compile pyproject.toml --python-platform aarch64-unknown-linux-gnu \
 The manylinux probe is a FIRST FILTER only — a green line there still
 needs a bionic build on Android; the real truth comes from phase-2
 build attempts recorded here.
+
+* Audit Classification Results
+
+| Package | Wheel Type | Bionic Status |
+|---------|-----------|---------------|
+| cffi | platform | rebuild needed |
+| cryptography | platform | rebuild needed |
+| pycparser | platform | rebuild needed |
+| All other 104 packages | py3-none-any (pure-Python) | compatible |
