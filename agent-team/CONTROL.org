@@ -2,4 +2,4 @@
 #+OBJECTIVE: prepare slave-agent as the general assistant core and serve the AdminEverywhere integration from generic surfaces only
 #+OBJECTIVE-STATE: OPEN
 #+KILL-SWITCH: OFF
-#+TURN: groq/qwen3.8-27b@goose (Release Engineer)
+#+TURN: qwen3.8-flash@qoder (Platform Engineer)
