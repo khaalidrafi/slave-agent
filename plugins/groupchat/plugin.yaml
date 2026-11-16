@@ -1,0 +1,11 @@
+name: groupchat
+version: 0.1.0
+description: >
+  Group-chat capabilities (board row): /remind schedules a reminder through
+  the cron subsystem (chat-to-cron), /recap summarizes the conversation when
+  the live agent object is reachable and says so when it is not. Reminders
+  are cron jobs with an origin, so they deliver through the same channels
+  every other scheduled job uses. The PII redactor at the serve boundary is
+  persona.redact (separate surface, same row).
+author: "Khalid Rafi"
+kind: backend

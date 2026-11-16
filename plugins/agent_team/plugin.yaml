@@ -1,0 +1,20 @@
+name: agent_team
+version: 0.1.0
+description: >
+  Non-coding team workflows for the agent: a writing team for blogs, a
+  reporting team for news media, or a custom roster. One tool (team_run)
+  walks the roster role by role — each role gets its own brief, the task,
+  and every earlier role's output — through the host's active model
+  (ctx.llm), so a team run costs model calls, never processes. Rosters are
+  data: the built-in templates cover blog-writing and news-reporting, and
+  a deployment defines its own via plugins.entries.agent_team.settings.teams.
+
+  The point is structure, not pretense: a team run is a fixed review chain
+  (draft, critique, verify) with named deliverables per role — the pattern
+  that makes multi-pass writing work — and it composes with personas
+  (specs/013): the deployment's voice rides the persona, the workflow rides
+  this plugin.
+author: "Khalid Rafi"
+kind: backend
+provides_tools:
+  - team_run

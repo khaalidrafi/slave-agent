@@ -21,8 +21,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Tuple
 
-#: Top-level key that puts the user back on stock Hermes values.
-COMPAT_KEY = "hermes_compat"
+#: Top-level key that puts the user back on stock values. ``slave_compat`` is
+#: canonical (this file is fork-owned and speaks the fork's name, like
+#: ``brand.SLUG`` in steward.py); ``hermes_compat`` keeps working as the
+#: upstream-spelled alias so an old config never breaks on upgrade.
+COMPAT_KEY = "slave_compat"
+COMPAT_KEY_ALIAS = "hermes_compat"
 
 # Dotted path -> the value this fork ships instead of upstream's. Kept to knobs whose
 # upstream value is a *cost* rather than a preference: each one either multiplies what the
@@ -60,12 +64,19 @@ def _truthy(value: Any) -> bool:
 
 
 def hermes_compat_enabled(user_config: Optional[Dict[str, Any]]) -> bool:
-    """True when the user asked for stock Hermes behaviour, overlay off.
+    """True when the user asked for stock behaviour, overlay off.
 
 Read from the *user's* file only. A compat flag in ``DEFAULT_CONFIG`` would make the
 overlay self-disabling, and in a managed overlay (the enterprise case) it is the operator's
-choice, so the managed section is consulted through the same argument the caller built."""
-    return bool(user_config) and _truthy(user_config.get(COMPAT_KEY))
+choice, so the managed section is consulted through the same argument the caller built.
+The canonical key is ``slave_compat``; ``hermes_compat`` stays readable as the
+upstream-spelled alias, so a config written before the rename never breaks."""
+    if not isinstance(user_config, dict):
+        return False
+    value = user_config.get(COMPAT_KEY)
+    if value is None:
+        value = user_config.get(COMPAT_KEY_ALIAS)
+    return _truthy(value)
 
 
 def _user_named(user_config: Optional[Dict[str, Any]], path: Sequence[str]) -> bool:

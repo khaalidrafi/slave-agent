@@ -675,6 +675,23 @@ class OpenAICompatRoutesMixin:
         history = conversation_messages[:-1]
         if not _content_has_visible_payload(user_message):
             return _invalid_request("No user message found in messages")
+        # PII redaction at the prompt boundary (board: group-chat capabilities;
+        # persona integration.pii_redact or the platforms.api_server.pii_redact
+        # extra). Off unless a deployment asks: an unconfigured host never
+        # rewrites a user's words. Applied to user/assistant text only, never
+        # to system prompts — the caller's instructions are contractual.
+        if getattr(self, "_pii_redact", False):
+            from persona.redact import redact_text
+            def _redact_content(content):
+                if isinstance(content, str):
+                    return redact_text(content)[0]
+                if isinstance(content, list):
+                    return [({**part, "text": redact_text(part["text"])[0]}
+                             if isinstance(part, dict) and isinstance(part.get("text"), str) else part)
+                            for part in content]
+                return content
+            user_message = _redact_content(user_message)
+            history = [{"role": m["role"], "content": _redact_content(m["content"])} for m in history]
         # Server-side default persona (brand file, business deployments): only
         # when the request carries no system message — an explicit system
         # message from the caller always wins.  Included before session-id

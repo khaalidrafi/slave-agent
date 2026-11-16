@@ -2549,6 +2549,13 @@ def save_config(
         config_path = get_config_path()
         _refuse_failed_read(config_path, config)
         config = _strip_managed_keys_for_save(config)
+        # One-way alias upgrade (board: slave_compat canonical): a config still
+        # carrying the upstream spelling is rewritten to the canonical key on
+        # the next save, so one spelling wins without breaking old files. An
+        # explicit canonical key is never overwritten by the alias.
+        if isinstance(config, dict) and "hermes_compat" in config and "slave_compat" not in config:
+            config = dict(config)
+            config["slave_compat"] = config.pop("hermes_compat")
 
         ensure_hermes_home()
         # Explicit user paths come from the RAW dict BEFORE normalisation (which may inject

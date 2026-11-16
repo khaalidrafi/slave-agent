@@ -106,6 +106,21 @@ from hermes_cli import __release_date__ as RELEASE_DATE
 from hermes_cli.version_info import get_version_info
 
 
+def _deployment_nameplate():
+    """(name, tagline) of the active deployment persona, or None.
+
+    Lazy and failure-tolerant on purpose: the banner prints at every CLI
+    start, so a missing/broken persona must degrade to the product's own
+    plate rather than take the process down. One JSON read is the whole cost.
+    """
+    try:
+        from persona import active_persona
+        from persona.render import persona_nameplate
+        return persona_nameplate(active_persona())
+    except Exception:
+        return None
+
+
 def _brand_wordmark() -> str:
     """The banner's nameplate, spelled from ``brand.py`` rather than drawn in pixels.
 
@@ -117,13 +132,18 @@ def _brand_wordmark() -> str:
 
     Art actually *designed* for this name belongs to the own-mark task in FORK.org
     (icon / caduceus), where it can be judged as design instead of as code.
+
+    A deployment persona replaces the plate at runtime (specs/013 req. 2): the
+    product's mark stays generator-owned, the deployment identity is runtime
+    config. Two tiers, two laws, one nameplate slot.
     """
-    inner = f"{brand.PRODUCT} — {brand.TAGLINE}"
+    name, tagline = _deployment_nameplate() or (brand.PRODUCT, brand.TAGLINE)
+    inner = f"{name} — {tagline}"
     rule = "═" * (len(inner) + 2)
     return (
         f"[bold #FFD700]╔{rule}╗[/]\n"
-        f"[bold #FFD700]║[/] [bold #FFBF00]{brand.PRODUCT}[/]"
-        f"[#CD7F32] — [/][#FFD700]{brand.TAGLINE}[/] [bold #CD7F32]║[/]\n"
+        f"[bold #FFD700]║[/] [bold #FFBF00]{name}[/]"
+        f"[#CD7F32] — [/][#FFD700]{tagline}[/] [bold #CD7F32]║[/]\n"
         f"[bold #CD7F32]╚{rule}╝[/]"
     )
 

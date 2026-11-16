@@ -23,6 +23,12 @@ CLI: str = "slave"                   # primary console command
 # occurrence in ~10k files — the source of truth has to be the generator's answer.
 # Pinned by tests/scripts/test_rebrand_brand_agreement.py.
 HOME_ENV: str = "SLAVE_HOME"         # preferred override for the state dir
+# The state dir name this product used before it was this product (upstream's).
+# Lives HERE because brand.py is the one file the rebrand generator never
+# rewrites (SELF_PATHS): a literal legacy name in any other module would be
+# renamed on the branded branch and point at the NEW directory, defeating
+# ``migrate-state`` and the read-fallback in hermes_constants.
+LEGACY_STATE_DIR: str = ".hermes"
 UPSTREAM: str = "NousResearch/hermes-agent"
 TAGLINE: str = "the agent that learns its master"
 
@@ -35,5 +41,5 @@ PITCH: str = (
 
 __all__ = [
     "PRODUCT", "SLUG", "MODULE", "CLI",
-    "HOME_ENV", "UPSTREAM", "TAGLINE", "PITCH",
+    "HOME_ENV", "LEGACY_STATE_DIR", "UPSTREAM", "TAGLINE", "PITCH",
 ]

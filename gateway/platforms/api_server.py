@@ -1232,6 +1232,18 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         from gateway.platforms.api_server_brand import load_brand_prompt
         self._brand_default_prompt: str = load_brand_prompt(
             extra.get("brand_file", os.getenv("API_SERVER_BRAND_FILE", "")))
+        # PII redaction at this adapter's prompt boundary (persona
+        # integration.pii_redact wins; the extra is the host-level default).
+        # Reads the ACTIVE persona lazily so a runtime `persona activate`
+        # applies without a restart — same artifact, same law as the banner.
+        self._pii_redact: bool = bool(extra.get("pii_redact", False))
+        if not self._pii_redact:
+            try:
+                from persona import active_persona
+                data = active_persona()
+                self._pii_redact = bool((data or {}).get("integration", {}).get("pii_redact", False))
+            except Exception:
+                pass
         # alias (client "model") -> {model, provider?, api_key? (UPSTREAM, never logged), base_url?}
         self._model_routes: Dict[str, Dict[str, Any]] = self._parse_model_routes(extra.get("model_routes"))
         # Opt-in bare ``model`` passthrough on OpenAI-compatible surfaces (generic clients

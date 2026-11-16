@@ -54,8 +54,24 @@ def _get_platform_default_hermes_home() -> Path:
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / ("hermes" + suffix)
-    return Path.home() / (".hermes" + suffix)
+        default = base / ("hermes" + suffix)
+    else:
+        default = Path.home() / (".hermes" + suffix)
+    # Read-fallback for a renamed product (board: slave_compat row): when this
+    # build's default state dir does not exist but the legacy-named one does,
+    # keep reading the data the user already has. The legacy NAME lives in
+    # brand.py — the one module the rebrand generator never rewrites — because
+    # a literal here would be renamed on a rebranded build and point at the
+    # new directory, defeating the fallback. One-shot `migrate-state` moves it.
+    if suffix or not default.exists():
+        try:
+            import brand
+            legacy = default.parent / (brand.LEGACY_STATE_DIR + suffix)
+            if legacy.exists() and legacy != default:
+                return legacy
+        except Exception:  # brand is a root module; a stripped install just skips the fallback
+            pass
+    return default
 
 
 def sudo_invoker_default_home() -> Path | None:
