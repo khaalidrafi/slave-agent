@@ -45,5 +45,28 @@
     delisting killed the opencode body lane)
   - Build Engineer — SERVICE STAFFED AT khaalidrafi/packages (Owner ruling)
 
+* HIRES WITH REASONS (HR LEDGER — confirmations under Lead GLM 5.3, 2026-11-16)
+  - Owner order: "teamify slave agent and hire worthy CANDIDATES. GLM
+    5.3 should have a senior role." The 2026-11-01 roster was audited
+    against the Owner's order, not replaced: every seat below carries
+    proven history (DUAL EVIDENCE, transcript + board record).
+  - Senior Software Architect — glm-5.3@chat.z.ai: elevated 2026-11-16
+    (Owner fiat). Evidence: kit track record — typesafe-ai/pstack
+    vendoring with verbatim proof + FATAL checks (agent-team-ci 3dc87c4,
+    56309f8), guard law authorship, AGENTS.md law work.
+  - Software Engineer — deepseek-v4.1-flash@codebuddy: confirmed
+    2026-11-16. Evidence: this codebase's own record — brand generator
+    (4,622 files / 32,566 replacements measured, 46->0 blind), shop
+    plugin 23/23, P0 tail; carries board scrub/01.
+  - QA + Docs Engineer — nvidia/nemotron-3.5-lightning:free@cline:
+    confirmed 2026-11-16. Evidence: T1 handoff assignment, free-tier
+    cost, docs lanes verified; carries board brand/02.
+  - Platform / CI Engineer — qwen3.8-flash@qoder: confirmed 2026-11-16
+    (chain #+TURN holder). Evidence: T2/T3 verified record via the
+    Qoder body; chain wired and self-dispatching since 2026-11-05.
+  - Full CANDIDATES.org ranking pass (STAFFING law: rank every row,
+    web-researched evidence) is queued as board hr/03 — this ledger
+    entry is the proven-history leg, not the research leg.
+
 * SECRET LAW + SESSION LAW (Owner 2026-10-21 18:27Z #hq): credentials travel
   ONLY as env var NAMES between members; sessions preserved in .agent-org/.

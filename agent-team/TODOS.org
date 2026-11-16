@@ -3,6 +3,22 @@
 
 * Board
 
+** TODO hr/03 — full CANDIDATES.org ranking pass under this Lead
+   :PROPERTIES:
+   :EFFORT: M
+   :DEADLINE: <2026-11-23>
+   :END:
+   - ROLE: Platform / CI Engineer — qwen3.8-flash@qoder
+   - Owner order 2026-11-16: "hire worthy CANDIDATES." The 2026-11-01
+     roster was confirmed on proven history (MEMBERS HR ledger,
+     2026-11-16); this item runs the STAFFING law's research leg:
+     rank every row of agent-team/CANDIDATES.org with web-researched
+     evidence (batched searches, LMArena / Artificial Analysis /
+     hands-on reviews, dates cited), record LIMITS per row, compute
+     the roster diff against GET /v1/models, and post the resulting
+     hire/release proposals to the Owner per CONSULT LAW before any
+     activation. ADD-FREEZE holds: no new rows without the Owner.
+
 ** TODO scrub/01 — customer-brand out of CODE surfaces (naming-ban tail)
    :PROPERTIES:
    :EFFORT: S
