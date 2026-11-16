@@ -1,8 +1,8 @@
 {
   "core_dependencies": 45,
-  "core_python_files": 1585,
-  "core_python_lines": 656576,
-  "gateway_platform_adapters": 42,
-  "in_tree_plugin_dirs": 19,
+  "core_python_files": 1590,
+  "core_python_lines": 656964,
+  "gateway_platform_adapters": 43,
+  "in_tree_plugin_dirs": 21,
   "tool_files": 342
 }
