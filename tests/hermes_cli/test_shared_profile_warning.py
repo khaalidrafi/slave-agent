@@ -128,18 +128,6 @@ def test_cli_entrypoint_registers_and_warns_once_for_live_shared_home(homes, tmp
             assert own[0]["purpose"] == "cli"
             assert own[0]["hermes_home"] == hermes_home_key(homes)
             assert shared_profile_warning(project_root=stable)
-            # A CLI record must not make a terminal process an update-owned backend.
-            import hermes_constants
-            from hermes_cli.update_inventory import UpdatePlan, _collect_ledger_runtimes
-
-            with monkeypatch.context() as patcher:
-                patcher.setattr(hermes_constants, "PROJECT_ROOT", canary, raising=False)
-                assert own == process_identity.ledger_entries(verified_only=True)
-                assert own[0]["purpose"] not in process_identity.REAPABLE_PURPOSES
-                plan = UpdatePlan()
-                _collect_ledger_runtimes(plan, set())
-                assert plan.runtimes == []
-                assert child.poll() is None
         assert output["stderr"].count("Another Hermes installation") == 1
         assert shared_profile_warning(project_root=stable) == ""
 

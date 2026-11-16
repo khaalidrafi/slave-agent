@@ -45,7 +45,7 @@ def _at(raw: dict, dotted: str):
 def test_update_keeps_user_values_of_an_unversioned_config_and_migrates_legacy_keys(hermes_home):
     from hermes_cli.config import DEFAULT_CONFIG, set_config_value
     from hermes_cli.personality import persist_personality
-    from hermes_cli.update_cmd import _check_and_apply_config_migration
+    from hermes_cli.install_maint import _check_and_apply_config_migration
 
     # Seeded before the template carried a stamp; early-2026 templates shipped this retired key.
     (hermes_home / "config.yaml").write_text(

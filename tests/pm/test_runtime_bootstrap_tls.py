@@ -149,7 +149,7 @@ sys.path.insert(0, sys.argv.pop(1))
 sys.argv[0] = script
 # Register only the fixture package; the real entrypoint owns TLS activation.
 module = runpy.run_path(script, run_name='tls_entrypoint_test')
-import pm.tls_fixture
+import pm.tls_fixture  # kernel-floor: fixture-created module
 raise SystemExit(module['main']())
 """
     env = runtime_environment()

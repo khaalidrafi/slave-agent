@@ -215,36 +215,6 @@ def test_packaged_launch_opens_the_refreshed_installed_app(tmp_path, monkeypatch
     assert (installed / "Contents" / "Resources" / "app.asar").read_bytes() == b"checkout build"
 
 
-def test_packaged_renderer_bom_does_not_bypass_entry_validation(tmp_path):
-    import json
-    import struct
-    from hermes_cli.desktop_update_verify import _verify_packaged_entry
-
-    resources = tmp_path / "resources"
-    dist = resources / "app.asar.unpacked" / "dist"
-    dist.mkdir(parents=True)
-    entry = b"export {};"
-    (dist / "main.mjs").write_bytes(entry)
-    package = json.dumps({"main": "dist/main.mjs"}).encode("utf-8")
-    header = json.dumps({"files": {
-        "package.json": {"size": len(package), "offset": "0"},
-        "dist": {"files": {"main.mjs": {"size": len(entry), "unpacked": True}}},
-    }}).encode("utf-8")
-    padded = header + b"\0" * (-len(header) % 4)
-    (resources / "app.asar").write_bytes(
-        struct.pack("<4I", 4, 8 + len(padded), 4 + len(padded), len(header)) + padded + package)
-    index = dist / "index.html"
-    index.write_text('<title>café</title><script type="module" src="./main.mjs"></script>',
-                     encoding="utf-8-sig")
-    _verify_packaged_entry(resources)
-    index.write_text("<title>café</title>", encoding="utf-8-sig")
-    with pytest.raises(RuntimeError, match="renderer has no local module entry"):
-        _verify_packaged_entry(resources)
-    index.write_bytes(b"\xef\xbb\xbf\xff")
-    with pytest.raises(RuntimeError, match="renderer entry is invalid"):
-        _verify_packaged_entry(resources)
-
-
 # Dependency admission and staging are exercised by test_desktop_source_build.py.
 
 

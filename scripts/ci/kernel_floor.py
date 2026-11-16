@@ -53,6 +53,18 @@ _DYNAMIC_RE = re.compile(
     r"""(?:import_module|__import__|importlib\.import_module)\s*\(\s*[f]?["']([A-Za-z_][\w.]*)["']"""
 )
 
+# Dynamic imports that are optional by design: the target is a renderer the lean
+# install legitimately omits, and the caller falls back when it is absent
+# (tui_gateway/render.py documents the contract). A missing optional module is a
+# supported configuration, not a dangling reference.
+OPTIONAL_DYNAMIC_IMPORTS = {"agent.rich_output"}
+
+# Line-level opt-out for imports inside fixture strings: the module is written by
+# the test itself into a temporary repo, so it resolves at run time and only this
+# static scan is blind to it. Greppable, so a marker hiding a real dangling import
+# is visible in review.
+_FIXTURE_IMPORT_MARKER = "kernel-floor: fixture-created module"
+
 
 @dataclass(frozen=True)
 class DanglingImport:
@@ -136,6 +148,8 @@ def find_dangling_imports(files: list[str], exists: set[str], read) -> list[Dang
         if not path.endswith(".py"):
             continue
         for lineno, line in enumerate(read(path).splitlines(), start=1):
+            if _FIXTURE_IMPORT_MARKER in line:
+                continue
             match = _FROM_RE.match(line) or _IMPORT_RE.match(line)
             module, kind = (match.group(1), "static") if match else (None, None)
             if module is None:
@@ -144,8 +158,12 @@ def find_dangling_imports(files: list[str], exists: set[str], read) -> list[Dang
                 if not dynamic or "{" in dynamic.group(1):
                     continue
                 module, kind = dynamic.group(1), "dynamic"
+            if module.endswith("."):
+                continue  # truncated by an f-string interpolation (`import cron.{store}`): not a name
             if module.split(".")[0] not in tops:
                 continue  # stdlib or third-party: not ours to resolve
+            if module in OPTIONAL_DYNAMIC_IMPORTS:
+                continue
             if not resolves(module, exists, dirs):
                 findings.append(DanglingImport(path, lineno, module, kind))
     return findings

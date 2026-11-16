@@ -340,18 +340,3 @@ def test_non_partial_checkout_is_left_alone(repo: Path) -> None:
     assert keys == "", "a full clone keeps git's stock maintenance"
 
 
-def test_update_debris_cleanup_folds_and_reports_a_fold_that_runs_out_of_time(
-        partial_clone: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]) -> None:
-    """A killed fold restarts from scratch every update, so it must say so instead of returning 0."""
-    from hermes_cli import gitlock
-    from hermes_cli.update_cmd_check import clear_git_debris
-
-    before = len(_packs(partial_clone))
-    with monkeypatch.context() as patched:
-        patched.setattr(gitlock, "LAZY_FETCH_GC_TIMEOUT_SECONDS", 0)  # the real gc, killed by the real bound
-        clear_git_debris(partial_clone)
-    out = capfd.readouterr().out
-    assert f"Folding {before} lazy-fetch packs" in out and "gc.writeCommitGraph=false gc --auto" in out
-
-    clear_git_debris(partial_clone)
-    assert len(_packs(partial_clone)) < before

@@ -106,10 +106,17 @@ class TestCustomProviderBaseUrlPassthrough:
 
     def test_custom_passes_base_url(self):
         """CustomProfile.fetch_models passes base_url to super()."""
+        import model_tools  # noqa: F401 — triggers discovery
+        import providers
+
         server, port = _start_server([{"id": "ollama-model"}])
         try:
-            from plugins.model_providers.custom import CustomProfile
-            profile = CustomProfile(
+            # The plugin tree is a hyphenated directory loaded by discovery, so
+            # the class is reached through the registry — a direct module import
+            # path cannot spell it and never could.
+            registered = providers.get_provider_profile("custom")
+            assert registered is not None, "custom provider profile must be registered"
+            profile = type(registered)(
                 name="custom",
                 base_url="http://127.0.0.1:1",  # wrong port
             )

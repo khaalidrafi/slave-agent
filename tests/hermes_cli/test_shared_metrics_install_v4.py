@@ -246,7 +246,7 @@ def test_version_age_unknown_without_a_commit_date(monkeypatch):
 
 
 def _write_update_cache(home, root, *, behind, head, ts):
-    from hermes_cli.update_channel import install_id
+    from hermes_cli.process_identity import install_id
 
     path = home / "source-checks" / f"{install_id(root)}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -296,7 +296,7 @@ def test_source_checkout_channel_follows_its_branch_never_its_remote(tmp_path, m
 
 @pytest.mark.parametrize(("tag", "channel"), [("v0.13.0", "stable"), ("v0.13.0+canary.20260927T120000Z", "main")])
 def test_packaged_build_channel_is_its_baked_channel_not_its_branch(tmp_path, monkeypatch, tag, channel):
-    from hermes_cli.update_channel import is_canary_tag
+    from hermes_cli.release_channels import is_canary_tag
 
     if channel == "main":
         assert is_canary_tag(tag)

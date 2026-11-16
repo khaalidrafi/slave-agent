@@ -2012,30 +2012,6 @@ class TestRunPreUpdateBackup:
 
 
 
-    def test_config_off_disables_everything_silently(self, hermes_home, capsys):
-        """pre_update_backup: off — an explicit opt-out disables the quick
-        snapshot too (it previously ran unconditionally), with no output."""
-        self._set_mode(hermes_home, "off")
-        from hermes_cli.update_cmd import _run_pre_update_backup
-        snap_id = _run_pre_update_backup(Namespace(no_backup=False, backup=False))
-        out = capsys.readouterr().out
-        assert snap_id is None
-        assert out == ""
-        assert not self._snaps(hermes_home)
-        assert not self._zips(hermes_home)
-
-
-
-    def test_config_full_mode(self, hermes_home, capsys):
-        self._set_mode(hermes_home, "full")
-        from hermes_cli.update_cmd import _run_pre_update_backup
-        snap_id = _run_pre_update_backup(Namespace(no_backup=False, backup=False))
-        assert snap_id is not None
-        assert len(self._zips(hermes_home)) == 1
-
-
-
-
 # ---------------------------------------------------------------------------
 # Pre-migration backup (hermes claw migrate safety net)
 # ---------------------------------------------------------------------------

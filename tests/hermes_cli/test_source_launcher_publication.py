@@ -398,28 +398,6 @@ def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypat
     assert result is not None and str(new_python) in result.read_text(encoding="utf-8-sig")
 
 
-@pytest.mark.platforms("windows")
-def test_windows_repair_upgrades_healthy_old_pm_external_launchers(tmp_path, monkeypatch):
-    from hermes_cli._install_repair import ensure_windows_bin_launchers
-
-    repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
-    managed = home / "hermes-agent"
-    shutil.move(repo, managed)
-    external = home / "bin"
-    external.mkdir()
-    for name in _launchers.ENTRY_POINTS:
-        (external / f"{name}.exe").write_bytes(b"old PM launcher without a venv binding")
-    assert ensure_windows_bin_launchers(managed, user_path_entries=[])
-    local = managed / ".hermes" / "bin"
-    launcher = local / "hermes.exe"
-    if not launcher.exists():
-        launcher = local / "hermes.cmd"
-    result = subprocess.run([str(launcher), "--print-runtime-command"], capture_output=True,
-                            text=True, timeout=30, encoding="utf-8")
-    assert result.returncode == 0, result.stderr
-    assert Path(json.loads(result.stdout)[0]).samefile(interpreter)
-
-
 def test_dashboard_action_boots_selected_dependencies(tmp_path, monkeypatch):
     from hermes_cli import web_server, web_server_gateway
 

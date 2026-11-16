@@ -59,10 +59,13 @@ class TestCommandCodeReasoningWireControls:
         assert top_level == {}
 
     def test_deepseek_effort_matches_native_profile_and_others_noop(self, commandcode_profile):
-        from plugins.model_providers.deepseek import deepseek
+        import model_tools  # noqa: F401 — triggers discovery
+        import providers
 
+        native = providers.get_provider_profile("deepseek")
+        assert native is not None, "deepseek provider profile must be registered"
         rc = {"enabled": True, "effort": "low"}
-        expected = deepseek.build_api_kwargs_extras(reasoning_config=rc, model="deepseek-v4.1-flash")
+        expected = native.build_api_kwargs_extras(reasoning_config=rc, model="deepseek-v4.1-flash")
         assert expected[1].get("reasoning_effort") == "low"  # equality below must not be ({}, {}) == ({}, {})
         assert commandcode_profile.build_api_kwargs_extras(
             reasoning_config=rc, model="deepseek/deepseek-v4.1-flash"

@@ -53,7 +53,7 @@ def test_dropped_public_names_methods_and_test_defs_are_reported_and_moves_are_n
     # non-source module (ignored).
     (repo / "agent" / "mod.py").write_text(textwrap.dedent('''
         import os
-        from agent.moved import relocated  # re-export
+        from agent.moved import relocated  # re-export  # kernel-floor: fixture-created module
 
         LIMIT = 3
         def keep(): ...
