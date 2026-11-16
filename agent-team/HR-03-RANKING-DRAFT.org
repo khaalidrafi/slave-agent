@@ -1,0 +1,169 @@
+#+TITLE: HR-03-RANKING-DRAFT.org, model-candidates ranking pass, full CANDIDATES sweep
+#+DISPATCH: hr/03, assigned to GLM 5.3 Lead, 2026-11-17
+#+AUTHORITY: agent-team/CANDIDATES.org (umbrella inventory, laws in header) +
+#+           slave-agent/agent-team/MEMBERS.org roster (2026-11-16 ledger)
+#+SCOPE: RESEARCH ONLY. One report file. Nothing else changed. No commits.
+#+LAWS-APPLIED: BURN-LAW (every minimax-m3.1-flash API and gateway lane is
+#+        persona non grata, no hire, no probe, no fallback; noted as burned
+#+        only). EXPIRY-LAW (every row carries free-tier expiry when dated;
+#+        undated free tiers carry cap and rotation risk, never treated as
+#+        unlimited). OWNER-KEYS standing order (only lanes with Owner keys
+#+        on file are ranked; no unregistered platform is recommended).
+
+* METHOD
+
+- Date of all live fetches and searches below is 2026-11-17 unless a row
+  states an older date.
+- Three live public catalogs were probed without keys.
+  1. https://openrouter.ai/api/v1/models (469 ids, full pricing and context)
+  2. https://api.cline.bot/api/v1/models (454 ids, 15 free-tagged)
+  3. https://opencode.ai/zen/v1/models (87 ids, 12 free-tagged)
+- Primary docs were fetched directly. Google, Cloudflare, Ollama, Z.ai,
+  DeepSeek, Experiential Labs, Token Harbor, Thinking Machines, TypeSafe,
+  Devin, Gemini CLI, OpenRouter limits and cookbook pages. URLs and dates
+  sit in each row.
+- Artificial Analysis model pages were fetched and parsed for the
+  intelligenceIndex field per model slug.
+- Batched web searches ran through Bing (several rounds of 5 queries).
+  Bing returned noise for most niche model names. The hits that mattered
+  are the Z.ai coding plan pages and the GLM-5.3 doc page. Empty rounds
+  are recorded as empty, not hidden.
+- AA drift warning from CANDIDATES.org still binds. AA publishes moving
+  numbers. Every AA value below states its fetch date. Older values from
+  the 2026-10-20 batches are quoted as historical where they disagree.
+- No lane API key is present in this seat's environment. Keyed live probes
+  were impossible. Public endpoints and docs carry the evidence.
+
+* RANKING TABLE
+
+Tier scale. S = top quality agentic. A = strong. B = usable for cheap
+lanes. C = fallback only. DEAD = lane removed upstream. BURNED = persona
+non grata per BURN-LAW, never ranked, never probed.
+
+| id | tier | evidence summary | sources (date) | limits | free tier + expiry |
+|---|---|---|---|---|---|
+| zai glm-5.3 (web, chat.z.ai) | S | Owner-mandated Architect brain. AA 31.65 on model page now vs 60 recorded 2026-10-20. GDPval-AA 1769 and TB4 41.8 best open weight, both recorded 2026-10-21. Vendor doc says same base model as GLM-5.2 with post-training gains. | artificialanalysis.ai/models/glm-5-3 (2026-11-17); CANDIDATES batch 1 + benchmark snapshot (2026-10-20, 2026-10-21); docs.z.ai GLM-5.3 page via Bing (2026-11-17) | 1M ctx on OpenRouter row. CUSTOM licence, not MIT. Web seat is hands-on only, no CI lane. | Web chat free, undated, caps undocumented, ToS bans account sharing. GLM Coding Plan Lite USD 18/mo, 2000 credits per 5h, 10000 weekly (docs.z.ai/devpack/overview, 2026-11-17). |
+| antling Ling-3.1-flash + ling-3.2-flash:free | S | Strongest proven free coding brains in the pool. 19/19 on the hidden-ERT ELisp battery, real headless agent turn proven 2026-10-31. Ling 3.1 Flash 1019 AA 29.57. Ling 3.2 Flash is the new free OpenRouter lane, listed 2026-11-13, 1M ctx, hybrid reasoning, text plus image. | CANDIDATES batch 6 (2026-10-31); artificialanalysis.ai/models/ling-3-1-flash (2026-11-17); openrouter.ai/api/v1/models (2026-11-17, listed 2026-11-13) | antling direct lane has an undated daily grant, reasoning ids burn max_tokens. OpenRouter free lane capped at lane level, see openrouter row. Ling 3.2 has no independent benchmark yet, 4 days old. | antling undated daily grant, burn-verified 2026-10-24, 13 ids live 2026-10-31. ling-3.2-flash:free undated, capacity-capped class. |
+| openrouter :free lane (14 live ids) | A | Free-lane workhorse. Live census 2026-11-17 counts 14 :free ids. New since the 2026-11-01 census are ling-3.2-flash:free, inkling-2-small:free, baidu ernie-5.5-flash-preview:free, particle-1:free, liquid lfm-3-1.7b:free. Gone are poolside x2, inkling-small, nemotron-3-super-120b, qwen3.8-27b:free, xing4.0, ling-3.1-flash-1019-free, auto:free. | openrouter.ai/api/v1/models (2026-11-17); openrouter.ai/docs/api-reference/limits (2026-11-17) | 20 RPM hard. 50 requests/day under USD 10 lifetime credits, 1000 requests/day at USD 10 or more. Page JS constants confirm 20 RPM, 50 RPD, 1000 RPD, USD 10 threshold. | Undated lane, capacity-based, models rotate on and off. Rotation risk proven twice, poolside 2026-10-31 and the 1019-free id before 2026-11-17. |
+| zai glm-5.3-flash (API, zen free, web) | A | Lead relay brain class. MIT, 320B-A18B. TB 84.3 and DeepSWE 63.4 recorded 2026-10-20. AA drifted 57 to 42 to 27.8 across 2026-10-20 to 2026-11-17. OpenRouter price fell to USD 0.04 in / 0.078 out. Zen free lane alive with a zero-retention provider. | CANDIDATES batch 1 (2026-10-20); artificialanalysis.ai/models/glm-5-3-flash (2026-11-17); openrouter.ai/api/v1/models (2026-11-17); opencode.ai/docs/zen (2026-11-17) | 1M ctx. Web tier caps undocumented, ToS bans account sharing, agentic features gated to the paid coding plan. | Web free undated. Zen -free id "limited time" per docs. API paid, cheap. |
+| thinkingmachines inkling-2-small:free | A | New generation, free on three catalogs. AA 30.63 vs 12.91 for the old inkling-small. 594B total, 17B active, open weights. Thinking Machines front page announces "Introducing Inkling 2 Small". | artificialanalysis.ai/models/inkling-2-small (2026-11-17); openrouter.ai/api/v1/models (listed 2026-11-09); thinkingmachines.ai (2026-11-17); opencode.ai/zen/v1/models (2026-11-17); api.cline.bot/api/v1/models (2026-11-17) | 1M ctx. No hands-on trial here yet. Zen privacy note says free-period data is retained and may train, unlike GLM-5.3-Flash Free and DeepSeek V4.1 Flash Free. | Undated free on OpenRouter, zen and cline. Rotation risk medium, the old inkling-small:free already vanished from OpenRouter. |
+| deepseek-v4.1-flash (codebuddy seat, deepseek API) | A | Proven internally, 4622 files and 32566 replacements measured, shop plugin 23/23. AA for the 1017 build is 32.59. Official docs retired the v4-flash names and serve everything from V4.1-Flash-1017 at flash price. | slave-agent MEMBERS.org ledger (2026-11-16); artificialanalysis.ai/models/deepseek-v4-1-flash (2026-11-17, 1017 variant 32.59, base null); api-docs.deepseek.com/quick_start/pricing (2026-11-17) | 1M ctx, 384K max output. Off-peak USD 0.15 in / 0.60 out, peak 0.30 / 1.20, cache hit 0.003. Concurrency 2500. | codebuddy free offer undated, none published. DeepSeek API has no free tier now, 5M signup tokens were a tracker note from 2026-10-21, not re-verified. |
+| reflection beam (beam-1.0-501b-a23b, beam-free on zen) | A | Open-weight reasoning model for coding and long-horizon agentic work, 501B-A23B. Vendor TB2.1 80.1 and SWE-V 80.9 recorded 2026-10-05. AA for Beam 1.0 is 17.73 now vs 30 recorded mid-October. On OpenRouter paid since 2026-10-16, USD 0.30 in / 1.00 out. beam-free lives on zen. | openrouter.ai/api/v1/models (2026-11-17, listed 2026-10-16); artificialanalysis.ai/models/reflection-beam (2026-11-17); CANDIDATES batch 4 (2026-10-20); opencode.ai/zen/v1/models (2026-11-17) | 1M ctx on OpenRouter row. Zen beam-free is client-only. Apache-2.0 was promised, weights situation still thin on independent evidence. | beam-free on zen is "limited time", undated. OpenRouter row is paid. |
+| opencode zen free lane (12 -free ids) | A | Free fuel inside the OpenCode client. Live roster 2026-11-17 holds glm-5.3-flash-free, deepseek-v4.1-flash-free, beam-free, flint-40b-free, mimo-v2.6-flash-free, nemotron-3.5-lightning-free, nemotron-3.5-super-vl-free, plus new longcat-2.5-free, iceman-free, inkling-2-small-free, hy4-flash-free. jev-1.13-free is documented but served on the systemone decision endpoint. | opencode.ai/zen/v1/models (2026-11-17); opencode.ai/docs/zen (2026-11-17) | Client-only by design, docs state free-tier chat models require OpenCode, 403 measured from other clients on 2026-11-01. | "Free for a limited time" per model, dynamic by design, revocable without notice. Zen deprecation table already lists Crouton Alpha Free gone 2026-11-09 and Pulse Alpha Free gone 2026-11-06. |
+| groq lane (qwen3.8-27b, gpt-oss pair, guards) | B | Published caps, proven alive, CI-proven ert 7/7 in the banked record. Caps for qwen3.8-27b are 30 RPM, 1000 RPD, 8K TPM, 200K tokens/day. Live console page is 403-blocked from this seat, so the 2026-10-20 record stands as the cited number. | console.groq.com/docs/rate-limits (acc 2026-10-20, 403 on 2026-11-17); MEMBERS.org banked runner record (2026-10-28) | 200K tokens/day ceiling per free key. gpt-oss ids fall under the gpt name ban in the values filter. | Undated free tier with published per-model caps. Rotation risk low, caps are the limit, not dates. |
+| zai lane (glm-4.7-flash, glm-4.5-flash, glm-4.6v-flash) | B | Weakest seated brain, vendor SWE-V 59.2 and TB 14.4 recorded 2026-10-20. Proven alive through the gateway. GLM 4.7 is a deprecated generation on the OpenCode console, deprecation date 2026-03-15. z.ai 429s are real, the gateway retry budget absorbs them. | CANDIDATES batch 1 (2026-10-20); opencode.ai/docs/zen deprecation table (2026-11-17); MEMBERS.org zai retry note (2026-11-01) | 30B-A3B, MIT. Lane serves GLM-4.x only, no GLM-5.x. 429 flakiness on record. | Free API tier for GLM-4.7-Flash, no published cap, undated. |
+| qwen3.8-27b (groq seat, openrouter paid) | B | Open-weight dense vision-language model per the OpenRouter description, suited for coding, multimodal work and long-running agent tasks. AA 20.11. Banked CI record, parser fix PR fefd5a7. | openrouter.ai/api/v1/models (2026-11-17); artificialanalysis.ai/models/qwen3-8-27b (2026-11-17); MEMBERS.org banked record | 1024K ctx on OpenRouter. USD 0.15 in / 1.875 out paid. The :free variant on OpenRouter is gone. | Groq free lane undated with the caps above. OpenRouter free row dead. |
+| qwen3.8-flash (qoder seat) | B | No independent benchmark found. Two search rounds empty on 2026-10-20 and my 2026-11-17 rounds empty too. Internal record is strong, Lark binding, 163-id roster split, 15 secrets staged, parser fix 7/7 green. | CANDIDATES batch 3 (2026-10-20); Bing rounds (2026-11-17, empty) | No published context or caps for the model itself. Qoder site is a JS shell, no public docs retrieved. | Bundled free with the Qoder harness, undated. The earlier acting-term expiry around 2026-10-30 was renewed 2026-10-29 per MEMBERS.org. |
+| nvidia nemotron-3.5-lightning:free | B | QA-grade, stable free lane on three catalogs, OpenRouter, zen and cline, all live 2026-11-17. Vendor SWE-V 51.6 to 52.8, TB2.1 24.6. AA 5.53. Real quoted quota, USD 0 in / 0 out with a 65,536 max output token cap. | openrouter.ai/api/v1/models (2026-11-17); opencode.ai/zen/v1/models (2026-11-17); api.cline.bot/api/v1/models (2026-11-17); artificialanalysis.ai/models/nemotron-3-5-lightning (2026-11-17); datacamp.com via CANDIDATES batch 4 (2026-08-12) | 1M ctx on the OpenRouter row. 65,536 output cap. Small brain, 30B-A3B. | Undated, free on three independent catalogs, lowest rotation risk of any free row in this pass. |
+| xplabs lane (clef-flash, qwen3.8-27b, gpt-6-luna) | B | Free plan gives 1M tokens a day, 10 RPM, 250K TPM, shared across GPT-6 Luna, DeepSeek V4.1 Flash and the Clef decision endpoint. Card verification is required before the core models share the free limits, so the card_required block still stands. Flat-price gateway, 972 models, Pro 20, Max 200, Ultra 2000 USD per month. | experientiallabs.ai/pricing (2026-11-17); experientiallabs.ai (2026-11-17) | 10 RPM and 1M tokens/day on free. New accounts get 60 RPM and 1M TPM for non-core models. | Free USD 0/mo, undated, card-gated. gpt-6-luna is closed and name-banned for accountable seats by the values filter. |
+| typesafe/jev lane (jev-1.13.0, jev-latest) | B | Decision layer, not a chat model. OpenRouter now hosts typesafe/jev-router, listed 2026-09-25, and publishes SystemOne SDK docs plus cookbooks for auto-approving permission prompts and gating agent tool calls in OpenCode, Claude Code, Codex and Cursor. Gemini now ships a rival, Gemini Decision 1 on a Decisions API with a free tier of 200 RPM, 50K TPM, 10K RPD. | openrouter.ai/docs/llms.txt and cookbook pages (2026-11-17); openrouter.ai/api/v1/models (jev-router listed 2026-09-25); ai.google.dev/gemini-api/docs/rate-limits (2026-11-17); typesafe.ai (2026-11-17) | No public benchmark exists for a decision model. No pricing surfaced on typesafe.ai, the page is marketing only. jev-1.13-free on zen is "limited time" and rides the systemone endpoint. | Undated. Zen free variant is limited-time per docs. |
+| gemini lane (25 ids, flash family) | C | Free API tier exists for gemini-3.8-flash, input and output free of charge, with data used for product improvement on the free tier. Paid price is USD 0.75 in / 3.75 out through 2026-12-31, then doubles on 2027-01-01. Gemini 4 family now exists, Carbon, Argon, Hydrogen. Closed weights, values-excluded from accountable seats. | ai.google.dev/gemini-api/docs/pricing (2026-11-17); ai.google.dev/gemini-api/docs/rate-limits (2026-11-17); geminicli.com/docs/resources/quota-and-pricing (2026-11-17); llmfisher config id list (2026-11-01) | Static per-model free-tier RPM tables are gone from the docs, AI Studio holds the live numbers. Gemini CLI gives 1000 requests/day with Google login and 250/day with an unpaid API key. | Undated free tier. Dated price step 2027-01-01 on the paid side. Probe and intel lane only under the values filter. |
+| cloudflare Workers AI lane (35 ids) | C | 10,000 Neurons per day free, then USD 0.011 per 1000 Neurons, reset daily at 00:00 UTC. Page updated 2026-11-12. Mostly values-excluded families, llama, gemma, gpt-oss. Has qwen3.8-27b, glm-4.7-flash and nemotron-3-120b. | developers.cloudflare.com/workers-ai/platform/pricing/ (fetched 2026-11-17, updated 2026-11-12); llmfisher config id list (2026-11-01) | Daily Neuron pool is shared and was exhausted once already on 2026-10-20. | Undated, daily cap, emergency only per the values filter. |
+| ollama-cloud lane (7 ids) | C | Pay-as-you-go at USD 0 base price, pay per token, 3 concurrent requests. Pro 20, Max 100 USD per month. No free token grant on the page. Serves beam, gemma4:31b, gpt-oss pair, nemotron tiers. | ollama.com/cloud (2026-11-17); llmfisher config id list (2026-11-01) | 3 concurrent requests on the free plan. Roster rotates per the character notes. | No free tier, paid lane. Fallback only. |
+| tokenharbor lane (4 free ids) | C | Promo relay. Free rows are deepseek-v4-flash:free, deepseek-v4.1-flash:free, mimo-v2.5:free, mimo-v2.6-flash:free, each using a rolling 7-day allowance then a rate-limit error, never billed. Site pushes an Agent Pass at USD 0.99 for the first month. deepseek-v4-flash is a retired name upstream, served by V4.1-Flash-1017. | tokenharbor.ai (fetched 2026-11-17, footer updated 2026-10-29); llmfisher config tokenharbor rows (sync 2026-11-01); api-docs.deepseek.com (2026-11-17) | Rolling 7-day allowance per free row. | Undated promo, can vanish, emergency only per the values filter. |
+| devin + SWE-2 (Cloud Agent, provisional) | C | Closed product, vendor-only evidence. One third-party review says good for the money but not on par with the frontier. Free tier verified USD 0 with a light quota, Pro 20, Max 200 USD per month. SWE-2 free window expires 2026-11-30, an Owner-confirmed date from 2026-10-29. | docs.devin.ai (2026-11-17); CANDIDATES.org devin row (pricing refresh 2026-10-29); catalins.tech review (2026-09-22, via CANDIDATES) | 1M ctx and explicit reasoning mode per vendor claims. Local ACP needs a browser login credential, not the API key. | Free tier undated. SWE-2 window DATED, expires 2026-11-30, 13 days from this dispatch. |
+| dots-3-note-preview:free | C | Vendor SWE-V 78.4, TB2.1 75.1, 280B-A16B. Still free on OpenRouter and cline, live 2026-11-17. Preview tag caveat stands. | openrouter.ai/api/v1/models (2026-11-17); api.cline.bot/api/v1/models (2026-11-17); CANDIDATES batch 4 (2026-10-20) | Preview model, retention terms not re-checked. | Undated free, rotation risk medium. |
+| recursive flint-v1.0:free | C | No data anywhere, again. Live on OpenRouter and cline 2026-11-17. 40B total, 2.5B active, built for coding agents by an autoresearch system. Intern class. | openrouter.ai/api/v1/models (2026-11-17); CANDIDATES no-data rule | 262K ctx on OpenRouter. | Undated free. |
+| cohere north-mini-code:free | C | QA only. AA 3.42. First agentic coding model from Cohere, 30B-A3B. | artificialanalysis.ai/models/north-mini-code (2026-11-17); openrouter.ai/api/v1/models (2026-11-17) | 256K ctx. Exact cap wording still not retrievable, recorded as such. | Undated free. |
+| openrouter/poolside/laguna-s-2.1:free (Principal Engineer seat) | DEAD | Lane dead. Poolside delisted from OpenRouter 2026-10-31. Live catalog 2026-11-17 holds zero poolside ids. The llmfisher config snapshot from 2026-11-01 still lists the id, that row is stale against the live catalog. | openrouter.ai/api/v1/models (2026-11-17); CANDIDATES batch 6 (2026-10-31); llmfisher config (sync 2026-11-01) | Seat body is dead until a live free lane reappears. Was TB2.1 70.2, SWE-Pro 59.4, DeepSWE 40.4. | Free lane ended 2026-10-31, confirmed still absent 2026-11-17. |
+| minimax-m3.1-flash, all API and gateway lanes | BURNED | Persona non grata per BURN-LAW 2026-10-24. No hire, no probe, no fallback. Noted only that a minimax-m3.1-flash-free id now sits on the zen roster and a paid id sits on OpenRouter. Both are barred by law. The mcode OAuth leg stays exempt per the 2026-10-24 17:11Z carve-out. | CANDIDATES.org BURN-LAW (2026-10-24); opencode.ai/zen/v1/models (2026-11-17); openrouter.ai/api/v1/models (2026-11-17) | Barred from probing, so no fresh limits are recorded by law. | The free-through-2026-10-25 promo is long dead. |
+
+* LIMITS PER ROW
+
+- zai glm-5.3. Context 1M on the OpenRouter row. CUSTOM licence blocks
+  accountable seats. Web seat has no CI lane. Coding Plan caps are the only
+  published agentic numbers, 2000 credits per 5 hours on Lite.
+- Ling family. antling direct lane is an undated daily grant with
+  max_tokens burn on reasoning ids. The OpenRouter free lane is 20 RPM and
+  50 or 1000 RPD by credit history. Ling 3.2 has no independent benchmark
+  and no AA page yet, AA slug 404 on 2026-11-17.
+- openrouter :free lane. 20 RPM. 50 RPD under USD 10 lifetime, 1000 RPD at
+  USD 10 plus. Rotation is proven, two delist waves inside four weeks.
+- glm-5.3-flash. 1M ctx. AA index has moved 57 to 42 to 27.8 in a month,
+  treat any single AA number as a snapshot. Zen free is "limited time".
+- inkling-2-small:free. 1M ctx. Free-period data is retained and may train
+  on the zen lane. Old generation already rotated off OpenRouter.
+- deepseek-v4.1-flash. 1M ctx, 384K max output. Peak hours double the
+  price. Legacy names retired.
+- reflection beam. 1M ctx paid row. Zen beam-free is client-only. Zen
+  privacy note says prompts may train the provider.
+- opencode zen. Client-only, 403 from other clients. Deprecation table
+  shows free ids dying weekly, Crouton 2026-11-09, Pulse 2026-11-06.
+- groq. 30 RPM, 1000 RPD, 8K TPM, 200K tokens/day for qwen3.8-27b. Sized
+  for CI probes, not for an unattended primary.
+- zai GLM-4.x lane. 429 flakiness on record. Generation deprecated on the
+  OpenCode console since 2026-03-15. No GLM-5.x on this lane.
+- qwen3.8-27b. Paid at USD 0.15 in / 1.875 out on OpenRouter, free row
+  gone. Groq free caps are the usable lane.
+- qwen3.8-flash. No published limits found anywhere. Externally
+  intern-grade, internally proven.
+- nemotron-3.5-lightning. 65,536 output token cap. 1M ctx. Small brain.
+- xplabs. 10 RPM, 250K TPM, 1M tokens/day, card verification required for
+  the core models.
+- typesafe/jev. Decision endpoint, not chat. No benchmark class exists.
+  No public pricing found.
+- gemini. Free tier trains on your data. Static rate tables removed from
+  docs. CLI gives 1000 or 250 requests/day by auth type. Paid price doubles
+  on 2027-01-01.
+- cloudflare. 10,000 Neurons/day shared, resets 00:00 UTC, exhausts.
+- ollama-cloud. 3 concurrent requests, pay per token, no free grant.
+- tokenharbor. Rolling 7-day allowance per free row, promo class.
+- devin SWE-2. Free window ends 2026-11-30. Local ACP honors only a
+  browser-login credential file.
+- poolside laguna. Lane dead, nothing to limit.
+- minimax-m3.1-flash. Barred from probing by law.
+
+* HIRE AND RELEASE PROPOSAL, slave-agent roster
+
+1. RELEASE openrouter/poolside/laguna-s-2.1:free@opencode from Principal
+   Engineer. The brain lane has been dead since 2026-10-31 and the live
+   catalog confirms zero poolside ids on 2026-11-17.
+2. HIRE openrouter/inclusionai/ling-3.2-flash:free@opencode as Principal
+   Engineer, after the 15/19 ELisp battery per the capability law. It is
+   the newest free Ling lane, 1M ctx, listed 2026-11-13, and it rides an
+   OpenRouter lane independent of the antling direct key.
+3. HIRE thinkingmachines/inkling-2-small:free@opencode as an intern with
+   the same battery, then seat it as the vision and fallback lane. AA
+   30.63, open weights, free on three catalogs, retention terms are the
+   one caveat.
+4. REPLACE the QA Engineer brain zai/glm-4.7-flash@opencode with the zen
+   lane glm-5.3-flash-free@opencode and demote glm-4.7-flash to fallback.
+   The body is already opencode so the client-only law is satisfied, the
+   provider is zero-retention, and the move drops the z.ai 429 dependence
+   and a generation that OpenCode deprecated on 2026-03-15.
+5. KEEP glm-5.3@chat.z.ai as Senior Software Architect. Owner fiat
+   2026-11-16 and the top brain on record.
+6. KEEP antling/Ling-3.1-flash@opencode as Port Engineer. 19/19 on the
+   ELisp battery plus a proven headless agent turn.
+7. KEEP nvidia/nemotron-3.5-lightning:free@cline as QA and Docs. Free on
+   three catalogs on 2026-11-17, the most rotation-proof free row found.
+8. KEEP deepseek-v4.1-flash@codebuddy as Software Engineer. The undated
+   free offer stays on record with the fallback chain standing.
+9. KEEP groq/qwen3.8-27b@goose as Release Engineer. Published caps and a
+   banked green CI record.
+10. KEEP qwen3.8-flash@qoder as Platform and CI Engineer. No external
+    evidence exists after three rounds, the internal record carries the
+    seat, intern label externally.
+11. DECIDE on devin before 2026-11-30. The SWE-2 free window expires that
+    day. Either the Owner seals the browser login and the probe runs, or
+    the provisional seat lapses and drops off the next ranking.
+
+* ROSTER-DIFF STATUS
+
+BLOCKED. GOMODEL_MASTER_KEY is not present in this seat. The live gateway
+roster diff was skipped per the dispatch.
+
+Gateway facts on record. llmfisher/config/config.yaml is titled "GoModel
+config.yaml" and its last sync stamp is 2026-11-01, but it carries no
+gateway base URL, only direct provider base URLs. The gateway URLs known
+from CANDIDATES.org are https://ai.khalidrafi.tech/v1/models for the
+public path and http://127.0.0.1:8080/v1/models for the local path, both
+from the 2026-10-20 gateway note. One drift fact survives without the
+diff. The config snapshot from 2026-11-01 still lists
+poolside/laguna-s-2.1:free while the live OpenRouter catalog on
+2026-11-17 has zero poolside ids, so the config roster is stale against
+at least one provider.
+
+* FOOTER
+
+Evidence quality: each claim carries its source URL and date in the same row.

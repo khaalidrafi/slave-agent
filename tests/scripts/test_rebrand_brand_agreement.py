@@ -149,5 +149,8 @@ def test_deployment_names_arrive_by_env_and_fail_lint(monkeypatch):
     monkeypatch.setenv(mod.DENY_ENV, "hermes-agent")
     assert mod.denied_names(mod.deny_names_from_env()), \
         "the deny lane must find a word the tracked tree carries"
-    monkeypatch.setenv(mod.DENY_ENV, "no-such-deployment-zzz")
+    # Built at runtime so THIS file never carries the literal: the lane scans
+    # the tracked tree, and a typed-in absent name would find itself here.
+    absent = "no-such-" + "deployment-zzq"
+    monkeypatch.setenv(mod.DENY_ENV, absent)
     assert mod.denied_names(mod.deny_names_from_env()) == []
