@@ -1,0 +1,95 @@
+#+TITLE: Emacs and Org roadmap R2-R6 — design contracts
+#+STARTUP: overview
+
+- Status: DESIGN (Senior Software Architect seat, GLM 5.3; board row
+  "Emacs/Org roadmap R2-R6 + panel embedding")
+- R1 is landed and live: slave-agent is an agent-org provider
+  (~:command '("slave-acp")~), the Emacs chat was exercised end to end
+  (agent-org ea1cfa1, DISPATCH #10). R6 lands behind the terminal tool's
+  approval gate, not a new one (FORK.org).
+- Each step below is a separate deliverable with its own acceptance
+  test; nothing here is started until its row is dispatched on the
+  board.
+
+* R2 — ~ob-slave-agent~: Org Babel blocks whose body is the prompt
+
+A block is a recipe; evaluating it runs one agent turn with the block
+body as the prompt and the result as the block output.
+
+- Shape: ~#+begin_src slave-agent :session s1 :model nil~. ~:session~
+  names an agent-org session (resume over session/load); no session
+  means a one-shot turn. ~:model~ overrides per call; nil keeps the
+  profile's model.
+- Contract: results are the agent's final text, ~:results value~;
+  ~:cache yes~ re-uses the last result until the body or header changes
+  (hash keyed on body + header args).
+- Failure: a non-zero agent exit leaves the previous result in place
+  and writes the error to the ~*Org-Babel Error*~ buffer, never into
+  the file.
+- Acceptance: a note with two blocks, one cached, one sessioned;
+  re-evaluating the file hits the agent exactly once.
+
+* R3 — Org as the memory substrate
+
+Memory and skills are Org trees the master can read and edit; answers
+cite ~file.org::*Heading~.
+
+- Shape: ~$HERMES_HOME/memory/*.org~ with top-level headings as memory
+  entries; the loader reads through ~org-element~ (no regex over Org).
+  Writes append a timestamped heading; they never rewrite what is there.
+- Contract: an agent answer that used memory carries the heading refs it
+  used; a memory entry deleted by hand is simply absent on the next
+  read. No index to invalidate.
+- Acceptance: teach a fact in Emacs, ask in the terminal, get the fact
+  with the citation; delete the heading, ask again, the fact is gone.
+
+* R4 — ~slave-agent-consult~: one key, any buffer
+
+The ambient shape (the "Grok bot" feel): ask about the region or the
+project from any buffer, answer inline.
+
+- Shape: ~slave-agent-consult~ (region or point); prefix arg widens to
+  project scope. Input window is a transient; the answer lands in a
+  side window that point can dismiss with one key.
+- Contract: consult runs on the R1 session of the current project
+  (buffer-name convention "Provider:project [sid]"), so context rides
+  the session instead of being re-sent.
+- Acceptance: from a code buffer, one key asks about the def at point;
+  the answer names the def; the chat buffer of that project shows the
+  same turn.
+
+* R5 — the agenda as a job queue
+
+The agent works TODO headings, writes CLOCK ranges and results back.
+
+- Shape: an agenda TODO with a ~:slave-agent:~ property is claimable;
+  ~slave-agent-work-tree~ claims the subtree, runs it, writes the result
+  under a RESULTS drawer and clocks the run.
+- Contract: the agent never edits a heading's state; it proposes the
+  flip and the master accepts it in Emacs (writes are human-owned;
+  reads and results are agent-owned).
+- Acceptance: a TODO with a one-line task runs end to end and the
+  file's diff is exactly a RESULTS drawer plus a CLOCK range.
+
+* R6 — Emacs introspection tools
+
+Eval elisp in the live session, read buffer state. The interpreter
+primitive is powerful, so it rides the terminal tool's approval gate.
+
+- Shape: tools ~emacs_eval~ and ~emacs_buffers~ exposed ONLY through a
+  session that has the approval gate enabled (the same gate the
+  terminal tool uses; no separate ladder).
+- Contract: every eval call shows the form to the master and waits; a
+  denied form is a denial, not a retry.
+- Acceptance: with the gate on, an eval is refused without approval;
+  approved, the result returns; the gate-off profile lists no such
+  tools at all.
+
+* Panel embedding (the non-Emacs half of the row)
+
+Settled by specs/013/014 and landed with them: the panel embeds
+in-process through the persona library seam; ACP stays the first-class
+external surface; the serve endpoint is retired as the integration path
+(Owner 2026-11-05). The Emacs half above composes with the same seam:
+R2-R6 all talk to the agent through slave-acp, so a panel host and an
+Emacs host see one assistant, not two integrations.

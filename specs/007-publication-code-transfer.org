@@ -1,0 +1,108 @@
+#+TITLE: Spec 007 — Publication: public repo, docs island, and the blocked code transfer
+#+STARTUP: overview
+
+- Status: IN-PROGRESS
+- Source: upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org — * RESPONDED
+  "Commit ALL changes and PUSH to Github. I'll continue in the cloud. So,
+  also provide a handoff." (12:24–12:54) and * RESPONDED "It will be public.
+  But, don't use fork command… handoff should be uploaded to the repo;
+  summarized with no sensitive data." (12:58–13:08); corroborated by
+  HANDOFF.org, agent-team/TODOS.org, and this repo's own git history
+  (island commit ~f37d1ff~, remote github.com/khaalidrafi/slave-agent).
+
+* Problem
+
+The working clone's only remote was ~origin = NousResearch/hermes-agent~
+(the upstream org repo). The Owner ordered a commit-and-push to continue in
+the cloud; the push had nowhere legal to land, and the machine could not
+materialize a full history push.
+
+Facts established in the session:
+
+1. ~git push~ to origin was denied (403, "denied to khaalidrafi"; the token
+   has ~admin:org~ but not push on that repo). No personal fork existed.
+2. The clone is ~blob:none~ partial; pushing the branch to a fresh repo
+   requires every blob — a test push packed ~496 MB~ into a temp pack on a
+   partition at 98% before being killed (freed back to ~2.9 G~). Upstream's
+   full object store is ≈1.23 GB; the worktree ~634 MB~.
+3. A delta ~git bundle~ of the branch works cheaply:
+   ~~/.agents-work/slave-agent-light-core-2026-10-15.bundle~ — 131 KB for 14
+   commits, refreshed to 140 KB after the 4th commit (head ~4255916916~),
+   prerequisite ~origin/main~; ~git bundle verify~ clean.
+
+* Owner decisions (recorded verbatim in the transcript)
+
+- "It will be public. But, don't use fork command if it makes the repo
+  notable in the community right now."
+- "handoff should be uploaded to the repo; summarized with no sensitive
+  data."
+
+* Requirements
+
+1. Create an *independent public* repo — not a fork, so it appears in no fork
+   network and no community activity feed: ~gh repo create khaalidrafi/slave-agent --public~ (done in session; ~fork: false~
+   verified via the API).
+2. Push a docs-only island as the initial content: branch ~handoff~ carrying
+   ~HANDOFF.org~ + ~FORK.org~ in one commit built with plumbing
+   (~mktree~ / ~commit-tree~, author Qwen3.8-Flash). Done: island commit
+   ~f37d1ff~ "docs: public handoff + fork doctrine (island commit,
+   pre-code-transfer)", default branch ~handoff~.
+3. The public handoff must be leak-checked: no pilot-customer name, no
+   market plan, no local paths, no credential values, no monetization
+   framing, no machine/personal details. Both docs were grepped for the
+   client name and market markers before the push (clean).
+4. Code transfer must come from a machine with a complete clone; recorded
+   commands:
+   #+begin_src sh
+   git clone https://github.com/NousResearch/hermes-agent && cd hermes-agent
+   git fetch /path/to/slave-agent-light-core-2026-10-15.bundle ai/light-core:ai/light-core
+   git push -u https://github.com/khaalidrafi/slave-agent ai/light-core
+   gh repo set-default khaalidrafi/slave-agent ai/light-core
+   git push https://github.com/khaalidrafi/slave-agent :handoff   # drop the placeholder branch
+   #+end_src
+   (recorded as stated in the transcript's final response)
+5. Commit-message scrub decision BEFORE the code is public (Owner's call —
+   the Owner benchmarks per-model commits, so rewrites move hashes):
+   - ~51e1d196c8~ (shop) says "the capability the slave-agent fork exists to
+     sell", "This is NOT <client> code", "the <client> Django API is
+     just the first REST-shaped storefront pointed at it";
+   - ~4255916916~ (docs) says "Nothing in it names a pilot customer…", which
+     itself hints at one.
+   The session offered the reword (two local, unpushed commits; a
+   ~backup/pre-reword~ branch is mentioned as holding the current pair —
+   evidence: none found (needs Owner confirmation)).
+6. Optional bridge, offered not done: commit the 140 KB bundle onto the
+   ~handoff~ branch so a plain ~git clone~ carries the history with no scp —
+   declined for now because it would publish the commit messages before the
+   reword decision.
+
+* Acceptance criteria
+
+1. https://github.com/khaalidrafi/slave-agent exists, public, ~fork: false~
+   — VERIFIED from this repo (~git remote -v~; island commit ~f37d1ff~
+   authored Qwen3.8-Flash in ~git log~).
+2. The ~handoff~ branch carries the summarized, leak-checked docs — VERIFIED
+   (this repo's current state, since evolved by the team: AGENTS.md,
+   agent-team/, docs/INTEGRATION-ADMINEVERYWHERE.org on top).
+3. The three work commits are on the remote once the transfer runs —
+   currently NOT the case: agent-team board records the island UNREACHABLE
+   on every channel (only the handoff docs island is on origin); the bundle
+   lives on the Owner's machine. evidence: none found (needs Owner
+   confirmation).
+4. No secret ever entered chat, files, commits or logs (repo law); PLAN.org
+   and ~~/.agents-work/~ and ~~/.agent-org/~ transcripts stayed out
+   (~.git/info/exclude~ got ~.agent-org/~ locally).
+
+* Notes / OPEN QUESTIONS
+
+- The private, full-detail handoff lives at
+  ~~/.agents-work/slave-agent-handoff-2026-10-15.org~ on the Owner's box
+  (commit states and attribution, P0 layout, known-red tests, measured brand
+  numbers, the #35 KEEP decision, shop credentials owed, the held
+  Bangladesh-market proposal) — not in this repo by design.
+- Task #36 ("push target decision") was closed by the Owner's public-repo
+  order; task #37 ("Push code branch from complete clone + decide
+  commit-message reword") remains open.
+- Sequencing note from the session: the client/BD-market proposal stays
+  HELD until the brand work is done and the Owner consults (his words:
+  complete the Hermes replacement before consulting on the client).

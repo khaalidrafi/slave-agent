@@ -1,0 +1,82 @@
+#+TITLE: Spec 008 — agent-org chat surface: buffer names, per-project transcripts, :tool: drawers
+#+STARTUP: overview
+
+- Status: DONE
+- Source: upload/15bc8d02-770b-4ebc-acd8-130e4d50d9be.org (Qoder/Qwen3.8-Flash,
+  2026-10-04 → 10-07; workspace ~slave-agent~, work in ~~/agent-org~) — * Agent
+  section and * RESPONDED "Done? fAST!" / "??"; the Owner's original request
+  list is quoted in upload/mvs_e5ca10a60e414336af0201a9657f1e39.org (the
+  qoder jsonl extraction). Relevant to slave-agent via FORK.org's
+  "Emacs is a first-class surface" doctrine (R1: agent-org drives the agent
+  through slave-acp).
+- Note: this workstream lives in the agent-org repository (~~/agent-org~), not
+  in this tree. It is specced here because the transcripts carry it and
+  slave-agent's Emacs roadmap builds on it.
+
+* Problem
+
+The Owner's standing request list for the agent-org Emacs package:
+
+1. Remove the "agent-org: " prefix from chat buffer names; format
+   "Qoder:agent-org [SESSION_ID]".
+2. Transcripts should live under a project's ~.agent-org/~ directory.
+3. Tool calls should be inside ~:tool:~ drawers.
+
+The Org drawer spec forbids headlines inside drawers, so the previous
+rendering (tool calls as ~** KEYWORD title~ subheadings) could not simply be
+wrapped; the shape had to become drawer *lines*. The AGENTS.md statement "Tool
+calls are HEADLINES, not a drawer" was therefore stale the moment the Owner's
+order landed and had to be rewritten in the same change.
+
+* Requirements
+
+1. Buffer names: ~<Provider>:<project> [<session-id>]~, no package prefix —
+   commit ~3eebe08~ "Names: a chat buffer is 'Qoder:agent-org [sid]', no
+   package prefix" (committed by a concurrent agent on ~ai/quickstart~).
+2. Transcripts: one Org file per session, mirrored at turn boundaries, under
+   a per-project ~.agent-org/~ directory — commit ~b7b882f~ "Transcripts: one
+   .agent-org/ per project, and the suite stops writing". The directory name
+   is ~agent-org-transcript-directory~ (default ~.agent-org~); projects may
+   want it in their ~.gitignore~.
+3. Tool calls: ONE ~:tool:~ drawer per agent turn, one line per
+   toolCallId — implemented in ~agent-org-buffer.el~ (~:tool:~ rendering;
+   the transcript records the renderer around line 991 of that era) with
+   tests asserting ~^:tool:$~ occurrence counts (tests of that era at lines
+   437–604).
+4. AGENTS.md updated to match: "Tool calls: ONE ~:tool:~ drawer per turn,
+   one item per toolCallId" (plus the FOLD-is-default drawer convention) —
+   the doc fix is part of the change, per the repo's own convention that
+   moving a symbol means fixing its docs.
+5. A concurrent agent was committing to the same branch and files; commits
+   ~1–3~ above were landed by that agent, and shared files
+   (~tests/test-agent-org.el~, ~agent-org.el~) carried interleaved in-flight
+   hunks. Attribution hygiene ("DON'T commit changes made by other sessions
+   as yourself") shaped who committed what.
+
+* Acceptance criteria
+
+1. Live-verified in the Owner's Emacs (transcript "??"): buffer names are
+   exactly ~Qoder:slave-agent [15bc8d02-…]~, ~OpenCode:sane-packages […]~.
+2. Tests asserting the drawer shape pass (transcript: drawer tests green;
+   the "6/6 new tests pass" run covered the adjacent features).
+3. VERIFIED in the local agent-org checkout (/home/z/my-project/agent-org):
+   - ~agent-org-buffer.el~ carries the ~:tool:~ drawer rendering and its
+     header comment ("Tool calls render as ONE ~:tool:~ drawer under the
+     current ~* Agent~");
+   - ~agent-org-buffer.el:5167~ ~(defcustom agent-org-transcript-directory ".agent-org"~;
+   - ~AGENTS.md:145~ states the ~:tool:~ drawer contract.
+4. The Org-drawer legality rule holds: no headlines inside drawers; drawer
+   lines carry the keyword + title.
+
+* Notes / OPEN QUESTIONS
+
+- The transcripts pre-date the current agent-org tree; the local checkout
+  shows the features landed and later evolved (e.g. ~agent-org-transcript-sync~
+   ~2a5bfcd~ to re-mirror a transcript on demand; transcripts opened
+   read-only as a mirror, ~d5cce17~). Those later commits are NOT from these
+  transcripts and are not specced here.
+- Related still-open agent-org TODOs.org items named in the transcript:
+  Markdown→Org, steer, fork, input-history ring, non-blocking permissions,
+  tool-call grouping, model names in ~C-c C-m~ (see TODOs.org here).
+- Attribution question for the traffic/copy-id commands (swept into another
+  session's commit) is tracked in specs/009.

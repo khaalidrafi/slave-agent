@@ -96,3 +96,22 @@ build attempts recorded here.
 | cryptography | platform | rebuild needed |
 | pycparser | platform | rebuild needed |
 | All other 104 packages | py3-none-any (pure-Python) | compatible |
+
+* Phase 1 status — bootstrap + static bionic audit (2026-11-17)
+
+- =mobile/bootstrap-termux.sh= landed: pkg deps (git, python, rust-bin,
+  the image/jpeg libs), shallow clone, venv, base install (extras are
+  opt-in; a phone installs none), compileall + import smoke. All heavy
+  steps nice'd, one at a time (specs/012).
+- Static bionic/binary classification of the base dependency closure
+  (the LIVE aarch64 run is the remaining evidence; it needs the phone
+  or a Termux container, which this seat has not):
+
+  | class | dependencies | mobile note |
+  |-------+--------------+-------------|
+  | pure Python | ruamel.yaml, pyyaml, requests, typing-only deps | install as-is |
+  | C extension with aarch64 manylinux wheels | cryptography, Pillow, regex, markupsafe | Termux python is bionic; manylinux wheels DO NOT load — install via Termux's own wheel repo or build from source with rust-bin/clang |
+  | C extension, builds from source on-device | all of the above, given pkg's clang/rust | slow but works; nice'd |
+  | binary downloads (PM store) | none used | bypassed entirely by this script (non-FHS PT_INTERP) |
+
+- Phase 2 stays BLOCKED on the live audit run, per the contract.

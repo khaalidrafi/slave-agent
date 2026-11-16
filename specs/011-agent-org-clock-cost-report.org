@@ -1,0 +1,92 @@
+#+TITLE: Spec 011 — agent-org clock/cost report ("the special design")
+#+STARTUP: overview
+
+- Status: DONE (landed after the transcript was interrupted; verified in the
+  local agent-org checkout)
+- Source: upload/15bc8d02-770b-4ebc-acd8-130e4d50d9be.org — * "Start working
+  on the special design, PLEASE" (2026-10-07 11:00–12:37), the whole design
+  and test-writing sequence, ending mid-verification; interpretation anchored
+  on agent-org TODOs.org's "Brainstorm from worg" block (commit ~1088100~),
+  top-ranked item "Reporting over the clocks/cost we already write (highest
+  value, lowest cost)".
+- Note: workstream lives in ~~/agent-org~ (see specs/008 preamble). Relevant to
+  slave-agent: per-turn cost clocks are part of the R1 surface FORK.org
+  promises Emacs gets.
+
+* Problem
+
+agent-org already files the data — closed ~CLOCK:~ ranges per exchange,
+~:RESPONSE:~ seconds, per-file ~:Provider:~/~:Model:~/~:Tokens:~/~:Cost:~ —
+but nothing reports over it. The Owner ordered "Start working on the special
+design, PLEASE": build the brainstorm's top item, "seconds AND dollars per
+model", without violating the design guardrails (never touch org-clock
+state; on-demand only, no timers).
+
+* Requirements
+
+1. ~M-x agent-org-clock-report~ (~(defun agent-org-clock-report (&optional only-this)~): opens an org-mode report buffer (name shaped like
+   ~*agent-org clock report*~) containing:
+   - a hand-rolled per-chat legend table with columns
+     ~Chat | Provider | Model | Turns | Response | Tokens | Cost~ — one pass
+     per transcript over the first drawer's ~:Provider:~/~:Model:~/~:Tokens:~/~:Cost:~
+     (cost shown verbatim as the filed string, no arithmetic) plus
+     ~:RESPONSE:~ seconds summed; a totals row for Turns/Response/Tokens;
+   - a ~#+begin: clocktable~ dynamic block whose ~:scope~ is the LIST of the
+     project's ~.agent-org/*.org~ transcript files (~:maxlevel 1~ —
+     exchanges are level-1 headlines), refreshable with ~C-c C-c~ via
+     ~org-update-all-dblocks~.
+2. Prefix arg = ~only-this~: scope the report to the current session's
+   transcript alone (mirrors ~agent-org-resource-monitor~'s ONLY-THIS).
+3. Guardrails (each pinned by a test):
+   - *never enters org-clock machinery*: the report must not call
+     ~org-clock-in~/~org-clock-out~/~org-clock-load~/~org-clock-resolve~ —
+     it only reads closed ~CLOCK:~ lines through the clocktable writer;
+   - *one project's directory only*: only files under the resolved
+     ~agent-org-transcript-directory~ (an absolute binding is respected —
+     no CWD leak; a transcript placed elsewhere is not reported);
+   - *on-demand*: no timers, no hooks;
+   - nothing to read → ~user-error~ saying so.
+4. Reuse house idioms: the resource-monitor's table helper
+   (~agent-org--resource-table~), the report-buffer conventions, the
+   transcript fixture helpers; a small duration formatter for
+   seconds → ~H:MM:SS~ shaped like the monitor's formatters. Emacs 30.2
+   facts relied on: ~:scope~ accepts a list of files
+   (~org-dblock-write:clocktable~ in org-clock.el); the clocktable writer is
+   autoloaded (a plain ~(require 'org)~ fixture worked).
+5. Tests (names as landed): ~test-agent-org-clock-report-tables-the-clocks-a-project-files~, ~…-reads-one-projects-directory-only~, ~…-never-enters-org-clock-machinery~, ~…-prefix-arg-answers-one-chat~,
+   ~…-with-nothing-to-read-says-so~.
+6. Docs: a short README.org section and an AI-REVIEW.org note were planned
+   with the feature.
+7. Working discipline forced by the box: the shared
+   ~tests/test-agent-org.el~ was being edited by a concurrent session, so
+   the tests were validated in a standalone copy first
+   (/tmp/ao/test-clock-report.el with ~(require 'ert-x)~ and
+   ~(setq load-prefer-newer t)~), before any move into the shared file.
+
+* Acceptance criteria
+
+1. All five tests pass under ~emacs --batch -L . -L tests -L $HOME/.emacs.d/elpa/acp-… -l <test-file> --eval '(ert-run-tests-batch-and-exit (quote (or …)))~.
+2. Building a report over a temp directory with two fixture transcripts
+   yields the legend (both models, both titles, summed turns/response) and a
+   clocktable with a ~*Total time*~ row.
+3. VERIFIED in the local agent-org checkout:
+   - ~agent-org.el:3519~ ~(defun agent-org-clock-report (&optional only-this)~;
+   - ~tests/test-agent-org.el:10972–11124~ — all five tests present under
+     the names above;
+   - follow-up fix commit ~60b335b~ "Fix clock-report title regex, report
+     point, and a blank-env credential" — the feature landed and was
+     maintained after the transcript ended.
+
+* Notes / OPEN QUESTIONS
+
+- The transcript ENDS mid-verification (the last recorded action is a test
+   run whose result is not in the file); DONE status rests on the local
+   agent-org checkout evidence above, not on the transcript's own final
+   state.
+- "The special design" was interpreted, not quoted: the session searched for
+   a literal "special design" heading, found none, and took the brainstorm
+   block's top-ranked item (decision recorded in the thinking turns). If the
+   Owner meant a different "special design", that reading needs correction.
+- Related but NOT from these transcripts (do not credit them here):
+  ~agent-org-batch~ CI send lane, tool-call grouping, model-menu work seen
+  later in the agent-org history.

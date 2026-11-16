@@ -1,0 +1,104 @@
+#+TITLE: Spec 003 — Rebrand generator: every word-carrying format is read, plus --blind / --lint and split CI lanes
+#+STARTUP: overview
+
+- Status: DONE
+- Source: upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org — * Agent section,
+  tasks #25 + #27 turns ("Now #25: this workflow is permanently red on dev
+  branches" through "Lint is green, working tree clean"), including the
+  measured counts and the workflow rewrite; corroborated by FORK.org ("What
+  the generator actually costs, measured", "Verification") and HANDOFF.org
+  ("Brand: what a rename now costs").
+
+* Problem
+
+Two holes in the fork's "branding is generated, never hand-edited" invariant:
+
+1. *Blind formats.* An extension missing from ~PROSE_EXTS~ / ~CODE_EXTS~ was
+   not skipped, it was invisible: the old name reached users through ~.html~,
+   ~.css~, ~.svg~, ~.vue~, ~.js~, ~.nix~, ~.rs~, ~.mdx~, ~.plist~, ~.jsonl~,
+   ~.cmd~ and kin while ~--check~ reported nothing. Measured first at 21
+   blind files (~.js~ 7, ~.html~ 4, ~.css~ 8, ~.svg~ 2), then at 46 after
+   the first fix round (18 ~.nix~, 9 ~.rs~, 5 ~.mdx~, 3 ~.mts~, plus ~.xml~,
+   ~.tmpl~, ~.plist~, ~.manifest~, ~.jsonl~, ~.h~, ~.cts~, ~.cs~, ~.cmd~,
+   ~.ahk~, a ~.Dockerfile~).
+2. *Hand-typed brand words.* Nothing stopped a human from typing this fork's
+   own vocabulary into a file the generator would then treat as upstream
+   prose — a second spelling nobody regenerates.
+
+Also, ~.github/workflows/fork-brand-consistency.yml~ as inherited was
+permanently red on dev branches (a dev branch deliberately keeps upstream
+vocabulary), so the signal was useless.
+
+* Requirements
+
+1. ~scripts/rebrand.py~ extension tables, one edit:
+   - ~PROSE_EXTS~ += ~.html .css .svg .vue .nix .mdx .xml .plist .manifest .jsonl .tmpl .cmd .ahk .dockerfile~ (text/config formats, whole-text prose engine);
+   - ~CODE_EXTS~ += ~.js .rs .mts .cts .h .cs~ → quoted-region ("js")
+     engine, which confines prose rewriting to string literals so brand rules
+     cannot manufacture invalid identifiers.
+   - ~.js~ must not be dropped from ~CODE_EXTS~ when editing the table (the
+     session nearly lost it and restored it).
+2. New mode ~--blind~ behind ~blindspots()~: walks the same tracked file set
+   (~git grep -l -I -i -e hermes -- .~; ~-I~ skips binaries) and diffs the
+   extensions a tier reads against the extensions the tree actually carries
+   the word in; fails (nonempty report) when any file is unreachable.
+3. New mode ~--lint~ behind ~hand_brands()~: finds brand words a person typed
+   by hand, allow-listed by ~BRAND_LITERAL_ALLOW = SELF_PATHS ∪ {scripts/fork-sync.sh, FORK.org, HANDOFF.org}~ — the tooling that defines
+   the brand plus the fork's own documents about the fork. ~--lint~ runs both
+   checks.
+4. Fix the two hand-typed literals the lint found:
+   - ~AGENTS.md~ line ~31~ ("This fork (slave-agent) actively de-bloats…")
+     reworded to avoid naming the product at all — hand-typed brand in a file
+     merged from upstream is exactly the hunk that conflicts;
+   - ~plugins/shop/plugin.yaml~ author field "Khalid Rafi (slave-agent)" →
+     "Khalid Rafi".
+5. New test in ~tests/scripts/test_rebrand_brand_agreement.py~
+   (~test_the_generator_opens_every_format_that_carries_the_word~): for each
+   of ~.js .html .css .svg .vue .nix .mdx .rs .mts .h~ assert the extension
+   is in ~covered_extensions()~. The existing
+   ~test_names_we_do_not_own_survive_both_tiers~ keeps asserting the
+   deliberate KEEPs (~NousResearch/hermes-agent~,
+   ~hermes-agent.nousresearch.com~, ~@hermes.dev~, ~hermes-parser~,
+   ~hermes-estree~) survive both tiers.
+6. Rewrite ~.github/workflows/fork-brand-consistency.yml~ into two jobs:
+   - a cheap *lint* job on every ~ai/**~ push and every PR:
+     ~python3 scripts/rebrand.py --lint~ (blind + hand-brand) plus the
+     drawn-logo guard grep from specs/002;
+   - an *artifact* job gated to the branded branch ~ai/slave-agent~ only
+     (hardcoded in the ~if:~ — job-level ~if:~ cannot read ~env~), asserting
+     full-tree cleanliness and no old-vocabulary imports.
+   The workflow must not use ~github.head_ref~ in a ~run:~ step (fork-PR
+   hygiene) and the drawn-logo grep must carry ~-I~.
+7. Record the measurement in ~FORK.org~ (new subsection "What the generator
+   actually costs, measured" under Verification): brand tier = 4,622 files /
+   32,566 replacements; 46 → 0 blind files; 1 → 0 hand-typed brand literals;
+   663 ~NousResearch/hermes-agent~ and 79 image refs deliberately unchanged.
+
+* Acceptance criteria
+
+1. ~python3 scripts/rebrand.py --lint~ exits green over the committed tree
+   (0 blind, 0 hand-typed) — transcript records two consecutive green runs.
+2. ~python3 scripts/rebrand.py --blind~ lists nothing.
+3. All 46 formerly blind files are covered by the tables (verified in-session
+   by replaying the blind list through the new covered set).
+4. ~python3 -m compileall -q .~ still passes (generator edits are
+   syntactically loadable).
+5. ~python3 scripts/rebrand.py --tier brand --apply --dry-run~ reports the
+   measured bill (4,622 files / 32,566 replacements on the pre-extension-fix
+   run; the count rises slightly with the new formats — re-measure before
+   quoting a final number).
+6. The test from requirement 5 passes via ~scripts/run_tests.sh tests/scripts/test_rebrand_brand_agreement.py~.
+
+* Notes / OPEN QUESTIONS
+
+- The docstring in ~scripts/rebrand.py~ must say the engines honestly:
+  ~.py~ with ~tokenize~, ~.ts/.tsx/.js/.mjs/.cjs/.rs/.mts/.cts/.h/.cs~ with a
+  quoted-region regex, remaining prose/config formats whole-text.
+- Whole-text prose rewriting over ~.html/.css/.svg~ is deliberately stronger;
+  identity-tier renaming of ~.hermes-foo~ class names stays consistent
+  because the matching ~.tsx~/~.ts~ usages are covered too.
+- Landed in the ~ai/light-core~ brand commit ~e3edc4e6d3~ and the docs commit
+  ~4255916916~ (FORK.org numbers + allow-list + plugin.yaml) — not yet
+  verifiable in this repo (specs/007).
+- Third-party names the generator must NOT eat are a separate open decision
+  (specs/004).

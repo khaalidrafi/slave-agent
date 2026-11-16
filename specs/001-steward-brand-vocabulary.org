@@ -1,0 +1,77 @@
+#+TITLE: Spec 001 — Steward refusal text spells our package name from brand.py
+#+STARTUP: overview
+
+- Status: DONE
+- Source: upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org (Qoder/Qwen3.8-Flash,
+  2026-10-15) — * Agent section, task #24 turns, from "Let me continue with
+  task #24: finish steward.py brand work" through the appended test and the
+  green test run; corroborated by HANDOFF.org ("Brand" + commit table) and
+  FORK.org ("Never hand-edit a brand string in a file").
+
+* Problem
+
+~hermes_cli/steward.py~ (steward classification and refusal text for sealed
+install trees) contained a hand-typed brand literal: the Guix
+update/uninstall refusal told the user to ~guix install slave-agent~ as a raw
+string. FORK.org forbids hand-edited brand strings: the generator rewrites
+old-vocabulary prose, but a fork-owned *fact* (the name of the package this
+fork actually publishes, typed at a shell by a user) must already be true on
+the dev branch and must be drift-proof. Upstream package names in the same
+file (Termux APT, Nix) belong to someone else's published artifacts and are
+functional KEEPS, not prose.
+
+* Requirements
+
+1. ~hermes_cli/steward.py~ imports ~brand~ (root module; ~setup.py~ ships
+   every root module, so the import also works in an installed wheel) and the
+   Guix update + uninstall refusal messages name our package via
+   ~brand.SLUG~ (runtime f-string), never a hand-typed literal.
+2. The upstream Termux APT and Nix package names (~hermes-agent~) stay as
+   literal keeps, documented by the comment block at the ~import brand~ site:
+   a user who installed through those channels has upstream's artifact, so
+   telling them to remove *our* slug would name a package that does not exist
+   on their machine.
+3. A relationship test appended to
+   ~tests/hermes_cli/test_steward_detection.py~ (class planned as
+   ~TestBrandVocabularyInRefusalText~) asserting only what is durable across
+   dev and branded branches:
+   - the Guix update and uninstall refusals contain ~brand.SLUG~;
+   - the Termux/Nix refusals name upstream's published package, derived as
+     ~brand.UPSTREAM.split("/", 1)[1]~ (= ~hermes-agent~), and do NOT contain
+     ~brand.SLUG~.
+4. Task #23 companion fix (same session, same commit lane): ~brand.py~
+   ~HOME_ENV~ must agree with what the generator's identity-tier ~HERMES_~
+   arm actually produces (the mechanical swap drops ~_AGENT~), guarded by the
+   existing tests in ~tests/scripts/test_rebrand_brand_agreement.py~
+   (~test_every_brand_name_is_what_the_generator_produces_for_its_upstream_token~
+   and the ~export HERMES_HOME=$HERMES_HOME~ untouched-identifier case).
+5. Known pre-existing red tests are NOT in scope: 5 cases in
+   ~TestUpdateAdmission~ import the deleted ~hermes_cli.update_contract~
+   (updater-removal tail — see specs/006).
+
+* Acceptance criteria
+
+1. ~rg "guix install" hermes_cli/steward.py~ shows the refusal built from
+   ~brand.SLUG~, not a literal.
+2. Rendering the steward messages (update + uninstall, all stewards) produces
+   the Guix text with ~slave-agent~ and the Termux/Nix text with upstream's
+   ~hermes-agent~.
+3. ~HERMES_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh tests/hermes_cli/test_steward_detection.py tests/scripts/test_termux_update_refusal.py~ passes except the 5 known-red
+   ~TestUpdateAdmission~ cases (transcript records 14 total, 5 failed all
+   pre-existing, termux cases pass; later run green for the brand class).
+4. The work landed in the branch history of ~ai/light-core~ (brand commit
+   ~e3edc4e6d3~ / interleaved into the P0-tail commit ~0bbd3f41cd~ per the
+   session's disclosure) — not yet verifiable in this repo (see specs/007).
+
+* Notes / OPEN QUESTIONS
+
+- The transcript's draft decision (c) proposed adding ~UPSTREAM_PKG~ /
+  ~UPSTREAM_IMAGE~ constants to ~brand.py~; the implemented test derives the
+  upstream package name from the existing ~brand.UPSTREAM~ instead. Whether
+  the extra constants were added is not established by the transcript.
+- The lowercase Docker Hub path ~nousresearch/hermes-agent~ being rewritten by
+  the identity tier (KEEP_RE is case-sensitive) was measured as a hazard and
+  deliberately deferred to the KEEP-list decision (task #35, specs/004).
+- The ~HERMES_AGENT_LOGO~ env var documented in
+  ~website/docs/reference/environment-variables.md~ has no reading site in
+  code (stale docs, noted in the session; unrelated to this spec's scope).

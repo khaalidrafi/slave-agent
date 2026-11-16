@@ -1,0 +1,93 @@
+#+TITLE: Spec 004 — Third-party name KEEP list (names we do not own)
+#+STARTUP: overview
+
+- Status: IN-PROGRESS
+- Source: upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org — * Agent section,
+  task #35 discovery turns (from "Big finding: there are many third-party
+  names in that table that are NOT ours" through the final response's "#35
+  KEEP decision … that blocks #28"); corroborated by FORK.org ("TODO Decisions
+  still open", KEEP_RE items) and agent-team/TODOS.org ("KEEP_RE third-party
+  shape rules + tests").
+
+* Problem
+
+The generator protects ~NousResearch/hermes-agent~ (case-sensitive KEEP_RE),
+but measured over the tree it would rewrite *other people's names* on the
+branded branch, producing broken instructions and broken model catalog
+entries. Task #35 ("Decide the KEEP list: third-party NousResearch repos,
+Docker images, model IDs") was created to hold this; it blocks task #28
+(produce the branded branch for real), and the session's standing constraint
+was that keeping upstream mentions at all "needs your explicit blessing"
+(Owner decision, gap 7).
+
+Measured findings (transcript, 2026-10-15):
+
+1. Lowercase ~nousresearch/hermes-agent~ — the real Docker Hub path, ~19+~
+   files including ~Dockerfile~, ~docker-compose~, ~scripts/releases/docker.py~,
+   docs — gets rewritten to ~nousresearch/slave-agent~, a nonexistent image;
+   this breaks docker builds/runs and the release push. KEEP_RE is
+   case-sensitive → bug in the protection, same repo, same owner.
+2. ~pkg uninstall hermes-agent~ (Termux APT) and "remove ~hermes-agent~ from
+   your flake" (Nix) get rewritten to ~slave-agent~ — defensible only if the
+   branded fork actually publishes those channels; today they are upstream's
+   real packages.
+3. Other NousResearch repos/models found as ~nousresearch/<token>~ hits:
+   ~hermes-sandbox~ (32 refs), ~NousResearch/hermes-example-plugins~,
+   ~hermes-nvidia~, ~nousresearch/hermes-4-405b~ (a model ID),
+   ~NousResearch/Hermes-3-Llama-3.1-70B~, ~NousResearch/atropus~,
+   ~NousResearch/api~, ~NousResearch/pokemon-agent~. Rewriting model IDs
+   breaks inference endpoints and links.
+4. 79 Docker image refs and 663 ~NousResearch/hermes-agent~ mentions are
+   deliberately-unchanged upstream facts overall.
+5. Existing protected KEEPs that already survive both tiers:
+   ~NousResearch/hermes-agent~, ~hermes-agent.nousresearch.com~, ~@hermes.dev~,
+   ~hermes-parser~, ~hermes-estree~ (Meta's JS packages).
+
+* Requirements
+
+1. Owner blessing first (decision, not code): which third-party names must
+   NOT be rewritten — package manager names, container images, model IDs that
+   belong to upstream — per HANDOFF.org "What to do next" and FORK.org's
+   open-decision list.
+2. Encode the blessed list as *shape rules* in ~KEEP_RE~ in
+   ~scripts/rebrand.py~ with tests (agent-team board scope):
+   - at minimum, protect the lowercase Docker Hub path so
+     ~(?:NousResearch|nousresearch)/hermes-agent~ both survive;
+   - a general rule is preferred over enumeration: any slash-form
+     ~nousresearch/<token>~ path or model-identifier shape
+     (~hermes-N~ followed by digits/version) is a third-party fact → keep.
+3. Extend ~test_names_we_do_not_own_survive_both_tiers~ in
+   ~tests/scripts/test_rebrand_brand_agreement.py~ with the lowercase image
+   path (and each newly blessed keep) once the decision lands.
+4. Reword the stale ~KEEP_RE~ comment on the upstream repo path entry
+   (FORK.org TODO): it currently justifies the keep by "the updater still
+   reads upstream releases", a reason that no longer holds — the path stays
+   because it is our ~origin~ remote.
+5. Re-run ~python3 scripts/rebrand.py --lint~ / ~--blind~ and the
+   ~--apply --dry-run~ measurement after the change; the branded-branch
+   artifact (task #28) must not ship until this spec is closed.
+
+* Acceptance criteria
+
+1. ~mod.rewrite("docker rmi nousresearch/hermes-agent")[1] == 0~ and the
+   identity tier leaves the lowercase path intact (test).
+2. Model IDs (~hermes-4-405b~, ~Hermes-3-Llama-3.1-70B~) and the sandbox
+   image survive both tiers (test per blessed name).
+3. The dry-run diff over the tree shows no third-party name rewritten.
+4. Task #28 (~scripts/fork-sync.sh~ → ~ai/slave-agent~) can run without
+   producing a broken artifact.
+
+* Notes / OPEN QUESTIONS
+
+- OPEN (Owner): whether the branded fork will publish its own Termux APT /
+  Nix / Docker channels — until then the upstream channel names are keeps.
+- OPEN: the transcript's proposal to hoist third-party names into ~brand.py~
+  constants (~UPSTREAM_PKG~ / ~UPSTREAM_IMAGE~) was drafted but the landed
+  test derives from ~brand.UPSTREAM~; reconcile before extending (see
+  specs/001 notes).
+- Task #34 (our own mark: icon art ~assets/icon-master.svg~, ~☤~ in the
+  README, regenerate with ~scripts/generate_icons.py~) is related but
+  separate — it needs our own artwork, not a KEEP rule.
+- Evidence status: the measurements above are transcript-attested; the KEEP
+  rules and their tests are NOT in this repo (docs-only island) — evidence:
+  none found (needs Owner confirmation).

@@ -1,0 +1,84 @@
+#+TITLE: Spec 006 — P0 self-update removal: the tail that rewired the survivors
+#+STARTUP: overview
+
+- Status: IN-PROGRESS
+- Source: upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org — * RESPONDED
+  "Commit ALL changes and PUSH to Github…" turns: the 60-file staging, the
+  hunk-interleaving analysis, and the final response's commit table;
+  corroborated by HANDOFF.org ("P0: the updater is gone, and the survivors
+  were rewired", "Known-red tests, and why") and agent-team/TODOS.org
+  ("Transfer the ai/light-core code island", "Fix the 5 known-red steward
+  tests").
+
+* Problem
+
+Upstream's ~self-update~ subsystem was already deleted in ~ba9da5d86f~ (it
+fights a package manager: writes into a read-only store path, re-resolves a
+dependency closure nobody chose — FORK.org P0). ~60~ files of follow-up
+rewiring sat uncommitted in the tree from another agent session when the
+Owner ordered "Commit ALL changes and PUSH to Github" (2026-10-15). The
+session committed them as a clearly-disclosed snapshot (commit
+~0bbd3f41cd~, subject ~refactor(p0)~: finish the self-update removal,
+authored as the Owner with a body stating the tree is another agent session's
+work committed at the Owner's order; ~banner.py~ / ~steward.py~ interleaved
+this session's brand hunks, disclosed in the message).
+
+* Requirements (what the tail commit contains)
+
+1. ~hermes update~ is now a pointer to the package manager
+   (~hermes_cli/subcommands/update.py~); the ~/update~ slash command stays
+   harmless instead of crashing.
+2. The post-install maintenance tail shared by installers and source builds
+   is re-homed into ~hermes_cli/install_maint.py~ (+987 lines: state-db
+   guard, release history, catalog seeds, skills sync, per-profile sync,
+   config migration, notices) minus the updater-only parts. Read its
+   docstring first — it explains which updater parts were kept as maintenance
+   and which were dropped (HANDOFF.org review entry point #4).
+3. The one question the dashboard still needs from the deleted fleet module
+   got its own home: ~hermes_cli/gateway_systemd.py~ — "can this user
+   elevate without prompting?" (~sudo -n true~ first, then a targeted probe,
+   because a scoped NOPASSWD entry rejects the blanket one).
+4. ~hermes_cli/main.py~ lost its PEP-562 frozen updater surface (−317 lines)
+   that existed only so deleted siblings could resolve names off it.
+5. ~scripts/ci/classify_changes.py~ re-armed the ~desktop_updater~ CI lane on
+   the Electron shell's own updater, which is what still performs an update
+   here.
+6. FORK.org table realignment rode along (an Emacs ~org-table-format~ result
+   from the other session).
+7. Verification discipline per FORK.org's "Verification per removal":
+   ~python3 scripts/ci/kernel_floor.py --check-imports~ (nothing still
+   imports a removed path), ~python3 -m compileall -q .~, survivor tests via
+   ~scripts/run_tests.sh~; ~--record~ the lowered floor in the same commit.
+
+* Acceptance criteria
+
+1. The three work commits (~0bbd3f41cd~, ~e3edc4e6d3~, ~51e1d196c8~) exist on
+   the Owner's ~ai/light-core~ island with the disclosure described above —
+   transcript-attested; not yet verifiable in this repo (specs/007).
+2. Everything else touched passes: ~50/50~ brand + steward with the 5
+   attributed reds, ~23/23~ shop, generator-agreement and banner tests green
+   (HANDOFF.org).
+3. Known-red, and why: ~tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission~ — 5 tests still import ~hermes_cli.update_contract~,
+   which P0 deleted. They are the last visible part of the updater cleanup,
+   not a regression. Fixing them is a separate board item (rewrite the
+   assertions against the steward table instead of the deleted contract
+   module).
+4. After the reds are fixed: ~scripts/run_tests.sh~ green on the touched
+   dirs; ~kernel_floor.json~ monotonically lower per cut.
+
+* Notes / OPEN QUESTIONS
+
+- OPEN: task #31 ("Finish and verify the updater-removal cleanup, then
+  commit it") was recorded completed-by-owner-order with the verification
+  tail still red; the 5 tests remain the open remainder.
+- OPEN: task #33 — "Decide: fix attribution/split of commit ~ba9da5d86f~?"
+  (attribution pollution is a tracked concern; the Owner benchmarks per-model
+  commits).
+- The bloat removal queue P1–P9 (apps/, website/, locales/,
+  optional-skills/, platform adapters, tools/, dashboard, meetings/voice,
+  evals/) is the fork's main implementation lane — one commit per subsystem,
+  P0 first (FORK.org "Bloat removal queue"; agent-team board).
+- The clone is ~blob:none~; the island's commits are NOT on any remote
+  reachable from here — evidence: none found (needs Owner confirmation);
+  agent-team board records the island UNREACHABLE on every channel and
+  ~upstream/main~ (c419cf7c) booted on origin as the re-derive base.

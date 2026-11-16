@@ -1,0 +1,86 @@
+#+TITLE: Spec 012 — Machine-load discipline for the 4 GB box (freeze law)
+#+STARTUP: overview
+
+- Status: SPEC-ONLY
+- Source: all three transcripts — upload/mvs_e5ca10a60e414336af0201a9657f1e39.org
+  (the Owner's order "BEWARE of freezing this machine!"; load/memory/swap
+  measurements; the one-job-at-a-time strategy), upload/
+  15bc8d02-770b-4ebc-acd8-130e4d50d9be.org (Emacs unreachable for ~40 minutes~ under
+  18 concurrent batch ERT runs; ~nice -n 19 ionice -c 3 timeout 1500~
+  discipline), upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org (the killed
+  496 MB push pack on a 98% disk; ~nice -n 19~ for generator runs; load
+  checks before tests); FORK.org ("The agent runs on a 4 GB machine that is
+  also doing real work").
+
+* Problem
+
+The dev box is a 4 GB Celeron shared by everything at once. Measured during
+these sessions: 6–9 ~qoder --acp~ children (≈200 MB RSS each), two
+~emacs -nw~ processes, guix builds, dockerd, playwright chromium; load
+averages from 3.13 up to 11.56; 112–142 MB RAM free with ~1.6 GB~ swap in
+use and ~kswapd0~ active; Emacs PIDs entering ~D+~ (uninterruptible disk
+wait); batch Emacs startup exceeding 2 minutes; disk at 98–99% with only
+~2.4–2.9 GB~ free. Two incident classes occurred: (a) the Emacs server
+unreachable for ~40 minutes~ while a concurrent agent ran 18 full-suite ERT
+passes; (b) a ~git push~ from the ~blob:none~ clone materializing a 496 MB
+temp pack that had to be killed to protect the disk. The Owner's standing
+order is explicit: "BEWARE of freezing this machine!"
+
+* Requirements (discipline every agent on this box must follow)
+
+1. Check before heavy work: ~uptime && free -m | head -3~ (and ~ps~ for
+   concurrent agents) — if the box is already loaded, do cheap work first
+   (file edits, reading) and defer verification.
+2. Heavy jobs run as ~nice -n 19~ (and ~ionice -c 3~ where available) under
+   a hard ~timeout~ (30–900 s observed), one at a time — never parallel
+   suites, never a second full run while another agent's run is in flight.
+3. Avoid full-tree passes when a scoped one answers
+   (~scripts/rebrand.py --only <file>~, per-file test selection via ERT
+   selectors like ~(or test-a test-b)~; ~rg~ over ~find~).
+4. Prefer standalone / staged copies over shared in-flight files when a
+   concurrent session is editing them (the clock-report tests went to
+   /tmp/ao first — specs/011).
+5. Kill your own runaway background tasks (TaskStop) and clean their temp
+   artifacts (~.git/objects/pack/tmp_pack_*~ cost 496 MB in the incident);
+   verify ~df~ afterwards.
+6. Batch Emacs is the expensive primitive (~1 GB RSS~ class): do not spawn it
+   casually; when unavoidable, single, niced, timed. Beware that an advice
+   on ~add-face-text-property~ fires on every redisplay (specs/010) and
+   that ~qoder --list-sessions~-class node startups are themselves ≈1 GB
+   events on this box.
+7. On non-FHS distros the test runner needs its interpreter named:
+   ~HERMES_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh …~ (PM
+   bootstrap stages binaries whose ELF interpreter does not exist there) —
+   also a load-safety matter: do not let the runner hunt for interpreters.
+8. /tmp gets reaped on this box (a staged /tmp/ao script vanished mid-run):
+   re-create scratch dirs; do not assume earlier temp files persist.
+9. When blocked by the load, report honestly (the transcripts' "Done?
+   fAST!" answer is the model: state done / unverified / blocked and why)
+   instead of piling on CPU.
+
+* Acceptance criteria
+
+1. No agent action on this box starts a second heavy job while another is
+   running (observable in transcripts going forward).
+2. Every heavy command in future sessions is wrapped in ~nice~ + ~timeout~
+   (or justified inline).
+3. No disk-fill incident recurs: temp packs/artifacts are checked and
+   cleaned after any killed git operation.
+4. A written statement of this discipline exists where agents will read it
+   (this spec; TODOs.org points at it) — currently it lives only in
+   transcript practice, hence SPEC-ONLY.
+
+* Notes / OPEN QUESTIONS
+
+- This spec codifies observed practice; it invents no thresholds. Numbers
+  above are quoted from the transcripts' own measurements.
+- OPEN: whether the Owner wants this law enforced structurally (e.g. a
+  load-guard wrapper in the CI/test entry points) — no such tool exists in
+  the transcripts. evidence: none found (needs Owner confirmation).
+- Related open thread from the MiniMax session (transcript 3): the Owner
+  ordered "Please look into qoder sessions by using qoder CLI to list them
+  and find out which one dealt with slave-agent. The session tracked
+  /home/khalid/ dir, not cwd. agent-org is irrelevant!" — the session began
+  running ~qoder --list-sessions~ from the home directory and the transcript
+  ends before any result. That archaeology task is tracked in TODOs.org, not
+  specced.

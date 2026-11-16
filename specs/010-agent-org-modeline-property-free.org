@@ -1,0 +1,92 @@
+#+TITLE: Spec 010 — Doom-modeline blank bar: property-free heading text for the mode line
+#+STARTUP: overview
+
+- Status: DONE (agent-org side) — persistence in the Owner's dotfiles still
+  open
+- Source: upload/15bc8d02-770b-4ebc-acd8-130e4d50d9be.org — * Agent section
+  (task #4: the doom-modeline investigation), * RESPONDED "Done? fAST!" and
+  "??"; upload/mvs_e5ca10a60e414336af0201a9657f1e39.org — the MiniMax resume
+  session designed the agent-org-side fix in detail (the quoted elisp and
+  the org.el archaeology). Owner's request #4: "doom-modeline is still blank
+  (bug)".
+- Note: workstream lives in ~~/agent-org~ (see specs/008 preamble).
+
+* Problem
+
+In agent-org chat buffers the whole doom-modeline bar went blank. Root cause
+chain, established by live probing and source reading:
+
+1. agent-org makes its ~* User~ / ~* Agent~ heading lines ~read-only~
+   (buffer protection).
+2. Org sets ~add-log-current-defun-function~ buffer-locally to
+   ~org-add-log-current-headline~, which ends in ~org-get-heading~ — and
+   ~org-get-heading~'s arguments are no-tags/no-todo/no-priority/no-comment,
+   NOT no-properties, so it answers with ~buffer-substring~-style propertized
+   text: the heading, ~read-only~ and all.
+3. ~which-func-format~ / doom-modeline's generated function
+   (~doom-modeline-format--main~) applies a face (~add-face-text-property~)
+   to a string assembled from arbitrary segments; modifying read-only text
+   signals ~text-read-only~ during redisplay and the entire bar goes blank.
+
+Note: an early hypothesis (~which-func-current~ / ~which-function-mode~ as
+the carrier) was disproved by a live probe; the mechanism-agnostic statement
+("any read-only piece blanks the whole bar") is the one that held.
+
+* Requirements
+
+1. Live relief (applied in the Owner's running Emacs via
+   /tmp/ao/ml-fix.el): a named, removable ~:around~ advice on
+   ~doom-modeline-format--main~ binding ~inhibit-read-only~, plus removal of
+   the session's own diagnostic ~:before~ probes on
+   ~add-face-text-property~ / ~message~ (a probe on ~add-face-text-property~
+   fires on every redisplay and helped wedge the box — see specs/012).
+2. Persisting that advice means editing
+   ~~/home-config/dotfiles/.emacs.d/personal/khalid-ui.el~ (≈12 lines,
+   docstring naming the mechanism) — the Owner's AGENTS.md forbids editing
+   $DOTFILES without explicit permission; the session asked for the word
+   ("Say 'edit khalid-ui.el' and I will").
+3. The agent-org-side fix (mechanism-agnostic, package-scoped):
+   - ~agent-org-buffer--property-free (value)~: a fresh ~copy-sequence~ with
+     ~set-text-properties … nil~ — a display string that carries no
+     ~read-only~ at all.
+   - ~agent-org-buffer--install-plain-defun~: at ~agent-org-mode~ enable,
+     capture the buffer-local ~add-log-current-defun-function~ (falling
+     back to ~#'org-get-heading~) into
+     ~agent-org-buffer--defun-function~ and install a wrapper that returns
+     the original's answer property-free (preserving its
+     nil-when-not-on-a-heading behaviour).
+   - On ~(agent-org-mode -1)~: ~kill-local-variable~ both
+     ~header-line-format~ and ~add-log-current-defun-function~.
+   - A docstring sentence on the mode explaining the routing.
+4. Regression test ~test-agent-org-which-function-answers-property-free~:
+   after ~agent-org-buffer-create~ and a prompt at ~* User~:
+   - ~(funcall add-log-current-defun-function)~ → ~"User"~ with no
+     ~read-only~ text property, and applying a face to it does not error;
+   - the heading itself is still ~read-only~ (protection untouched);
+   - after ~(agent-org-mode -1)~ the variable is not buffer-local.
+
+* Acceptance criteria
+
+1. Live-verified (transcript "??"): mode lines render (122 chars in every
+   chat buffer), zero ~text-read-only~ errors before/after forced
+   redisplay, names exactly ~Qoder:slave-agent [sid]~.
+2. VERIFIED in the local agent-org checkout:
+   - ~agent-org-buffer.el:1749–1855~ implements the property-free
+     ~add-log-current-defun-function~ routing with
+     ~kill-local-variable~ on disable;
+   - ~tests/test-agent-org.el:1565~
+     ~(ert-deftest test-agent-org-which-function-answers-property-free~.
+3. Buffer protection is unchanged (headings remain untypeable).
+
+* Notes / OPEN QUESTIONS
+
+- OPEN (Owner permission): the persistent ~khalid-ui.el~ advice — the live
+  fix dies with the Emacs restart if never persisted, along with any leftover
+  probe advices. evidence: none found (needs Owner confirmation).
+- The transcripts record the *design*; the landed agent-org-side code in the
+  local checkout is the authoritative shape (later commits may have adjusted
+  it — the checkout's history was not audited commit-by-commit for this
+  spec).
+- Emacs-level guard learned in passing: ~advice-function-member-p~ proved
+  unreliable in batch tests; verify advice by behaviour (~advice--p~ /
+  output), not membership.

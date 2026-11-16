@@ -1,0 +1,82 @@
+#+TITLE: Spec 005 — plugins/shop: read-only, config-driven storefront adapter
+#+STARTUP: overview
+
+- Status: DONE
+- Source: upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org — the shop plugin
+  is this session's prior work referenced throughout ("plugins/shop/ +
+  tests/plugins/test_shop_plugin.py are MINE from this session"); commit
+  session turns "Now commit 3: the shop plugin (tasks #19/#29)" with the 23/23
+  green run; corroborated in full by HANDOFF.org ("Storefront capability")
+  and docs/INTEGRATION-ADMINEVERYWHERE.org.
+
+* Problem
+
+The agent needs a *read-only* view of a real shop's order queue (first
+deployment: the Owner's shop client, name withheld) without any bespoke
+integration: one plugin must
+serve any REST-shaped storefront, and no client code, client branding or
+client data model may enter this tree (purity law).
+
+* Requirements
+
+1. ~plugins/shop/~ ships:
+   - ~adapter.py~: a ~StorefrontAdapter~ ABC plus a REST implementation. The
+     shop's ~base_url~, path layout, filter names, status vocabulary and page
+     shape are all ~plugins.entries.shop.settings~ in the profile's
+     ~config.yaml~ — configuration, not code.
+   - four tools: ~shop_queue~, ~shop_orders~, ~shop_order~, ~shop_catalog~;
+   - ~hermes shop~ (subcommand) and ~/shop~ (slash command).
+2. Structural rules (not advisory):
+   - *Money never routes through a model.* Every number a tool returns is the
+     shop's own API field; the only arithmetic in the plugin is counting
+     rows, and each count carries provenance (~source: api~ for the shop's
+     total vs ~source: page~ for a tally over the page the model is looking
+     at).
+   - *Read-only by construction.* No write path exists, and none lands
+     before an approve-before-send gate exists. Outward-facing social
+     channels stay out of scope.
+3. Secret handling: the token is read through ~agent.secret_scope~ at *call
+   time*, never at import (one process serves many profiles; an import-time
+   read would silently bind whoever launched it). Adapters cache per
+   (settings, token) so a second profile cannot inherit the first's
+   connection.
+4. The tools exist only for a profile that configured a shop: ~base_url~ set
+   *and* the secret scope holding the token.
+5. Tests: ~tests/plugins/test_shop_plugin.py~ — 23 tests, green via
+   ~scripts/run_tests.sh~ (never bare pytest; CI parity).
+6. Commit: ~51e1d196c8~ (~feat(shop)~ on ~ai/light-core~), authored
+   Qwen3.8-Flash with the standard trailers
+   (~Co-authored-by: z.ai-agent <z.ai-agent@z.ai>~ and
+   ~Co-authored-by: Khalid Rafi <khaalidrafi@gmail.com>~).
+7. Hygiene verified before commit: no secrets in the diff; no
+   client-specific hardcoded data; ~__pycache__~ ignored.
+
+* Acceptance criteria
+
+1. ~scripts/run_tests.sh tests/plugins/test_shop_plugin.py~ → 23/23 green
+   (transcript-attested).
+2. ~rg -i "<deployment-slug>" plugins/shop/~ → nothing (client is
+   configuration only; the check runs with the deployment's own slug).
+3. No write-path symbol in ~plugins/shop/adapter.py~; counts carry
+   ~source:~ provenance.
+4. Token read happens inside the call path, not at module import (code
+   review of ~adapter.py~).
+5. Handoff review entry point: ~plugins/shop/adapter.py~ — "check that no
+   number is computed from anything but the shop's own fields"
+   (HANDOFF.org).
+
+* Notes / OPEN QUESTIONS
+
+- Four credentials for the deployment were recorded as "still owed" in the
+  session's private handoff (~~/.agents-work/slave-agent-handoff-2026-10-15.org~);
+  their names are not enumerated in the transcript — evidence: none found
+  (needs Owner confirmation). Per repo law, credentials travel as ENV VAR
+  NAMES only.
+- The commit *message* of ~51e1d196c8~ names the pilot and the commercial
+  intent ("the capability the slave-agent fork exists to sell", "This is NOT
+  <client> code") — reword decision pending before the code goes public
+  (specs/007).
+- A write path requires an approve-before-send gate first (HANDOFF.org,
+  docs/INTEGRATION-ADMINEVERYWHERE.org guardrails).
+- The plugin is not yet in this repo (docs-only island) — evidence: none
+  found (needs Owner confirmation); see specs/007 for the transfer path.

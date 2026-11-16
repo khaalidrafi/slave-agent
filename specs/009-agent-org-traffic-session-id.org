@@ -1,0 +1,69 @@
+#+TITLE: Spec 009 — agent-org: reading the raw wire JSON and copying the session id
+#+STARTUP: overview
+
+- Status: DONE
+- Source: upload/15bc8d02-770b-4ebc-acd8-130e4d50d9be.org — * Agent section
+  (traffic work: "task #5 (traffic command)… acp keeps *acp-(…)-traffic*
+  buffers"), * RESPONDED "Done? fAST!" and "??"; upload/
+  mvs_e5ca10a60e414336af0201a9657f1e39.org quotes the Owner's questions
+  "Can you read the response JSON an agent receives?" and "Have you
+  implemented ALL my feature requests and bugfixes? Please complete ALL."
+- Note: workstream lives in ~~/agent-org~ (see specs/008 preamble).
+
+* Problem
+
+The Owner could not read the raw JSON an agent receives: the acp package only
+keeps traffic buffers when ~acp-logging-enabled~ is on, and it is off by
+default — so nothing was readable. And the session id shown in the header
+line had to be retyped by hand into ~agent-org-resume-session~ or a shell,
+which is how ids get mistyped.
+
+* Requirements
+
+1. ~agent-org-log-traffic~ — a defcustom, default ON, that turns on
+   ~acp-logging-enabled~ at client creation, so the traffic buffer exists
+   without the user hunting for the acp knob.
+2. ~agent-org-show-traffic~ — an interactive command that opens the current
+   chat session's ~*acp-(agent)-N traffic*~ buffer; RET on a line
+   pretty-prints that message's JSON. Demands a chat and a live client;
+   names the switch when there is nothing to show (echo area / user-error
+   shaped like the package's other commands).
+3. ~agent-org-copy-session-id~ — puts this chat's ACP session id on the
+   kill ring; refuses (leaves a stale kill ring untouched) before the
+   handshake has produced an id.
+4. Tests (appended to ~tests/test-agent-org.el~): four traffic tests
+   (demands-a-chat, needs-a-live-client, names-the-switch-when-empty,
+   opens-this-chats-log) and two copy-id tests (copies after the handshake;
+   refuses before it).
+5. Documentation: README.org gains a "Seeing the raw wire" section
+   documenting the command (a matching section appeared as the concurrent
+   agent's uncommitted docs; the implementation was reconciled to it).
+6. Mock support: ~tests/acp-mock.el~ grew the ~acp-traffic-buffer~ surface;
+   unused-keyword warnings in the mock (~client~ → ~_client~, ~sync~ →
+   ~_sync~ in ~acp-send-notification~) fixed so byte-compile stays clean.
+
+* Acceptance criteria
+
+1. Live-verified in the Owner's Emacs (transcript "??"): ~M-x agent-org-copy-session-id~ → ~15bc8d02-…~ on the kill ring; ~M-x agent-org-show-traffic~ → ~*acp-(qoder)-8 traffic*~ with RET
+   pretty-printing.
+2. 6/6 new tests pass (transcript); byte-compile of the touched files clean.
+3. VERIFIED in the local agent-org checkout:
+   - ~agent-org.el:190~ ~(defcustom agent-org-log-traffic t~;
+   - ~agent-org.el:1081~ ~(defun agent-org-show-traffic (&optional buffer)~;
+   - ~agent-org.el:1115~ ~(defun agent-org-copy-session-id ()~.
+
+* Notes / OPEN QUESTIONS
+
+- Attribution caveat: ~agent-org-show-traffic~ (with the README section) was
+  swept into the *concurrent agent's* commit ~3c3ea63~ "Traffic: M-x
+  agent-org-show-traffic reads the JSON the agent actually sent" via their
+  ~git add -A~ — the qoder session's implementation, another session's commit
+  (authored "Khalid Rafi"). The copy-session-id commit was additionally
+  blocked for a while by the other session's staged-but-uncommitted work in
+  the same two files (~agent-org.el~ +51, ~tests/test-agent-org.el~ +98).
+  Per-model attribution for these commands is imperfect — needs Owner
+  confirmation if benchmarking matters (same concern as task #33 in
+  specs/006).
+- A missing closing paren once nested the copy-id defun inside
+  ~agent-org-show-traffic~ (found and fixed in session) — worth remembering
+  when re-reading that region.

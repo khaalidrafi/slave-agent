@@ -268,16 +268,16 @@ Order is doctrine-fit x cost paid, cheapest review first. Each item is ONE commi
 
 | #  | Subsystem                                                                                     | Cut                | Why it is bloat                                                                                                                                                 |
 |----+-----------------------------------------------------------------------------------------------+--------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| P0 | self-update (~37 modules, 13,854 lines, plus ~tests/e2e/core/upgrade/~ and ~scripts/update-test/~) | delete             | Fights Guix/Nix: wants a write into a read-only store path, re-resolves a dep closure we did not choose; ~hermes update~ becomes a pointer to the package manager |
-| P1 | ~apps/~ desktop + bootstrap installer                                                           | delete             | A self-installing GUI product on a distro that owns installs; the installer is the thing already proven broken here (non-FHS). ~44 MB~                            |
-| P2 | ~website/~ Docusaurus                                                                           | replace            | We ship a package, not a docs portal. Small ~docs/*.org~ set instead, which the fork can actually keep current                                                    |
-| P3 | ~locales/~                                                                                      | delete after P1/P7 | 6.7 MB of strings for UI surfaces that are gone                                                                                                                 |
-| P4 | ~optional-skills/~                                                                              | delete             | Shipped but inactive: 10.3 MB of catalogue the user does not have installed                                                                                     |
-| P5 | 42 platform adapters -> opt-in                                                                | gate + move        | Keep the channels the master uses; the rest are ~plugins/platforms/<name>/adapter.py~ the plugin system already supports                                          |
-| P6 | ~tools/~ 342 files                                                                              | gate               | Narrow waist keeps terminal/file/web/search/clarify; the long tail goes ~check_fn~-gated or plugin                                                                |
-| P7 | dashboard: ~web/~ SPA + ~hermes_cli/web_routers~                                                  | gate + delete      | FastAPI surface for a GUI we are not shipping                                                                                                                   |
-| P8 | meetings, voice, wake-word, ~image_gen~, ~video_gen~                                              | gate               | Heavy deps, narrow use; already plugin-shaped, so the work is making them off by default                                                                        |
-| P9 | ~evals/~                                                                                        | delete             | Dev-only benchmark harness                                                                                                                                      |
+| P0 | self-update (~37 modules, 13,854 lines, plus ~tests/e2e/core/upgrade/~ and ~scripts/update-test/~) | delete | DONE (island + test-tail commit ef6647262f) |
+| P1 | ~apps/~ desktop + bootstrap installer | delete | DONE 2026-11-17 (b3e628ec20; desktop-serving CLI modules remain for legacy installs — follow-up) |
+| P2 | ~website/~ Docusaurus | replace | DONE 2026-11-17 (5bc4eb1b84; docs = README + ~docs/*.org~) |
+| P3 | ~locales/~ | delete after P1/P7 | DONE 2026-11-17 (622420a08b) |
+| P4 | ~optional-skills/~ | delete | DONE 2026-11-17 (9b9a7287d4) |
+| P5 | 42 platform adapters -> opt-in | gate + move | LARGELY DONE upstream of the fork point: ~gateway/platforms/~ carries the shared surfaces, the channels live in ~plugins/platforms/<name>/~ (telegram, discord, slack, ...) — audit the survivors (api_server, webhook, signal, qqbot, weixin, whatsapp_cloud, yuanbao, bluebubbles, msgraph) for the same move |
+| P6 | ~tools/~ 342 files | gate | OPEN — ~check_fn~-gate the long tail or move it to plugins |
+| P7 | dashboard: ~web/~ SPA + ~hermes_cli/web_routers~ | gate + delete | OPEN |
+| P8 | meetings, voice, wake-word, ~image_gen~, ~video_gen~ | gate | OPEN — plugin-shaped already; make them off-by-default |
+| P9 | ~evals/~ | delete | DONE 2026-11-17 (5bc4eb1b84) |
 
 Kept on purpose: ~LICENSE~ and ~contributors/~ (attribution), ~nix/~ + ~docker/~ (how a
 package manager gets the thing installed), ~pm/~ (dependency provisioning is how we do NOT
