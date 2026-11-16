@@ -1,0 +1,110 @@
+#+TITLE: Spec 013 — brandability: the deployment profile contract
+#+STARTUP: overview
+
+- Status: PROPOSED (contract ready; implementation continues on the
+  live ai/main board)
+- Source: Owner order 2026-11-16 #hq — "make it completely brandable
+  for a company's tailored assistant"; anchored on what already
+  landed per the live board (Owner order 2026-11-02: brand JSON →
+  compiled default persona in gateway/platforms/api_server_brand.py,
+  API_SERVER_BRAND_FILE / platforms.api_server.brand_file wiring, the
+  deploy/example kit with brand.example.json + integrator README,
+  9/9 contract cases) plus specs/001–004 (the product's own brand
+  tier), specs/005 (profile-driven capabilities),
+  docs/INTEGRATION-ADMINEVERYWHERE.org (purity law), and the board
+  item "one-command persona install (persona = config profile)".
+
+* Problem
+
+slave-agent has two brand tiers and only parts of each are built.
+The product's own mark (SLUG, PRODUCT, TAGLINE, HOME_ENV in brand.py,
+rewritten by scripts/rebrand.py per specs/001–004) works and is
+drift-proof. The deployment tier landed its first slice on
+2026-11-02: a brand JSON compiled into the default persona on the
+serve side, with fail-fast parsing and request-level override. What
+is missing is the contract that makes brandability COMPLETE: one
+artifact per deployment covering identity, persona, vocabulary,
+capabilities, and integration, consumed identically by every surface
+(library embedding, ACP, serve), with a one-command install and a
+testable purity law. "Completely brandable" means: a company tailors
+the assistant by writing ONE configuration artifact, with zero code
+changes and zero client specifics in this tree.
+
+* Requirements
+
+1. One profile artifact per deployment, ~profiles/<name>.json~ beside
+   the existing ~config.yaml~ (the settings namespace
+   ~plugins.entries.*~ already rides config per specs/005). It EXTENDS
+   the landed brand JSON (deploy/example/brand.example.json is the
+   seed shape), never forks it. Blocks:
+   - ~identity~: company name, product display name, assistant persona
+     name users address, tagline, locale, timezone.
+   - ~persona~: tone (three adjectives at most), style rules, refusal
+     style, signature line — compiled into the default persona by the
+     landed api_server_brand.py semantics.
+   - ~vocabulary~: keep-list (terms never rewritten or translated) and
+     banned-list (terms never emitted).
+   - ~capabilities~: per-capability enable plus settings; the shop
+     block is exactly today's ~plugins.entries.shop.settings~ shape
+     (specs/005 req. 1).
+   - ~integration~: surface selection (library embedding, ACP, or
+     both), panel identity mapping, banner mode.
+   - ~secrets~: env var NAMES ONLY, consumed through
+     ~agent.secret_scope~ at call time (specs/005 req. 3); a value in
+     the profile file is a schema violation, not a warning.
+2. Every user-facing string renders from the profile at runtime:
+   banner nameplate (today fed by brand.PRODUCT/TAGLINE per specs/002),
+   slash-command help, steward refusal wording style, persona voice.
+   The landed precedence law holds everywhere: a request-level system
+   message overrides the compiled profile persona; malformed profile
+   files fail fast. The product's own mark stays generator-owned
+   (FORK.org: never hand-edit a brand string); the deployment identity
+   is runtime config. Two tiers, two laws, no mixing.
+3. One-command install: ~slave persona install <profile-url-or-path>~
+   validates the schema, lands the profile in the state dir, runs the
+   leakage self-check (req. 5), and prints the activation line. The
+   board's group-chat roadmap names this command; this spec fixes its
+   contract.
+4. Multi-profile serving: one process serves many profiles; adapters
+   cache per (settings, token) so profiles never inherit each other's
+   connections (specs/005 req. 3, restated as a profile-law).
+5. Purity law, testable: no client name, branding, or data model in
+   this tree. The negative check ~rg -i "<deployment-slug>"~ over the
+   tree must return nothing for every deployment; profiles live in the
+   deployment repo, never here. The generator's ~blindspots()~ and
+   ~BRAND_LITERAL_ALLOW~ machinery (specs/003) gains a profile-slug
+   blind list so a deployment can run the same check against its own
+   slug.
+6. Schema validation is a first-class failure: an invalid profile
+   exits nonzero naming the offending field and the expected shape;
+   it never falls back to defaults silently.
+7. Tests in ~tests/profiles/~: schema acceptance and rejection tables,
+   golden renders per identity (banner, help, one refusal) that differ
+   between two fixture profiles with zero code change, and the
+   isolation test (two profiles, distinct shop tokens, no cache bleed).
+
+* Acceptance criteria
+
+1. A new company assistant is produced by authoring one profile file
+   and running the install command; no file outside the state dir
+   changes (verified by ~git status~ in a clean checkout).
+2. Golden renders for two fixture profiles differ in every
+   user-facing surface tested, with the same code commit.
+3. ~rg -i "<deployment-slug>"~ over this tree returns nothing for both
+   fixture deployments.
+4. A profile carrying a secret VALUE fails schema validation with the
+   field named and exits nonzero.
+5. The specs/005 shop acceptance suite still passes unchanged (the
+   profile block is a superset of today's settings shape).
+
+* Notes / OPEN QUESTIONS
+
+- Implementation continues on the live ai/main board (the code landed
+  there 2026-11-01 and the chain self-dispatches); this spec is the
+  contract that work lands against, not a transfer blocker.
+- Whether ~persona install~ also handles state-dir migration
+  (~slave migrate-state~, board item) or ships separately is a
+  sequencing call; both are specified to not conflict.
+- The builder skill (~skills/slave-agent-builder/SKILL.md~, vendored
+  into the agent-team-ci kit) walks an agent through this contract end
+  to end; it is the operator-facing documentation of this spec.

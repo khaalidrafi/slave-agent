@@ -1,0 +1,103 @@
+#+TITLE: Spec 014 — AdminEverywhere embedding readiness
+#+STARTUP: overview
+
+- Status: PROPOSED (corrected 2026-11-16; supersedes the first draft
+  that made ~slave serve~ the embedding path)
+- Source: Owner order 2026-11-16 #hq — "prepare slave agent for
+  integration with admineverywhere"; the standing architecture
+  decision Owner 2026-11-05 17:01 Asia/Dhaka #hq (recorded on the
+  live board: the admin-app embedding is IN-PROCESS, the agent core
+  ships as a Python library via the admineverywhere[agent] extra, the
+  serving endpoint item is retired); docs/INTEGRATION-ADMINEVERYWHERE
+  .org (the 2026-10-31 contract); the live board entries "RETIRED
+  OpenAI-compatible serving mode" and "DONE Serve-side brand persona".
+
+* Problem
+
+AdminEverywhere (khaalidrafi/admineverywhere) embeds this platform as
+its panel assistant. The Owner fixed the architecture on 2026-11-05:
+in-process, the agent core as a Python library behind the
+admineverywhere[agent] extra — not a serving endpoint. The endpoint
+work that had landed (8d4b1ed7 contract pin + smoke, the brand
+persona tier) stands as history. "Prepare for integration" now means:
+the library seam is specified, the brand/persona injection is pinned
+to the mechanism that already landed, ACP keeps its first-class
+external role, and the panel team's six letter asks from 2026-10-31
+each have a default so work proceeds unblocked.
+
+* Requirements
+
+1. Library seam (the Owner's architecture): the panel depends on the
+   slave-agent package with the ~[agent]~ extra and gets a stable
+   Python surface — import the core, construct it with the profile
+   and brand configuration, run turns, read results. No subprocess,
+   no socket, no endpoint required for the embedding. The extra
+   carries the minimal dependency set so the lean-core work
+   (specs/006) protects the panel install too.
+2. Brand and persona injection rides the landed mechanism
+   (Owner order 2026-11-02): the brand JSON compiled into the default
+   persona (gateway/platforms/api_server_brand.py semantics —
+   fail-fast on malformed files, a request-level system message
+   wins). The library path consumes the same artifact and the same
+   precedence; specs/013 generalizes the artifact into the full
+   profile contract.
+3. ACP stays the first-class external surface (~slave-acp~,
+   acp_adapter.entry:main, session resume via ~session/list~ and
+   ~session/load~) for hosts that want tool-level control without
+   importing the core.
+4. The serve surface (~slave serve~, /v1/chat/completions) is
+   RETIRED as the integration item (Owner 2026-11-05; board retired
+   it 2026-11-11). The landed code and its 9-case contract suite
+   stand as history and stay available as a deployable platform for
+   other hosts; nothing new ships against it as the AdminEverywhere
+   path without a fresh Owner order.
+5. Purity law, restated for the seam: no panel-specific code, ever.
+   The seam is the package extra, the profile artifact, and env var
+   names. AdminEverywhere provides hosting, the user-to-profile map,
+   RBAC, and audit on its side. A need that does not fit the seam
+   widens the generic surface; it never special-cases the panel.
+6. Safe defaults for the six letter asks (each reversible by the
+   panel team's answer, none blocking):
+   | Ask | Default while unanswered |
+   |-----+--------------------------|
+   | Integration | In-process library via the [agent] extra (req. 1) |
+   | Runtime + budget | Inside the panel process; budget recorded at deploy |
+   | Identity model | Per-admin-user profiles, one service-account fallback |
+   | Persona injection point | Brand JSON / profile artifact, request-level override wins (req. 2) |
+   | Secrets channel | The panel's secret store, exported to the agent process as env var names |
+   | Staging contact | OPEN — the one default this repo cannot pick; Owner names it |
+7. Open decisions with the panel team travel as issues on
+   khaalidrafi/admineverywhere (the FR thread admineverywhere#18 is
+   the live one); this repo records them, it does not decide them.
+
+* Acceptance criteria
+
+1. A transcript shows the panel installing via the extra and running
+   a turn in-process, with the brand persona applied and a
+   request-level system message overriding it.
+2. The deploy/example kit (brand.example.json + integrator README,
+   renamed off any customer naming by the 2026-11-16 naming-ban
+   order) documents the library seam end to end.
+3. The panel-side checklist from docs/INTEGRATION-ADMINEVERYWHERE
+   .org is answerable by pointing at this spec and the profile
+   artifact, with no code reading required.
+4. ~rg -i "admineverywhere"~ over the implementation tree returns
+   nothing but the contract docs and board entries (the platform is
+   a name in contracts, never in code).
+
+* Notes / OPEN QUESTIONS
+
+- The agent-team.el side of AdminEverywhere (boards, dispatch, the
+  Emacs-local bridge surfaces) is specified in its own repo; this
+  spec covers only the assistant embedding and stays out of that
+  lane.
+- Implementation continues on the live ai/main board (the design
+  item "Emacs/Org roadmap R2-R6 + panel embedding" is the Senior
+  Software Architect seat's lane); this spec is the contract that
+  work lands against.
+- The first draft of this spec (same day) specified the serve
+  endpoint as the embedding path and was corrected against the
+  Owner's 2026-11-05 decision found on the live board during
+  session-pickup. The correction is recorded here so the draft's
+  failure mode is visible: verify inherited claims against the real
+  board before specifying.

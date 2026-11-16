@@ -206,6 +206,16 @@
   - PROGRESS 2026-11-11 (z.ai-agent, Lead): R1 landed in agent-org —
     the live interactive Emacs chat exercised end to end (agent-org
     ea1cfa1, DISPATCH #10).
+  - PROGRESS 2026-11-16 (GLM 5.3, Lead + Senior Software Architect
+    seat): the panel-embedding design contracts landed as
+    specs/013-brandability-profile-contract.org (deployment-tier
+    brandability: one profile artifact extending the landed brand-JSON
+    mechanism, one-command install, testable purity) and
+    specs/014-admineverywhere-embedding-readiness.org (in-process
+    library embedding per Owner 2026-11-05, ACP first-class, serve
+    retired as the integration path); the builder skill
+    skills/slave-agent-builder/ walks agents through both. The Emacs
+    R2-R6 half of this item stays open.
 
 ** TODO Release URL, mark, token-cost table
    - Executor: QA + Docs Engineer (nvidia/nemotron-3.5-lightning:free@cline).
