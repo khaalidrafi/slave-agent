@@ -11,6 +11,17 @@ and wiring capabilities through configuration. This skill walks that
 build end to end. You produce configuration and evidence, never forks
 of the platform.
 
+## Current state (read this first)
+
+The profile contract (specs/013) is PROPOSED: the one-command
+install and the schema validator are board work, not shipped code.
+Until they land, the profile artifact is the brand JSON that already
+shipped (deploy/example/brand.example.json, compiled into the
+default persona by gateway/platforms/api_server_brand.py, with a
+request-level system message winning), and the verify steps that
+name the install command apply from the day it ships. Everything
+else in this skill works today.
+
 ## Before you start
 
 Locate the slave-agent checkout, or clone it:
