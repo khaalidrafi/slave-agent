@@ -77,7 +77,7 @@ import os
 import subprocess
 import sys
 
-_FRONTEND = ("ui-tui/", "web/", "apps/")  # TS typecheck-matrix packages
+_FRONTEND = ("ui-tui/", "web/")  # TS typecheck-matrix packages (apps/ cut, P1)
 _ROOT_NPM = {"package.json", "package-lock.json"}  # shifts every package's tree
 _DOCKER_META = ("docker/", ".hadolint.yaml", "Dockerfile", ".dockerignore") # docker setup
 _NIX_PATHS = ("nix/",) # nix files
@@ -106,12 +106,8 @@ _PY_RELEVANT_SITE = (
 # that can catch the drift, so these force the Python lane too.
 _PY_RELEVANT_CONTRACT_FILES = {
     # tests/tui_gateway/contracts/test_generated.py (rendered from tui_gateway/contracts)
-    "apps/shared/src/gateway-contract.generated.ts",
-    "apps/shared/src/gateway-contract.openrpc.json",
     # tests/hermes_cli/test_desktop_slash_registry.py
-    "apps/desktop/src/lib/desktop-slash-registry.json",
     # tests/tui_gateway/test_show_reasoning_display_gate.py (card-tool names vs the gateway lifecycle set)
-    "apps/desktop/src/lib/tool-render-class.ts",
     # tests/website/test_catalog_rules_mirror.py (docs page mirrors the canonical rules)
     "plugin-catalog/README.md",
 }
@@ -124,7 +120,7 @@ _SCAN_FILES = {"setup.cfg", "pyproject.toml"}
 # that carries the same pin fragment, and the Tauri app's non-Rust sources
 # (the .rs/Cargo files are the ``rust`` lane's job). Changes here get the
 # bootstrap-installer.yml lane — a real sandboxed install + stamp check.
-_BOOTSTRAP_PATHS = ("apps/bootstrap-installer/",)
+_BOOTSTRAP_PATHS = ()
 _BOOTSTRAP_FILES = {"scripts/install.sh", "setup-hermes.sh"}
 # Windows desktop-update hand-off (scripts/desktop-update/windows.ps1 + the
 # Electron side that launches it) and the pytest files that spawn it. The PowerShell
@@ -133,13 +129,9 @@ _BOOTSTRAP_FILES = {"scripts/install.sh", "setup-hermes.sh"}
 # tests/_fixtures/ holds the conftest's platform gating, so it re-arms the lane too.
 _DESKTOP_UPDATER_PATHS = (
     "tests/_fixtures/",
-    "apps/desktop/electron/updater",
-    "apps/desktop/electron/app-updater",
 )
 _DESKTOP_UPDATER_TEST_PREFIX = "tests/desktop/"
 _DESKTOP_UPDATER_FILES = {
-    "apps/desktop/electron/updater-process.ts",
-    "apps/desktop/electron/managed-ssh-update.ts",
     "tests/conftest.py",
     "pyproject.toml",
 }
@@ -170,14 +162,6 @@ _PY_TEST_HARNESS = (
 # Both Desktop suites package the app and share this harness (the update
 # suite imports the core suite's harness and provider).
 _DESKTOP_E2E_SHARED = (
-    "apps/desktop/package.json",
-    "apps/desktop/electron-builder.config.cjs",
-    "apps/desktop/scripts/",
-    "apps/desktop/e2e/core/harness",
-    "apps/desktop/e2e/core/provider",
-    "apps/desktop/e2e/electron-binary",
-    "apps/desktop/e2e/fix-electron-tracing",
-    "apps/desktop/e2e/run-tmp",
 )
 _E2E_LANES: dict[str, tuple[str, ...]] = {
     "e2e": (
@@ -207,21 +191,9 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
     ),
     "e2e_desktop_core": (
         *_DESKTOP_E2E_SHARED,
-        "apps/desktop/e2e/",
-        "apps/desktop/electron/backend-",
-        "apps/shared/src/",
-        "apps/desktop/src/store/session",
-        "apps/desktop/src/store/transcript",
     ),
     "e2e_desktop_update": (
         *_DESKTOP_E2E_SHARED,
-        "apps/desktop/e2e/update/",
-        "apps/desktop/electron/updater",
-        "apps/desktop/electron/update-",
-        "apps/desktop/electron/app-updater",
-        "apps/desktop/electron/gateway-stop-before-update",
-        "apps/desktop/electron/pre-update-",
-        "apps/desktop/electron/install-stamp",
         # The last three entries named the Python-side updater (scripts/desktop-update/,
         # hermes_cli/desktop_update*, hermes_cli/update_*), which this fork deleted in
         # FORK.org P0. The Electron shell's updater is intact and owns this lane; the
