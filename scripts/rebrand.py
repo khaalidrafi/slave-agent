@@ -201,7 +201,16 @@ BRAND_LITERAL_ALLOW = SELF_PATHS | {"scripts/fork-sync.sh", "FORK.org", "HANDOFF
     # the builder skill, and the spec set. Each names this product because it
     # is ABOUT this product.
     "AGENTS.md", "docs/MOBILE-PORT.org", "deploy/example",
-    "skills/slave-agent-builder", "specs/"}
+    "skills/slave-agent-builder", "specs/",
+    # The 2026-11-17 feature block: the persona package and its CLI, the two
+    # plugins, the mobile bootstrap, their tests, and the two new docs — all
+    # fork-authored, all naming the product they belong to.
+    "persona/", "mobile/", "plugins/agent_team/", "plugins/groupchat/",
+    "tests/persona/", "tests/plugins/agent_team/", "tests/plugins/groupchat/",
+    "hermes_cli/persona.py", "hermes_cli/state_migrate.py",
+    "hermes_cli/subcommands/persona.py", "hermes_cli/subcommands/state_migrate.py",
+    "docs/RELEASE.md", "docs/EMACS-ROADMAP-R2-R6.org",
+    "agent-team/HR-03-RANKING-DRAFT.org"}
 
 
 def tracked_files(tier: str) -> list[Path]:
