@@ -3,61 +3,49 @@
 
 * Board
 
-** TODO hr/03 — full CANDIDATES.org ranking pass under this Lead
-   :PROPERTIES:
-   :EFFORT: M
-   :DEADLINE: <2026-11-23>
-   :END:
-   - ROLE: Platform / CI Engineer — qwen3.8-flash@qoder
-   - Owner order 2026-11-16: "hire worthy CANDIDATES." The 2026-11-01
-     roster was confirmed on proven history (MEMBERS HR ledger,
-     2026-11-16); this item runs the STAFFING law's research leg:
-     rank every row of agent-team/CANDIDATES.org with web-researched
-     evidence (batched searches, LMArena / Artificial Analysis /
-     hands-on reviews, dates cited), record LIMITS per row, compute
-     the roster diff against GET /v1/models, and post the resulting
-     hire/release proposals to the Owner per CONSULT LAW before any
-     activation. ADD-FREEZE holds: no new rows without the Owner.
+** DONE Profile contract (specs/013) + AdminEverywhere readiness (specs/014)
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; commit f793f612c3, Owner orders
+     2026-11-16 "completely brandable" + "prepare for admineverywhere"):
+     the persona package (schema, renders, store), persona install CLI,
+     golden-render tests, the banner's runtime deployment nameplate,
+     PII redaction at the serve boundary, slave_compat + migrate-state
+     in the same landing. The library seam a panel imports is
+     persona (compile_persona et al.); ACP stays first-class; the
+     builder skill's current-state note updated. Evidence: 34 tests
+     green in tests/persona/.
 
-** TODO scrub/01 — customer-brand out of CODE surfaces (naming-ban tail)
-   :PROPERTIES:
-   :EFFORT: S
-   :DEADLINE: <2026-11-19>
-   :END:
-   - ROLE: Software Engineer — deepseek-v4.1-flash@codebuddy
-   - Owner order 2026-11-16: no customer name anywhere in this tree.
-     Lead surfaces are scrubbed (this commit); the CODE surfaces remain:
-     gateway/platforms/api_server.py, gateway/platforms/api_server_brand.py,
-     plugins/shop/adapter.py, tests/gateway/platforms/test_serve_openai_contract.py,
-     tests/plugins/test_shop_plugin.py. Replace customer-brand strings
-     with generic equivalents (docstrings, comments, fixtures, default
-     values) with zero behavior change; suite green (the 9 serve-contract
-     cases + shop tests).
-   - Encode the lesson (principle-encode-lessons-in-structure): add the
-     customer-brand pattern to the rebrand generator's hand-brand lane
-     so future customer names fail --lint instead of landing by hand.
-     Verify hand-brands = 0 via the generator's own lane.
-   - Playbook: refactoring (behavior-preserving); verify per
-     prove-it-works on the real test run, not compileall alone.
+** DONE agent-team feature in slave-agent (non-coding workflows)
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; commit f793f612c3, Owner order
+     2026-11-17 "writing team for blogs, reporting team for news
+     media"): plugins/agent_team — team_run walks a roster of named
+     roles through the sanctioned ctx.llm facade (each role sees the
+     task and every earlier role's output); built-ins blog-writing and
+     news-reporting; deployment rosters via settings.teams; hermes team
+     CLI + /team. Evidence: tests/plugins/agent_team green.
 
-** TODO brand/02 — README family repositioning (customizable agent)
-   :PROPERTIES:
-   :EFFORT: M
-   :DEADLINE: <2026-11-21>
-   :END:
-   - ROLE: QA + Docs Engineer — nvidia/nemotron-3.5-lightning:free@cline
-   - README.md still carries upstream Hermes branding (banner, Nous
-     links, product name). Rewrite per the product statement: slave-agent
-     is a customizable agent with the hermes feature set, mouldable for
-     personal, business, or developer workflows; deployments are
-     configurations (brand file, profiles, env) — see deploy/example/.
-     Keep the fork's Absolute Backwards Compatibility guarantee visible.
-     SOUL.md and README.es/zh-CN/ur-pk: reposition or mark upstream-
-     carried; state which per file. Banner from brand.PRODUCT per the
-     wordmark law (specs/002); no hand-typed brand literals (specs/003).
-   - Senior Software Architect reviews before REVIEW flips.
-
-** DONE Branch resolution — every branch folded into ai/main
+** REVIEW hr/03 — full CANDIDATES.org ranking pass under this Lead
+   - RESEARCH LANDED 2026-11-17 (GLM 5.3, Lead; research seat):
+     agent-team/HR-03-RANKING-DRAFT.org — 25-row tier table with
+     per-row LIMITS, sources dated 2026-11-17, hire/release list. Key
+     findings: poolside/laguna-s-2.1:free DEAD (delisted 2026-10-31);
+     devin SWE-2 free window expires 2026-11-30 (Owner decision
+     needed); ling-3.2-flash:free the strongest new free lane;
+     glm-4.7-flash deprecated for the QA upgrade. Roster diff BLOCKED:
+     GOMODEL_MASTER_KEY absent in the seat (name-only check; value held
+     by the Owner). Proposals to the Owner per CONSULT LAW in the
+     2026-11-17 report — no activation before the Owner answers.** DONE scrub/01 — customer-brand out of CODE surfaces (naming-ban tail)
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; commit 0bb68fedae): the five code
+     surfaces scrubbed to generic equivalents (api_server comment + guide
+     path, api_server_brand docstring, shop adapter comments x3,
+     serve-contract + shop test fixtures); zero behavior change — 23/23
+     shop + 9/9 serve-contract green after. The lesson encoded as
+     structure: rebrand.py gained the BRAND_DENY_NAMES env deny lane
+     behind --lint (CI: BRAND_DENY_LIST secret, Owner-sealed; unset =
+     idle, green). A deny list cannot live in this tree — it would carry
+     the names it bans.** TODO brand/02 — README family repositioning (customizable agent)
+   - PROGRESS 2026-11-17 (GLM 5.3, Lead): docs/RELEASE.md + the own mark
+     (assets/icon-master.svg, a collar replacing the caduceus) landed;
+     the README family rewrite itself remains this row's scope.** DONE Branch resolution — every branch folded into ai/main
    - Owner 2026-11-11 #hq: "Resolve ALL branches and merge them into
      ai/main." Dispositions (SHAs verified on a fresh full clone):
      - origin/ai/light-core (4255916): 0 unique commits, contained in
@@ -84,18 +72,12 @@
      origin = ai/main + ai/slave-agent + upstream/main + archive tag.
 
 ** TODO Mobile phase 1 — Termux bootstrap + bionic wheel audit
-   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
-   - Contract: docs/MOBILE-PORT.org (absorbed from the island,
-     Owner 2026-11-05 17:01 Asia/Dhaka #hq).
-   - Scope: mobile/bootstrap-termux.sh (pkg installs, clone, venv,
-     lean extra, compile smoke) + run the contract's dependency-audit
-     commands; record the bionic/binary classification in
-     MOBILE-PORT.org. Phase 2 stays BLOCKED on the audit (contract).
-   - Effort: ~0.5 day. Deadline: 2026-11-14 (Lead-set, TIME
-     DISCIPLINE LAW).
-   - Evidence: bootstrap smoke green on aarch64; audit table filled.
-
-** DONE Transfer the ai/light-core code island into this repo
+   - PROGRESS 2026-11-17 (GLM 5.3, Lead; commit 1cbe914b87):
+     mobile/bootstrap-termux.sh landed (pkg + clone + venv + base
+     install + compile/import smoke, all nice'd, PM store bypassed) and
+     the static bionic classification table is in MOBILE-PORT.org.
+     BLOCKED remainder: the live aarch64 run needs the phone or a
+     Termux container — no such host in this seat (blocking fact).** DONE Transfer the ai/light-core code island into this repo
    - The three work commits quoted in HANDOFF.org (0bbd3f41cd updater
      tail, e3edc4e6d3 brand generator, 51e1d196c8 shop plugin) are not
      on origin — only the handoff docs island is.
@@ -118,60 +100,40 @@
     now stand: ai/main carries the work, the generated brand branch
     is live. Row complete.
 
-** TODO slave_compat as the canonical key + state migration
-   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
-   - Scope: slave_compat canonical while hermes_compat keeps working;
-     state-dir read-fallback; one-shot =slave migrate-state=; launcher
-     path default moves, old name still resolves.
-   - Evidence: knob-for-knob compat tests green; migration test green.
-
-** TODO KEEP_RE third-party shape rules + tests
-   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
-   - Scope: encode the names the generator must never rewrite (package
-     managers, container images, upstream model IDs) as shape rules
-     with tests; reword the stale updater comment on the upstream repo
-     path entry.
-   - Evidence: rebrand --lint / --blind fixture cases green.
-  - EVIDENCE 2026-11-11 (z.ai-agent, Lead; Owner's Qoder transcripts,
-    verified on origin/ai/main): three concrete hazards close this
-    row's scope —
-    (1) hermes_cli/steward.py ships lowercase
-    =nousresearch/hermes-agent= (the docker rmi line) while KEEP_RE
-    is case-sensitive, so the identity tier rewrites it to
-    =nousresearch/slave-agent= on the branded branch — a name we do
-    not own;
-    (2) steward.py's Termux (=pkg uninstall hermes-agent=) and Nix
-    (=remove hermes-agent from your flake=) strings name upstream's
-    published packages — decide: functional KEEPs, or brand-sourced
-    ours;
-    (3) add the steward relationship test: the Guix refusals must
-    name brand.SLUG (already landed in ai/main steward.py) and no
-    second spelling may hardcode it.
-
-** TODO Fix the known-red imports (steward tests + CI dangling refs)
-   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
-   - Scope: tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission
-     still imports hermes_cli.update_contract, deleted by P0; PLUS the full
-     DANGLING list from kernel_floor --check-imports (pm tls fixture,
-     update_lock, fetch_models base_url, public surface, icon flavors,
-     release tags, termux deb version, tui_gateway render) so the
-     kernel-floor CI lane goes green end to end.
-   - Evidence: scripts/run_tests.sh green on the touched dirs.
-  - EVIDENCE 2026-11-11 (z.ai-agent, Lead): hermes_cli/update_contract
-    confirmed absent on origin/ai/main; stale refs verified by git
-    grep — test_steward_detection.py x5, test_commit_build_updates.py
-    x1, test_check_store_update.py x1, test_shallow_graft_prune.py x1.
-
-** TODO Execute the bloat removal queue P0-P9
-   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy),
-     exhaustively — this is the fork's main implementation lane.
-   - Scope: FORK.org queue, ONE commit per subsystem, three-way
-     verification per removal (check-imports, compileall, survivor
-     tests), kernel_floor --record in the same commit.
-   - Evidence: scripts/ci/kernel_floor.json monotonically lower per
-     cut; compileall green.
-
-** RETIRED OpenAI-compatible serving mode (general)
+** DONE slave_compat as the canonical key + state migration
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; commit f793f612c3): slave_compat
+     canonical, hermes_compat working alias (explicit canonical beats a
+     stale alias); save_config upgrades the alias one-way; knob tests
+     green. State: brand.LEGACY_STATE_DIR + read-fallback in
+     hermes_constants (the legacy name survives rebranding only in
+     brand.py, the generator's exempt file) + one-shot migrate-state
+     (idempotent, conflict-safe). Launcher alias for the old command
+     name lands with release tooling — named remainder.** DONE KEEP_RE third-party shape rules + tests
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; commit 0bb68fedae): lowercase
+     repo path (docker rmi line), nousresearch/hermes-sandbox (the image
+     config_defaults pulls), and upstream model IDs (hermes-4-405b,
+     Hermes-3-Llama-3.1-70B, openrouter/hermes3:70b) survive the
+     identity tier — shape-rule tests green. Stale updater comment on
+     the repo-path arm reworded. Termux/Nix package strings in
+     steward.py now come from brand.SLUG (this fork's own packages
+     carry its name); docker image + docs host stay KEEPs.** DONE Fix the known-red imports (steward tests + CI dangling refs)
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; commit ef6647262f): 61 dangling
+     own-module imports cleared — 28 updater-only test files deleted, 12
+     dead test functions cut from 8 mixed files, 6 references re-pointed
+     to re-homed functions (install_maint, process_identity,
+     release_channels, the P5 platforms move, the discovery registry).
+     kernel_floor --check-imports: 16911 files, zero findings. The
+     checker gained three named blindness fixes (optional dynamic
+     imports, fixture-created modules, truncated f-string captures).** TODO Execute the bloat removal queue P0-P9
+   - PROGRESS 2026-11-17 (GLM 5.3, Lead): P1 (apps/ 51 MB, b3e628ec20),
+     P2 (website/ 29 MB, 5bc4eb1b84), P3 (locales/ 6.5 MB, 622420a08b),
+     P4 (optional-skills/ 10.3 MB, 9b9a7287d4), P9 (evals/ 1.9 MB,
+     5bc4eb1b84) — ~100 MB of tree gone, one commit per subsystem,
+     import scan + compileall + survivor tests green per cut; floor
+     re-recorded. OPEN: P6 (tools gating), P7 (dashboard gate+delete),
+     P8 (heavy plugins off-by-default), P1 follow-up (desktop-serving
+     CLI modules), P5 survivor audit. FORK.org queue table carries the
+     per-item status.** RETIRED OpenAI-compatible serving mode (general)
    - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
    - Scope: =slave serve= streaming /v1/chat/completions so any host
      panel (AdminEverywhere included) embeds the agent generically;
@@ -191,59 +153,39 @@
     contract pin + smoke) stands as history; the CI-wiring remainder
     no longer applies. ACP stays the first-class external surface.
 
-** TODO Group-chat capabilities
-   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy).
-   - Scope: /recap, chat-to-cron reminders, PII redactor at the prompt
-     boundary, one-command persona install (persona = config profile).
-   - Evidence: tests + docs entries.
-
-** TODO Design: Emacs/Org roadmap R2-R6 + panel embedding
-   - Executor: Software Architect (glm-5.3@chat.z.ai).
-   - Scope: R2-R6 design per FORK.org; the serve-vs-ACP embedding
-     architecture, session model and per-user profile design for
-     panel hosts.
-   - Evidence: design doc under docs/.
-  - PROGRESS 2026-11-11 (z.ai-agent, Lead): R1 landed in agent-org —
-    the live interactive Emacs chat exercised end to end (agent-org
-    ea1cfa1, DISPATCH #10).
-  - PROGRESS 2026-11-16 (GLM 5.3, Lead + Senior Software Architect
-    seat): the panel-embedding design contracts landed as
-    specs/013-brandability-profile-contract.org (deployment-tier
-    brandability: one profile artifact extending the landed brand-JSON
-    mechanism, one-command install, testable purity) and
-    specs/014-admineverywhere-embedding-readiness.org (in-process
-    library embedding per Owner 2026-11-05, ACP first-class, serve
-    retired as the integration path); the builder skill
-    skills/slave-agent-builder/ walks agents through both. The Emacs
-    R2-R6 half of this item stays open.
-
-** TODO Release URL, mark, token-cost table
-   - Executor: QA + Docs Engineer (nvidia/nemotron-3.5-lightning:free@cline).
-   - Scope: our own release URL + installer pointer, icon regeneration
-     via scripts/generate_icons.py, the lean-vs-compat token cost
-     table ("lighter" as a number).
-   - Evidence: docs updated; table committed.
-
-** TODO CI wiring + review lane
-   - Executor: Platform/CI Engineer (qwen3.8-flash@qoder).
-   - Scope: port the umbrella CI kit pattern (self-check, brand
-     consistency lanes); EVERY branch/PR routes through the Copilot CR
-     lane before the Lead merge (Owner 2026-10-31: burn this month's
-     CR). Seal the customer-website PAT (exact name in the vault) as a
-     repo secret once the
-     Owner's PAT scope covers this repo (value held by the Owner
-     meanwhile).
-   - Evidence: green self-check runs on ai/**; CR comments visible on
-     open PRs.
-
-* Org cheat sheet
-  - =* Board= holds every work item as =** KEYWORD title=.
-  - Add new work ONLY under Board; the cheat sheet stays last and
-    never carries work items.
-  - Keyword cycle: TODO -> PROGRESS -> REVIEW -> PENDING (delivered,
-    awaiting Lead merge) -> DONE (Lead-only).
-
-** DONE Serve-side brand persona for business deployments (customer kit)
+** DONE Group-chat capabilities
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; commit f793f612c3): /remind
+     (explicit in/at/every grammar into cron.create_job, one-shot via
+     repeat=1; parser + handler tests green), PII redactor at the serve
+     boundary (persona.redact; persona integration.pii_redact or extra;
+     user/assistant text only), one-command persona install (specs/013
+     row). /recap: summarizes through ctx.llm where the live agent is
+     reachable; on gateway surfaces it says so plainly — the gap is a
+     new row below.
+** TODO /recap on gateway surfaces
+   - The gateway session store holds transcripts keyed by session ids
+     the slash-command handler cannot see; wiring a history accessor
+     through the plugin ctx is the scope. Executor: Software Engineer.** REVIEW Design: Emacs/Org roadmap R2-R6 + panel embedding
+   - The design contracts landed 2026-11-17 (GLM 5.3, Senior Software
+     Architect; docs/EMACS-ROADMAP-R2-R6.org, commit 1cbe914b87): every
+     step a separate deliverable with an acceptance test; R6 behind the
+     terminal tool's approval gate. The panel half was already settled
+     by specs/013/014 and their implementation (f793f612c3). The
+     IMPLEMENTATION of R2-R6 is future dispatch, one row per step.** DONE Release URL, mark, token-cost table
+   - CLOSED 2026-11-17 (GLM 5.3, Lead; docs/RELEASE.md, commit
+     1cbe914b87): release URL = this repo's GitHub releases, cut from
+     the generated ai/slave-agent branch only; the own mark landed
+     (assets/icon-master.svg, a collar; regeneration via
+     scripts/generate_icons.py at release time); the token table
+     generated from LEAN_DEFAULTS itself (3.1x smaller tool-output
+     ceiling, 2800 tokens saved per tool-listing turn). Live-run means
+     land with the first release soak — named in the doc.** TODO CI wiring + review lane
+   - PROGRESS 2026-11-17 (GLM 5.3, Lead): the brand lane's deny hook
+     wired (BRAND_DENY_LIST secret env; commit 0bb68fedae); six desktop
+     workflows + three site workflows retired with their subsystems.
+     OPEN: the Copilot CR lane before every Lead merge, and sealing the
+     customer-website PAT — both need the Owner's PAT scope (the App is
+     Contents-only).** DONE Serve-side brand persona for business deployments (customer kit)
    - Owner order 2026-11-02 #hq: "complete preparing slave-agent so that
      [the customer] team can customize it as their business assistant."
    - Scope landed: gateway/platforms/api_server_brand.py (brand JSON ->

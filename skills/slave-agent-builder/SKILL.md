@@ -13,14 +13,17 @@ of the platform.
 
 ## Current state (read this first)
 
-The profile contract (specs/013) is PROPOSED: the one-command
-install and the schema validator are board work, not shipped code.
-Until they land, the profile artifact is the brand JSON that already
-shipped (deploy/example/brand.example.json, compiled into the
-default persona by gateway/platforms/api_server_brand.py, with a
-request-level system message winning), and the verify steps that
-name the install command apply from the day it ships. Everything
-else in this skill works today.
+The profile contract (specs/013) is IMPLEMENTED (commit f793f612c3):
+the `persona` package, `persona install <path-or-url>` (validate, land,
+activate — an invalid artifact exits nonzero naming the field), golden
+renders for banner/help/refusals, and the artifacts directory
+`<state>/personas/`. Two deviations from the first spec draft, both
+recorded in the code: artifacts live in `personas/` (the state dir's
+`profiles/` belongs to upstream's config profiles), and the shop
+`total`-folding fixture speaks of a generic reference store (purity
+law). The serve boundary applies `persona.redact` PII redaction when
+`integration.pii_redact` is true. `slave migrate-state` moves a legacy
+state dir once, idempotently. Everything below works as written.
 
 ## Before you start
 
