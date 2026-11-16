@@ -131,7 +131,7 @@ async def test_chat_completions_rejects_bad_auth(tmp_path, headers):
         assert resp.status == 401
 
 
-# --- brand/default persona (business deployments, deploy/freshorama) -------
+# --- brand/default persona (business deployments, deploy/example) --------
 
 
 @pytest.mark.asyncio
@@ -139,8 +139,8 @@ async def test_brand_default_persona_applied_when_request_has_no_system(tmp_path
     """No system message + brand file -> agent runs with the compiled persona."""
     brand = tmp_path / "brand.json"
     brand.write_text(json.dumps({
-        "name": "Freshorama Assistant",
-        "facts": ["Ships from Lagos daily"],
+        "name": "Acme Assistant",
+        "facts": ["Ships from the depot daily"],
         "never_do": ["give medical advice"],
     }), encoding="utf-8")
     calls: list = []
@@ -154,8 +154,8 @@ async def test_brand_default_persona_applied_when_request_has_no_system(tmp_path
         assert resp.status == 200
     assert len(calls) == 1
     prompt = calls[0].get("ephemeral_system_prompt") or ""
-    assert "You are Freshorama Assistant." in prompt
-    assert "- Ships from Lagos daily" in prompt
+    assert f"You are Acme Assistant." in prompt
+    assert "- Ships from the depot daily" in prompt
     assert "- give medical advice" in prompt
 
 
@@ -163,7 +163,7 @@ async def test_brand_default_persona_applied_when_request_has_no_system(tmp_path
 async def test_request_system_message_overrides_brand(tmp_path):
     """An explicit system message wins over the server-side brand persona."""
     brand = tmp_path / "brand.json"
-    brand.write_text(json.dumps({"name": "Freshorama Assistant"}), encoding="utf-8")
+    brand.write_text(json.dumps({"name": "Acme Assistant"}), encoding="utf-8")
     calls: list = []
     adapter = _build_adapter(tmp_path, extra={"brand_file": str(brand)}, calls=calls)
     async with _client(adapter) as client:

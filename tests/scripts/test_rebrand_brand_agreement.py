@@ -114,3 +114,40 @@ def test_the_generator_opens_every_format_that_ships_a_word_to_a_user():
     for ext in (".js", ".html", ".css", ".svg", ".vue", ".json", ".nix", ".mdx",
                 ".rs", ".mts", ".h", ".cs", ".cmd", ".tmpl", ".dockerfile"):
         assert ext in covered, ext
+
+
+def test_third_party_shapes_survive_the_identity_tier():
+    """Names upstream published that we do not own: the lowercase repo path the
+    docker cleanup names, the sandbox image config_defaults pulls, and upstream's
+    model IDs. The identity tier ate all three before the shape rules existed:
+    a lowercase ``docker rmi`` target became a repository we do not own, and
+    ``hermes-4-405b`` became a model that does not exist."""
+    mod = _load_rebrand()
+    for keep in ("nousresearch/hermes-agent", "nousresearch/hermes-sandbox:desktop",
+                 "hermes-4-405b", "NousResearch/Hermes-3-Llama-3.1-70B",
+                 "openrouter/hermes3:70b"):
+        out, _ = mod.rewrite_identity(f"pull {keep} now")
+        assert keep in out, (keep, out)
+    # Our own tokens still swap in the same pass, so a KEEP can never widen
+    # into a general amnesty.
+    out, hits = mod.rewrite_identity("hermes-agent and hermes_cli")
+    assert hits == 2
+    assert "slave" in out and "hermes" not in out
+
+
+def test_deployment_names_arrive_by_env_and_fail_lint(monkeypatch):
+    """The scrub law, executable: a deployment name handed in through
+    BRAND_DENY_NAMES is found case-insensitively anywhere in the tracked tree,
+    and the list itself reads the environment — a deny list checked into the
+    tree would carry the very names it bans. ``hermes-agent`` stands in for a
+    deployment name: the dev tree legitimately carries that word everywhere, so
+    the lane must find it there."""
+    mod = _load_rebrand()
+    assert mod.deny_names_from_env() == []          # unset: idle, never a crash
+    monkeypatch.setenv(mod.DENY_ENV, "acme-corp, acme-assistant ")
+    assert mod.deny_names_from_env() == ["acme-corp", "acme-assistant"]
+    monkeypatch.setenv(mod.DENY_ENV, "hermes-agent")
+    assert mod.denied_names(mod.deny_names_from_env()), \
+        "the deny lane must find a word the tracked tree carries"
+    monkeypatch.setenv(mod.DENY_ENV, "no-such-deployment-zzz")
+    assert mod.denied_names(mod.deny_names_from_env()) == []

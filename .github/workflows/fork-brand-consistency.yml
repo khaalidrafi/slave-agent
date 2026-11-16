@@ -35,7 +35,15 @@ jobs:
         # invisible: the branded tree keeps the old name through that channel and no
         # --check reports it. 46 such files existed the day this gate was written
         # (dashboard CSS/HTML, Nix packaging, the Rust installer, Windows manifests).
+        #
+        # The deny lane: deployment names are runtime config (specs/013 purity law)
+        # and must never appear in this tree. The names live in the BRAND_DENY_LIST
+        # secret (comma/space separated), sealed by the Owner — the App credentials
+        # are Contents-only and cannot write secrets. An unset secret leaves the
+        # lane idle and the run green.
         run: python3 scripts/rebrand.py --lint
+        env:
+          BRAND_DENY_NAMES: ${{ secrets.BRAND_DENY_LIST }}
 
       - name: no drawn logo
         # Block word-art cannot be maintained by a tool that rewrites *words*: the

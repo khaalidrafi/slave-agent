@@ -8,19 +8,19 @@ that carry no system message.  A request-level system message always wins.
 Schema (all keys optional, unknown keys ignored)::
 
     {
-      "name": "Freshorama Assistant",
-      "tagline": "Fresh groceries, delivered.",
+      "name": "Acme Assistant",
+      "tagline": "Orders tracked, answers plain.",
       "voice": ["friendly", "concise"],          // string or list of strings
       "language": "en",                           // reply language
-      "facts": ["Ships from Lagos daily"],        // string or list of strings
+      "facts": ["Ships from the depot daily"],      // string or list of strings
       "never_do": ["give medical advice"],        // string or list of strings
-      "escalation_contact": "support@freshorama.example",
+      "escalation_contact": "support@example.com",
       "system_prefix": "raw text prepended verbatim"
     }
 
 Fail fast: an unreadable or malformed file raises ``ValueError`` at adapter
 construction, so an operator never boots with half a persona.  The
-integrator guide lives in ``deploy/freshorama/README.md``.
+integrator guide lives in ``deploy/example/README.md``.
 """
 
 from __future__ import annotations

@@ -1225,10 +1225,10 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             extra.get("cors_origins", os.getenv("API_SERVER_CORS_ORIGINS", "")))
         self._model_name: str = self._resolve_model_name(
             extra.get("model_name", _get_scoped_secret("API_SERVER_MODEL_NAME", "")))
-        # Business deployments (Freshorama): ``brand_file`` gives the server a
+        # Business deployments: ``brand_file`` gives the server a
         # default persona applied to chat completions that carry no system
         # message; a request-level system message always wins.  Fails fast on a
-        # malformed file.  Guide: deploy/freshorama/README.md.
+        # malformed file.  Guide: deploy/example/README.md.
         from gateway.platforms.api_server_brand import load_brand_prompt
         self._brand_default_prompt: str = load_brand_prompt(
             extra.get("brand_file", os.getenv("API_SERVER_BRAND_FILE", "")))

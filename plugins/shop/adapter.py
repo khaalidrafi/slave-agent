@@ -242,8 +242,8 @@ class RestStorefrontAdapter(StorefrontAdapter):
     Covers the shape most self-hosted shops present (Django REST Framework,
     Laravel Sanctum, Rails JSON, a Node API): a base URL, a token in a header,
     JSON collections at predictable paths. Everything store-specific is a
-    setting, so Freshorama's ``?q=``/name-keyed-products API and a Shopify-ish
-    API are two config blocks, not two adapters.
+    setting, so a ``?q=``/name-keyed-products API and a Shopify-ish API are two
+    config blocks, not two adapters.
     """
 
     name = "rest"
@@ -425,8 +425,8 @@ class RestStorefrontAdapter(StorefrontAdapter):
             # A store that was given ``?status=`` proved it honoured it only if
             # every row it sent back is in that state. Believing the parameter
             # instead is how "23 pending" gets read off a page containing every
-            # order the shop has ever taken (Freshorama's order list is an
-            # unfiltered newest-first queryset, and plenty of small shop APIs are
+            # order the shop has ever taken (the reference shop's order list is
+            # an unfiltered newest-first queryset, and plenty of small shop APIs are
             # the same). Verify from the rows, filter here if they disagree.
             honoured = "status" in filtered and not any(_status_of(r) != want for r in rows)
             if not honoured:
@@ -573,8 +573,8 @@ def status_rows(result: Dict[str, Any], status: str, limit: int) -> List[Dict[st
     Every value is the store's own field copied straight through. ``total`` is
     whatever the serializer already calls the order's worth (``total``,
     ``amount``, ``grand_total``) — a shop that already folded shipping into it
-    (Freshorama: ``Order.total``, shop/models.py:527) must not have it added to
-    again, and a shop that did not must not have shipping guessed. Reading one
+    must not have it added to again, and a shop that did not must not have
+    shipping guessed. Reading one
     key and never summing any is the whole difference between a bot an owner
     trusts with money and one he cannot.
     """

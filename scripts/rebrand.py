@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import os
 import re
 import subprocess
 import sys
@@ -80,14 +81,25 @@ def rewrite(text: str) -> tuple[str, int]:
 
 # --- tier 2: internal vocabulary -------------------------------------------------
 # KEEPS are matched first and returned untouched. Each is a name we do not own:
-#   NousResearch/hermes-agent          upstream repo, still the update/release target
+#   NousResearch/hermes-agent          upstream repo path, any case — our origin
+#                                      remote points there; the name is upstream's
+#                                      (the updater that read its releases is gone,
+#                                      but the remote and the docs keep the path)
 #   hermes-agent.nousresearch.com      upstream docs + install one-liner host
 #   @hermes.dev                        contributor email domain (contributors/ paths)
 #   hermes-parser / hermes-estree      Meta's Hermes JS engine, pulled in transitively
 #                                      by package-lock.json — NOT our package
+#   nousresearch/hermes-sandbox        upstream's published sandbox image (the default
+#                                      in config_defaults pulls it; we build no own)
+#   hermes-4 / Hermes-3 / hermes3      upstream's published MODEL IDs (hermes-4-405b,
+#                                      Hermes-3-Llama-3.1-70B, openrouter/hermes3:70b):
+#                                      a model's name belongs to whoever trained it
 KEEP_RE = re.compile(
-    r"NousResearch/hermes-agent|hermes-agent\.nousresearch\.com|@hermes\.dev"
+    r"NousResearch/hermes-agent|nousresearch/hermes-agent|hermes-agent\.nousresearch\.com"
+    r"|@hermes\.dev"
     r"|hermes-parser|hermes-estree|hermes-engine"
+    r"|nousresearch/hermes-sandbox"
+    r"|hermes-?\d|Hermes-?\d"
 )
 # One alternation, longest/most-specific first, mapped by _identity_sub. The
 # standalone arms deliberately allow a leading hyphen (setup-hermes.sh) but not a
@@ -183,7 +195,13 @@ BRAND_LITERAL_ALLOW = SELF_PATHS | {"scripts/fork-sync.sh", "FORK.org", "HANDOFF
     "agent-team/CHARTER.md", "agent-team/CONTROL.org", "agent-team/MEMBERS.org",
     "agent-team/STATE.org", "agent-team/TODOS.org", "agent-team/CANDIDATES.org",
     "agent-team/CHAT.org",
-    "docs/INTEGRATION-ADMINEVERYWHERE.org"}
+    "docs/INTEGRATION-ADMINEVERYWHERE.org",
+    # Fork-only surfaces that never exist upstream, so no merge ever sees them:
+    # the root contributor guide, the mobile-port contract, the deployment kit,
+    # the builder skill, and the spec set. Each names this product because it
+    # is ABOUT this product.
+    "AGENTS.md", "docs/MOBILE-PORT.org", "deploy/example",
+    "skills/slave-agent-builder", "specs/"}
 
 
 def tracked_files(tier: str) -> list[Path]:
@@ -420,22 +438,61 @@ def hand_brands() -> list[str]:
     found = []
     for line in hits.splitlines():
         path = line.partition(":")[0]
-        if path in BRAND_LITERAL_ALLOW or f"{path}/" in BRAND_LITERAL_ALLOW:
+        # Prefix-aware: an allow entry may be a file, or a directory with or
+        # without its trailing slash (``specs/`` covers every spec).
+        if any(path == a or path.startswith(a if a.endswith("/") else a + "/")
+               for a in BRAND_LITERAL_ALLOW):
             continue
         found.append(line[:200])
     return found
 
 
 def report_lint() -> int:
-    """The two invariants that hold on *every* branch, cheap enough to run per PR."""
+    """The invariants that hold on *every* branch, cheap enough to run per PR."""
     blind, typed = blindspots(), hand_brands()
+    deny = denied_names(deny_names_from_env())
     for rel in blind:
         print(f"[rebrand blind] {rel}")
     for line in typed:
         print(f"[rebrand hand-written] {line}")
+    for line in deny:
+        print(f"[rebrand denied] {line}")
+    idle = "" if deny_names_from_env() else f" (deny lane idle: {DENY_ENV} unset)"
     print(f"[rebrand lint] {len(blind)} files no tier reads, "
-          f"{len(typed)} hand-typed brand literals")
-    return 1 if (blind or typed) else 0
+          f"{len(typed)} hand-typed brand literals, "
+          f"{len(deny)} deployment-name hits{idle}")
+    return 1 if (blind or typed or deny) else 0
+
+
+# --- deployment-name deny lane --------------------------------------------------
+# A deployment's name is runtime configuration (specs/013 purity law): it must
+# never appear in this tree, not even in a docstring or a fixture. The names
+# cannot be checked in — a deny list inside the tree would itself carry them —
+# so they arrive through the environment, and CI fills that from a secret the
+# Owner seals (the App credentials are Contents-only and cannot write it).
+DENY_ENV = "BRAND_DENY_NAMES"
+
+
+def deny_names_from_env() -> list[str]:
+    """Deployment slugs from the environment; empty when the lane is idle."""
+    return [s for s in re.split(r"[\s,]+", os.environ.get(DENY_ENV, "")) if s]
+
+
+def denied_names(names: list[str]) -> list[str]:
+    """Tracked lines that carry a deployment name, case-insensitively.
+
+    The 2026-11-16 naming-ban order landed with five code surfaces still
+    carrying a customer's name in docstrings and fixtures, every one typed by
+    hand. This lane is that lesson as structure: the next name fails ``--lint``
+    instead of waiting for a sweep.
+    """
+    found: list[str] = []
+    for name in names:
+        hits = subprocess.run(
+            ["git", "-C", str(ROOT), "grep", "-n", "-I", "-i", "-F", "-e", name, "--", "."],
+            capture_output=True, text=True).stdout
+        found.extend(f"[denied: {name}] {line[:180]}" for line in hits.splitlines())
+    return found
 
 
 # --- verification ---------------------------------------------------------------

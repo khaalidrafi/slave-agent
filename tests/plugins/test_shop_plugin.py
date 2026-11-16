@@ -37,7 +37,7 @@ PRODUCTS = [
     {"name": "Chia Seeds 250g", "price": "180.00", "is_available": False, "category": "seeds"},
 ]
 # Two pending, one confirmed. ``total`` already includes ``shipping_fee`` (the
-# Freshorama shape, shop/models.py:527), so a plugin that added them again would
+# reference store's shape), so a plugin that added them again would
 # overstate every order it quoted — which is the bug this file exists to catch.
 ORDERS = [
     {"id": 23, "status": "pending", "phone": "01711223344", "total": "1300.00",
@@ -287,7 +287,7 @@ class TestReads:
             server.server_close()
 
     def test_config_that_claims_a_status_filter_the_store_ignores_is_caught(self, monkeypatch):
-        """The Freshorama shape: config declares ``?status=`` (reasonable — DRF
+        """The reference shape: config declares ``?status=`` (reasonable — DRF
         stores usually do), the shop's queryset ignores it and publishes a
         ``count`` over the WHOLE collection.
 

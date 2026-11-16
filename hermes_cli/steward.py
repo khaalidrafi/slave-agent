@@ -24,17 +24,18 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# The fork's brand vocabulary. Two strings in this file name OUR package (the Guix
-# one below), and a package name is a fact about the tree, not prose: it has to be
-# right in the working branch too, because `guix install` is typed at a shell and
-# nothing regenerates it. So it comes from brand.py, per FORK.org's rule that a
-# brand string is never hand-written. `brand` is a root module and setup.py ships
-# every root module, so this import works in an installed wheel as well.
+# The fork's brand vocabulary. Package names in this file name OUR package, and
+# a package name is a fact about the tree, not prose: it has to be right in the
+# working branch too, because `pkg install` is typed at a shell and nothing
+# regenerates it. So it comes from brand.py, per FORK.org's rule that a brand
+# string is never hand-written — the Guix line, and the Termux and Nix lines
+# with it: whatever this fork ships on those stewards will carry OUR package
+# name, so the steward text names ours, not upstream's.
 #
-# What does NOT come from brand: the Termux APT name `hermes-agent` further down.
-# That is upstream's real published package, so it is a functional KEEP — the same
-# class as the `NousResearch/hermes-agent` remote and Meta's `hermes-parser`. The
-# generator protects it, and so does this comment.
+# What does NOT come from brand: the Docker image line further down
+# (`nousresearch/hermes-agent`) and the upstream docs URL. Those name artifacts
+# upstream published and we did not — an image we do not build, a host we do
+# not own — so the generator's KEEP_RE protects them, and so does this comment.
 import brand  # noqa: E402
 
 UPDATE_MECHANISMS = ("self", "app-installer", "electron-updater", "external", "microsoft-store")
@@ -74,7 +75,7 @@ STEWARD_UPDATE_MESSAGES = {
         "✗ This Hermes runs from a Termux APT package.\n"
         "\n"
         "The package manager owns the code tree. Update with:\n"
-        "  pkg upgrade hermes-agent"
+        f"  pkg upgrade {brand.SLUG}"
     ),
     STEWARD_GUIX: (
         "✗ This Hermes runs from the Guix store.\n"
@@ -92,9 +93,9 @@ SOURCE_ON_TERMUX_UPDATE_MESSAGE = (
     "\n"
     "Source installs are not supported on Termux — `hermes update` would\n"
     "build Python packages on the device. Switch to the APT package:\n"
-    "  pkg install hermes-agent"
+    f"  pkg install {brand.SLUG}"
 )
-SOURCE_ON_TERMUX_UPDATE_COMMAND = "pkg install hermes-agent"
+SOURCE_ON_TERMUX_UPDATE_COMMAND = f"pkg install {brand.SLUG}"
 
 
 _STEWARD_UPDATE_FALLBACK = (
@@ -126,7 +127,7 @@ _STEWARD_UNINSTALL_MESSAGES = {
         "✗ This Hermes was installed by a Termux APT package.\n"
         "\n"
         "The package manager owns the code tree — uninstall it with:\n"
-        "  pkg uninstall hermes-agent\n"
+        f"  pkg uninstall {brand.SLUG}\n"
         "\n" +
         _STEWARD_DELETE_DATA_PREAMBLE +
         _STEWARD_DELETE_DATA_CLI
@@ -135,7 +136,7 @@ _STEWARD_UNINSTALL_MESSAGES = {
         "✗ This Hermes was installed by Nix.\n"
         "\n"
         "The store path is immutable — uninstall it the same way you\n"
-        "installed it: remove hermes-agent from your flake / profile\n"
+        f"installed it: remove {brand.SLUG} from your flake / profile\n"
         "(e.g. `nix profile remove`), then rebuild.\n"
         "\n" +
         _STEWARD_DELETE_DATA_PREAMBLE +
