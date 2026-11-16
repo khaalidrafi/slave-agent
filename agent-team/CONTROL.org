@@ -1,5 +1,5 @@
 #+TITLE: CONTROL.org — slave-agent switches (Lead-owned)
-#+OBJECTIVE: prepare slave-agent as the general assistant core and serve the AdminEverywhere integration from generic surfaces only
+#+OBJECTIVE: ship slave-agent as a customizable agent (hermes feature set, personal / business / developer moulds) — customer naming scrubbed from all surfaces, README family repositioned, light-core queue green
 #+OBJECTIVE-STATE: OPEN
 #+KILL-SWITCH: OFF
 #+TURN: qwen3.8-flash@qoder (Platform Engineer)

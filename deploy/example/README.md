@@ -1,7 +1,7 @@
-# Freshorama integration guide — slave-agent as your business assistant
+# Deployment example — slave-agent as your business assistant
 
 `serve` exposes the agent as an **OpenAI-compatible chat API**
-(`POST /v1/chat/completions`, `GET /v1/models`).  Freshorama customizes it
+(`POST /v1/chat/completions`, `GET /v1/models`).  A business customizes it
 as its business assistant **without touching agent code**: a brand file
 sets the persona, environment variables set the addresses and keys, and any
 OpenAI-compatible front end (chat widget, CRM integration, n8n/Zapier,
@@ -39,8 +39,8 @@ Equivalent per-platform `config.yaml` keys (`platforms.api_server`): `key`,
 Copy `brand.example.json` beside your deployment and edit it:
 
 ```bash
-cp deploy/freshorama/brand.example.json /etc/freshorama/brand.json
-export API_SERVER_BRAND_FILE=/etc/freshorama/brand.json
+cp deploy/example/brand.example.json /etc/mybusiness/brand.json
+export API_SERVER_BRAND_FILE=/etc/mybusiness/brand.json
 ```
 
 Schema — all keys optional; unknown keys are ignored:
@@ -84,13 +84,13 @@ curl -s http://127.0.0.1:8080/v1/chat/completions \
 
 ```ini
 [Unit]
-Description=Freshorama business assistant (slave-agent serve)
+Description=My business assistant (slave-agent serve)
 After=network-online.target
 
 [Service]
-User=freshorama
+User=mybusiness
 Environment=API_SERVER_KEY=__SET_AT_DEPLOY_TIME__
-Environment=API_SERVER_BRAND_FILE=/etc/freshorama/brand.json
+Environment=API_SERVER_BRAND_FILE=/etc/mybusiness/brand.json
 Environment=API_SERVER_HOST=127.0.0.1
 Environment=API_SERVER_PORT=8080
 WorkingDirectory=/opt/slave-agent
@@ -101,7 +101,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-Put the real key in a drop-in (`/etc/systemd/system/freshorama-assistant.service.d/env.conf`,
+Put the real key in a drop-in (`/etc/systemd/system/mybusiness-assistant.service.d/env.conf`,
 `EnvironmentFile=` also works) with `chmod 600` — never in the repo, never in
 git, never in the brand file.
 
@@ -111,6 +111,6 @@ git, never in the brand file.
 - Rotate `API_SERVER_KEY` per environment; treat it like a password.
 - The brand file shapes tone and facts; it grants no tools by itself —
   toolsets stay governed by the gateway config (`_get_platform_tools`).
-- Open questions for the Freshorama admin team (transport confirmation,
-  hosting shape, identity model, secrets channel, staging contact) are
-  tracked in admineverywhere issue #18.
+- Open deployment questions (transport confirmation, hosting shape,
+  identity model, secrets channel, staging contact) are tracked with the
+  panel-host integration (docs/INTEGRATION-ADMINEVERYWHERE.org).

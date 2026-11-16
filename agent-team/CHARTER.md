@@ -2,7 +2,12 @@
 
 ## Purpose
 
-review, clean and measure vibe-coded projects: turns an AI-generated repo into an Org ledger and walks review -> understand -> comment -> clean with meters and GitHub badges proving a human was here.  The team layer wraps the project; it never rewrites it.
+slave-agent: a customizable agent with the hermes feature set, mouldable
+per deployment — personal assistant, business assistant, or developer
+assistant (Owner order 2026-11-16). Light fork doctrine per FORK.org:
+light core, optional bulk, generated brand; deployments are
+configurations (profiles, brand files, env), never forks. The team
+layer wraps the project; it never rewrites it.
 Existing code and conventions outrank the master prompt.
 
 ## Canonical law (ONE copy — never embed)
@@ -18,6 +23,16 @@ Existing code and conventions outrank the master prompt.
    application code flows through the hires (Owner 2026-10-29 #hq).
 2. ENV-VAR LAW — credentials travel only as env var NAMES; values live in
    repo secrets / the vault, never in files, chat, commits or logs.
+2a. CUSTOMER-NAMING BAN (Owner order 2026-11-16) — no customer name
+   appears anywhere in this tree: code, docs, board, chat, deploy kits,
+   commit subjects. Refer to the vault for exact secret names. A mention
+   is a bug; scrub it in its own commit. The rebrand generator's
+   hand-brand lane is the structural guard (keep hand-brands at 0).
+2b. PSTACK LAW (kit ci/AGENTS.md) — route rigorous engineering through
+   the poteto-mode playbooks baked at /opt/agent-team-ci-skills/pstack;
+   unslop every prose surface; cite only principles whose leaf SKILL.md
+   was read this session; verify inherited claims against the real
+   artifact. Team mapping: agent-team.el docs/PSTACK-TEAM.org.
 3. Board law — single board `agent-team/TODOS.org`; states TODO, PROGRESS,
    BLOCKED, REVIEW | DONE, CANCELLED, DEFERRED; only the EM flips DONE;
    :EFFORT: from the ladder; no close without clock evidence.

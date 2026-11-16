@@ -37,6 +37,16 @@ Two invariants shape almost every design decision and are the lens for reviewing
   for knob, and by loading upstream plugins if desired. Every optimization or lean default overlay we
   add must be accompanied by a clear mapping back to upstream values under the compat mode.
 
+## Fork identity (Owner order 2026-11-16)
+
+slave-agent is a customizable agent with the hermes feature set,
+mouldable per deployment: personal assistant, business assistant, or
+developer assistant. Deployments are configurations (profiles, brand
+files, env) — never forks. **No customer name appears anywhere in this
+tree** (code, docs, board, deploy kits, commit subjects): refer to the
+vault for exact secret names; the rebrand generator's hand-brand lane
+is the structural guard.
+
 ## Contribution Rubric — What We Want / What We Don't
 
 The project's intent layer. It serves humans aiming a contribution AND the automated triage

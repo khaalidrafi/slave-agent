@@ -1,6 +1,6 @@
 #+TITLE: STATE.org — repo state (audit snapshot, kept current by the team)
 * PROJECT
-  - khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; the AdminEverywhere panel assistant core, first deployment Freshorama via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org).
+  - khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; a CUSTOMIZABLE agent with the hermes feature set, mouldable per deployment (personal / business / developer) via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org). Customer names never appear in this tree (Owner order 2026-11-16).
   - Language: Python (agent core, plugins, CLI) + the Emacs/Org surface
     (slave-acp); branch model per FORK.org (ai/main work, generated
     ai/slave-agent brand commit).
@@ -15,6 +15,22 @@
   - agent-team/ board + .github/workflows/agent-team.yml + ci/ kit submodule
     (khaalidrafi/agent-team-ci @ main) + docker/harness thin layer
     (FROM agent-team-harness-base:local — bodies preinstalled, kit law).
+* ORDERS 2026-11-16 (Lead session)
+  - Owner #hq: pstack into the kit and in use (landed: agent-team-ci
+    56309f8, agent-team.el docs/PSTACK-TEAM.org a25b9cd); slave-agent
+    is a CUSTOMIZABLE agent (hermes feature set; personal / business /
+    developer moulds) — no customer name anywhere in this tree;
+    teamify confirmed and GLM 5.3 elevated to Senior Software Architect
+    ("GLM 5.3 should have a senior role"); autonomy grant standing:
+    "Never wait for my go. Just do them."
+  - ci submodule pin repaired: d7b5ec1 vanished from the public kit
+    (upload-pack: not our ref — fresh clones could not checkout
+    submodules); repinned to agent-team-ci 149ca60 (kit ai/main tip:
+    typesafe-ai payload fix + pstack vendored + guard).
+  - Lead surfaces scrubbed in the naming-ban commit; CODE-surface
+    scrub dispatched (board scrub/01); README repositioning dispatched
+    (board brand/02).
+
 * HYGIENE AT ADOPTION
   - Branch ai/main = team truth; members work ai/turn-* branches; CHAT.org
     merges union.  Compliance audit of the whole repo is TODO-001.

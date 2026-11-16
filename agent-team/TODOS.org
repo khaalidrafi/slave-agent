@@ -3,6 +3,44 @@
 
 * Board
 
+** TODO scrub/01 — customer-brand out of CODE surfaces (naming-ban tail)
+   :PROPERTIES:
+   :EFFORT: S
+   :DEADLINE: <2026-11-19>
+   :END:
+   - ROLE: Software Engineer — deepseek-v4.1-flash@codebuddy
+   - Owner order 2026-11-16: no customer name anywhere in this tree.
+     Lead surfaces are scrubbed (this commit); the CODE surfaces remain:
+     gateway/platforms/api_server.py, gateway/platforms/api_server_brand.py,
+     plugins/shop/adapter.py, tests/gateway/platforms/test_serve_openai_contract.py,
+     tests/plugins/test_shop_plugin.py. Replace customer-brand strings
+     with generic equivalents (docstrings, comments, fixtures, default
+     values) with zero behavior change; suite green (the 9 serve-contract
+     cases + shop tests).
+   - Encode the lesson (principle-encode-lessons-in-structure): add the
+     customer-brand pattern to the rebrand generator's hand-brand lane
+     so future customer names fail --lint instead of landing by hand.
+     Verify hand-brands = 0 via the generator's own lane.
+   - Playbook: refactoring (behavior-preserving); verify per
+     prove-it-works on the real test run, not compileall alone.
+
+** TODO brand/02 — README family repositioning (customizable agent)
+   :PROPERTIES:
+   :EFFORT: M
+   :DEADLINE: <2026-11-21>
+   :END:
+   - ROLE: QA + Docs Engineer — nvidia/nemotron-3.5-lightning:free@cline
+   - README.md still carries upstream Hermes branding (banner, Nous
+     links, product name). Rewrite per the product statement: slave-agent
+     is a customizable agent with the hermes feature set, mouldable for
+     personal, business, or developer workflows; deployments are
+     configurations (brand file, profiles, env) — see deploy/example/.
+     Keep the fork's Absolute Backwards Compatibility guarantee visible.
+     SOUL.md and README.es/zh-CN/ur-pk: reposition or mark upstream-
+     carried; state which per file. Banner from brand.PRODUCT per the
+     wordmark law (specs/002); no hand-typed brand literals (specs/003).
+   - Senior Software Architect reviews before REVIEW flips.
+
 ** DONE Branch resolution — every branch folded into ai/main
    - Owner 2026-11-11 #hq: "Resolve ALL branches and merge them into
      ai/main." Dispositions (SHAs verified on a fresh full clone):
@@ -165,7 +203,8 @@
    - Scope: port the umbrella CI kit pattern (self-check, brand
      consistency lanes); EVERY branch/PR routes through the Copilot CR
      lane before the Lead merge (Owner 2026-10-31: burn this month's
-     CR). Seal FRESHORAMA_WEBSITE_PAT as a repo secret once the
+     CR). Seal the customer-website PAT (exact name in the vault) as a
+     repo secret once the
      Owner's PAT scope covers this repo (value held by the Owner
      meanwhile).
    - Evidence: green self-check runs on ai/**; CR comments visible on
@@ -178,16 +217,17 @@
   - Keyword cycle: TODO -> PROGRESS -> REVIEW -> PENDING (delivered,
     awaiting Lead merge) -> DONE (Lead-only).
 
-** DONE Serve-side brand persona for business deployments (Freshorama)
+** DONE Serve-side brand persona for business deployments (customer kit)
    - Owner order 2026-11-02 #hq: "complete preparing slave-agent so that
-     Freshorama team can customize it as their business assistant."
+     [the customer] team can customize it as their business assistant."
    - Scope landed: gateway/platforms/api_server_brand.py (brand JSON ->
      compiled default persona, fail-fast on malformed files);
      API_SERVER_BRAND_FILE / platforms.api_server.brand_file wired into
      APIServerAdapter; /v1/chat/completions applies it only when the
      request carries no system message (a request system message wins);
-     deploy/freshorama/ kit (brand.example.json + integrator README
-     with env surface, systemd unit, security notes).
+     deploy/example/ kit (brand.example.json + integrator README
+     with env surface, systemd unit, security notes; renamed from the
+     customer-named dir by the 2026-11-16 naming-ban order).
    - Evidence: tests/gateway/platforms/test_serve_openai_contract.py
      extended 4 -> 9 cases, 9 passed (persona applied, request
      override, malformed/missing fail-fast, no-file unchanged); FR

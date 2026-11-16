@@ -12,7 +12,7 @@
         in khaalidrafi/agent-team.el agent-team/MEMBERS.org — one canonical
         copy; this file carries the roster + seat duties only, no re-cited
         numbers (drift law).
-#+PROJECT: khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; the AdminEverywhere panel assistant core, first deployment Freshorama via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org).
+#+PROJECT: khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; a CUSTOMIZABLE agent with the hermes feature set, mouldable per deployment (personal / business / developer) via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org). Customer names never appear in this tree (Owner order 2026-11-16).
 
 * Team Lead + Director of Engineering — z.ai-agent (COMBINED SEAT, umbrella)
   - APPOINTMENT (Owner 2026-10-29 05:12Z #hq): one umbrella Lead across
@@ -31,7 +31,13 @@
     (nemotron-3.5-lightning:free ranks first on the SW/Release chain).
 
 * STANDING HIRES (off-rotation specialists, umbrella-wide)
-  - Senior Emacs Lisp Engineer — glm-5.3@chat.z.ai (web seat, hands-on only)
+  - Senior Software Architect — glm-5.3@chat.z.ai (web seat, hands-on
+    only). ELEVATED 2026-11-16 by Owner order ("GLM 5.3 should have a
+    senior role"), absorbing the Senior Emacs Lisp Engineer seat: owns
+    this product's architecture, specs integrity, the serve/ACP
+    embedding surfaces, and the Emacs/Org roadmap R2-R6. The kit's
+    Acting-Lead amendment (2026-11-15 #2) lets the seat carry
+    Lead-desk engineering when the Owner orders it.
   - QA + Docs Engineer — nvidia/nemotron-3.5-lightning:free@cline
   - Cloud Agent — devin@devin.ai (provisional, Owner fiat)
   - Port Engineer — antling/Ling-3.1-flash@opencode (strongest PROVEN free
