@@ -3,6 +3,49 @@
 
 * Board
 
+** DONE Identity fix — Flash authorship re-authored org-wide
+   - Owner ruling 2026-11-18: "GLM 5.3 holds another role, besides
+     Acting Lead, but Flash doesn't. So, it's abnormal for most
+     commits to be authored by GLM 5.3 Flash, but not for non-Flash."
+     Verified abnormal: 11 slave-agent + 475 admineverywhere + 54
+     agent-team-ci + 10 agent-org commits carried the lead persona
+     as author.
+   - FIXED 2026-11-18 (GLM 5.3, Senior Software Architect): all four
+     repos rewritten to GLM 5.3 <glm-5.3@z.ai> — trees byte-identical,
+     verified per repo — and force-pushed with their tags.  The kit
+     law amended (80cfe09: the Lead role coordinates and never
+     authors; the acting brain authors under its member seat).  Kit
+     re-pinned in slave-agent (b082f155af) and admineverywhere
+     (9611c6b); old kit tips stay reachable under
+     archive/pre-identity-fix[-ai].
+
+** DONE Upstream catch-up — hermes aaec1339 merged
+   - One merge commit (02e5e6a6f1) carries 26,121 upstream commits
+     per the stay-mergeable doctrine.  Conflicts resolved per
+     FORK.org: 2,002 modify/delete re-deleted; content favored ours;
+     re-entered updater hooks cut by hand; full-cut dirs swept. 
+     Static floor green: compileall, kernel_floor --check-imports
+     zero findings, rebrand --lint.  Branded branch regenerated
+     (88af7095e1); the origin tracker upstream/main advanced to
+     aaec1339.  The live test suite and CI lanes are the next
+     evidence.
+
+** TODO Post-merge audit — the -X ours hunks and local reimplements
+   - The merge favored our side on conflicting hunks, so upstream
+     fixes to lines the fork also touched may have dropped
+     silently.  Audit the merge diff hunk-by-hunk against
+     hermes/main for the surviving core files; also review the
+     local reimplementations (migrate_backends argv/unit
+     classification, git_commit_graph common_git_dir).  Executor:
+     Software Engineer.
+
+** TODO Kit re-pin tail — the remaining kit consumers
+   - agent-shepherd, agent-team.el, ate, docneural, org-learn.el,
+     org-roadmap, packages, unslop.el still pin pre-identity-fix kit
+     commits.  The archive tags keep them fetchable, so nothing is
+     broken — re-pin each to the rewritten equivalents, then retire
+     the archive tags.  Executor: Platform/CI Engineer.
+
 ** DONE Profile contract (specs/013) + AdminEverywhere readiness (specs/014)
    - CLOSED 2026-11-17 (GLM 5.3, Lead; commit f793f612c3, Owner orders
      2026-11-16 "completely brandable" + "prepare for admineverywhere"):
@@ -45,7 +88,10 @@
      the names it bans.** TODO brand/02 — README family repositioning (customizable agent)
    - PROGRESS 2026-11-17 (GLM 5.3, Lead): docs/RELEASE.md + the own mark
      (assets/icon-master.svg, a collar replacing the caduceus) landed;
-     the README family rewrite itself remains this row's scope.** DONE Branch resolution — every branch folded into ai/main
+     the README family rewrite itself remains this row's scope.
+   - README.md repositioned 2026-11-18 (allow-listed as a fork
+     doctrine doc in rebrand.py, so the generator keeps it verbatim);
+     the .es/.ur-pk/.zh-CN family rewrite remains.** DONE Branch resolution — every branch folded into ai/main
    - Owner 2026-11-11 #hq: "Resolve ALL branches and merge them into
      ai/main." Dispositions (SHAs verified on a fresh full clone):
      - origin/ai/light-core (4255916): 0 unique commits, contained in
