@@ -69,7 +69,26 @@
    - Default branch: ai/main (Owner flipped in Settings 2026-11-11;
      the App keeps Contents-only, no administration granted). Then
      handoff deleted under plain Contents R/W. Resolution complete:
-     origin = ai/main + ai/slave-agent + upstream/main + archive tag.
+     origin = ai/main + ai/slave-agent + upstream/main + archive tag
+     (tag retired 11-17, below).
+   - RE-RESOLVED 2026-11-17 (GLM 5.3, Lead; Owner "Review and resolve
+     all branches"): handoff had been re-activated 11-15/16 by
+     dispatch sessions following the stale handoff AGENTS.md ("the
+     branch in use for handoff work is handoff"). Audited against
+     ai/main before the second deletion: specs/013+014
+     byte-identical; INTEGRATION doc and builder skill NEWER on
+     ai/main (handoff copies predated the 11-05 in-process decision
+     and the f793f612c3 profile-contract implementation); TODOs.org
+     (transcript work tree) was the only unique artifact — absorbed
+     (3be78a60e9), branch deleted again. Tag island/handoff-final
+     RETIRED: its tree predates the 11-16 customer-naming ban and
+     carried the client name in three files (AGENTS.md,
+     agent-team/TODOS.org, INTEGRATION doc) on the public repo; its
+     unique content was already absorbed 11-11 (mobile contract,
+     in-process amendment) and the notice laws live in
+     agent-team-ci's global AGENTS.md. Local archive kept in the
+     Lead clone (tag + handoff line). Origin end state: ai/main +
+     ai/slave-agent + upstream/main, no tags.
 
 ** TODO Mobile phase 1 — Termux bootstrap + bionic wheel audit
    - PROGRESS 2026-11-17 (GLM 5.3, Lead; commit 1cbe914b87):
