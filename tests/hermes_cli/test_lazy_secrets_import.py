@@ -15,6 +15,7 @@ def _run_isolated(code: str) -> subprocess.CompletedProcess[str]:
         text=True,
         cwd=str(repo_root),
         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+        check=False,
     )
 
 

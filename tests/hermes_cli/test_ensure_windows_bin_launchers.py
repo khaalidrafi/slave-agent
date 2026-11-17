@@ -38,13 +38,15 @@ from hermes_cli._launchers import (
 
 def _make_managed(tmp_path, monkeypatch):
     """Fake managed layout: HERMES_HOME/hermes-agent/venv (+ a fake venv
-    python whose path legacy trampolines would embed)."""
+    python whose path legacy trampolines would embed). New consoles resolve
+    this home, so the PATH migration may edit the (injected) User PATH."""
     home = tmp_path / "hermes"
     root = home / "hermes-agent"
     (root / "venv" / "Scripts").mkdir(parents=True)
     (root / "venv" / "Scripts" / "python.exe").write_bytes(b"MZ fake venv python")
     (root / "venv" / "pyvenv.cfg").write_text("home = X\n", encoding="utf-8")
     monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setattr(_launchers, "new_console_hermes_root", lambda: home)
     return home, root
 
 
@@ -117,8 +119,8 @@ def test_no_store_python_refuses_publication(managed_install, tmp_path, monkeypa
 def test_store_python_launcher_boot_the_store_not_the_venv(tmp_path, monkeypatch):
     """With the store materialized, the staged launchers bind to the store
     interpreter and never to the venv python."""
-    home, root = _make_managed(tmp_path, monkeypatch)
-    store, entry = _make_store(tmp_path, monkeypatch)
+    _home, root = _make_managed(tmp_path, monkeypatch)
+    store, _entry = _make_store(tmp_path, monkeypatch)
 
     restored = ensure_windows_bin_launchers(root, windows=True, user_path_entries=[])
 
@@ -155,7 +157,7 @@ def test_legacy_venv_trampoline_is_replaced_by_store_launcher(
 
 def test_healthy_store_launcher_is_a_noop(tmp_path, monkeypatch):
     home, root = _make_managed(tmp_path, monkeypatch)
-    store, _entry = _make_store(tmp_path, monkeypatch)
+    _store, _entry = _make_store(tmp_path, monkeypatch)
     bin_dir = home / "bin"
     bin_dir.mkdir()
     local = root / ".hermes" / "bin"
@@ -207,7 +209,7 @@ def test_legacy_bin_restaged_only_while_on_user_path(managed_install):
 
 
 def test_legacy_bin_not_restaged_without_path_consent(managed_install):
-    home, root = managed_install
+    _home, root = managed_install
 
     ensure_windows_bin_launchers(root, windows=True, user_path_entries=[])
 
@@ -309,6 +311,7 @@ def test_repo_gitignores_the_legacy_bin_dir():
     result = subprocess.run(
         [git, "-C", str(repo_root), "check-ignore", "-q", "bin/hermes.exe"],
         capture_output=True, env=env,
+        check=False,
     )
     assert result.returncode == 0, (
         "bin/hermes.exe is not gitignored — hermes update's autostash "

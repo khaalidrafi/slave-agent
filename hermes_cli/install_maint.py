@@ -603,14 +603,6 @@ def _install_default_tools_after_update() -> None:
             print(f"    Retry with: hermes pm install {name}")
 
 
-def _print_checkpoint_footprint_notice() -> None:
-    """Surface a GB-scale /rollback store the user may not know is on."""
-    from tools.checkpoint_maintenance import checkpoint_footprint_notice
-    notice = checkpoint_footprint_notice()
-    if notice:
-        print(f"\n\033[1;33mℹ  {notice}\033[0m")
-
-
 def _migrate_relay_exporter_env() -> None:
     from hermes_cli.relay_plugin_migrate import run_relay_migration_after_update
     run_relay_migration_after_update()
@@ -629,7 +621,6 @@ def _print_post_update_notices_and_self_heals() -> None:
         ('CLI launcher exposure failed: %s', lambda: _launchers.expose_cli(PROJECT_ROOT)),
         ('cua-driver refresh failed: %s', _refresh_cua_driver_after_update),
         ('Default PM tool install failed: %s', _install_default_tools_after_update),
-        ('Checkpoint footprint notice failed: %s', _print_checkpoint_footprint_notice),
         ('Relay exporter migration failed: %s', _migrate_relay_exporter_env),
     ):
         with _best_effort(message):

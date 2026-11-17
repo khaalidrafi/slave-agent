@@ -15,7 +15,8 @@ from typing import Any
 from hermes_cli.release_channels import STABLE_TAG_RE
 from scripts.releases.semver import compare
 
-SEED = "0.21.4"
+# The legacy CalVer line published up to 0.21.5 (v2026.9.24); the pipeline continues it.
+SEED = "0.21.5"
 BUMPS = ("major", "minor", "patch")
 
 

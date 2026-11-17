@@ -65,7 +65,7 @@ def _record_completed_action(name: str, message: str, exit_code: int = 1) -> Non
     _finish_action(name, exit_code, None)
 
 
-def _tail_lines(path: Path, n: int) -> List[str]:
+def _tail_lines(path: Path, n: int) -> list[str]:
     """Return the last ``n`` lines of ``path`` without loading huge logs."""
     try:
         size = path.stat().st_size
@@ -78,7 +78,7 @@ def _tail_lines(path: Path, n: int) -> List[str]:
     offset = size
     chunk_size = _ACTION_LOG_TAIL_INITIAL_CHUNK_BYTES
     newline_count = 0
-    chunks: List[bytes] = []
+    chunks: list[bytes] = []
     drop_partial_first_line = False
     try:
         with path.open("rb") as handle:
@@ -104,9 +104,10 @@ def _tail_lines(path: Path, n: int) -> List[str]:
 
 @router.post("/api/gateway/restart")
 async def restart_gateway(profile: Optional[str] = None):
-    """Kick off a ``hermes gateway restart`` in the background."""
+    """Kick off a ``hermes gateway restart --interrupt`` in the background: the user-commanded force
+    path that supersedes a drain (D6, 19b26244046), so live sessions do not refuse it."""
     with http_failure("Failed to spawn gateway restart", 500, "Failed to restart gateway"):
-        proc, _reused = _spawn_gateway_restart(profile)
+        proc, _reused = _spawn_gateway_restart(profile, interrupt=True)
     return {"ok": True, "pid": proc.pid, "name": "gateway-restart"}
 
 
@@ -215,6 +216,11 @@ async def update_hermes():
     return _update_refused(_update_state())
 
 
+def _source_release_label(status: dict[str, Any]) -> str:
+    version = status.get("sourceVersion")
+    return f"{status.get('channel') or 'stable'} release" + (f" v{version}" if version else "")
+
+
 @router.get("/api/hermes/update/check")
 async def check_hermes_update():
     """Report what this install is, and that nothing here can update it.
@@ -225,6 +231,34 @@ async def check_hermes_update():
     clients and ignored — they used to bust the 24h GitHub cache and scope the check.
     """
     return _update_state()
+
+
+def _import_report(log_path: Path, pid: Optional[int]) -> dict[str, Any]:
+    """What a keep-host import reported in its own section of the action log (the one this dashboard
+    spawned as *pid*): its undo point as soon as it exists (also when the import fails), the
+    messaging platforms ``--messaging-off`` switched off, and a gateway that did not start again."""
+    from hermes_cli.backup_keep_host import GATEWAY_DOWN_LINE, MESSAGING_OFF_LINE, UNDO_POINT_LINE
+    from hermes_cli.web_server_gateway import _ACTION_LOG_STARTS
+    report: dict[str, Any] = {"undo_archive": None}
+    start = _ACTION_LOG_STARTS.get("import")
+    if start is None or start[0] != pid:
+        return report
+    try:
+        with log_path.open("rb") as log:
+            log.seek(start[1])
+            section = log.read(_ACTION_LOG_TAIL_MAX_BYTES).decode("utf-8", errors="replace")
+    except OSError:
+        return report
+    lines = section.lstrip("\n").split("\n=== import started", 1)[0].splitlines()
+    report["undo_archive"] = next((line[len(UNDO_POINT_LINE):].strip() for line in lines
+                                   if line.startswith(UNDO_POINT_LINE)), None)
+    off = next((line[len(MESSAGING_OFF_LINE):] for line in lines if line.startswith(MESSAGING_OFF_LINE)), None)
+    if off is not None:
+        report["messaging_off"] = [name.strip() for name in off.split(",") if name.strip()]
+    down = next((line[len(GATEWAY_DOWN_LINE):].strip() for line in lines if line.startswith(GATEWAY_DOWN_LINE)), None)
+    if down is not None:
+        report["gateway_down"] = down
+    return report
 
 
 @status_router.get("/api/actions/{name}/status")

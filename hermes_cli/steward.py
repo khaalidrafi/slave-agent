@@ -261,7 +261,7 @@ def is_bundled_payload(project_root: Path) -> bool:
     """
     try:
         return read_install_stamp(Path(project_root)).get("payload") == "bundled"
-    except Exception:  # noqa: BLE001 — a bad stamp must not take a caller down
+    except Exception:
         return False
 
 
@@ -291,7 +291,7 @@ def sealed_steward(project_root: Path) -> Optional[str]:
     return distribution if isinstance(distribution, str) and distribution else "unknown"
 
 
-def classify_install(project_root: Path) -> "tuple[str, bool]":
+def classify_install(project_root: Path) -> tuple[str, bool]:
     """(steward, code_removal_allowed) for the tree at ``project_root``.
 
     A git checkout reports ``("git", True)``; a sealed tree reports its
