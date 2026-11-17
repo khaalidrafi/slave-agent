@@ -56,8 +56,12 @@ fi
 
 echo "== step 1/3: our work onto upstream/$(git rev-parse --short "$UPSTREAM_REMOTE/main")"
 git checkout "$BRANCH_BASE"
-git rebase "$UPSTREAM_REMOTE/main"
-echo "   rebase clean. If it stopped, resolve as usual and re-run this script."
+if git merge-base --is-ancestor "$UPSTREAM_REMOTE/main" "$BRANCH_BASE"; then
+    echo "   $BRANCH_BASE already carries $UPSTREAM_REMOTE/main (merge-based catch-up); no rebase"
+else
+    git rebase "$UPSTREAM_REMOTE/main"
+    echo "   rebase clean. If it stopped, resolve as usual and re-run this script."
+fi
 
 echo "== step 2/3: regenerate the brand from the merged tree"
 git checkout -B "$BRANCH_BRAND" "$BRANCH_BASE"

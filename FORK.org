@@ -125,6 +125,18 @@ they are what search for it. Print the mapping with ~python3 scripts/rebrand.py 
 
 * Syncing upstream
 
+Two lanes, by drift size:
+- small drift: ~scripts/fork-sync.sh~ (fetch, rebase ~ai/main~ onto upstream,
+  regenerate the brand);
+- catch-up over months of drift: ONE ~git merge -X ours~ commit on ~ai/main~,
+  resolving modify/deletes with ~git rm~ per the doctrine above and cutting
+  updater hooks that re-entered through non-conflicting hunks — replaying
+  dozens of fork commits across tens of thousands of upstream commits pays
+  the conflict bill once per commit instead of once.  The 2026-11-18
+  catch-up (aaec1339, 26,121 commits) landed this way (02e5e6a6f1).
+  ~fork-sync.sh~ now skips its rebase step when ~ai/main~ already carries
+  upstream, so the script stays safe after a merge.
+
 #+begin_src bash
 scripts/fork-sync.sh              # fetch, rebase ai/main, regenerate brand, one commit
 scripts/fork-sync.sh --check      # how many upstream commits we are behind
