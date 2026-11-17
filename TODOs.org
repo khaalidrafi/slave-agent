@@ -1,0 +1,376 @@
+#+TITLE: TODOs.org — slave-agent work tree (all workstreams, transcript-derived)
+#+TODO: TODO IN-PROGRESS | DONE
+#+STARTUP: overview
+
+# Derived by the spec-drafting agent (Task 2-a) from the three AI-CLI session
+# transcripts provided by the Owner plus the repo boards. NEW FILES ONLY —
+# nothing else in the repo was touched, nothing committed.
+#
+# Source keys (full filenames, kept short below):
+#   T1 = upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org  (Qoder/Qwen3.8-Flash, 2026-10-15)
+#   T2 = upload/15bc8d02-770b-4ebc-acd8-130e4d50d9be.org  (Qoder/Qwen3.8-Flash, 2026-10-04→10-07)
+#   T3 = upload/mvs_e5ca10a60e414336af0201a9657f1e39.org  (MiniMax M3.1-Flash-Preview, 2026-10-04)
+# Repo docs cited by path. Task numbers (#NN) are the PLAN/task ids used
+# inside the transcripts. "agent-org checkout" = /home/z/my-project/agent-org
+# (local copy used read-only for verification).
+
+* Brand vocabulary & generator (slave-agent) — see specs/001–004
+
+** DONE Steward refusal text spells our package from brand.py (#24)
+   - Guix update/uninstall refusals via ~brand.SLUG~; Termux APT + Nix names
+     stay upstream keeps; relationship test appended to
+     ~tests/hermes_cli/test_steward_detection.py~.
+   - Source: T1 (* Agent, task #24 turns); HANDOFF.org "Brand".
+   - Cross-ref: specs/001.
+
+** DONE brand.py HOME_ENV agrees with the generator (#23)
+   - The identity tier's mechanical ~HERMES_~ swap drops ~_AGENT~; brand.py
+     fixed so the env name matches; guarded by
+     ~tests/scripts/test_rebrand_brand_agreement.py~.
+   - Source: T1 (* Agent, task #23 references; the agreement-test stdout is
+     quoted in T1). Cross-ref: specs/001 req. 4.
+
+** DONE Banner nameplate from brand.PRODUCT/TAGLINE; block art dead (#26)
+   - ~_brand_wordmark()~ in ~hermes_cli/banner.py~; ~ui-tui/src/banner.ts~
+     literal plate; skin comment updated; regression test in
+     ~tests/hermes_cli/test_banner.py~; CI guard on the deleted row-1
+     signature.
+   - Source: T1 (* Agent, task #26 turns); HANDOFF.org "Brand". Cross-ref:
+     specs/002.
+
+** DONE Generator reads every word-carrying format; --blind and --lint land (#25/#27)
+   - PROSE/CODE extension tables extended; ~blindspots()~/~hand_brands()~;
+     ~BRAND_LITERAL_ALLOW~; measured 4,622 files / 32,566 replacements,
+     46→0 blind, 1→0 hand-typed; numbers recorded in FORK.org.
+   - Source: T1 (* Agent, tasks #25/#27 turns); FORK.org "What the generator
+     actually costs, measured"; HANDOFF.org. Cross-ref: specs/003.
+
+** DONE Brand CI split into lint (ai/** + PRs) and artifact (ai/slave-agent) lanes
+   - ~.github/workflows/fork-brand-consistency.yml~ rewritten; drawn-logo
+     guard with ~-I~; branch hardcoded in ~if:~.
+   - Source: T1 (* Agent, task #25 turns); FORK.org "Verification".
+     Cross-ref: specs/003 req. 6.
+
+** DONE Hand-typed brand literals removed (AGENTS.md, plugins/shop/plugin.yaml)
+   - AGENTS.md fork-guarantee sentence reworded to avoid naming the product;
+     plugin author field loses "(slave-agent)"; HANDOFF.org added to the
+     allow-list as a fork document.
+   - Source: T1 (* Agent lint turns; docs commit ~4255916916~). Cross-ref:
+     specs/003 req. 4.
+
+** IN-PROGRESS Decide the third-party KEEP list (#35) — blocks #28
+   - Lowercase ~nousresearch/hermes-agent~ Docker path, Termux/Nix package
+     names, ~hermes-sandbox~, model IDs (~hermes-4-405b~,
+     ~Hermes-3-Llama-3.1-70B~), 79 image refs; Owner blessing required
+     ("needs your explicit blessing", gap 7).
+   - Source: T1 (* Agent, discovery turns + final response); FORK.org "TODO
+     Decisions still open". Cross-ref: specs/004.
+
+** TODO Encode KEEP_RE third-party shape rules + tests
+   - Executor: Software Engineer (deepseek-v4.1-flash@codebuddy) per
+     agent-team/TODOS.org; also reword the stale updater comment on the
+     upstream repo path entry (FORK.org TODO item).
+   - Source: agent-team/TODOS.org "KEEP_RE third-party shape rules + tests";
+     T1. Cross-ref: specs/004.
+
+** TODO Produce the branded branch for real (#28)
+   - ~scripts/fork-sync.sh~ → ~ai/slave-agent~; blocked on the KEEP
+     decision so the artifact does not ship broken third-party rewrites.
+   - Source: HANDOFF.org "What to do next"; T1. Cross-ref: specs/004.
+
+** TODO Our own mark / icon regeneration (#34)
+   - ~assets/icon-master.svg~, ~☤~ in the README; regenerate via
+     ~scripts/generate_icons.py~ once we have our own mark.
+   - Source: FORK.org "TODO Decisions still open"; T1 (caduceus kept while
+     #34 open). Cross-ref: specs/002 notes, specs/004 notes.
+
+* Shop storefront plugin (slave-agent) — see specs/005
+
+** DONE plugins/shop read-only storefront adapter + 4 tools (#19/#29)
+   - ~StorefrontAdapter~ ABC + REST impl; ~shop_queue~, ~shop_orders~,
+     ~shop_order~, ~shop_catalog~; ~hermes shop~ + ~/shop~; all shape via
+     ~plugins.entries.shop.settings~; token via ~agent.secret_scope~ at call
+     time; cache per (settings, token); 23/23 tests green; commit
+     ~51e1d196c8~.
+   - Source: T1 (commit session); HANDOFF.org "Storefront capability";
+     docs/INTEGRATION-ADMINEVERYWHERE.org. Cross-ref: specs/005.
+
+** TODO Four shop-deployment credentials still owed (Owner)
+   - Recorded as owed in the session's private handoff; names not
+     enumerated in the transcripts — evidence: none found (needs Owner
+     confirmation). Credentials travel as ENV VAR NAMES only (AGENTS.md).
+   - Source: T1 (final response). Cross-ref: specs/005 notes.
+
+** TODO Shop write path behind an approve-before-send gate
+   - Read-only by construction until the gate exists; outward-facing social
+     channels stay out of scope.
+   - Source: HANDOFF.org; docs/INTEGRATION-ADMINEVERYWHERE.org guardrails.
+     Cross-ref: specs/005 req. 2.
+
+* Light core / bloat removal (slave-agent) — see specs/006
+
+** IN-PROGRESS P0 updater-removal tail committed, verification remainder open (#31)
+   - Commit ~0bbd3f41cd~ (~refactor(p0)~): ~hermes update~ →
+     package-manager pointer; ~hermes_cli/install_maint.py~ (+987);
+     ~hermes_cli/gateway_systemd.py~; ~main.py~ −317;
+     ~scripts/ci/classify_changes.py~ desktop_updater lane. Committed at the
+     Owner's order with full disclosure of the other session's authorship.
+   - Island NOT on any reachable remote (agent-team board: UNREACHABLE on
+     every channel; ~upstream/main~ c419cf7c booted on origin as re-derive
+     base) — evidence: none found (needs Owner confirmation).
+   - Source: T1 (* RESPONDED "Commit ALL changes…"); HANDOFF.org "P0";
+     agent-team/TODOS.org. Cross-ref: specs/006, specs/007.
+
+** TODO Fix the 5 known-red steward tests
+   - ~tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission~
+     still imports deleted ~hermes_cli.update_contract~; rewrite the
+     assertions against the steward table. Executor: Software Engineer
+     (deepseek-v4.1-flash@codebuddy).
+   - Source: T1; HANDOFF.org "Known-red tests"; agent-team/TODOS.org.
+     Cross-ref: specs/006.
+
+** TODO Execute the bloat removal queue P1–P9
+   - One commit per subsystem, three-way verification per removal
+     (check-imports, compileall, survivor tests), ~kernel_floor --record~ in
+     the same commit. Executor: Software Engineer
+     (deepseek-v4.1-flash@codebuddy).
+   - Source: FORK.org "Bloat removal queue"; agent-team/TODOS.org.
+
+* Publication & code transfer — see specs/007
+
+** DONE Public independent repo created; handoff docs island pushed
+   - ~khaalidrafi/slave-agent~ public, ~fork: false~ (no fork network, per
+     the Owner's "don't use fork command" order); branch ~handoff~ carries
+     the summarized, leak-checked ~HANDOFF.org~ + ~FORK.org~ island commit.
+   - VERIFIED locally: this repo's ~git remote -v~ and island commit
+     ~f37d1ff~ (author Qwen3.8-Flash) in ~git log~.
+   - Source: T1 (* RESPONDED "It will be public…").
+
+** TODO Transfer the ai/light-core code island into this repo
+   - The three work commits (~0bbd3f41cd~, ~e3edc4e6d3~, ~51e1d196c8~) are
+     not on origin; whoever holds the island pushes it, else re-derive the
+     three topics per the HANDOFF.org table. Bundle at
+     ~~/.agents-work/slave-agent-light-core-2026-10-15.bundle~ (140 KB,
+     verified) on the Owner's machine; cloud-transfer commands recorded in
+     specs/007.
+   - Source: T1; agent-team/TODOS.org; HANDOFF.org. Cross-ref: specs/007.
+
+** TODO Reword two commit messages before the code goes public (Owner decision)
+   - ~51e1d196c8~ ("…exists to sell", "This is NOT <client> code", "the
+     <client> Django API…") and ~4255916916~ (hints at a pilot customer).
+     Rewriting moves hashes — Owner's call (benchmarking). A
+     ~backup/pre-reword~ branch is mentioned as holding the pair — evidence:
+     none found (needs Owner confirmation).
+   - Source: T1 (final response). Cross-ref: specs/007 req. 5.
+
+** TODO Decide the bundle-bridge option (140 KB bundle onto the handoff branch)
+   - Offered so a plain clone carries the history without scp; declined for
+     now because it would publish the commit messages before the reword
+     decision.
+   - Source: T1. Cross-ref: specs/007 req. 6.
+
+** TODO Decide: fix attribution/split of commit ba9da5d86f (#33)
+   - Upstream's P0 deletion commit's authorship; attribution pollution is a
+     tracked Owner concern.
+   - Source: T1 (task #33 references in thinking turns).
+
+* slave-agent capability roadmap (boards + transcripts)
+
+** TODO slave_compat as the canonical key + state migration
+   - ~slave_compat~ canonical while ~hermes_compat~ keeps working; state-dir
+     read-fallback; one-shot ~slave migrate-state~; launcher path default
+     moves, old name still resolves. Executor: Software Engineer
+     (deepseek-v4.1-flash@codebuddy).
+   - Source: HANDOFF.org; agent-team/TODOS.org; T1 (gap 5 references).
+
+** TODO Release URL, mark, lean-vs-compat token cost table
+   - Our own release URL + installer pointer; icon regeneration; "lighter"
+     as a number. Executor: QA + Docs Engineer
+     (nvidia/nemotron-3.5-lightning:free@cline).
+   - Source: HANDOFF.org; agent-team/TODOS.org; FORK.org "TODO Decisions
+     still open".
+
+** TODO Group-chat capabilities on top of the shop toolset
+   - ~/recap~, chat-to-cron reminders, PII redactor at the prompt boundary,
+     one-command persona install (persona = config profile; contract
+     fixed by specs/013). Executor: Software Engineer
+     (deepseek-v4.1-flash@codebuddy).
+   - Source: HANDOFF.org; agent-team/TODOS.org.
+
+** TODO Brandability profile contract per specs/013
+   - One profile artifact per deployment (identity, persona, vocabulary,
+     capabilities, integration, secret names); every user-facing string
+     renders from it at runtime; ~slave persona install~ validates,
+     lands, and self-checks. Extends the landed brand-JSON mechanism
+     (api_server_brand.py, deploy/example kit). Executor: Software
+     Engineer (deepseek-v4.1-flash@codebuddy); implementation continues
+     on the live ai/main board.
+   - Source: Owner order 2026-11-16 #hq ("make it completely brandable
+     for a company's tailored assistant"); specs/013.
+
+** TODO Emacs/Org roadmap R2–R6 + panel embedding design
+   - R2 ~ob-slave-agent~, R3 Org memory substrate, R4 ~slave-agent-consult~,
+     R5 agenda as job queue, R6 Emacs introspection behind the terminal-tool
+     approval gate; plus the serve-vs-ACP embedding architecture and
+     per-user profile design for panel hosts. Executor: Software Architect
+     (glm-5.3@chat.z.ai). R1 is wired (FORK.org) but the Emacs chat itself
+     is still unexercised and agent-org's suite was entangled with another
+     session's edits.
+   - Source: FORK.org "Emacs and Org roadmap"; agent-team/TODOS.org; T1.
+
+** DONE OpenAI-compatible serving mode — RETIRED on the live board
+   - The live ai/main board retired the endpoint item 2026-11-11 per
+     Owner 2026-11-05 17:01 #hq: the admin-app embedding is IN-PROCESS,
+     the agent core ships as a Python library via the
+     admineverywhere[agent] extra; ACP stays the first-class external
+     surface. Landed work (contract pin + smoke + the brand persona
+     tier) stands as history. specs/014 records the corrected
+     embedding-readiness contract.
+   - Source: live board "RETIRED OpenAI-compatible serving mode"; Owner
+     order 2026-11-05; specs/014.
+
+** TODO AdminEverywhere in-process embedding readiness (specs/014)
+   - Library seam via the [agent] extra, brand and persona injection on
+     the landed brand-JSON mechanism, ACP first-class, purity at the
+     seam, safe defaults for the panel team's six open asks. Executor:
+     Software Architect (glm-5.3@chat.z.ai) per the live board design
+     item; contract fixed by specs/014.
+   - Source: Owner order 2026-11-16 #hq; live board design item
+     "Emacs/Org roadmap R2-R6 + panel embedding"; specs/013, specs/014.
+
+** DONE Builder skill for agents — skills/slave-agent-builder/
+   - Intake-to-handoff skill so any agent tailors a company assistant
+     on the platform: laws, intake questions, profile authoring per
+     specs/013, capability wiring, verification, handoff artifacts.
+     Canonical copy lives here; vendored into the agent-team-ci kit
+     (skills/slave-agent-builder/) so harness seats get it baked.
+   - Source: Owner order 2026-11-16 #hq ("write a skill for agents to
+     build personalized assistants with slave agent").
+
+** DONE Working docs scrubbed of the client name (purity law, forward)
+   - AGENTS.md, TODOs.org, agent-team/TODOS.org, specs/005, specs/007,
+     docs/INTEGRATION-ADMINEVERYWHERE.org reworded to neutral references
+     (the client, the deployment's own slug); the island commit messages
+     keep their separate reword decision (Owner's call, above).
+   - Source: purity law, docs/INTEGRATION-ADMINEVERYWHERE.org; Owner
+     order 2026-11-16 #hq (complete brandability).
+
+** TODO CI wiring + review lane
+   - Port the umbrella CI kit pattern (self-check, brand consistency
+     lanes); every branch/PR routes through the Copilot CR lane before the
+     Lead merge (Owner 2026-10-31: burn this month's CR); seal the
+     client-website PAT as a repo secret once the Owner's PAT scope
+     covers this repo (secret name as recorded on the dispatching
+     board). Executor: Platform/CI Engineer (qwen3.8-flash@qoder).
+   - Source: agent-team/TODOS.org; AGENTS.md (no CI chain wired here yet).
+
+** TODO HELD: first-client / Bangladesh-market proposal (Owner consult)
+   - Held until the brand work is done and the Owner consults (his words:
+     complete the Hermes replacement before consulting on the client); no
+     client data or naming enters this tree (purity law).
+   - Source: T1 (thinking turns + private-handoff outline). Cross-ref:
+     specs/007 notes.
+
+* agent-org Emacs surface (~~/agent-org~ repo; slave-agent R1 depends on it) — see specs/008–011
+
+** DONE Buffer names "Provider:project [sid]", no package prefix (request 1)
+   - Commit ~3eebe08~ (concurrent agent, ~ai/quickstart~); live-verified as
+     ~Qoder:slave-agent [15bc8d02-…]~.
+   - Source: T2; T3 (request list). Verified: agent-org checkout.
+     Cross-ref: specs/008.
+
+** DONE One .agent-org/ per project for transcripts (request 2)
+   - Commit ~b7b882f~; ~agent-org-transcript-directory~ (default
+     ~.agent-org~); suite stops writing during tests.
+   - Source: T2; T3. Verified: agent-org checkout (~agent-org-buffer.el:5167~).
+     Cross-ref: specs/008.
+
+** DONE Tool calls inside :tool: drawers (request 3)
+   - One ~:tool:~ drawer per turn, one line per call (Org forbids headlines
+     inside drawers); tests assert the shape; AGENTS.md updated to the new
+     contract.
+   - Source: T2. Verified: agent-org checkout (~agent-org-buffer.el~
+     rendering; AGENTS.md:145). Cross-ref: specs/008.
+
+** DONE agent-org-show-traffic + agent-org-log-traffic (requests 5–6)
+   - ~acp-logging-enabled~ turned on at client creation (default-on custom);
+     command opens the session's traffic buffer, RET pretty-prints JSON;
+     README "Seeing the raw wire" section. Commit ~3c3ea63~ (concurrent
+     agent — attribution caveat).
+   - Source: T2 ("Done? fAST!" / "??"). Verified: agent-org checkout
+     (~agent-org.el:190, :1081~). Cross-ref: specs/009.
+
+** DONE agent-org-copy-session-id
+   - Session id onto the kill ring; refuses before the handshake; two tests;
+     live-verified. Commit was blocked by the concurrent session's staged
+     work in the same files — attribution open.
+   - Source: T2 ("??"). Verified: agent-org checkout (~agent-org.el:1115~).
+     Cross-ref: specs/009.
+
+** DONE Doom-modeline blank bar fixed (request 4) — agent-org side
+   - Property-free ~add-log-current-defun-function~ routing
+     (~agent-org-buffer--property-free~ / ~…-install-plain-defun~,
+     kill-local-variable on disable); regression test
+     ~test-agent-org-which-function-answers-property-free~; live advice
+     (~inhibit-read-only~ around ~doom-modeline-format--main~) applied and
+     verified (122-char bars, zero ~text-read-only~ errors).
+   - Source: T2; T3 (fix design). Verified: agent-org checkout
+     (~agent-org-buffer.el:1749–1855~; ~tests/test-agent-org.el:1565~).
+     Cross-ref: specs/010.
+
+** TODO Persist the doom-modeline advice in khalid-ui.el (Owner permission)
+   - ≈12 lines in ~~/home-config/dotfiles/.emacs.d/personal/khalid-ui.el~;
+     the Owner's AGENTS.md forbids editing $DOTFILES without explicit
+     permission ("Say 'edit khalid-ui.el' and I will"). Without it the live
+     fix dies at the next Emacs restart. evidence: none found (needs Owner
+     confirmation).
+   - Source: T2 ("??" final asks). Cross-ref: specs/010.
+
+** DONE agent-org clock/cost report ("the special design")
+   - ~M-x agent-org-clock-report~: per-chat legend (Chat | Provider | Model
+     | Turns | Response | Tokens | Cost) + clocktable dblock scoped to the
+     project's ~.agent-org/~ transcripts; never enters org-clock machinery;
+     prefix arg = this chat only; five tests. The transcript ends
+     mid-verification; the feature landed afterwards (follow-up fix commit
+     ~60b335b~).
+   - Source: T2 ("Start working on the special design, PLEASE").
+     Verified: agent-org checkout (~agent-org.el:3519~;
+     ~tests/test-agent-org.el:10972–11124~). Cross-ref: specs/011.
+
+** TODO agent-org backlog items named but not started in the transcripts
+   - Markdown→Org, steer, fork, input-history ring, non-blocking
+     permissions, tool-call grouping, model names in ~C-c C-m~ — as listed
+     open in agent-org's own TODOs.org at the time. (Some may have landed
+     since; audit the agent-org repo before working one.)
+   - Source: T2 ("??" final: "Still open from TODOs.org"). Cross-ref:
+     specs/008 notes.
+
+* Machine discipline & session archaeology — see specs/012
+
+** TODO Locate the /home/khalid qoder session that dealt with slave-agent
+   - Owner order (2026-10-04): "Please look into qoder sessions by using
+     qoder CLI to list them and find out which one dealt with slave-agent.
+     The session tracked /home/khalid/ dir, not cwd. agent-org is
+     irrelevant!" — the MiniMax session began ~qoder --list-sessions~ from
+     the home directory and the transcript ends before any result.
+     Unfinished.
+   - Source: T3 (final user message + last turns).
+
+** TODO Codify the freeze-risk discipline where agents will read it
+   - nice + timeout + one-heavy-job-at-a-time + disk guard; observed as
+     practice in all three transcripts, never written down until
+     specs/012. Decide whether the Owner wants it enforced structurally
+     (load-guard in test entry points). evidence: none found (needs Owner
+     confirmation).
+   - Source: T1, T2, T3; FORK.org "The agent runs on a 4 GB machine".
+     Cross-ref: specs/012.
+
+* Footnotes for the Lead
+
+- Keyword law of agent-team/TODOS.org (TODO → PROGRESS → REVIEW → PENDING →
+  DONE, DONE is Lead-only) governs that board; this file uses the simpler
+  TODO / IN-PROGRESS / DONE because it is a work tree derived from
+  transcripts, not a dispatch board. Effort/deadline drawers apply only to
+  lead-assigned TODOs on the agent-team board.
+- Counts: 18 DONE, 2 IN-PROGRESS, 23 TODO (one of the TODOs carries the HELD
+  marker: the first-client/BD proposal).
