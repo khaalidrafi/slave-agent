@@ -196,6 +196,10 @@ BRAND_LITERAL_ALLOW = SELF_PATHS | {"scripts/fork-sync.sh", "FORK.org", "HANDOFF
     "agent-team/STATE.org", "agent-team/TODOS.org", "agent-team/CANDIDATES.org",
     "agent-team/CHAT.org",
     "docs/INTEGRATION-ADMINEVERYWHERE.org",
+    # The absorbed transcript work tree and the fork-positioned README
+    # carry the repo name on purpose (README exists upstream: a future
+    # sync resolves its conflicts with ours, per FORK.org):
+    "TODOs.org", "README.md",
     # Fork-only surfaces that never exist upstream, so no merge ever sees them:
     # the root contributor guide, the mobile-port contract, the deployment kit,
     # the builder skill, and the spec set. Each names this product because it
