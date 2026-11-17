@@ -1,0 +1,37 @@
+#+TITLE: specs/015 — AdminEverywhere optional slave-agent integration
+#+STARTUP: overview
+
+* Order
+
+Owner 2026-11-18: audit and modify admineverywhere so the
+slave-agent integration is OPTIONAL — a deployment can embed the
+assistant, and a deployment can run the panel without it.
+
+* Contract
+
+- OPTIONAL means: neither side depends on the other.  The panel
+  works with zero agent configuration; slave-agent ships with no
+  panel-specific code (purity law, docs/INTEGRATION-ADMINEVERYWHERE.org).
+- Two integration seams, both optional:
+  1. IN-PROCESS (specs/014): the agent core as a Python library via
+     the ~admineverywhere[agent]~ extra; the panel imports the persona
+     seam directly.  Landed: plugin ~agent_embed.py~ on the
+     admineverywhere side (absorbed lane ai/agent-embed).
+  2. NETWORKED: one preset button in the existing three-input
+     settings form (no new input element — the form's contract law
+     holds), pointing the Ctrl+K assistant at a standalone
+     slave-agent serve: base URL ~http://127.0.0.1:8642/v1~, model
+     id ~slave-agent~, empty key.  This is the mobile/networked
+     path; it rides the same OpenAI wire the mobile contract
+     (docs/MOBILE-PORT.org) names.  Landed:
+     ~app/src/lib/aiProviders.ts~ plus its test.
+- Law kept: no client or customer name on either side; secrets as
+  env var names only; the preset adds no new panel dependency.
+
+* Evidence
+
+- admineverywhere 94b09e5 (client preset) and the merged in-process
+  seam lane; slave-agent specs/014 (the library seam contract),
+  docs/INTEGRATION-ADMINEVERYWHERE.org (the integration guide).
+- This spec records the contract; the implementation lives in the
+  admineverywhere repository.

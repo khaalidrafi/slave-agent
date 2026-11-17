@@ -1,0 +1,48 @@
+#+TITLE: specs/016 — pluggable assistant contract (any workflow; Emacs as the benchmark)
+#+STARTUP: overview
+
+* Order
+
+Owner 2026-11-18: make slave-agent extremely pluggable and
+flexible, usable by any workflow — explicitly including as an
+assistant inside Emacs.  This spec merges the Emacs-malleability
+draft into the platform contract.
+
+* Contract
+
+Embedding NEVER edits the core.  A workflow reaches the agent
+through exactly one of four surfaces, in preference order:
+
+1. ACP — ~slave-acp~, the stdio Agent Client Protocol server
+   (~acp_adapter.entry:main~).  The first-class external surface for
+   editors and tools.  Emacs through the ~agent-org~ package
+   (~M-x agent-org-slave-agent-start-agent~) is the benchmark use
+   case: Org transcripts, session resume over ~session/list~ +
+   ~session/load~, per-turn cost clocks (R1, wired).
+2. IN-PROCESS LIBRARY — the persona seam (~persona.compile_persona~
+   et al., specs/013) a host application imports; brand and persona
+   inject through the landed brand-JSON mechanism (specs/014).
+3. PROFILE — deployment shape as configuration (identity, persona,
+   vocabulary, capabilities, integrations, secret names); one
+   profile per deployment, validated and self-checked by ~slave
+   persona install~.
+4. OPENAI WIRE — the serve platform, for deployments that prefer a
+   network boundary (the AdminEverywhere preset, specs/015).
+
+Structural rules:
+
+- Capability edges stay plugins and skills (shop storefront,
+  agent-team non-coding workflows, platform channels); the core
+  stays a narrow waist (AGENTS.md).
+- The Emacs/Org roadmap (R2-R6, docs/EMACS-ROADMAP-R2-R6.org) rides
+  surface 1 plus Org as the memory substrate; R6 (agent-driven
+  Emacs introspection) stays behind the terminal tool's approval
+  gate, not a new one.
+- Purity: no host or editor name enters this tree; each surface's
+  integration doc lives with its consumer.
+
+* Evidence
+
+- ~acp_adapter/~ (the ACP server), agent-org's slave-agent provider
+  seat, ~plugins/agent_team/~ (workflows), ~persona/~ (the profile
+  package), ~gateway/platforms/~ (the serve wire), specs/013-015.
