@@ -42,6 +42,31 @@ tree** (code, docs, board, deploy kits, commit subjects): refer to the
 vault for exact secret names; the rebrand generator's hand-brand lane
 is the structural guard.
 
+## Fork commit attribution + upstream merges (Owner order 2026-11-18)
+
+Ruling: "Having Flash commits isn't a problem. Having most commits by
+Flash is. And, Flash's authored commits should stay Flash."
+
+- The acting brain commits under its OWN model identity. GLM 5.3
+  non-flash (Acting Lead + Senior Software Architect seat) authors its
+  work `GLM 5.3 <glm-5.3@z.ai>` with lead-verb subjects. GLM 5.3 Flash
+  holds no seat; its own work commits as `GLM 5.3 Flash
+  <glm-5.3-flash@z.ai>` and STAYS Flash.
+- Most commits by Flash is the abnormal state. The fix is dispatch, not
+  relabel: substantive work goes to member seats, which commit it under
+  their own identities (the chain commits as `agent-team-ci` with the
+  seat named on the board).
+- Attribution is sticky in both directions: no identity rewrite absorbs
+  Flash's commits into the Lead identity, reassigns them to seats, or
+  the reverse. The 2026-11-18 org-wide rewrite that absorbed 553
+  Flash-authored commits into `GLM 5.3` across this repo, the kit,
+  admineverywhere and agent-org was reverted the same day (trees
+  byte-identical, verified per repo).
+- Merging upstream into this fork NEVER squashes: every upstream commit
+  stays individual (merge-based catch-up or rebase). The generated
+  brand commit on `ai/slave-agent` is exempt — it is a build artifact,
+  not a merge (FORK.org).
+
 ## Contribution Rubric — What We Want / What We Don't
 
 ## Contribution rubric

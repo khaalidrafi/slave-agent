@@ -18,6 +18,21 @@
      re-pinned in slave-agent (b082f155af) and admineverywhere
      (9611c6b); old kit tips stay reachable under
      archive/pre-identity-fix[-ai].
+   - CORRECTED same day (GLM 5.3 Flash, session; Owner follow-up
+     ruling: "Having Flash commits isn't a problem. Having most
+     commits by Flash is. And, Flash's authored commits should stay
+     Flash."): the fix above over-reached — it absorbed Flash's
+     authored commits into the Lead identity instead of leaving them
+     Flash.  Reverted per repo, trees byte-identical, verified:
+     slave-agent 18 commits restored (10 rewrite-absorbed, evidence
+     01a3a11ccd pre-rewrite lineage, + 8 born under the Lead identity
+     after the 2026-11-16 session archive, the last genuine GLM 5.3
+     Lead record); kit 53 on main + 55 on ai/main (evidence:
+     archive/pre-identity-fix[-ai]); admineverywhere 476 (evidence:
+     e147b2e pre-rewrite); agent-org 10 on ai/main (evidence:
+     b478d7f0).  Kit law re-amended (Flash commits stay Flash; most-
+     commits-by-Flash is fixed by dispatch, not relabel).  Kit re-pin
+     in this repo moves to the restored equivalent b0e3fb27.
 
 ** DONE Upstream catch-up — hermes aaec1339 merged
    - One merge commit (02e5e6a6f1) carries 26,121 upstream commits
@@ -38,6 +53,52 @@
      local reimplementations (migrate_backends argv/unit
      classification, git_commit_graph common_git_dir).  Executor:
      Software Engineer.
+
+** TODO sync/01 — post-merge survivor test audit (upstream 730d593)
+   :PROPERTIES:
+   :EFFORT:   1 session
+   :DEADLINE: <2026-11-24>
+   :END:
+   - The 2026-11-18 catch-up merged 375 upstream commits (7c6293a19f).
+     Static gates are green (compileall; kernel_floor --check-imports
+     19,524 files zero findings; rebrand lint).  Remaining: run the
+     affected test dirs where an interpreter exists, chase any new
+     dangling refs upstream added against paths this fork re-homed,
+     and confirm the classify_changes lane table still selects the
+     right lanes after the merge.  Executor: Software Engineer
+     (deepseek-v4.1-flash@codebuddy).
+   - Source: FORK.org verification law; board row "Post-merge audit".
+
+** TODO mobile/01 — Phase 2 JNI bridge spike (the native Android path)
+   :PROPERTIES:
+   :EFFORT:   2 sessions
+   :DEADLINE: <2026-11-28>
+   :END:
+   - MOBILE-PORT.org now carries the Owner's formal answer (2026-11-18:
+     native and optimized for Android, not Termux for the masses, not a
+     remote control).  First executable step of Phase 2: bundle CPython
+     via the Rust JNI bridge inside the AdminEverywhere apk skeleton,
+     import the persona seam, prove one round trip on-device or in an
+     emulator.  Dependency audit is green (3 bionic rebuilds: cffi,
+     cryptography, pycparser).  Design: Software Architect
+     (glm-5.3@chat.z.ai); execution dispatched per DOD.
+   - Source: docs/MOBILE-PORT.org "The formal answer".
+
+** TODO audit/02 — agent-org ai/quickstart attribution anomaly
+   :PROPERTIES:
+   :EFFORT:   1 session
+   :DEADLINE: <2026-11-26>
+   :END:
+   - agent-org ai/quickstart carries 613 commits authored GLM 5.3 that
+     were agent-team-ci chain commits in the 2026-11-08 lineage
+     (evidence: local reflog c9b0f79).  An earlier rewrite layer
+     (2026-11-13/14) re-attributed them; the 2026-11-18 org-wide pass
+     then treated the surface again.  Per the sticky-attribution law
+     this needs an evidence pass per commit before any further
+     rewrite: which brain authored each, which seat it belongs to.
+     Executor: Platform/CI Engineer (qwen3.8-flash@qoder).  No rewrite
+     before the evidence table is complete.
+   - Source: Owner ruling 2026-11-18 (attribution honesty); kit law.
 
 ** TODO Kit re-pin tail — the remaining kit consumers
    - agent-shepherd, agent-team.el, ate, docneural, org-learn.el,
