@@ -100,6 +100,20 @@ KEEP_RE = re.compile(
     r"|hermes-parser|hermes-estree|hermes-engine"
     r"|nousresearch/hermes-sandbox"
     r"|hermes-?\d|Hermes-?\d"
+    # Upstream plugin-catalog schema key: third-party catalog format, renamed
+    # keys would corrupt every entry (upstream tooling reads requires_hermes).
+    r"|requires_hermes"
+    # Third-party and upstream-official plugin repositories: someone else's
+    # repo names (Qhantom-Labs/hermesclaw, raw.githubusercontent URLs), never
+    # our brand to change.
+    r"|github\.com/[\w.-]+/[\w.-]*hermes[\w.-]*"
+    r"|githubusercontent\.com/[\w.-]+/[\w.-]*hermes[\w.-]*"
+    # Upstream installer host (we ship a package, not an installer).
+    r"|hermes-assets\.nousresearch\.com"
+    # Upstream container/CI infrastructure paths: /opt/hermes, /etc/hermes,
+    # /run/secrets/hermes-env, /home/hermes-check, $RUNNER_TEMP/hermes-*.
+    # Facts about upstream's build environments, not user-visible brand.
+    r"|(?:/opt|/etc|/run/secrets|/home|/tmp|RUNNER_TEMP)/hermes[\w./-]*"
 )
 # One alternation, longest/most-specific first, mapped by _identity_sub. The
 # standalone arms deliberately allow a leading hyphen (setup-hermes.sh) but not a
@@ -525,6 +539,10 @@ def verify() -> list[str]:
     # paths than the repo does, and none of it is ours to check.
     tracked = subprocess.run(["git", "-C", str(ROOT), "ls-files", "-z"],
                              capture_output=True, text=True, check=True).stdout.split("\0")
+    # Modules generated at RUNTIME by slave_cli code (their importers are
+    # executed in subprocesses after the module is written to disk):
+    # slave_tools is produced by generate_slave_tools_module.
+    generated_modules = {"slave_tools"}
     for rel in tracked:
         if not rel.endswith(".py"):
             continue
@@ -533,11 +551,15 @@ def verify() -> list[str]:
             src = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        for m in re.finditer(r"^(?:from|import)\s+(slave[a-z0-9_]*)", src, re.M):
+        # The negative lookahead stops "from slave-agent ..." prose (our own
+        # product name in a docstring) from being read as an import.
+        for m in re.finditer(r"^(?:from|import)\s+(slave[a-z0-9_]*(?!-))", src, re.M):
             name = m.group(1)
+            if name in generated_modules:
+                continue
             if name not in module_dirs and name not in module_files:
                 problems.append(f"{rel}: unresolved import '{name}'")
-        for m in re.finditer(r"^(?:from|import)\s+(hermes[a-z0-9_]*)", src, re.M):
+        for m in re.finditer(r"^(?:from|import)\s+(hermes[a-z0-9_]*(?!-))", src, re.M):
             problems.append(f"{rel}: leftover import '{m.group(1)}'")
     # Anything still carrying the old word is reported per line, minus the KEEPS
     # (upstream URLs and Meta's hermes-parser, which are not our brand).
