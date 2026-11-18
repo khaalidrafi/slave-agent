@@ -54,6 +54,26 @@
      classification, git_commit_graph common_git_dir).  Executor:
      Software Engineer.
 
+** TODO brand/01 — rebrand verify gate to zero before the first release
+   :PROPERTIES:
+   :EFFORT:   2 sessions
+   :DEADLINE: <2026-11-28>
+   :END:
+   - The branded branch regen (e5f79a61d2, upstream 730d593) still
+     carries 2,750 verify problems, classified: kanban dist CSS class
+     prefix (.hermes-kanban-*, generated artifact), dashboard
+     reverse-proxy /hermes prefix in test fixtures, _TO_HERMES
+     screaming-snake identifiers the identity arms miss, nix argv
+     checks naming bin/hermes, dead desktop-installer e2e tests
+     against the P1-deleted apps/ tree (candidates for deletion, P1
+     tail), .hermes-* state-path entries in ignore files.  Each class:
+     keep (documented KEEP arm), rewrite (tier arm), or delete (dead
+     test); the gate must read zero before the first release
+     (docs/RELEASE.md).  Starting data: the classification in commit
+     961c70347b's message and its session analysis.  Executor:
+     Software Engineer (deepseek-v4.1-flash@codebuddy).
+   - Source: 2026-11-18 sync session; FORK.org verification law.
+
 ** TODO sync/01 — post-merge survivor test audit (upstream 730d593)
    :PROPERTIES:
    :EFFORT:   1 session
