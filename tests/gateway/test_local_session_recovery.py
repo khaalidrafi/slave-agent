@@ -86,7 +86,7 @@ def test_messaging_session_history_follows_the_compression_tip(tmp_path, monkeyp
     from persistence.conversation.lineage import CompressionChild
     from persistence.conversation.messages import NewMessage
     from persistence_assembly import open_persistence, profile_scope
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         seed_session(db, 'root', 'telegram', session_key='agent:telegram:dm:1')
         seed_messages(db, 'root', {'role': 'user', 'content': 'BEFORE_COMPRESSION'})

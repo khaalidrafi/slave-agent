@@ -335,7 +335,7 @@ def rehome_queued_inputs(holder, *, epoch: int, old_session_id: str, new_session
 def retarget_local_automation(holder, *, epoch: int, session_id: str, principal_id: str,
                                old_targets, new_target: str) -> list[str]:
     """Point a LOCAL owner's still-queued ``principal_id`` automation rows (a Bot Chat's queued
-    ``hermes peer dm`` turns, plugin and completion notices) that name a pre-reset transcript in
+    ``slave peer dm`` turns, plugin and completion notices) that name a pre-reset transcript in
     ``old_targets`` at ``new_target``, in one transaction (the compression-exhaustion auto-reset).
     A LOCAL FIFO's owner is its receipt id and survives the reset; only the descriptor's ``target``
     goes stale, and the drain refuses a stale one (``admission_conflict``), pausing the FIFO for

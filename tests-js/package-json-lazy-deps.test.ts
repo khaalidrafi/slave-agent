@@ -1,13 +1,13 @@
 /**
  * Invariants for what is eager vs lazy in the root ``package.json``.
  *
- * The root ``package.json`` is installed by ``hermes update`` on every user,
+ * The root ``package.json`` is installed by ``slave update`` on every user,
  * including users who never opted into a given browser backend. Anything
  * listed in ``dependencies`` therefore runs its postinstall script for
  * everyone, and — per #43564 — was also part of the npm workspace install
  * graph, where a workspace-scoped ``npm ci`` (``--workspace ui-tui
  * --workspace web``) could silently prune it right back out on the next
- * ``hermes update``.
+ * ``slave update``.
  *
  * The contract:
  *
@@ -17,17 +17,17 @@
  *   — not root, where it was subject to the exact same pruning risk.
  *
  * - ``@askjo/camofox-browser`` is NOT eager. Camofox is an opt-in browser
- *   backend that ships as the ``camofox`` catalog plugin (Hermes core carries
+ *   backend that ships as the ``camofox`` catalog plugin (Slave core carries
  *   no Camofox code). Its postinstall fetches a ~300MB Firefox-fork binary,
- *   which silently blocked ``hermes update`` for multi-minute stretches on
+ *   which silently blocked ``slave update`` for multi-minute stretches on
  *   slow / network-restricted connections (notably users in China running
  *   through a VPN), so it installs only when the user sets the plugin up.
  *
- * (agent-browser, once listed here, is no longer used by Hermes in any form:
+ * (agent-browser, once listed here, is no longer used by Slave in any form:
  * browser_exec launches the pm-pinned Chromium itself.)
  *
  * If a future PR re-adds any of these to root ``dependencies``, this test
- * fails — read the lazy-install guidance in the ``hermes-agent-dev`` skill
+ * fails — read the lazy-install guidance in the ``slave-agent-dev`` skill
  * before changing the expectations.
  */
 

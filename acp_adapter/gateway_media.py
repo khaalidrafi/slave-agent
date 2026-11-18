@@ -6,7 +6,7 @@ import logging
 import os
 from contextlib import suppress
 
-from hermes_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_client import GatewayClientError
 
 logger = logging.getLogger(__name__)
 
@@ -48,17 +48,17 @@ async def stage_user_content(content, home=None):
     at admission. A remote image URL that cannot be fetched is kept as text so the model
     still sees it. Only a remote image awaits (its download); every other part stages inline.
 
-    ``home`` is the owner's profile home: a per-task overlay ``HERMES_HOME`` does not share
+    ``home`` is the owner's profile home: a per-task overlay ``SLAVE_HOME`` does not share
     ``cache/images``, and admission accepts only the owner's cache (never relaxed here)."""
     if isinstance(content, str):
         return content, []
     if home is not None:
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-        token = set_hermes_home_override(home)
+        from slave_constants import reset_slave_home_override, set_slave_home_override
+        token = set_slave_home_override(home)
         try:
             return await stage_user_content(content)
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
     import base64
     import binascii
     from gateway.platforms.base import cache_image_from_bytes

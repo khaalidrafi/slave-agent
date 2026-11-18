@@ -17,7 +17,7 @@ _KEY = "k" * 32
 @pytest.fixture(autouse=True)
 def _plain_process(monkeypatch):
     from agent import secret_scope
-    from hermes_cli import managed_scope
+    from slave_cli import managed_scope
 
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", False)
     for name in ("GATEWAY_RELAY_URL", "GATEWAY_RELAY_ALLOW_DIRECT_PLATFORMS"):  # not in the suite's env filter
@@ -53,12 +53,12 @@ def test_explicit_disable_beats_an_env_key(monkeypatch, config):
 
 
 def test_an_administrator_pinned_key_outranks_the_users_empty_one(monkeypatch, tmp_path):
-    from hermes_cli import managed_scope
+    from slave_cli import managed_scope
 
     managed = tmp_path / "managed"
     managed.mkdir()
     (managed / "config.yaml").write_text(json.dumps({"api_server": {"key": _KEY}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", str(managed))
     managed_scope.invalidate_managed_cache()
     user = {"platforms": {"api_server": {"enabled": True, "extra": {"key": ""}}}}
 
@@ -71,7 +71,7 @@ def test_an_administrator_pinned_key_outranks_the_users_empty_one(monkeypatch, t
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text(json.dumps(user), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     gateway = load_gateway_config()
     api_server = gateway.platforms[Platform.API_SERVER]
     assert (api_server.enabled, gateway._is_platform_connected(Platform.API_SERVER, api_server)) == (True, True)

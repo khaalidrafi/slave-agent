@@ -75,7 +75,7 @@ def _setup(tmp_path):
         'auxiliary': {'title_generation': {'enabled': False}},
         'platform_toolsets': {'cli': ['delegation', 'todo']}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(ROOT),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(ROOT),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
     return home, peer, url, env
 
@@ -164,7 +164,7 @@ def test_relay_driven_worker_builds_and_runs_its_child_off_the_relay_loop(tmp_pa
                        '[components.config]\nversion = 4\n[components.config.atof]\nenabled = true\n'
                        '[[components.config.atof.sinks]]\ntype = "file"\noutput_directory = '
                        + json.dumps(str(home / 'relay-events')) + '\nfilename = "events.jsonl"\nmode = "overwrite"\n')
-    env['HERMES_NEMO_RELAY_PLUGINS_TOML'] = str(plugins)
+    env['SLAVE_NEMO_RELAY_PLUGINS_TOML'] = str(plugins)
 
     async def exercise(desc):
         sid = await _submit(home, desc, url, 'DELEGATE')

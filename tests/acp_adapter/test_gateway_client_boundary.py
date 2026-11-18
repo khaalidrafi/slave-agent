@@ -1,7 +1,7 @@
 """The normal ACP constructor is a transport client, not an embedded owner."""
 import pytest
 
-from acp_adapter.server import HermesACPAgent
+from acp_adapter.server import SlaveACPAgent
 
 
 def test_default_acp_does_not_construct_an_embedded_session_manager(monkeypatch):
@@ -11,13 +11,13 @@ def test_default_acp_does_not_construct_an_embedded_session_manager(monkeypatch)
         raise AssertionError("ACP constructed an independent session owner")
 
     monkeypatch.setattr(server, "SessionManager", forbidden)
-    agent = HermesACPAgent()
+    agent = SlaveACPAgent()
     assert not hasattr(agent, "session_manager")
 
 
 @pytest.mark.asyncio
 async def test_unadvertised_acp_creation_is_not_relabelled_as_cli(tmp_path):
-    agent = HermesACPAgent()
+    agent = SlaveACPAgent()
     calls = []
 
     class RPC:

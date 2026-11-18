@@ -1,4 +1,4 @@
-"""A one-shot run (``hermes chat -q`` / ``-z``) has nobody to ask, steer, or live-control children for.
+"""A one-shot run (``slave chat -q`` / ``-z``) has nobody to ask, steer, or live-control children for.
 
 It drops ``clarify``, the mid-turn steering briefing and ``delegate_task``'s live-control parameters on both
 paths that build its surface (the agent's tool build and the gateway's session inventory). An interactive
@@ -19,11 +19,11 @@ def _built_agent(monkeypatch, oneshot: bool, disabled=None):
     from agent.agent_init import _load_tools
 
     if oneshot:
-        monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")
+        monkeypatch.setenv("SLAVE_SINGLE_QUERY_SESSION", "1")
     else:
-        monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
+        monkeypatch.delenv("SLAVE_SINGLE_QUERY_SESSION", raising=False)
     agent = SimpleNamespace(platform="cli", quiet_mode=True)
-    _load_tools(agent, ["hermes-cli"], disabled)
+    _load_tools(agent, ["slave-cli"], disabled)
     return agent
 
 
@@ -38,7 +38,7 @@ def test_oneshot_tool_build_drops_clarify_and_delegate_live_control(monkeypatch)
     tools = _by_name(interactive)
     assert "clarify" in tools and LIVE_CONTROL <= set(tools["delegate_task"]["parameters"]["properties"])
     registry_delegate = next(t["function"] for t in model_tools.get_tool_definitions(
-        enabled_toolsets=["hermes-cli"], disabled_toolsets=interactive.disabled_toolsets, quiet_mode=True)
+        enabled_toolsets=["slave-cli"], disabled_toolsets=interactive.disabled_toolsets, quiet_mode=True)
         if t["function"]["name"] == "delegate_task")
     assert tools["delegate_task"] == registry_delegate  # interactive schema untouched
 
@@ -53,7 +53,7 @@ def test_oneshot_tool_build_drops_clarify_and_delegate_live_control(monkeypatch)
 
 @pytest.mark.parametrize("config_disables_clarify", [False, True])
 def test_oneshot_resume_keeps_the_pinned_interactive_tool_bytes(monkeypatch, config_disables_clarify):
-    # `hermes -z --resume <interactive session>`: the same-code pin's bytes head every request (prompt cache), so
+    # `slave -z --resume <interactive session>`: the same-code pin's bytes head every request (prompt cache), so
     # neither the one-shot delegate_task variant nor the one-shot clarify gate may rewrite or drop a pinned tool;
     # a clarify the user's config disables since the pin still drops, as it would for an interactive resume.
     from tools.mcp_tool_agent import restore_agent_tool_prefix, tool_pin_version
@@ -70,7 +70,7 @@ def test_gateway_oneshot_inventory_drops_clarify(tmp_path, monkeypatch):
     from gateway.session_local_inventory import _policy_tools
     from gateway.session_policy import build_policy, policy_scope
 
-    monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
+    monkeypatch.delenv("SLAVE_SINGLE_QUERY_SESSION", raising=False)
 
     def names(source):
         policy = build_policy({"source": source, "cwd": str(tmp_path), "model": "m"}, {})

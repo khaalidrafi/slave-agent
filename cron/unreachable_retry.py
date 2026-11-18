@@ -24,7 +24,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from cron.constants import is_recurring
-from hermes_time import now as _hermes_now
+from slave_time import now as _slave_now
 
 logger = logging.getLogger("cron.scheduler")
 
@@ -44,7 +44,7 @@ def retry_enabled(cfg: Optional[dict] = None) -> bool:
     model calls were made)."""
     if cfg is None:
         try:
-            from hermes_cli.config import load_config
+            from slave_cli.config import load_config
 
             cfg = load_config() or {}
         except Exception:  # config unreadable — keep the reliability default
@@ -98,7 +98,7 @@ def will_retry(job: dict[str, Any]) -> bool:
         return False  # _advance_after_run completes the job; plan_retry never runs
     from cron.jobs import _parse_aware, compute_next_run
 
-    now = _hermes_now()
+    now = _slave_now()
     natural_next = _parse_aware(compute_next_run(
         job.get("schedule") or {}, now.isoformat(), timezone=job.get("timezone")))
     if natural_next is None:
@@ -141,7 +141,7 @@ def plan_retry(job: dict[str, Any]) -> bool:
     a retry was scheduled."""
     from cron.jobs import _parse_aware  # late: jobs imports this module's helpers
 
-    retry_dt = _ladder_instant(job, _parse_aware(job.get("next_run_at")), _hermes_now())
+    retry_dt = _ladder_instant(job, _parse_aware(job.get("next_run_at")), _slave_now())
     attempt = int((job.get(STATE_KEY) or {}).get("attempt") or 0)
     if retry_dt is None:
         if attempt >= len(RETRY_DELAYS_SECONDS) and _ladder_applies(job):

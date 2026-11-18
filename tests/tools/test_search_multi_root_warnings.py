@@ -19,7 +19,7 @@ from tools.registry import registry
 
 @pytest.fixture
 def two_roots(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     roots, locked = [], []
     for name in ("alpha", "beta"):
         root = tmp_path / name
@@ -68,7 +68,7 @@ def test_multi_root_skipped_dir_name_with_comma_survives_merge(tmp_path, monkeyp
         pytest.skip("ripgrep not installed")
     if engine == "grep":
         monkeypatch.setattr(ShellFileOperations, "_has_command", lambda self, command: command != "rg")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     roots, locked = [tmp_path / "alpha", tmp_path / "beta"], []
     for root, dirname in zip(roots, ("plain", "one, two")):
         (root / dirname).mkdir(parents=True)

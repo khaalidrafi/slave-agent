@@ -20,7 +20,7 @@ from persistence.sqlite.conversation._store.sessions import list_sessions_rich
 from persistence.sqlite.conversation._store.sql_common import MAX_FTS5_QUERY_CHARS, escape_like as _escape_like
 
 
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 
 @dataclass
@@ -42,7 +42,7 @@ class _BackfillProgress:
 
 def _search_slow_ms() -> float:
     """``sessions.search_slow_ms`` for the served profile (default 1000; 0 logs every call)."""
-    value = routed_sessions_setting("search_slow_ms", "HERMES_SEARCH_SLOW_MS")
+    value = routed_sessions_setting("search_slow_ms", "SLAVE_SEARCH_SLOW_MS")
     try:
         return 1000.0 if value is None or str(value).strip() == "" else float(value)
     except (TypeError, ValueError):
@@ -578,7 +578,7 @@ def search_messages(
     after_ts: Optional[int] = None, before_ts: Optional[int] = None,
 ) -> list[dict[str, Any]]:
     """:meth:`_search_messages_impl` plus one log line per slow search with the routing
-    path taken. Threshold HERMES_SEARCH_SLOW_MS (default 1000; 0 logs every call)."""
+    path taken. Threshold SLAVE_SEARCH_SLOW_MS (default 1000; 0 logs every call)."""
     started = time.time()
     rows = None
     try:
@@ -795,7 +795,7 @@ def rebuild_fts(holder: StoreHolder) -> int:
                     if is_malformed_db_error(exc):
                         logger.error(
                             "FTS rebuild failed with a corruption-class error for %s: %s; "
-                            "run 'hermes sessions repair' (or 'hermes doctor --fix') to rebuild the index offline",
+                            "run 'slave sessions repair' (or 'slave doctor --fix') to rebuild the index offline",
                             tbl, exc)
                     else:
                         logger.warning("FTS rebuild failed for %s: %s", tbl, exc)

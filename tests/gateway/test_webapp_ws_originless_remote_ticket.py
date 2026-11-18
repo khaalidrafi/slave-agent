@@ -1,6 +1,6 @@
 """A remote client that sends a ticket subprotocol without ``Origin`` reaches the Webapp's ticket gate (#147361).
 
-The Android app (ktor) dials ``/api/ws`` from a remote peer with ``hermes-gateway-ticket.<ticket>`` and no
+The Android app (ktor) dials ``/api/ws`` from a remote peer with ``slave-gateway-ticket.<ticket>`` and no
 ``Origin``. The runtime wrapper took that for a native local Desktop dial and closed it 4403 before the
 Webapp ever saw the ticket its own ``/api/auth/ws-ticket`` had minted.
 """
@@ -10,7 +10,7 @@ import pytest
 
 from gateway.run_api import GatewayRuntimeAPI
 
-_TICKET_PROTOCOLS = "hermes-gateway-v1, hermes-gateway-ticket.webapp-minted"
+_TICKET_PROTOCOLS = "slave-gateway-v1, slave-gateway-ticket.webapp-minted"
 
 
 class _NativeTickets:
@@ -37,7 +37,7 @@ async def _dial(peer, *, protocols=_TICKET_PROTOCOLS, origin=None):
     async def send(message):
         sent.append(message)
 
-    headers = [(b"host", b"hermes.example.lan"), (b"sec-websocket-protocol", protocols.encode())]
+    headers = [(b"host", b"slave.example.lan"), (b"sec-websocket-protocol", protocols.encode())]
     if origin:
         headers.append((b"origin", origin.encode()))
     scope = {"type": "websocket", "path": "/api/ws", "scheme": "ws", "query_string": b"",
@@ -71,5 +71,5 @@ async def test_loopback_ticket_still_takes_the_native_grant_first():
 
 @pytest.mark.asyncio
 async def test_remote_malformed_ticket_set_is_still_refused():
-    reached, closes, redeemed = await _dial("192.168.178.206", protocols="hermes-gateway-ticket.no-base")
+    reached, closes, redeemed = await _dial("192.168.178.206", protocols="slave-gateway-ticket.no-base")
     assert reached == [] and closes == [4403] and redeemed == []

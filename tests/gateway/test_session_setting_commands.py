@@ -36,7 +36,7 @@ def _run(tmp_path, steps, extra_config=None):
               'auxiliary': {'title_generation': {'enabled': False}}, **(extra_config or {})}
     (home / 'config.yaml').write_text(json.dumps(config))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out = {}
 
@@ -90,7 +90,7 @@ def _get(label, key):
 
 
 def _yaml(home):
-    from hermes_yaml import safe_load
+    from slave_yaml import safe_load
     return safe_load((home / 'config.yaml').read_text())
 
 

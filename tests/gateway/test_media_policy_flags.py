@@ -8,28 +8,28 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     routed = launch / "profiles" / "b"
     routed.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    for var in ("HERMES_MEDIA_DELIVERY_STRICT", "HERMES_MEDIA_TRUST_RECENT_FILES"):
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
+    for var in ("SLAVE_MEDIA_DELIVERY_STRICT", "SLAVE_MEDIA_TRUST_RECENT_FILES"):
         monkeypatch.delenv(var, raising=False)
     return launch, routed
 
 
 def _under(home: Path, fn):
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         return fn()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _write_gateway(home: Path, cfg: dict) -> None:
@@ -70,8 +70,8 @@ def test_config_path_agrees_with_the_env_path_for_every_spelling(
     from gateway import media_policy
 
     _write_gateway(routed, {"strict": cfg_value, "trust_recent_files": cfg_value})
-    monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", str(cfg_value))
-    monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", str(cfg_value))
+    monkeypatch.setenv("SLAVE_MEDIA_DELIVERY_STRICT", str(cfg_value))
+    monkeypatch.setenv("SLAVE_MEDIA_TRUST_RECENT_FILES", str(cfg_value))
 
     assert (
         _under(routed, media_policy.media_delivery_strict)
@@ -90,7 +90,7 @@ def test_unknown_config_value_takes_the_restrictive_reading(homes, stored):
     the routed path and through the bridge."""
     launch, routed = homes
     from gateway import media_policy
-    from hermes_cli.config import load_config
+    from slave_cli.config import load_config
 
     _write_gateway(routed, {"strict": stored, "trust_recent_files": stored})
     assert _under(routed, media_policy.media_delivery_strict) is True
@@ -103,12 +103,12 @@ def test_unknown_config_value_takes_the_restrictive_reading(homes, stored):
 
 @pytest.mark.parametrize("stored,expected", [('"true"', True), ('"false"', False), ("'off'", False)])
 def test_value_an_older_config_set_stored_keeps_its_meaning(homes, stored, expected):
-    """Before the CLI coerced shell-quoted booleans, ``hermes config set gateway.strict '"true"'``
+    """Before the CLI coerced shell-quoted booleans, ``slave config set gateway.strict '"true"'``
     stored the quotes in the string, and the old bool() reading turned strict ON. After the upgrade
     the stored word must still decide both flags, on the routed path and through the bridge."""
     launch, routed = homes
     from gateway import media_policy
-    from hermes_cli.config import load_config
+    from slave_cli.config import load_config
 
     _write_gateway(routed, {"strict": stored, "trust_recent_files": stored})
     assert _under(routed, media_policy.media_delivery_strict) is expected
@@ -121,7 +121,7 @@ def test_value_an_older_config_set_stored_keeps_its_meaning(homes, stored, expec
 
 @pytest.mark.parametrize("cfg", [{}, {"strict": None, "trust_recent_files": None}])
 def test_unset_config_keeps_the_knob_default(homes, cfg):
-    """Unset or an explicit null (``hermes config set gateway.strict null``) keeps the knob default;
+    """Unset or an explicit null (``slave config set gateway.strict null``) keeps the knob default;
     ``{}`` alone never reaches the None branch, because the defaults merge fills it in."""
     _, routed = homes
     from gateway import media_policy
@@ -149,7 +149,7 @@ def test_unset_config_keeps_the_knob_default(homes, cfg):
 def test_strict_env_reader_is_unchanged(homes, monkeypatch, env_value, expected):
     from gateway import media_policy
 
-    monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", env_value)
+    monkeypatch.setenv("SLAVE_MEDIA_DELIVERY_STRICT", env_value)
     assert media_policy.media_delivery_strict() is expected
 
 
@@ -171,7 +171,7 @@ def test_strict_env_reader_is_unchanged(homes, monkeypatch, env_value, expected)
 def test_trust_recent_env_reader_is_unchanged(homes, monkeypatch, env_value, expected):
     from gateway import media_policy
 
-    monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", env_value)
+    monkeypatch.setenv("SLAVE_MEDIA_TRUST_RECENT_FILES", env_value)
     assert media_policy.media_delivery_trust_recent() is expected
 
 
@@ -180,14 +180,14 @@ def test_bridge_copies_the_same_reading_into_the_launch_env(homes):
     sees the env reads the policy the operator wrote."""
     launch, _ = homes
     from gateway import media_policy
-    from hermes_cli.config import load_config
+    from slave_cli.config import load_config
 
     _write_gateway(launch, {"strict": "false", "trust_recent_files": "false"})
     media_policy.apply_media_policy_env(load_config())
     import os
 
-    assert os.environ["HERMES_MEDIA_DELIVERY_STRICT"] == "0"
-    assert os.environ["HERMES_MEDIA_TRUST_RECENT_FILES"] == "0"
+    assert os.environ["SLAVE_MEDIA_DELIVERY_STRICT"] == "0"
+    assert os.environ["SLAVE_MEDIA_TRUST_RECENT_FILES"] == "0"
     # The env readers now answer the same as the config path did.
     assert media_policy.media_delivery_strict() is False
     assert media_policy.media_delivery_trust_recent() is False
@@ -196,13 +196,13 @@ def test_bridge_copies_the_same_reading_into_the_launch_env(homes):
 def test_bridge_still_bridges_plain_bools(homes):
     launch, _ = homes
     from gateway import media_policy
-    from hermes_cli.config import load_config
+    from slave_cli.config import load_config
     import os
 
     _write_gateway(launch, {"strict": True, "trust_recent_files": False})
     media_policy.apply_media_policy_env(load_config())
-    assert os.environ["HERMES_MEDIA_DELIVERY_STRICT"] == "1"
-    assert os.environ["HERMES_MEDIA_TRUST_RECENT_FILES"] == "0"
+    assert os.environ["SLAVE_MEDIA_DELIVERY_STRICT"] == "1"
+    assert os.environ["SLAVE_MEDIA_TRUST_RECENT_FILES"] == "0"
 
 
 
@@ -213,11 +213,11 @@ def test_cli_quoted_media_flags_enforce_strict_allowlist(homes, tmp_path, monkey
     configured allowlist must be rejected when strict is on and recency trust off.
     """
     launch, _ = homes
-    from hermes_cli.config import load_config, set_config_value
+    from slave_cli.config import load_config, set_config_value
     from gateway import media_policy
     from gateway.platforms.base import validate_media_delivery_path
 
-    monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
+    monkeypatch.delenv("SLAVE_MEDIA_ALLOW_DIRS", raising=False)
     _write_gateway(launch, {"strict": False, "trust_recent_files": True})
     set_config_value("gateway.strict", '"true"')
     set_config_value("gateway.trust_recent_files", '"false"')

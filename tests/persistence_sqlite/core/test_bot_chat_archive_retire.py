@@ -50,12 +50,12 @@ async def test_delivery_after_archive_of_delivery_minted_bot_chat_mints_fresh(hi
     from gateway import run
     from gateway.session_bot import _target
     from gateway.session_persistence import authority_persistence
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.gateway.test_follow_profile_followups import _profile
     from tests.gateway.test_session_follow_profile_config import _owner
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     _profile(home, 'm', 1, 'k')
     store, runner, authority, owner = _owner(home)
     runner._peek_session_state = lambda key: None

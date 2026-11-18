@@ -24,7 +24,7 @@ def _stub_startup(monkeypatch, opened):
 
 def test_entry_refuses_an_owned_home_and_owns_a_free_one(monkeypatch, tmp_path):
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     opened: list[str] = []
     _stub_startup(monkeypatch, opened)
     gateway = ProfileOwnership()

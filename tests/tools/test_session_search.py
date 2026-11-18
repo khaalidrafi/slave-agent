@@ -545,7 +545,7 @@ class TestSessionLink:
 
 class TestCrossProfileRead:
     def _patch_profiles(self, monkeypatch, home, exists=True):
-        from hermes_cli import profiles as profiles_mod
+        from slave_cli import profiles as profiles_mod
         monkeypatch.setattr(profiles_mod, "normalize_profile_name", lambda n: n)
         monkeypatch.setattr(profiles_mod, "validate_profile_name", lambda n: None)
         monkeypatch.setattr(profiles_mod, "profile_exists", lambda n: exists)
@@ -561,7 +561,7 @@ class TestCrossProfileRead:
         seed_messages(other, "s_far", {"role": "user", "content": "secret"})
 
         from collections import namedtuple
-        from hermes_cli import profiles as profiles_mod
+        from slave_cli import profiles as profiles_mod
         Info = namedtuple("Info", "name path")
         monkeypatch.setattr(profiles_mod, "get_profile_dir", lambda n: tmp_path / "default_home")
         monkeypatch.setattr(profiles_mod, "list_profiles", lambda: [Info("asdf", other_home)])
@@ -1331,7 +1331,7 @@ class TestBrowseDefaultLimit:
     def test_no_limit_browse_returns_ten_on_every_entry_point(self, db, tmp_path, monkeypatch):
         """Browse must not inherit discovery's default of 3 via the function, the registry
         handler, or the inline executor (the live path), each of which used to bake in 3."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # a call without a handle reads the home's store
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))  # a call without a handle reads the home's store
         from types import SimpleNamespace
 
         from agent.inline_tool_executors import INLINE_TOOL_EXECUTORS, InlineToolContext

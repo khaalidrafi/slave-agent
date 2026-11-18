@@ -1,13 +1,13 @@
 """Late session cwd updates must stay in the SSH peer's namespace.
 
-The creation path already translates the Hermes subprocess home to remote ~.
+The creation path already translates the slave-agent subprocess home to remote ~.
 These regressions exercise an existing environment and a later command reading
 the raw session record, neither of which creates a new environment.
 """
 
 import pytest
 
-import hermes_constants
+import slave_constants
 from tools import terminal_tool
 from tools.file_operations import ShellFileOperations
 
@@ -28,8 +28,8 @@ class RecordingEnvironment:
 
 @pytest.fixture(autouse=True)
 def isolated_session_state(monkeypatch):
-    monkeypatch.setattr(hermes_constants, "get_subprocess_home", lambda: HOST_HOME)
-    monkeypatch.setattr(hermes_constants, "get_real_home", lambda: "/srv/os-user")
+    monkeypatch.setattr(slave_constants, "get_subprocess_home", lambda: HOST_HOME)
+    monkeypatch.setattr(slave_constants, "get_real_home", lambda: "/srv/os-user")
     for name in ("_session_cwd", "_task_env_overrides", "_active_environments", "_container_aliases"):
         monkeypatch.setattr(terminal_tool, name, {})
 

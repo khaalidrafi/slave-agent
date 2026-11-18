@@ -31,7 +31,7 @@ class ConfigGetParams(ProfileParams):
 
 
 class ConfigProviderRef(OpenModel):
-    """``hermes_cli/models.py::list_available_providers`` row."""
+    """``slave_cli/models.py::list_available_providers`` row."""
 
     id: str
     label: str
@@ -178,7 +178,7 @@ method("diagnostics.share_nous", params=DiagnosticsShareNousParams, result=Diagn
 
 
 class FreeTierChallengePayload(OpenModel):
-    """``hermes_cli/anon_challenge.py::BrowserChallenge.as_payload``: the ``free_tier.challenge``
+    """``slave_cli/anon_challenge.py::BrowserChallenge.as_payload``: the ``free_tier.challenge``
     event, and ``free_tier.status``'s ``challenge`` field for a client that connected after it."""
 
     type: Literal["browser"]
@@ -204,7 +204,7 @@ class FreeTierStatusResult(Result):
     error_code: str | None = None
     retryable: bool | None = None
     retry_after: int | None = None
-    # A browser challenge the account service is waiting on (``hermes_cli/anon_challenge.py``).
+    # A browser challenge the account service is waiting on (``slave_cli/anon_challenge.py``).
     challenge: FreeTierChallengePayload | None = None
     # Seconds until the sign-in offer after a finished task is due (0 = due now); absent when none is
     # pending (no finished task since the last offer, or not on the free tier).
@@ -316,7 +316,7 @@ class SharedMetricsStartupLatencyParams(ProfileParams):
     """``elapsed_ms`` = the client's own launch (TUI process start / Desktop app start) to ready
     (TUI gateway ready / Desktop backend attached), measured once per launch by the client. The
     client names its surface because a Desktop may attach to a URL/cloud backend where
-    ``HERMES_DESKTOP`` is unset; without it the backend falls back to its own client detection.
+    ``SLAVE_DESKTOP`` is unset; without it the backend falls back to its own client detection.
     ``launch_id`` is an opaque per-launch token the backend latches on (never recorded), so a
     reconnect re-sending the same launch counts once while a new launch counts again."""
 
@@ -337,7 +337,7 @@ method("shared_metrics.startup_latency", params=SharedMetricsStartupLatencyParam
 # ---- v4 reliability ----
 class SharedMetricsUpdateRunParams(ProfileParams):
     """One Desktop PACKAGED self-update (electron-updater / App Installer / Store). Source-checkout
-    hand-offs run ``hermes update`` and are counted from its receipt, never here. Raw words; the
+    hand-offs run ``slave update`` and are counted from its receipt, never here. Raw words; the
     backend buckets them: ``outcome`` success|failed|noop|refused, ``failed_stage``
     download|verify|apply|restart, ``mechanism`` the updater strategy kind, ``duration_ms`` wall
     time, ``from_commit_date`` the updated-from build's commit time (epoch seconds) when known."""
@@ -458,7 +458,7 @@ class ModelOptionsParams(ProfileParams):
 # TODO(common): ModelPricing / ModelCapabilities / ModelOptionProvider are also the row shape of
 # ``model.save_key``'s ``provider`` — the parent consolidates into contracts/common.py.
 class ModelPricing(Result):
-    """``hermes_cli/inventory.py::_apply_pricing`` — formatted $/Mtok strings (``""`` unknown,
+    """``slave_cli/inventory.py::_apply_pricing`` — formatted $/Mtok strings (``""`` unknown,
     ``"free"``); the sale fields are Nous Portal-only."""
 
     input: str
@@ -471,7 +471,7 @@ class ModelPricing(Result):
 
 
 class ModelCapabilities(Result):
-    """``hermes_cli/inventory.py::_apply_capabilities``."""
+    """``slave_cli/inventory.py::_apply_capabilities``."""
 
     fast: bool
     ultrafast: bool = False
@@ -482,7 +482,7 @@ class ModelCapabilities(Result):
 
 
 class ProviderLimit(Result):
-    """``hermes_cli/inventory.py::_apply_limits`` — ``account``: the whole login is rate-limited until
+    """``slave_cli/inventory.py::_apply_limits`` — ``account``: the whole login is rate-limited until
     ``resets_at`` (ISO, absent when unknown); ``models``: only these models are, each until its time."""
 
     scope: Literal["account", "models"]
@@ -505,7 +505,7 @@ class ProviderUsageWindow(Result):
 
 
 class ProviderUsageAccount(Result):
-    """One account of a provider's credential pool (``hermes_cli/inventory.py::_pool_usage_accounts``).
+    """One account of a provider's credential pool (``slave_cli/inventory.py::_pool_usage_accounts``).
     ``id`` is a stable non-secret account identity (never a key or URL); ``label`` may be empty (UI
     falls back to a localized "Account N"). ``windows`` is empty while the account's usage is not
     yet known — state carries the meaning, never a fabricated gauge.
@@ -527,7 +527,7 @@ class ProviderUsageAccount(Result):
 
 
 class ProviderUsage(Result):
-    """``hermes_cli/inventory.py::_apply_usage`` — the provider's subscription usage, from cache.
+    """``slave_cli/inventory.py::_apply_usage`` — the provider's subscription usage, from cache.
 
     Multi-entry credential pools carry ``accounts`` (one row per account; the legacy ``windows``
     stays EMPTY there — a provider-wide percentage across different logins would be fabricated).
@@ -538,7 +538,7 @@ class ProviderUsage(Result):
 
 
 class ModelOptionProvider(OpenModel):
-    """One ``hermes_cli/inventory.py::build_models_payload`` provider row (the union of every field
+    """One ``slave_cli/inventory.py::build_models_payload`` provider row (the union of every field
     the builder sets; ``pricing_pending`` / ``free_tier_pending`` mark the cached-only path)."""
 
     slug: str
@@ -639,7 +639,7 @@ method("image.render", params=ImageRenderParams, result=ImageRenderResult,
 
 
 class GoalContractSnapshot(Result):
-    """``hermes_cli/goals.py::GoalContract.to_dict``."""
+    """``slave_cli/goals.py::GoalContract.to_dict``."""
 
     outcome: str = ""
     verification: str = ""

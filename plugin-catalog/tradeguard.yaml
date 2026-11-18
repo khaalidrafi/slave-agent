@@ -3,7 +3,7 @@ title: TradeGuard
 repo: https://github.com/vansh-attention/hermes-tradeguard
 sha: 46434c99ce192f0fa9e3c718d91d57be20d056e4
 description: >-
-  Read-only stocks and ETF research for Hermes: evidence-aware fundamentals,
+  Read-only stocks and ETF research for slave-agent: evidence-aware fundamentals,
   daily technical observations, ETF structure, comparable ranking,
   microstructure calculations and an explicitly experimental walk-forward ML
   baseline. It provides explainable heuristic research priority, not trade

@@ -73,7 +73,7 @@ def _make_runner():
     # A bare MagicMock attribute is os.fspath()-able as the RELATIVE path "MagicMock/<name>/<id>":
     # startup's heartbeat restore treats ``_routing_home`` as the launch home and would build a
     # profile home (state.db, SOUL.md) under the cwd, i.e. the repo checkout. None falls back to
-    # the test's isolated HERMES_HOME.
+    # the test's isolated SLAVE_HOME.
     runner.session_store._routing_home = None
     return runner
 
@@ -89,7 +89,7 @@ class TestStartupPlatformIsolation:
         # Skip the boot warm-up and boot-path sends: unrelated to platform
         # isolation, and with create_task stubbed below the bounded wait on
         # the (never-started) send task would hold start() for 30 s.
-        monkeypatch.setenv("HERMES_STARTUP_WARMUP_TIMEOUT", "0")
+        monkeypatch.setenv("SLAVE_STARTUP_WARMUP_TIMEOUT", "0")
         runner = _make_runner()
         runner._await_startup_boot_sends = AsyncMock()
         runner.config = GatewayConfig(
@@ -128,8 +128,8 @@ class TestStartupPlatformIsolation:
             return MagicMock()
 
         with patch("gateway.status.publish_runtime_status"):
-            with patch("hermes_cli.plugins.discover_plugins"):
-                with patch("hermes_cli.config.load_config", return_value={}):
+            with patch("slave_cli.plugins.discover_plugins"):
+                with patch("slave_cli.config.load_config", return_value={}):
                     with patch("agent.shell_hooks.register_from_config"):
                         with patch(
                             "tools.process_registry.process_registry.recover_from_checkpoint",
@@ -367,7 +367,7 @@ class TestPlatformReconnectWatcher:
         """An unregistered plugin platform (its deferred load failed at startup) heals on the next watcher
         tick: the adapter_unavailable branch re-arms the failed load instead of waiting for a manual
         reload-plugins or restart (#126356)."""
-        import hermes_cli.plugins as plugins_mod
+        import slave_cli.plugins as plugins_mod
 
         runner = _make_runner()
         runner._update_platform_runtime_status = MagicMock()
@@ -541,8 +541,8 @@ class TestReconnectKeepsInboundDedup:
         runner._configure_profile_adapter = MagicMock(side_effect=lambda *_a: setattr(runner, "_running", False))
         if mode != "connect-raises":  # stub the attempt; connect-raises runs the real one's own teardown
             runner._secondary_reconnect_attempt = attempt
-        with patch("hermes_cli.profiles.get_profile_dir"), \
-             patch("hermes_cli.env_loader.hydrate_profile_secret_sources"), \
+        with patch("slave_cli.profiles.get_profile_dir"), \
+             patch("slave_cli.env_loader.hydrate_profile_secret_sources"), \
              patch("gateway.run._profile_runtime_scope", MagicMock()), \
              patch("gateway.run._platform_has_bot_credential", return_value=True), \
              patch("gateway.config.load_gateway_config") as load, \
@@ -666,7 +666,7 @@ class TestSpawnSupervised:
             is_delegated_child_context,
         )
         from gateway.kanban_watchers_common import _to_thread_process_service
-        from hermes_cli.kanban_db import _assert_not_delegated_child_mutation
+        from slave_cli.kanban_db import _assert_not_delegated_child_mutation
 
         with delegated_child_context():
             assert is_delegated_child_context() is True
@@ -858,7 +858,7 @@ class TestVoiceInputCallbackWiring:
     @pytest.mark.asyncio
     async def test_startup_wires_voice_input_callback(self, tmp_path, monkeypatch):
         """Cold-start connect must wire _voice_input_callback on Discord adapter."""
-        monkeypatch.setenv("HERMES_STARTUP_WARMUP_TIMEOUT", "0")
+        monkeypatch.setenv("SLAVE_STARTUP_WARMUP_TIMEOUT", "0")
         runner = self._make_runner_with_discord()
         runner._await_startup_boot_sends = AsyncMock()  # see TestStartupPlatformIsolation
         adapter = self._make_discord_voice_adapter()
@@ -870,8 +870,8 @@ class TestVoiceInputCallbackWiring:
 
         with patch.object(runner, "_create_adapter", return_value=adapter):
             with patch("gateway.status.publish_runtime_status"):
-                with patch("hermes_cli.plugins.discover_plugins"):
-                    with patch("hermes_cli.config.load_config", return_value={}):
+                with patch("slave_cli.plugins.discover_plugins"):
+                    with patch("slave_cli.config.load_config", return_value={}):
                         with patch("agent.shell_hooks.register_from_config"):
                             with patch(
                                 "tools.process_registry.process_registry.recover_from_checkpoint",

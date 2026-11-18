@@ -18,7 +18,7 @@ from tests.fixtures.storage_read import session_row
 from tests.fixtures.storage_seed import seed_messages, seed_session
 from tests.gateway import test_peer_dm_bot_chat_headless as _headless_gateway
 
-# The headless gateway fixture: one real authority over a store in a temp HERMES_HOME.
+# The headless gateway fixture: one real authority over a store in a temp SLAVE_HOME.
 headless = _headless_gateway.headless
 _local_owner = _headless_gateway._local_owner
 

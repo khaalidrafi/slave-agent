@@ -78,7 +78,7 @@ def test_existing_session_keeps_frozen_mcp_transport_after_profile_edit(tmp_path
               'platform_toolsets': {'cli': ['owned']}}
     (home / 'config.yaml').write_text(json.dumps(config))
     env = {**child_env(), **{k: os.environ[k] for k in ('TIRITH_ENABLED',) if k in os.environ}}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     def status(request_id):
@@ -125,7 +125,7 @@ def test_ordinary_worker_binding_freezes_readers_but_keeps_customizations(tmp_pa
     plugin = home / 'plugins' / 'sentinel'
     plugin.mkdir(parents=True)
     (plugin / 'plugin.yaml').write_text('name: sentinel\nversion: 1.0.0\nkind: standalone\n', encoding='utf-8')
-    (plugin / '__init__.py').write_text("import os; from pathlib import Path\nPath(os.environ['HERMES_HOME'], 'plugin-executed').touch()\ndef register(ctx): pass\n", encoding='utf-8')
+    (plugin / '__init__.py').write_text("import os; from pathlib import Path\nPath(os.environ['SLAVE_HOME'], 'plugin-executed').touch()\ndef register(ctx): pass\n", encoding='utf-8')
     frozen = {'plugins': {'enabled': ['sentinel']}, 'agent': {'max_turns': 7}, 'command_allowlist': ['echo *'],
               'mcp_servers': {'x': {'command': 'FROZEN_A'}}}
     live = {**frozen, 'agent': {'max_turns': 99}, 'mcp_servers': {'x': {'command': 'LIVE_B'}},
@@ -139,9 +139,9 @@ def test_ordinary_worker_binding_freezes_readers_but_keeps_customizations(tmp_pa
         bind_worker_policy({{'safe_mode': False, 'ignore_user_config': False,
                              'policy': {{'config_json': json.dumps({frozen!r})}}}})
         from agent.safe_worker_policy import safe_worker_enabled
-        from hermes_cli.config import load_config, read_raw_config
-        from hermes_cli.config_effective import load_user_config_effective
-        from hermes_cli.plugins import discover_plugins
+        from slave_cli.config import load_config, read_raw_config
+        from slave_cli.config_effective import load_user_config_effective
+        from slave_cli.plugins import discover_plugins
         from tools.mcp_tool_config import _load_mcp_config
         discover_plugins()
         from tools import approval
@@ -149,16 +149,16 @@ def test_ordinary_worker_binding_freezes_readers_but_keeps_customizations(tmp_pa
         print(json.dumps({{'safe': safe_worker_enabled(), 'turns': [load_config()['agent']['max_turns'],
             read_raw_config()['agent']['max_turns'], load_user_config_effective()['agent']['max_turns']],
             'mcp': _load_mcp_config()['x']['command'],
-            'plugin': os.path.exists(os.path.join(os.environ['HERMES_HOME'], 'plugin-executed'))}}))
+            'plugin': os.path.exists(os.path.join(os.environ['SLAVE_HOME'], 'plugin-executed'))}}))
     '''), encoding='utf-8')
     env = {**child_env(), **{k: os.environ[k] for k in ('TIRITH_ENABLED',) if k in os.environ}}
-    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), HERMES_HOME=str(home), PYTHONPATH=str(root))
+    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), SLAVE_HOME=str(home), PYTHONPATH=str(root))
     result = subprocess.run([sys.executable, str(script)], cwd=root, env=env, stdin=subprocess.DEVNULL,
                             capture_output=True, text=True, timeout=90, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     receipt = json.loads(result.stdout.strip().splitlines()[-1])
     assert receipt == {'safe': False, 'turns': [7, 7, 7], 'mcp': 'FROZEN_A', 'plugin': True}, receipt
-    from hermes_cli.config import fast_safe_load
+    from slave_cli.config import fast_safe_load
     saved = fast_safe_load((home / 'config.yaml').read_text(encoding='utf-8'))
     assert saved['command_allowlist'] == ['echo *', 'ls *']
     assert saved['agent']['max_turns'] == 99 and saved['mcp_servers']['x']['command'] == 'LIVE_B', saved

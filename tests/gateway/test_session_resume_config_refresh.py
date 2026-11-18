@@ -1,6 +1,6 @@
 """CFG-2: a resumed local session runs the profile's CURRENT config-derived settings.
 
-Main's ``hermes -c`` was a new CLI process: toolsets, ``terminal.backend``, ``max_turns``, checkpoints and
+Main's ``slave -c`` was a new CLI process: toolsets, ``terminal.backend``, ``max_turns``, checkpoints and
 the reasoning default came from the config it read at startup, while the stored session supplied the
 model/provider (``cli_model_switch_mixin.py`` restore). The owner freezes a LocalSessionPolicy at creation,
 so ``session.resume`` re-derives those fields from the profile as a new policy generation, keeping the
@@ -29,12 +29,12 @@ AFTER = ('model: {default: m2, provider: custom, base_url: "http://127.0.0.1:9/v
 def _home(monkeypatch):
     """The profile home the store's state.db lives in: creation and the refresh read its config.yaml."""
     from gateway import run
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / 'config.yaml').write_text(BEFORE)
     # gateway.run binds its home at first import; another test module may have imported it elsewhere.
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     return home
 
 
@@ -88,7 +88,7 @@ async def test_resume_after_restart_rereads_config_derived_fields_and_keeps_pick
                        'backend': 'local', 'model': 'm1'}, created
     await owner.close()
 
-    # `hermes tools disable web`, `hermes config set ...`, then a gateway restart and `hermes -c`.
+    # `slave tools disable web`, `slave config set ...`, then a gateway restart and `slave -c`.
     (home / 'config.yaml').write_text(AFTER)
     cold = await initialize_session_authority(_runner(store), profile_id=str(home), instance_id='restarted')
     viewer = AuthorityConnection(cold, object(), {'user_id': 'human'})

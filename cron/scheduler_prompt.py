@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from hermes_time import now as _hermes_now
+from slave_time import now as _slave_now
 from typing import Optional
 
 # Log-record parity with the origin module.
@@ -297,8 +297,8 @@ def _run_time_line(job: Optional[dict] = None) -> str:
     cron sessions are fresh per fire. A pinned job reads its schedule in its own zone, so its run
     time is stated there too (a 09:00 New York job is not told 06:00 from a Los Angeles profile)."""
     from cron.jobs_time import zone_for_job
-    from hermes_time import safe_strftime
-    now = _hermes_now()
+    from slave_time import safe_strftime
+    now = _slave_now()
     pinned = zone_for_job(job or {})
     if pinned is not None:
         now = now.astimezone(pinned)
@@ -458,7 +458,7 @@ def _block_and_pause_job(
     except Exception:
         logger.exception("Job '%s': failed to auto-pause unrunnable job", job_id)
 
-    now_iso = _hermes_now().strftime("%Y-%m-%d %H:%M:%S")
+    now_iso = _slave_now().strftime("%Y-%m-%d %H:%M:%S")
     doc = (
         f"# Cron Job: {job_name}\n\n"
         f"**Job ID:** {job_id}\n"

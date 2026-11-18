@@ -2,7 +2,7 @@ name: volcengine-voice
 repo: https://github.com/linxichen/hermes-volcengine-voice
 sha: cd242cc2e9dea8e139a5500914cc1619dc249497
 description: >-
-  Volcengine (火山引擎) Doubao TTS and STT providers for Hermes, registered with
+  Volcengine (火山引擎) Doubao TTS and STT providers for slave-agent, registered with
   register_tts_provider / register_transcription_provider (tts.provider and
   stt.provider: volcengine). Chinese voice presets, [情绪] emotion markers,
   streaming ASR. Optional opt-in LLM transcript cleanup through Volcengine Ark.

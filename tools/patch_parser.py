@@ -179,7 +179,7 @@ def _overlay_key(path: str, file_ops: Any) -> str:
 
 def _backend_is_windows(env: Any, cwd: str) -> bool:
     """A local env on a Windows host, or a backend whose cwd is a drive path. Remote
-    sandboxes (docker, ssh, modal ...) are POSIX shells even when Hermes runs on Windows."""
+    sandboxes (docker, ssh, modal ...) are POSIX shells even when slave-agent runs on Windows."""
     from tools.environments.local import _IS_WINDOWS
     return bool(_IS_WINDOWS and getattr(env, "is_local", False)) or bool(
         re.match(r"^[A-Za-z]:[\\/]", cwd))

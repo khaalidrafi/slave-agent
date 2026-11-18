@@ -105,7 +105,7 @@ def _manual_compression_reply_lines(summary: dict, compressor, focus_topic) -> l
 def _compress_preview_reply(history, partial: bool, keep_last, focus_topic, agg_note: str) -> str:
     """``/compress --preview``: report what WOULD be compressed — no agent, no writes."""
     from agent.model_metadata import estimate_request_tokens_rough
-    from hermes_cli.partial_compress import summarize_compress_preview
+    from slave_cli.partial_compress import summarize_compress_preview
 
     pv_msgs = [{"role": m.get("role"), "content": m.get("content")} for m in history
                if m.get("role") in {"user", "assistant"} and m.get("content")]
@@ -160,7 +160,7 @@ def _authority_store(authority):
 async def discard_lost_turns(authority, session_id) -> str:
     """Messaging ``/discard`` (#134889 GW-10): acknowledge every ``unknown`` (lost-in-restart) turn
     of this chat's FIFO through the owner's fenced ``resolve_unknown``, the path Desktop's Discard,
-    the TUI queue and ``hermes sessions discard`` use. Never replays the input; the saved
+    the TUI queue and ``slave sessions discard`` use. Never replays the input; the saved
     followers run once it commits."""
     from gateway.session_contract import SessionRef
     from persistence.core.errors import AuthorityRefusal
@@ -350,7 +350,7 @@ class GatewaySessionCommandsMixin:
         # Plugin on_session_reset hook (new session guaranteed to exist); best-effort.
         await self._fire_plugin_session_reset(source, session_key, _old_sid, _new_sid)
         try:
-            from hermes_cli.tips import get_random_tip
+            from slave_cli.tips import get_random_tip
             _tip_line = t("gateway.reset.tip", tip=get_random_tip())
         except Exception:
             _tip_line = ""
@@ -743,12 +743,12 @@ class GatewaySessionCommandsMixin:
     def _record_model_friction(self, signal: str, source, session_id: str, turns: int = 1) -> None:
         """Slash dispatch does not install the routed profile's scope, so a multiplexed runner
         names the owning home explicitly."""
-        from hermes_cli.observability.shared_metrics_model import record_model_friction
+        from slave_cli.observability.shared_metrics_model import record_model_friction
         home = None
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
             with contextlib.suppress(Exception):
                 home = self._resolve_profile_home_for_source(source)
-        record_model_friction(signal, session_id=session_id, hermes_home=home, turns=turns)
+        record_model_friction(signal, session_id=session_id, slave_home=home, turns=turns)
 
     async def _handle_undo_command(self, event: MessageEvent) -> str:
         """Handle /undo [N] — back up N user turns (default 1), soft-deleting the truncated rows and
@@ -902,7 +902,7 @@ class GatewaySessionCommandsMixin:
         """Build the throwaway AIAgent that performs a manual /compress rewrite of *session_id*."""
         from run_agent import AIAgent
         from gateway.run import _GATEWAY_HYGIENE_PLATFORM, _seed_hygiene_system_prompt
-        from hermes_cli.config import load_config as _load_cfg
+        from slave_cli.config import load_config as _load_cfg
         from utils import is_truthy_value as _is_truthy
 
         # _compress_context may persist its cached system prompt, and this agent runs outside the
@@ -1032,7 +1032,7 @@ class GatewaySessionCommandsMixin:
     async def _handle_save_command(self, event: MessageEvent) -> str:
         """Handle /save — export the current session and send it as a document."""
         import tempfile
-        from hermes_cli.session_export import (
+        from slave_cli.session_export import (
             SAVE_USAGE, default_save_filename, load_save_snapshot, normalize_save_format, render_session_for_save)
 
         parts = event.get_command_args().split()
@@ -1064,9 +1064,9 @@ class GatewaySessionCommandsMixin:
         if not export_data:
             return t("gateway.save.no_messages", session_id=session_id)
         if redact:
-            from hermes_cli.session_export_md import redact_session_data
+            from slave_cli.session_export_md import redact_session_data
             export_data = redact_session_data(export_data)
-        temp_dir = tempfile.mkdtemp(prefix="hermes_save_")
+        temp_dir = tempfile.mkdtemp(prefix="slave_save_")
         temp_path = os.path.join(temp_dir, filename)
         try:
             # Off-loop: render + write scale with transcript size (multi-MB) and would stall the loop.
@@ -1315,7 +1315,7 @@ class GatewaySessionCommandsMixin:
         store = getattr(self, "persistence", None)
         if store is None:
             return self._session_db_unavailable_reply()
-        from hermes_cli.session_listing import (
+        from slave_cli.session_listing import (
             format_gateway_session_listing, parse_session_listing_args, query_session_listing)
         try:
             include_all, include_unnamed, target, search_query = parse_session_listing_args(

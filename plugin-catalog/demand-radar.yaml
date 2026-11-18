@@ -10,7 +10,7 @@ description: >-
   validate-idea skill. No API key needed. Disclosure — each check sends the idea text and its
   phrasings as search queries to api.stackexchange.com, hn.algolia.com and api.github.com;
   check history and HTML reports stay in the plugin's own data folder; an optional read-only
-  GitHub token is read through Hermes's secret route; no shell commands, background processes,
+  GitHub token is read through slave-agent’s secret route; no shell commands, background processes,
   telemetry or Python dependencies.
 maintainer: LeonardIrimia
 tier: community

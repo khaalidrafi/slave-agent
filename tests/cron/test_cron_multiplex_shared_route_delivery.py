@@ -10,13 +10,13 @@ import asyncio
 from concurrent.futures import Future
 from unittest.mock import MagicMock, patch
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 from cron.scheduler import _deliver_result
 from cron.scheduler_preflight import SharedRouteAdapters, _primary_profile_routes_for_current_home
 from gateway.config import Platform, PlatformConfig
 from gateway.profile_routing import ProfileRoute
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 PRIMARY_YAML = {
     "gateway": {
@@ -78,10 +78,10 @@ def test_satellite_routes_exact_target_through_primary_adapter(tmp_path, monkeyp
     fitness_home = root / "profiles" / "fitness"
     fitness_home.mkdir(parents=True)
     (root / "config.yaml").write_text(yaml.safe_dump(PRIMARY_YAML), encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("slave_constants.get_default_slave_root", lambda: root)
     primary = _primary_adapter()
 
-    token = set_hermes_home_override(str(fitness_home))
+    token = set_slave_home_override(str(fitness_home))
     try:
         shared = SharedRouteAdapters(
             {Platform.DISCORD: primary}, _primary_profile_routes_for_current_home()
@@ -102,7 +102,7 @@ def test_satellite_routes_exact_target_through_primary_adapter(tmp_path, monkeyp
             assert primary.sent == []
             assert standalone == [chat]
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_shared_view_is_falsy_without_routes_or_primary_adapters():
@@ -124,10 +124,10 @@ def test_guild_scoped_route_authorizes_cron_target_even_when_satellite_has_no_pl
         "gateway": {"multiplex_profiles": True, "profile_routes": [
             {"platform": "discord", "guild_id": "G1", "chat_id": "C1", "profile": "fitness"}]},
     }), encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("slave_constants.get_default_slave_root", lambda: root)
     primary = _primary_adapter()
 
-    token = set_hermes_home_override(str(sat_home))
+    token = set_slave_home_override(str(sat_home))
     try:
         shared = SharedRouteAdapters({Platform.DISCORD: primary}, _primary_profile_routes_for_current_home())
         for satellite_platforms in ({}, {Platform.DISCORD: PlatformConfig(enabled=False)}):
@@ -140,7 +140,7 @@ def test_guild_scoped_route_authorizes_cron_target_even_when_satellite_has_no_pl
             assert error is None, error
             assert primary.sent == ["C1"] and standalone == []
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_live_native_adapter_without_platform_block_is_not_treated_as_disabled():
@@ -166,7 +166,7 @@ def test_live_native_adapter_without_platform_block_is_not_treated_as_disabled()
 def test_multiplex_tick_routes_desktop_served_satellite_with_only_local_adapter(
     tmp_path, monkeypatch,
 ):
-    """#139825: a satellite profile also chatted with from Hermes Desktop holds
+    """#139825: a satellite profile also chatted with from slave-agent Desktop holds
     ``{LOCAL: adapter}`` in ``_profile_adapters``. LOCAL carries no platform credential, so its
     cron tick must still hand it the routed primary view — before, the non-empty map skipped
     ``SharedRouteAdapters`` and delivery fell through to the profile's own credentialless config
@@ -183,7 +183,7 @@ def test_multiplex_tick_routes_desktop_served_satellite_with_only_local_adapter(
         "gateway": {"multiplex_profiles": True, "profile_routes": [
             {"platform": "discord", "guild_id": "G1", "chat_id": "C1", "profile": "sat"}]},
     }), encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("slave_constants.get_default_slave_root", lambda: root)
 
     primary = _primary_adapter()
     captured = {}
@@ -263,13 +263,13 @@ def test_satellite_cron_job_reaches_its_telegram_dm_through_the_primary_bot(tmp_
         "multiplex_profiles": True,
         "profile_routes": [{"name": "emil", "platform": "telegram", "user_id": "399611999", "profile": "emil"}],
     }}), encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("slave_constants.get_default_slave_root", lambda: root)
     primary = _primary_adapter()
     config = MagicMock()
     config.platforms = {}
     config.get_home_channel = lambda p: None
 
-    token = set_hermes_home_override(str(sat_home))
+    token = set_slave_home_override(str(sat_home))
     try:
         shared = SharedRouteAdapters({Platform.TELEGRAM: primary}, _primary_profile_routes_for_current_home())
         for chat, delivered in (("399611999", True), ("42", False)):
@@ -280,4 +280,4 @@ def test_satellite_cron_job_reaches_its_telegram_dm_through_the_primary_bot(tmp_
             assert (error is None) is delivered, error
             assert primary.sent == ([chat] if delivered else [])
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)

@@ -1,6 +1,6 @@
 #+TITLE: STATE.org — repo state (audit snapshot, kept current by the team)
 * PROJECT
-  - khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; a CUSTOMIZABLE agent with the hermes feature set, mouldable per deployment (personal / business / developer) via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org). Customer names never appear in this tree (Owner order 2026-11-16).
+  - khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; a CUSTOMIZABLE agent with the slave feature set, mouldable per deployment (personal / business / developer) via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org). Customer names never appear in this tree (Owner order 2026-11-16).
   - Language: Python (agent core, plugins, CLI) + the Emacs/Org surface
     (slave-acp); branch model per FORK.org (ai/main work, generated
     ai/slave-agent brand commit).
@@ -18,7 +18,7 @@
 * ORDERS 2026-11-16 (Lead session)
   - Owner #hq: pstack into the kit and in use (landed: agent-team-ci
     56309f8, agent-team.el docs/PSTACK-TEAM.org a25b9cd); slave-agent
-    is a CUSTOMIZABLE agent (hermes feature set; personal / business /
+    is a CUSTOMIZABLE agent (slave feature set; personal / business /
     developer moulds) — no customer name anywhere in this tree;
     teamify confirmed and GLM 5.3 elevated to Senior Software Architect
     ("GLM 5.3 should have a senior role"); autonomy grant standing:

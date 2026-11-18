@@ -50,7 +50,7 @@ export const ko: Translations = {
   },
 
   app: {
-    brand: "Hermes Agent",
+    brand: "slave-agent",
     brandShort: "HA",
     closeNavigation: "내비게이션 닫기",
     closeModelTools: "모델 및 도구 닫기",
@@ -97,13 +97,13 @@ export const ko: Translations = {
     activeProvider: "활성 메모리 제공자",
     noProvider: "없음 — 내장 메모리만",
     builtinLayer: "내장 레이어",
-    builtinNote: "MEMORY.md와 USER.md는 외부 제공자와 별개인 Hermes 자체 메모리입니다. 기본적으로 둘 다 세션에 로드되며, 설정 토글 (memory.memory_enabled / memory.user_profile_enabled)로 각각 끌 수 있습니다. 외부 제공자는 여기에 더해질 뿐, 이를 대체하지 않습니다.",
+    builtinNote: "MEMORY.md와 USER.md는 외부 제공자와 별개인 slave-agent 자체 메모리입니다. 기본적으로 둘 다 세션에 로드되며, 설정 토글 (memory.memory_enabled / memory.user_profile_enabled)로 각각 끌 수 있습니다. 외부 제공자는 여기에 더해질 뿐, 이를 대체하지 않습니다.",
   },
 
   status: {
     actionFailed: "작업 실패",
     actionFinished: "완료됨",
-    actionFinishedOwed: "업데이트되었지만 아직 남은 작업이 있습니다 (완료하려면 `hermes update`를 다시 실행하세요)",
+    actionFinishedOwed: "업데이트되었지만 아직 남은 작업이 있습니다 (완료하려면 `slave update`를 다시 실행하세요)",
     actions: "작업",
     agent: "에이전트",
     activeSessions: "활성 세션",
@@ -129,8 +129,8 @@ export const ko: Translations = {
     starting: "시작 중",
     startedInBackground: "백그라운드에서 시작됨 — 진행 상황은 로그를 확인하세요",
     stopped: "중지됨",
-    updateHermes: "Hermes 업데이트",
-    updatingHermes: "Hermes 업데이트 중…",
+    updateHermes: "slave-agent 업데이트",
+    updatingHermes: "slave-agent 업데이트 중…",
     waitingForOutput: "출력 대기 중…",
   },
 
@@ -341,7 +341,7 @@ export const ko: Translations = {
       "저장됨 — 변경 사항을 적용하려면 게이트웨이를 다시 시작하세요.",
     forceReinstall: "강제 재설치 (기존 폴더를 먼저 삭제)",
     headline:
-      "Hermes 플러그인을 검색, 설치, 활성화 및 업데이트합니다 (`hermes plugins` 동등).",
+      "slave-agent 플러그인을 검색, 설치, 활성화 및 업데이트합니다 (`slave plugins` 동등).",
     identifierLabel: "Git URL 또는 owner/repo",
     inactive: "비활성",
     installBtn: "설치",
@@ -358,8 +358,8 @@ export const ko: Translations = {
     providersHint:
       "memory.provider (비어 있으면 = 내장)와 context.engine을 config.yaml에 기록합니다. 다음 세션부터 적용됩니다.",
     refreshDashboard: "대시보드 확장 재스캔",
-    removeConfirm: "~/.hermes/plugins/에서 이 플러그인을 제거하시겠습니까?",
-    removeHint: "~/.hermes/plugins 아래에 사용자가 설치한 플러그인만 제거할 수 있습니다.",
+    removeConfirm: "~/.slave/plugins/에서 이 플러그인을 제거하시겠습니까?",
+    removeHint: "~/.slave/plugins 아래에 사용자가 설치한 플러그인만 제거할 수 있습니다.",
     rescanHeading: "SPA 플러그인 레지스트리",
     rescanHint: "디스크에 파일을 추가한 후 재스캔하여 대시보드 사이드바가 새 매니페스트를 인식하도록 합니다.",
     runtimeHeading: "게이트웨이 런타임 (YAML 플러그인)",
@@ -388,7 +388,7 @@ export const ko: Translations = {
     all: "전체",
     categories: "카테고리",
     filters: "필터",
-    noSkills: "스킬을 찾을 수 없습니다. 스킬은 ~/.hermes/skills/ 에서 로드됩니다",
+    noSkills: "스킬을 찾을 수 없습니다. 스킬은 ~/.slave/skills/ 에서 로드됩니다",
     noSkillsMatch: "검색이나 필터와 일치하는 스킬이 없습니다.",
     skillCount: "{count}개 스킬",
     resultCount: "{count}개 결과",
@@ -402,7 +402,7 @@ export const ko: Translations = {
   },
 
   config: {
-    configPath: "~/.hermes/config.yaml",
+    configPath: "~/.slave/config.yaml",
     filters: "필터",
     sections: "섹션",
     exportConfig: "설정을 JSON으로 내보내기",
@@ -462,7 +462,7 @@ export const ko: Translations = {
     showValue: "실제 값 표시",
     hideValue: "값 숨기기",
     customTitle: "사용자 지정 키",
-    customHint: "Hermes가 인식하지 못하는, .env에 저장된 임의의 환경 변수입니다. 스킬, MCP 서버 또는 자체 도구를 위한 환경 변수를 주입하는 데 사용하세요.",
+    customHint: "slave-agent가 인식하지 못하는, .env에 저장된 임의의 환경 변수입니다. 스킬, MCP 서버 또는 자체 도구를 위한 환경 변수를 주입하는 데 사용하세요.",
     customConfigured: "사용자 지정 키 {count}개 설정됨",
     addCustomKey: "사용자 지정 키 추가",
     customKeyName: "변수 이름",
@@ -527,11 +527,11 @@ export const ko: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Hermes Achievements",
+      title: "slave-agent Achievements",
       subtitle:
-        "실제 세션 기록에서 획득하는 Hermes 컬렉터블 배지입니다. 알려져 있지만 아직 달성되지 않은 업적은 Discovered로 표시되며, Secret 업적은 일치하는 동작이 처음 나타날 때까지 숨겨집니다.",
+        "실제 세션 기록에서 획득하는 slave-agent 컬렉터블 배지입니다. 알려져 있지만 아직 달성되지 않은 업적은 Discovered로 표시되며, Secret 업적은 일치하는 동작이 처음 나타날 때까지 숨겨집니다.",
       scan_subtitle:
-        "Hermes 세션 기록을 스캔하고 있습니다. 기록이 많으면 첫 스캔에 5~10초가 걸릴 수 있습니다.",
+        "slave-agent 세션 기록을 스캔하고 있습니다. 기록이 많으면 첫 스캔에 5~10초가 걸릴 수 있습니다.",
     },
     actions: {
       rescan: "다시 스캔",
@@ -546,7 +546,7 @@ export const ko: Translations = {
       highest_tier: "최고 등급",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "최근",
-      latest_hint_empty: "Hermes를 더 사용해 보세요",
+      latest_hint_empty: "slave-agent를 더 사용해 보세요",
       none_yet: "아직 없음",
     },
     state: {
@@ -577,10 +577,10 @@ export const ko: Translations = {
       tiers_header: "등급",
       secret_header: "시크릿 업적",
       secret_body:
-        "시크릿은 정확한 트리거 조건을 숨깁니다. Hermes가 관련 신호를 감지하면 카드가 Discovered로 바뀌고 요건이 표시됩니다.",
+        "시크릿은 정확한 트리거 조건을 숨깁니다. slave-agent가 관련 신호를 감지하면 카드가 Discovered로 바뀌고 요건이 표시됩니다.",
       scan_status_header: "스캔 상태",
       scan_status_body:
-        "Hermes는 로컬 기록을 한 번 스캔한 뒤 카드를 자동으로 표시합니다. 몇 초 걸리더라도 멈춘 것이 아닙니다.",
+        "slave-agent는 로컬 기록을 한 번 스캔한 뒤 카드를 자동으로 표시합니다. 몇 초 걸리더라도 멈춘 것이 아닙니다.",
       what_scanned_header: "스캔 대상",
       what_scanned_body:
         "세션, 도구 호출, 모델 메타데이터, 오류, 업적 및 로컬 해제 상태입니다.",
@@ -627,7 +627,7 @@ export const ko: Translations = {
         "X에 공유를 누르면 새 탭에서 미리 작성된 게시물이 열립니다. 1200×630 배지를 첨부하려면 먼저 이미지 복사를 누르세요 — X 작성기에서 바로 붙여넣을 수 있습니다. PNG 다운로드는 파일을 저장하여 어디서나 사용할 수 있게 합니다.",
       clipboard_unsupported:
         "이 브라우저에서는 클립보드 이미지 복사를 지원하지 않습니다 — 대신 다운로드를 이용하세요.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Hermes Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in slave-agent ☤",
     },
   },
   kanban: {

@@ -12,7 +12,7 @@ import pytest
 
 from agent.delegation_context import DELEGATED_CHILD_ENV_MARKER, KANBAN_ENV_KEYS, non_dispatcher_owned_context
 from agent.transports import codex_app_server as cas
-from hermes_cli.codex_runtime_plugin_migration import migrate
+from slave_cli.codex_runtime_plugin_migration import migrate
 
 
 class _RecordingPopen:
@@ -42,7 +42,7 @@ def launch(monkeypatch, tmp_path):
     """Return ``launch(env) -> list[str]`` of the ``mcp_servers.*`` overrides in the worker argv."""
     _RecordingPopen.commands = []
     monkeypatch.setattr(subprocess, "Popen", _RecordingPopen)
-    for key in (*KANBAN_ENV_KEYS, DELEGATED_CHILD_ENV_MARKER, "HERMES_KANBAN_DB", "HERMES_KANBAN_BOARD"):
+    for key in (*KANBAN_ENV_KEYS, DELEGATED_CHILD_ENV_MARKER, "SLAVE_KANBAN_DB", "SLAVE_KANBAN_BOARD"):
         monkeypatch.delenv(key, raising=False)
 
     def _launch(env: dict[str, str]) -> list[str]:
@@ -59,7 +59,7 @@ def launch(monkeypatch, tmp_path):
 
 def _migrated_server_names(tmp_path) -> set[str]:
     codex_home = tmp_path / "codex"
-    report = migrate({"mcp_servers": {}}, codex_home=codex_home, discover_plugins=False, expose_hermes_tools=True)
+    report = migrate({"mcp_servers": {}}, codex_home=codex_home, discover_plugins=False, expose_slave_tools=True)
     assert not report.errors
     return set(tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))["mcp_servers"])
 
@@ -68,15 +68,15 @@ def test_worker_overrides_target_the_migrated_server(launch, tmp_path):
     """Producer/consumer contract: every ``-c mcp_servers.<name>.env.*`` override the worker
     launcher emits names an entry the migration actually writes to config.toml."""
     overrides = launch({
-        "HERMES_KANBAN_TASK": "11111111-1111-4111-8111-111111111111",
-        "HERMES_KANBAN_RUN_ID": "42",
-        "HERMES_KANBAN_DB": str(tmp_path / "board" / "kanban.db"),
+        "SLAVE_KANBAN_TASK": "11111111-1111-4111-8111-111111111111",
+        "SLAVE_KANBAN_RUN_ID": "42",
+        "SLAVE_KANBAN_DB": str(tmp_path / "board" / "kanban.db"),
     })
     assert overrides, "dispatcher-owned worker must scope the managed MCP endpoint"
     targeted = {arg.split(".env.", 1)[0].removeprefix("mcp_servers.") for arg in overrides}
     migrated = _migrated_server_names(tmp_path)
     assert targeted <= migrated, f"overrides target {targeted - migrated}, which codex has no transport for"
-    assert any(arg.startswith(f"mcp_servers.{next(iter(targeted))}.env.HERMES_KANBAN_TASK=") for arg in overrides)
+    assert any(arg.startswith(f"mcp_servers.{next(iter(targeted))}.env.SLAVE_KANBAN_TASK=") for arg in overrides)
 
 
 def test_only_dispatcher_owned_workers_get_mcp_overrides(launch):
@@ -84,4 +84,4 @@ def test_only_dispatcher_owned_workers_get_mcp_overrides(launch):
     ``mcp_servers.*`` override at all (nothing to scope, nothing for codex to reject)."""
     assert launch({}) == []
     with non_dispatcher_owned_context():
-        assert launch({"HERMES_KANBAN_TASK": "11111111-1111-4111-8111-111111111111"}) == []
+        assert launch({"SLAVE_KANBAN_TASK": "11111111-1111-4111-8111-111111111111"}) == []

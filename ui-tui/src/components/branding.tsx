@@ -1,6 +1,6 @@
-import { Box, Text, useStdout } from '@hermes/ink'
-import { mix } from '@hermes/shared/color'
-import type { SessionInfo } from '@hermes/shared/gateway-types'
+import { Box, Text, useStdout } from '@slave-agent/ink'
+import { mix } from '@slave-agent/shared/color'
+import type { SessionInfo } from '@slave-agent/shared/gateway-types'
 import { useEffect, useState } from 'react'
 import unicodeSpinners from 'unicode-animations'
 
@@ -288,7 +288,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
 
   // MCP headline counts *connected* servers, not configured-but-disabled ones,
   // so it matches the classic CLI banner (`sum(s.connected)` in
-  // hermes_cli/banner.py) and the "connected" label on the collapse toggle.
+  // slave_cli/banner.py) and the "connected" label on the collapse toggle.
   const mcpServers = info.mcp_servers ?? []
   const mcpConnected = mcpServers.filter(s => s.connected).length
 
@@ -495,7 +495,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
             {T.runPrefix}
           </Text>
           <Text bold color={t.color.warn}>
-            {info.update_command || 'hermes update'}
+            {info.update_command || 'slave update'}
           </Text>
           <Text bold={false} color={t.color.warn} dimColor>
             {T.toUpdate}

@@ -1,4 +1,4 @@
-"""One persistent (shared) profile has ONE Chromium, whichever Hermes home or launcher key reaches it.
+"""One persistent (shared) profile has ONE Chromium, whichever slave-agent home or launcher key reaches it.
 
 Two homes (profiles) pinning the same ``browser.user_data_dir``, or one process reaching one dir under two keys
 (a symlinked path), drive one browser: they share its launch record, leases and lock, so the LAST holder stops
@@ -27,7 +27,7 @@ pytestmark = [pytest.mark.platforms("linux"),
 
 _REPO = Path(__file__).resolve().parents[2]
 
-# A Hermes process on a persistent profile: launches or attaches, prints "<pid> <owned>", waits for a line on
+# A Slave process on a persistent profile: launches or attaches, prints "<pid> <owned>", waits for a line on
 # stdin, then exits normally (the session layer's exit teardown lets go of its browsers).
 _PROFILE_USER = textwrap.dedent("""\
     import os, sys
@@ -45,7 +45,7 @@ _PROFILE_USER = textwrap.dedent("""\
 def _user(home: Path, script: Path, udd: Path) -> tuple[subprocess.Popen, int, bool]:
     home.mkdir(parents=True, exist_ok=True)
     proc = subprocess.Popen([sys.executable, "-c", _PROFILE_USER, str(script), str(udd)], cwd=_REPO,
-                            env={**os.environ, "HERMES_HOME": str(home)}, stdin=subprocess.PIPE,
+                            env={**os.environ, "SLAVE_HOME": str(home)}, stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     line = proc.stdout.readline().split()
     assert line and line[0].isdigit(), proc.stderr.read()[-2000:] if proc.poll() is not None else line
@@ -87,7 +87,7 @@ def test_two_homes_pinning_one_profile_share_its_browser_until_the_last_one_leav
 
 
 def test_shared_profile_state_lives_in_a_private_per_user_dir_outside_every_home(tmp_path):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     script = write_fake_chromium(tmp_path / "chromium")
     udd = tmp_path / "pinned-profile"
     browser, err = launcher.launch_chromium(f"profile:{udd}", executable=str(script), user_data_dir=str(udd),
@@ -97,7 +97,7 @@ def test_shared_profile_state_lives_in_a_private_per_user_dir_outside_every_home
         record = launcher._record_path(browser)
         root = launcher._shared_profiles_root()
         assert record.exists() and record.parent.parent == root
-        assert Path(get_hermes_home()) not in record.parents
+        assert Path(get_slave_home()) not in record.parents
         for state in (root, record.parent):
             assert stat.S_IMODE(state.lstat().st_mode) == 0o700 and not state.is_symlink()
     finally:

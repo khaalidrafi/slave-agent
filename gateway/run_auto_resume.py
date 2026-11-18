@@ -117,19 +117,19 @@ def _start_continue(runner: Any, record: dict[str, Any], unit: dict[str, Any], m
 
 
 def _profile_homes(runner: Any) -> list[tuple[str, Path]]:
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     homes = dict(getattr(runner, "_served_profile_homes", None) or {})
     primary = getattr(runner, "_primary_profile_name", None) or "default"
-    homes.setdefault(primary, get_hermes_home())
+    homes.setdefault(primary, get_slave_home())
     return [(name, Path(home)) for name, home in homes.items()]
 
 
 def _capacity() -> int:
     """The bound profile's ``delegation.max_concurrent_children`` minus the units THIS profile has running."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.async_delegation import active_count
     from tools.delegate_tool_config import _get_max_concurrent_children
-    return _get_max_concurrent_children() - active_count(home=get_hermes_home())
+    return _get_max_concurrent_children() - active_count(home=get_slave_home())
 
 
 def tick_profiles(runner: Any) -> list[str]:

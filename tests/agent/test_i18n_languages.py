@@ -16,7 +16,7 @@ def test_bundled_table_matches_bundled_catalogs():
 
 
 def test_language_options_are_en_first_sorted_and_sourced(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     i18n.reset_language_cache()
     try:
         options = i18n.language_options()
@@ -31,9 +31,9 @@ def test_language_options_are_en_first_sorted_and_sourced(monkeypatch, tmp_path)
 def test_describe_language_precedence():
     # Pack metadata names a pack-only language; the bundled table wins for a bundled id even if a pack
     # re-declares it; an overlay-only language is reported as such and falls back to the bare id.
-    pack = {"endonym": "Polski", "rtl": False, "source": "plugin:hermes-lang-pl"}
+    pack = {"endonym": "Polski", "rtl": False, "source": "plugin:slave-lang-pl"}
     assert describe_language("pl", pack=pack, overlay=False, surfaces=("core", "desktop")) == {
-        "id": "pl", "endonym": "Polski", "rtl": False, "source": "plugin:hermes-lang-pl", "surfaces": ["core", "desktop"]}
+        "id": "pl", "endonym": "Polski", "rtl": False, "source": "plugin:slave-lang-pl", "surfaces": ["core", "desktop"]}
     assert describe_language("ar", pack={**pack, "endonym": "Other", "rtl": False}, overlay=False, surfaces=())["endonym"] == "العربية"
     assert describe_language("ar", pack={**pack, "rtl": False}, overlay=False, surfaces=())["rtl"] is True
     assert describe_language("eo", pack=None, overlay=True, surfaces=()) == {
@@ -45,13 +45,13 @@ def test_language_surfaces_report_each_layer(monkeypatch, tmp_path):
     """Bundled Korean has core + TUI strings and no Desktop catalog; a user overlay or a pack adds the
     surface it ships. ``i18n.languages`` carries this so the Desktop can leave out a language it would
     only show in English."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
     from agent import i18n_layers
 
     home = tmp_path / "home"
     (home / "locales").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     i18n_layers._reset_registry_for_tests()
     i18n.reset_language_cache()
     try:
@@ -61,7 +61,7 @@ def test_language_surfaces_report_each_layer(monkeypatch, tmp_path):
 
         (home / "locales" / "ko.desktop.yaml").write_text(yaml.safe_dump({"settings": {"title": "설정"}}),
                                                          encoding="utf-8")
-        i18n_layers.register_pack("pl", "desktop", {"settings.title": "Ustawienia"}, source="plugin:hermes-lang-pl")
+        i18n_layers.register_pack("pl", "desktop", {"settings.title": "Ustawienia"}, source="plugin:slave-lang-pl")
         i18n.reset_language_cache()
         surfaces = i18n.language_surfaces()
         assert surfaces["ko"] == ("core", "tui", "desktop")
@@ -74,7 +74,7 @@ def test_language_surfaces_report_each_layer(monkeypatch, tmp_path):
         # A layer that loaded no strings advertises nothing: an empty or unparseable overlay, an empty pack.
         (home / "locales" / "ja.desktop.yaml").write_text("# nothing translated yet\n", encoding="utf-8")
         (home / "locales" / "de.desktop.yaml").write_text("settings: [unclosed\n", encoding="utf-8")
-        i18n_layers.register_pack("uk", "desktop", {}, source="plugin:hermes-lang-uk")
+        i18n_layers.register_pack("uk", "desktop", {}, source="plugin:slave-lang-uk")
         i18n.reset_language_cache()
         surfaces = i18n.language_surfaces()
         assert "desktop" not in surfaces["ja"]

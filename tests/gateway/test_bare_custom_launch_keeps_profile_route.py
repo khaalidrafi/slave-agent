@@ -125,12 +125,12 @@ def test_a_kanban_custom_provider_override_stays_on_the_profiles_endpoint(tmp_pa
     from types import SimpleNamespace
     from gateway.session_contract import SessionActor
     from gateway.session_kanban import build_kanban_policy
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
-    monkeypatch.setenv('HERMES_KANBAN_HOME', str(tmp_path))
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
-    monkeypatch.delenv('HERMES_KANBAN_DB', raising=False)
-    monkeypatch.setattr('hermes_cli.profiles.resolve_profile_env', lambda name: str(tmp_path))
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
+    monkeypatch.setenv('SLAVE_KANBAN_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
+    monkeypatch.delenv('SLAVE_KANBAN_DB', raising=False)
+    monkeypatch.setattr('slave_cli.profiles.resolve_profile_env', lambda name: str(tmp_path))
     kb.create_board('owned')
     with closing(connect(board='owned')) as conn:
         task_id = kb.create_task(conn, title='t', assignee='default', workspace_kind='dir',
@@ -151,11 +151,11 @@ async def test_a_session_create_with_a_bare_custom_pick_stays_on_the_profiles_en
     """The real ``session.create`` (``stage_local_session``) and the turn's runtime resolver."""
     import json
     from gateway import run
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.gateway.test_session_follow_profile_config import _owner, _route
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     (home / 'config.yaml').write_text(json.dumps(BARE_LOCAL))
     store, runner, authority, owner = _owner(home)
     runner._peek_session_state = lambda key: None
@@ -176,11 +176,11 @@ async def test_adopting_a_legacy_custom_row_recovers_the_entry_serving_its_model
     import json
     from gateway import run
     from gateway.session_local_migration import resolve_local_target
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.gateway.test_session_follow_profile_config import _owner, _route
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     (home / 'config.yaml').write_text(json.dumps({
         'model': {'provider': 'custom', 'base_url': LOCAL, 'default': 'qwen3-32b', 'key_env': 'LOCAL_KEY'},
         'providers': {'relay': {'api': RELAY, 'key_env': 'RELAY_KEY', 'models': ['saved-model']}}}))

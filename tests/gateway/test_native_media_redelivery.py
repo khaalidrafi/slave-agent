@@ -36,7 +36,7 @@ async def test_redelivered_media_message_returns_its_receipt_and_changed_bytes_c
     from gateway.session_ingress_context import native_callback
     from gateway.session_ingress_media import _media_root, release_admission_media
     from gateway.session_persistence import authority_persistence
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from plugins.platforms.discord.adapter import DiscordAdapter
     monkeypatch.setattr(SessionAuthority, '_schedule', lambda self, ref: None)
     monkeypatch.setenv('DISCORD_ALLOWED_USERS', '42')
@@ -58,7 +58,7 @@ async def test_redelivered_media_message_returns_its_receipt_and_changed_bytes_c
         event = MessageEvent(text='look', source=source, message_id='provider-1', message_type=MessageType.PHOTO,
                              media_urls=[staged], media_types=['image/png'],
                              timestamp=datetime.fromtimestamp(0, UTC))
-        with native_callback(runner, event, get_hermes_home()):
+        with native_callback(runner, event, get_slave_home()):
             return staged, await authority.admit_native(event)
 
     try:

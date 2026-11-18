@@ -109,7 +109,7 @@ def hub_install_lock():
     """One profile's Skills Hub install lock (fetch through lock.json persistence), so a CLI and a
     dashboard install cannot interleave their target rmtree/move. Waits behind the running and queued
     installs; raises ``TimeoutError`` once this waiter has waited ``_INSTALL_LOCK_TIMEOUT_S`` in total."""
-    from hermes_cli.auth import _file_lock
+    from slave_cli.auth import _file_lock
     from tools.skills_hub import _hub_dir, ensure_hub_dirs
 
     ensure_hub_dirs()
@@ -125,7 +125,7 @@ def _category_skill_dirs(directory: Path) -> list[str]:
     Vendored/cache/progressive-disclosure paths are pruned via
     :func:`is_excluded_skill_path` so a lone ``node_modules`` or
     ``references/pkg/SKILL.md`` does not make the directory a category.
-    Shared with ``hermes_cli.skills_hub._existing_categories``.
+    Shared with ``slave_cli.skills_hub._existing_categories``.
     """
     return [
         entry.name for entry in directory.iterdir()
@@ -260,7 +260,7 @@ def uninstall_skill(skill_name: str) -> tuple[bool, str]:
         shutil.rmtree(install_path)
     lock.record_uninstall(skill_name)
     append_audit_log("UNINSTALL", skill_name, entry["source"], entry["trust_level"], "n/a", "user_request")
-    from hermes_cli.observability.shared_metrics_disabled import record_skill_removed
+    from slave_cli.observability.shared_metrics_disabled import record_skill_removed
     record_skill_removed(skill_name)
     return True, f"Uninstalled '{skill_name}' from {entry['install_path']}"
 

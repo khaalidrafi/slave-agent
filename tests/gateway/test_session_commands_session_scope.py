@@ -12,7 +12,7 @@ from tests.gateway.test_session_tui_ops import _checkpoint, _git_rpc
 
 
 def _repo_with_skill(path):
-    skill = path / '.hermes' / 'skills' / 'repo-probe'
+    skill = path / '.slave' / 'skills' / 'repo-probe'
     skill.mkdir(parents=True)
     (skill / 'SKILL.md').write_text('---\nname: repo-probe\ndescription: Project skill fixture\n---\n# Repo probe\n')
     (path / 'a.txt').write_text('original\n')

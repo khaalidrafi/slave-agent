@@ -65,7 +65,7 @@ def abandoned_screen(tmp_path):
         (stubs / name).chmod(0o755)
     home = tmp_path / "home"
     home.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home), "PATH": f"{stubs}{os.pathsep}{os.environ['PATH']}"}
+    env = {**os.environ, "SLAVE_HOME": str(home), "PATH": f"{stubs}{os.pathsep}{os.environ['PATH']}"}
     env.pop("PYTHONPATH", None)
     groups: list[int] = []
 
@@ -95,25 +95,25 @@ def test_an_abandoned_screen_stops_itself_after_the_idle_window(abandoned_screen
 
 
 def test_a_screen_started_before_an_update_still_stops_itself(abandoned_screen, tmp_path):
-    """The screen outlives ``hermes update``, which can drop the starter's interpreter and collect the dependency
+    """The screen outlives ``slave update``, which can drop the starter's interpreter and collect the dependency
     generation its PYTHONPATH named: a check pinned to either failed with ModuleNotFoundError and was retried in
-    300 s, forever. The launcher runs the install's stable command (on a store install the ``hermes
+    300 s, forever. The launcher runs the install's stable command (on a store install the ``slave
     --run-module`` launcher, which loads the current generation at every run) with its own pid appended."""
     install = tmp_path / "an install's root"  # quoting: the command crosses the env as a shell-quoted string
     used = tmp_path / "launcher-used"
-    hermes = install / ".hermes" / "bin" / "hermes"
-    hermes.parent.mkdir(parents=True)
-    hermes.write_text(
+    slave = install / ".slave" / "bin" / "slave"
+    slave.parent.mkdir(parents=True)
+    slave.write_text(
         "#!/bin/sh\n"
         '[ "$1" = --run-module ] && [ "$2" = tools.bot_desktop.idle_watch ] && [ $# -eq 3 ] || exit 64\n'
         f'echo "$3" > "{used}"\n'
         "shift 2\n"
         f'PYTHONPATH="{_REPO}" exec "{sys.executable}" -m tools.bot_desktop.idle_watch "$@"\n', encoding="utf-8")
-    hermes.chmod(0o755)
+    slave.chmod(0o755)
     prelude = (
-        "from hermes_cli import _launchers\n"
+        "from slave_cli import _launchers\n"
         f"_launchers.resolve_store_python = lambda root, **_: Path({str(tmp_path / 'store/bin/python3')!r})\n"
-        f"import hermes_cli._startup_fast as _sf; _sf.project_root_str = lambda: {str(install)!r}\n"
+        f"import slave_cli._startup_fast as _sf; _sf.project_root_str = lambda: {str(install)!r}\n"
         f"sys.executable = {str(tmp_path / 'old-env/bin/python')!r}  # removed by the update\n"
         f"import os; os.environ['PYTHONPATH'] = {str(tmp_path / 'collected-generation')!r}")
     sd, launcher = abandoned_screen(idle_stop_minutes=0.02, prelude=prelude)
@@ -168,7 +168,7 @@ def test_a_killed_sleep_does_not_end_the_self_stop(abandoned_screen):
 
 
 def test_a_screen_in_use_is_kept_and_a_returning_gateway_reattaches(abandoned_screen, monkeypatch):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     from tools.bot_desktop import runtime
 
     sd, launcher = abandoned_screen(idle_stop_minutes=0.1)  # 6 s; a human lease lapses after 10 min (the floor over 4 windows)
@@ -186,11 +186,11 @@ def test_a_screen_in_use_is_kept_and_a_returning_gateway_reattaches(abandoned_sc
 
     # A gateway that comes back inside the window re-attaches to the same screen instead of starting another.
     monkeypatch.setattr(runtime, "missing_binaries", list)  # the stub X binaries are only on the launcher's PATH
-    token = set_hermes_home_override(sd.parent)
+    token = set_slave_home_override(sd.parent)
     try:
         assert runtime.start(wait_seconds=1).pid == launcher
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     # A human holding the screen past the window is not timed out... Synced to a check that just kept the screen
     # in use, so the next one starts a window later and judges the human lease, not the use before it.

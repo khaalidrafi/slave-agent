@@ -21,7 +21,7 @@ async def test_forwarded_identity_survives_reconnect_without_policy_override(tmp
     from gateway.session_policy import build_policy
     from persistence.core.errors import AuthorityRefusal
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {'default': 'fixture'}, 'platform_toolsets': {'cli': []}})
     monkeypatch.setattr(run, '_resolve_gateway_model', lambda config: 'fixture')
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
@@ -74,7 +74,7 @@ async def test_forwarding_does_not_merge_lossy_context_or_peer_identity(tmp_path
     from gateway.session_authority import initialize_session_authority
     from gateway import run
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {'default': 'fixture'}, 'platform_toolsets': {'cli': []}})
     monkeypatch.setattr(run, '_resolve_gateway_model', lambda config: 'fixture')
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
@@ -130,7 +130,7 @@ async def test_forwarded_turns_are_authored_by_the_peer_for_memory_attribution(t
     from gateway.session_authority import admission_row
     from gateway import run
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {'default': 'fixture'}, 'platform_toolsets': {'cli': []}})
     monkeypatch.setattr(run, '_resolve_gateway_model', lambda config: 'fixture')
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
@@ -171,8 +171,8 @@ async def test_forward_wakes_on_the_completion_frame_instead_of_a_fixed_100ms_po
     import asyncio
     import time
     from websockets.asyncio.server import serve
-    from hermes_cli import gateway_client
-    from hermes_cli import gateway_runtime
+    from slave_cli import gateway_client
+    from slave_cli import gateway_runtime
     from gateway.session_a2a import forward_to_owner
 
     calls = []
@@ -191,7 +191,7 @@ async def test_forward_wakes_on_the_completion_frame_instead_of_a_fixed_100ms_po
                         'type': 'message.complete', 'session_id': 's', 'payload': {'admission_id': 'adm'}}}))
                 asyncio.ensure_future(complete())
 
-    async with serve(owner, '127.0.0.1', 0, subprotocols=['hermes-gateway-v1']) as server:
+    async with serve(owner, '127.0.0.1', 0, subprotocols=['slave-gateway-v1']) as server:
         port = server.sockets[0].getsockname()[1]
         endpoint = SimpleNamespace(api_origin=f'http://127.0.0.1:{port}')
         monkeypatch.setattr(gateway_runtime, 'ensure_gateway_runtime',

@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, List
 from agent.display import redact_tool_args_for_display
 from agent.redact import redact_sensitive_text
 from agent.stream_single_writer import claim_stream_writer, stream_writer_is_current
-from agent.transports.hermes_tools_mcp_server import HERMES_TOOLS_MCP_SERVER_NAME
+from agent.transports.slave_tools_mcp_server import SLAVE_TOOLS_MCP_SERVER_NAME
 from agent.sdk_transform_bypass import bypass_sdk_request_transform
 from agent.stream_diag import buffer_connect_exhausted_notice
 from agent.usage_anchor import set_usage_anchor
@@ -40,7 +40,7 @@ def _stream_drain_timeout() -> float:
     ``0`` skips the drain entirely.
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
         agent_cfg = load_config_readonly().get("agent")
         value = agent_cfg.get("stream_drain_timeout") if isinstance(agent_cfg, dict) else None
         if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -149,11 +149,11 @@ def _queue_token_counts(agent, fail_msg: str, *fail_extra: Any, counts: Callable
 
 
 def _record_codex_app_server_usage(agent, turn, messages=None) -> dict[str, Any]:
-    """Translate Codex app-server token usage into Hermes accounting. Prompt bucket = uncached + cached
+    """Translate Codex app-server token usage into slave-agent accounting. Prompt bucket = uncached + cached
     + cache-write input; a turn with no usage still counts as one API call.
     ``messages`` (the transcript mirror) lets real usage anchor the next preflight: this runtime bypasses
     the main loop's capture, and the mirror is never compacted natively, so without an anchor the rough
-    estimate grows monotonically and hermes-mode fires thread compaction on tiny threads (#100381)."""
+    estimate grows monotonically and slave-mode fires thread compaction on tiny threads (#100381)."""
     agent.session_api_calls += 1
     usage = getattr(turn, "token_usage_last", None)
     compressor = getattr(agent, "context_compressor", None)
@@ -213,7 +213,7 @@ def _record_codex_app_server_usage(agent, turn, messages=None) -> dict[str, Any]
         agent.session_estimated_cost_usd += cost_usd
     agent.session_cost_status, agent.session_cost_source = cost_result.status, cost_result.source
     cost_fields = {"estimated_cost_usd": cost_usd, "cost_status": cost_result.status, "cost_source": cost_result.source}
-    # The app-server builds its own requests (cache options included), so Hermes cannot know the
+    # The app-server builds its own requests (cache options included), so Slave cannot know the
     # window: an explicit unknown keeps an older window from outliving this cache activity.
     from agent.prompt_cache_clock import record_unobserved_cache_response
     from agent.turn_usage import _cache_clock_column
@@ -242,7 +242,7 @@ def _record_codex_app_server_compaction(agent, turn, *, approx_tokens: int | Non
     if compressor is not None:
         compressor.compression_count = getattr(compressor, "compression_count", 0) + 1
         compressor.last_compression_rough_tokens = approx_tokens or 0
-        # Codex owns this summary: a prior Hermes deterministic-fallback flag must not leak into it.
+        # Codex owns this summary: a prior Slave deterministic-fallback flag must not leak into it.
         record_boundary = getattr(type(compressor), "record_completed_compaction", None)
         if callable(record_boundary):
             record_boundary(compressor, used_fallback=False)
@@ -262,17 +262,17 @@ def _record_codex_app_server_compaction(agent, turn, *, approx_tokens: int | Non
                       "runtime": "codex_app_server", "thread_id": thread_id, "turn_id": turn_id,
                   }))
     if not force:
-        # Hermes-forced compactions are recorded by their compress_context attempt; this one Codex ran alone.
+        # Slave-forced compactions are recorded by their compress_context attempt; this one Codex ran alone.
         from agent.compaction_events import publish_provider_native
         publish_provider_native(agent)
     return True
 
 
-# --- Codex app-server → Hermes UI bridge -------------------------------------
-# The app-server bypasses the Hermes tool loop, so the bridge translates JSON-RPC notifications
+# --- Codex app-server → Slave UI bridge -------------------------------------
+# The app-server bypasses the Slave tool loop, so the bridge translates JSON-RPC notifications
 # into the callbacks the standard runtime fires (tool_progress_callback, _fire_stream_delta, ...).
 
-# Item types that project to a Hermes tool_call (keep in sync with agent/transports/codex_event_projector.py
+# Item types that project to a Slave tool_call (keep in sync with agent/transports/codex_event_projector.py
 # so UI names match recorded names). webSearch is codex's built-in tool; the projector records it under the same id.
 _CODEX_TOOL_ITEM_TYPES = frozenset({"commandExecution", "fileChange", "mcpToolCall", "dynamicToolCall", "webSearch"})
 # Text-delta notifications → the agent stream hook each one feeds. Single source for both the display
@@ -289,8 +289,8 @@ _CODEX_PROGRESS_DELTA_METHODS = frozenset(m for m, _ in _CODEX_TEXT_DELTA_METHOD
     "item/commandExecution/outputDelta", "item/fileChange/outputDelta",
 }
 _CODEX_PROGRESS_ITEM_TYPES = _CODEX_TOOL_ITEM_TYPES | {"agentMessage", "reasoning"}
-# Internal MCP server wrapping Hermes' native tools: its inner dispatch has no tool_progress_callback, so the
-# codex-level mcpToolCall IS the display event and the mcp.hermes-tools.* prefix is stripped (users see Hermes tools).
+# Internal MCP server wrapping Slave' native tools: its inner dispatch has no tool_progress_callback, so the
+# codex-level mcpToolCall IS the display event and the mcp.hermes-tools.* prefix is stripped (users see Slave tools).
 _STATIC_TOOL_NAMES = {"commandExecution": "exec_command", "fileChange": "apply_patch", "webSearch": "web_search"}
 _STABLE_ID_PREFIXES = {"commandExecution": "exec", "fileChange": "apply_patch"}
 _MCP_LIKE_ITEM_TYPES = {"mcpToolCall", "dynamicToolCall"}
@@ -309,11 +309,11 @@ def _item_changes(item: dict) -> list[dict]:
 
 
 def _codex_item_to_tool_name(item: dict) -> str:
-    """Synthetic Hermes tool name for a codex item (mirrors CodexEventProjector)."""
+    """Synthetic slave-agent tool name for a codex item (mirrors CodexEventProjector)."""
     item_type = item.get("type") or ""
     if item_type == "mcpToolCall":
         server, tool = item.get("server") or "mcp", item.get("tool") or "unknown"
-        return tool if server == HERMES_TOOLS_MCP_SERVER_NAME else f"mcp.{server}.{tool}"
+        return tool if server == SLAVE_TOOLS_MCP_SERVER_NAME else f"mcp.{server}.{tool}"
     if item_type == "dynamicToolCall":
         return item.get("tool") or "dynamic"
     return _STATIC_TOOL_NAMES.get(item_type) or item_type or "unknown"
@@ -356,7 +356,7 @@ def _codex_display_args(name: str, args: dict) -> dict:
     """Display-safe copy of a codex item's args for progress previews and tool cards.
 
     Native ``exec_command`` text gets the same forced secret redaction as the terminal tool's display
-    path; Hermes-tools MCP items carry the bare Hermes tool name, so the shared display redactor applies."""
+    path; Slave-tools MCP items carry the bare slave-agent tool name, so the shared display redactor applies."""
     if name == "exec_command" and isinstance(args.get("command"), str):
         return {**args, "command": redact_sensitive_text(args["command"], force=True)}
     return redact_tool_args_for_display(name, args) or args
@@ -523,10 +523,10 @@ def _codex_developer_instructions(agent) -> str:
     return developer_instructions
 
 
-# Durable codex thread binding: ``sessions.model_config.codex_thread_id`` (hermes_state), written after the
-# turn's projected rows were committed, read by the next AIAgent built for the same Hermes session so an
+# Durable codex thread binding: ``sessions.model_config.codex_thread_id`` (slave_state), written after the
+# turn's projected rows were committed, read by the next AIAgent built for the same Slave session so an
 # API-server restart (or the per-request agents of /api/sessions/{id}/chat) resumes the model-side thread
-# instead of starting an empty one while Hermes' own transcript continues (#100531).
+# instead of starting an empty one while Slave' own transcript continues (#100531).
 _CODEX_THREAD_ID_KEY = "codex_thread_id"
 _CODEX_THREAD_RESUME_NOTICE = "Codex thread could not be resumed; starting a new one."
 
@@ -570,29 +570,29 @@ def _start_codex_thread(agent) -> str:
 
 def _codex_model_provider(agent) -> str | None:
     """codex's ``[model_providers.<id>]`` for a named custom provider (``providers.<name>``); None means codex's
-    own provider. Only the stable id is sent and codex resolves base_url/env_key itself, so Hermes' credential
+    own provider. Only the stable id is sent and codex resolves base_url/env_key itself, so slave-agent’ credential
     never enters the JSON-RPC payload (#75186)."""
     if str(getattr(agent, "provider", "") or "").strip().lower() != "custom":
         return None
-    from hermes_cli.runtime_provider_custom import codex_model_provider_id
+    from slave_cli.runtime_provider_custom import codex_model_provider_id
     return codex_model_provider_id(str(getattr(agent, "requested_provider", "") or ""))
 
 
 def _codex_wire_model(agent, model_provider: str | None) -> str | None:
-    """The slug codex should run. ``-900k`` picker variants are Hermes-side aliases the backend rejects
+    """The slug codex should run. ``-900k`` picker variants are Slave-side aliases the backend rejects
     ("not supported when using Codex with a ChatGPT account"); codex applies the catalog's extended window
     to the base slug itself. On codex's own provider the slug is bare (``openai/gpt-5.5`` -> ``gpt-5.5``),
     as for openai-codex; a named custom provider's model ids are its own and pass through."""
     from agent.model_metadata import strip_codex_context_variant_suffix
     model = strip_codex_context_variant_suffix(getattr(agent, "model", None)) or None
     if model and model_provider is None:
-        from hermes_cli.model_normalize import normalize_model_for_provider
+        from slave_cli.model_normalize import normalize_model_for_provider
         model = normalize_model_for_provider(model, "openai-codex")
     return model
 
 
 def _codex_turn_effort(agent, model: str | None) -> str | None:
-    """``turn/start.effort``: only an explicit Hermes reasoning setting overrides codex's own default, clamped
+    """``turn/start.effort``: only an explicit slave-agent reasoning setting overrides codex's own default, clamped
     to the route's vocabulary like the Responses path (a level the model lacks fails the turn with 400
     "Unsupported value"). ``ultra`` stays ``ultra`` where the model reaches ``max``: codex runs it as its
     harness mode. Disabled reasoning goes out as ``none`` where the route accepts it."""
@@ -619,7 +619,7 @@ def _codex_turn_effort(agent, model: str | None) -> str | None:
 
 
 def _codex_turn_service_tier(agent) -> str | None:
-    """``turn/start.serviceTier``: the tier Hermes' own Responses path would request this turn (a static
+    """``turn/start.serviceTier``: the tier slave-agent’ own Responses path would request this turn (a static
     ``/fast`` tier pinned in request_overrides, or an open ``auto``/``cold`` window), in codex's words: the
     OpenAI ``priority`` tier is codex's ``fast``. A tier codex has no word for (``ultrafast``) is not sent."""
     from agent.fast_mode import CODEX_TIER_WORDS, effective_request_overrides
@@ -647,9 +647,9 @@ def _ensure_codex_session(agent, messages: list[dict[str, Any]] | None = None) -
     resume_thread_id = None if getattr(agent, "_codex_session_prompt", None) is not None else _stored_codex_thread_id(agent)
     from agent.runtime_cwd import resolve_agent_cwd
     from agent.transports.codex_app_server_session import CodexAppServerSession, _ServerRequestRouting
-    from hermes_cli.codex_runtime_switch import get_configured_codex_binary
-    from hermes_cli.config import load_config
-    # Approval callback: Hermes' standard prompt flow when a CLI thread installed one. `hermes chat -q`, cron and
+    from slave_cli.codex_runtime_switch import get_configured_codex_binary
+    from slave_cli.config import load_config
+    # Approval callback: Slave' standard prompt flow when a CLI thread installed one. `slave chat -q`, cron and
     # unattended platforms can have one registered with nobody to answer it, so they get none and fail closed at once.
     approval_callback = None
     with suppress(Exception):
@@ -658,7 +658,7 @@ def _ensure_codex_session(agent, messages: list[dict[str, Any]] | None = None) -
         if not _no_user_can_answer():
             approval_callback = _get_approval_callback()
     # Gateway/cron have no UI for codex approval requests, so exec/apply_patch fail closed by default. Only an
-    # explicit approval bypass (approvals.mode: off, /yolo, --yolo, HERMES_YOLO_MODE) hands policy to codex's sandbox.
+    # explicit approval bypass (approvals.mode: off, /yolo, --yolo, SLAVE_YOLO_MODE) hands policy to codex's sandbox.
     auto_approve_requests = False
     try:
         from tools.approval import is_approval_bypass_active
@@ -666,11 +666,11 @@ def _ensure_codex_session(agent, messages: list[dict[str, Any]] | None = None) -
     except Exception:
         logger.debug("codex app-server: approval-bypass lookup failed; keeping fail-closed default", exc_info=True)
     # Bridge codex JSON-RPC notifications (item/started, item/completed, item/agentMessage/delta, ...) into
-    # Hermes' gateway UI callbacks (tool_progress_callback, _fire_stream_delta,
+    # Slave' gateway UI callbacks (tool_progress_callback, _fire_stream_delta,
     # _emit_interim_assistant_message). Without this, Discord/Telegram users see no live tool-progress or
     # interim commentary while codex_app_server is running — only the final answer (#33200). Supersedes the
     # narrower item/started-only bridge from #38835.
-    # Hermes owns the prompt: the same composition the standard loop sends as its system message
+    # Slave owns the prompt: the same composition the standard loop sends as its system message
     # (cached per-session prompt + ephemeral additions such as channel overrides) rides along ONCE per
     # thread as developerInstructions. A retired/recreated session re-sends the current composition.
     # A thread started from scratch (no resumable codex thread) also receives the session's prior turns
@@ -680,7 +680,7 @@ def _ensure_codex_session(agent, messages: list[dict[str, Any]] | None = None) -
     agent._codex_session_model_provider = model_provider
     from agent.codex_runtime_history_seed import render_history_seed
     history_seed = render_history_seed(messages) or None
-    # The model always rides along: codex's home is shared, while the Hermes model is per profile/session,
+    # The model always rides along: codex's home is shared, while the Slave model is per profile/session,
     # so omitting it ran codex's own default instead of the selection.
     agent._codex_session = CodexAppServerSession(
         cwd=getattr(agent, "session_cwd", None) or str(resolve_agent_cwd()), approval_callback=approval_callback,
@@ -1304,7 +1304,7 @@ def run_codex_stream(agent, api_kwargs: dict, client: Any = None, on_first_delta
         return bool(agent._interrupt_requested)
 
     def _open_codex_stream(next_api_kwargs: dict[str, Any]):
-        from hermes_cli.providers import is_actual_route
+        from slave_cli.providers import is_actual_route
 
         if is_actual_route(
             getattr(agent, "provider", ""),

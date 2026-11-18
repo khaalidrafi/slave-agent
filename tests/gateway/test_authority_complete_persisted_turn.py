@@ -92,7 +92,7 @@ def test_steered_turn_receipt_names_every_user_row_in_order(tmp_path):
 @pytest.mark.asyncio
 async def test_authority_completion_publishes_the_turn_receipt(tmp_path, monkeypatch):
     from gateway import session_finite
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     seed_session(db, 's', 'test')
     epoch = db.runtime.begin_epoch(instance_id='current')

@@ -4,11 +4,11 @@ Login is a credential form (``supports_password`` + ``complete_password_login``)
 verify, refresh, ws-tickets and logout are the shared framework. Sessions are stateless
 HMAC-signed tokens (no IDP, no database) whose key is derived from the signing secret AND the
 configured credential, so changing the username or password ends every session; logout records
-the login's session id in ``dashboard_auth/basic-revoked-sessions.json`` under the Hermes home,
+the login's session id in ``dashboard_auth/basic-revoked-sessions.json`` under the slave-agent home,
 which every renewal of that login carries, so a copied token of it stops working too. Passwords use stdlib scrypt and login always hashes
 even for an unknown username (no username-enumeration timing oracle). Config: ``dashboard.
 basic_auth.{username,password_hash|password,secret,session_ttl_seconds}`` or the
-``HERMES_DASHBOARD_BASIC_AUTH_*`` env vars (env wins when non-empty; see ``_settings``).
+``SLAVE_DASHBOARD_BASIC_AUTH_*`` env vars (env wins when non-empty; see ``_settings``).
 """
 
 from __future__ import annotations
@@ -25,8 +25,8 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from hermes_cli.dashboard_auth import DashboardAuthProvider, InvalidCredentialsError, RefreshExpiredError, Session
-from hermes_constants import get_hermes_home
+from slave_cli.dashboard_auth import DashboardAuthProvider, InvalidCredentialsError, RefreshExpiredError, Session
+from slave_constants import get_slave_home
 from plugins.dashboard_auth._shared import (
     NonInteractiveMixin, SkipRegistration, load_config_section, register_provider, resolve_env_or_cfg)
 from utils import atomic_json_write, read_json_or_empty
@@ -148,10 +148,10 @@ class BasicAuthProvider(NonInteractiveMixin, DashboardAuthProvider):
             raise ValueError("secret must be at least 16 bytes")
         self._username = username
         self._password_hash = password_hash
-        binding = b"\0".join((b"hermes-dashboard-basic-session", username.encode(), (credential_id or password_hash).encode()))
+        binding = b"\0".join((b"slave-dashboard-basic-session", username.encode(), (credential_id or password_hash).encode()))
         self._secret = hmac.new(secret, binding, hashlib.sha256).digest()
         self._ttl = max(60, int(ttl_seconds))
-        self._revoked_path = get_hermes_home() / _REVOKED_PATH
+        self._revoked_path = get_slave_home() / _REVOKED_PATH
         self._revoked: dict[str, int] = {}
 
     # ---- password login ----------------------------------------------------
@@ -255,8 +255,8 @@ def _load_config_basic_auth_section() -> dict:
 # these (nor a space), and everyone who copied the same line would share the same key.
 _UNEXPANDED_SHELL_MARKERS = ("$(", "`", "openssl rand")
 
-# The error above only reaches the log files, not the console of ``hermes serve`` /
-# ``hermes dashboard``; one stderr line per process makes it visible there too.
+# The error above only reaches the log files, not the console of ``slave serve`` /
+# ``slave dashboard``; one stderr line per process makes it visible there too.
 _shell_text_secret_reported = False
 
 
@@ -265,26 +265,26 @@ def _resolve_secret(cfg_section: dict) -> bytes:
     a random per-process secret (sessions then don't survive a restart or span multiple
     workers — logged at INFO). A value holding unexpanded shell text is never used as the
     key: it is logged as an error and replaced by a random per-process secret."""
-    raw = resolve_env_or_cfg("HERMES_DASHBOARD_BASIC_AUTH_SECRET", cfg_section.get("secret"))
+    raw = resolve_env_or_cfg("SLAVE_DASHBOARD_BASIC_AUTH_SECRET", cfg_section.get("secret"))
     if not raw:
         logger.info(
             "dashboard-auth-basic: no 'secret' configured; generating a random "
             "per-process signing key. Sessions will not survive a restart or span "
             "multiple workers. Set dashboard.basic_auth.secret (or "
-            "HERMES_DASHBOARD_BASIC_AUTH_SECRET) for stable sessions.")
+            "SLAVE_DASHBOARD_BASIC_AUTH_SECRET) for stable sessions.")
         return secrets.token_bytes(32)
     if any(marker in raw for marker in _UNEXPANDED_SHELL_MARKERS):
         logger.error(
             "dashboard-auth-basic: the configured signing secret contains unexpanded shell "
             "text (such as '$(openssl rand -base64 32)') instead of a random value, so it "
             "is ignored and a random per-process signing key is used. Set "
-            "HERMES_DASHBOARD_BASIC_AUTH_SECRET (or dashboard.basic_auth.secret) to the "
+            "SLAVE_DASHBOARD_BASIC_AUTH_SECRET (or dashboard.basic_auth.secret) to the "
             "output of 'openssl rand -base64 32' to keep sessions across restarts.")
         global _shell_text_secret_reported
         if not _shell_text_secret_reported:
             _shell_text_secret_reported = True
             print(
-                "hermes: dashboard login: HERMES_DASHBOARD_BASIC_AUTH_SECRET (or "
+                "slave: dashboard login: SLAVE_DASHBOARD_BASIC_AUTH_SECRET (or "
                 "dashboard.basic_auth.secret) holds shell text instead of a random value; "
                 "using a per-process key, so sessions end on restart. Replace it with the "
                 "output of: openssl rand -base64 32", file=sys.stderr, flush=True)
@@ -306,13 +306,13 @@ def _settings() -> dict:
     def setting(env_name: str, cfg_key: str) -> str:
         return resolve_env_or_cfg(env_name, section.get(cfg_key, ""))
 
-    username = setting("HERMES_DASHBOARD_BASIC_AUTH_USERNAME", "username")
-    password_hash = setting("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH", "password_hash")
-    plaintext = setting("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "password")
-    ttl_raw = setting("HERMES_DASHBOARD_BASIC_AUTH_TTL_SECONDS", "session_ttl_seconds")
+    username = setting("SLAVE_DASHBOARD_BASIC_AUTH_USERNAME", "username")
+    password_hash = setting("SLAVE_DASHBOARD_BASIC_AUTH_PASSWORD_HASH", "password_hash")
+    plaintext = setting("SLAVE_DASHBOARD_BASIC_AUTH_PASSWORD", "password")
+    ttl_raw = setting("SLAVE_DASHBOARD_BASIC_AUTH_TTL_SECONDS", "session_ttl_seconds")
     if not username:
         raise SkipRegistration(
-            "dashboard.basic_auth.username is not set (and HERMES_DASHBOARD_BASIC_AUTH_USERNAME "
+            "dashboard.basic_auth.username is not set (and SLAVE_DASHBOARD_BASIC_AUTH_USERNAME "
             "is empty). Set a username and a password (or password_hash) under "
             "dashboard.basic_auth in config.yaml to enable username/password dashboard "
             "login, or use the OAuth provider, or pass --insecure to skip the auth gate.")
@@ -325,7 +325,7 @@ def _settings() -> dict:
     # Precedence: env password (hashed in-memory) overrides any config password_hash so
     # operators can rotate without editing config; a config password_hash wins over a
     # config-only plaintext password (preferred at-rest form).
-    plaintext_from_env = os.environ.get("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "").strip()
+    plaintext_from_env = os.environ.get("SLAVE_DASHBOARD_BASIC_AUTH_PASSWORD", "").strip()
     # The in-memory hash of a plaintext password is salted afresh each start; the plaintext is
     # the stable form that binds sessions to the credential (see BasicAuthProvider.__init__).
     credential_id = plaintext_from_env or (plaintext if not password_hash else "")

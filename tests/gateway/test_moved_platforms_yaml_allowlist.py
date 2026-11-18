@@ -21,7 +21,7 @@ def test_yaml_allowed_users_admits_listed_dm_sender_only(monkeypatch, platform):
     import os
 
     from gateway.run import GatewayRunner
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
 
     for key in list(os.environ):
         if key.endswith(("_ALLOWED_USERS", "_ALLOW_ALL_USERS", "_ALLOWED_CHATS")):

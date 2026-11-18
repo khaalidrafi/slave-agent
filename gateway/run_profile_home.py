@@ -1,4 +1,4 @@
-"""Which profile's HERMES_HOME serves an inbound source (``GatewayRunner._resolve_profile_home_for_source``)."""
+"""Which profile's SLAVE_HOME serves an inbound source (``GatewayRunner._resolve_profile_home_for_source``)."""
 
 import logging
 from pathlib import Path
@@ -21,9 +21,9 @@ def resolve_profile_home_for_source(runner, source) -> Path:
     keep the launch-home fallback."""
     from gateway.profile_routing import ProfileRouteRejected
     from gateway.session_identity import identity_of
-    from hermes_cli.profiles import (
+    from slave_cli.profiles import (
         get_active_profile_name, get_profile_dir, normalize_profile_name, profile_exists)
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     identity = identity_of(source)
     if identity is not None:
         return identity.runtime_home
@@ -45,9 +45,9 @@ def resolve_profile_home_for_source(runner, source) -> Path:
         if explicit_profile and not profile_exists(name):
             logger.warning(
                 "Profile %r does not exist for source %s/%s (guild_id=%s), "
-                "falling back to global HERMES_HOME",
+                "falling back to global SLAVE_HOME",
                 explicit_profile, *where, getattr(source, "guild_id", None))
-            return get_hermes_home()
+            return get_slave_home()
         return profile_dir
     except ProfileRouteRejected:
         raise
@@ -58,10 +58,10 @@ def resolve_profile_home_for_source(runner, source) -> Path:
             raise ProfileRouteRejected(explicit_profile, explicit_profile) from exc
         logger.warning(
             "Failed to resolve profile directory for source %s/%s (guild_id=%s), "
-            "falling back to global HERMES_HOME: %s",
+            "falling back to global SLAVE_HOME: %s",
             *where, getattr(source, "guild_id", None),
             explicit_profile or "(no profile)", exc_info=True)
-        return get_hermes_home()
+        return get_slave_home()
 
 
 async def completion_event_scope_or_refuse(runner, evt: dict, what: str):

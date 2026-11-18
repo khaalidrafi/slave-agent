@@ -1,7 +1,7 @@
 """Password-manager session tokens: in memory, out of reach of a plain import, gone at the idle TTL,
 and handed to exactly the manager invocation that needs them.
 
-This is accidental/casual-access protection, not isolation: code running inside the Hermes process can
+This is accidental/casual-access protection, not isolation: code running inside the slave-agent process can
 still reach process memory. The module-globals walk below is what ``from ... import`` or a state dump
 sees; it deliberately does not descend into function closures.
 """
@@ -56,7 +56,7 @@ def _held_by_unlock(token: str, *, closures: bool) -> bool:
 
 @pytest.fixture(autouse=True)
 def _profile(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     unlock.lock()
     yield
     unlock.lock()
@@ -141,7 +141,7 @@ def test_session_token_reaches_only_the_manager_call_that_uses_it(tmp_path):
     unlock_call, list_call = calls
     assert "BW_SESSION" not in unlock_call["env"], "the unlock call has no session yet"
     assert list_call["env"]["BW_SESSION"] == token
-    assert token not in os.environ.values(), "the token never enters Hermes' own environment"
+    assert token not in os.environ.values(), "the token never enters slave-agent’ own environment"
     # Every other child (terminal tool, MCP servers, hooks) starts from that environment; even the
     # unscrubbed factory variant must not carry it.
     assert token not in build_subprocess_env(scrub_secrets=False).values()

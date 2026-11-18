@@ -132,7 +132,7 @@ def test_tilde_is_the_backend_home_not_a_dir_under_cwd(tmp_path):
     (work / "~" / "x.txt").write_text("foo\n")
     with _non_host_file_ops(work) as fo:
         home = Path(fo.env.execute("echo $HOME")["output"].strip())  # whatever HOME the backend runs with
-        target = home / f"hermes-alias-probe-{tmp_path.name}.txt"
+        target = home / f"slave-alias-probe-{tmp_path.name}.txt"
         target.write_text("foo\n")
         try:
             result = fo.patch_v4a("*** Begin Patch\n" + _update(f"~/{target.name}", "foo", "X")

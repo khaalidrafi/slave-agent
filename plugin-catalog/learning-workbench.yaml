@@ -5,7 +5,7 @@ subdir: ""
 version: "0.2.0"
 title: Learning Workbench
 description: >-
-  Study with Hermes in a Desktop pane: a short diagnosis, a route of 2–7 steps you can rename or
+  Study with slave-agent in a Desktop pane: a short diagnosis, a route of 2–7 steps you can rename or
   skip, then one lesson and exercise at a time, answered in your own words. The plugin keeps the
   record honest: answer keys, rubrics and hints are frozen before you answer, only you can submit
   an attempt (the agent's six tools propose and read), every check must quote your words and the
@@ -13,7 +13,7 @@ description: >-
   in chat or after a revealed solution. Drafts and attempts survive restarts and compaction, a
   contest keeps the earlier verdict, and a study exports as a Markdown record. /study covers the
   CLI and messaging.
-  Disclosure: studies are stored locally in $HERMES_HOME/plugin-data/learning-workbench/ (SQLite)
+  Disclosure: studies are stored locally in $SLAVE_HOME/plugin-data/learning-workbench/ (SQLite)
   until you delete them, including after uninstall; while an exercise is open in a chat, the
   pre_llm_call hook adds a short reminder with that exercise's question to the turn's user message
   and records that the turn happened (not its text); chats without an open exercise are untouched.

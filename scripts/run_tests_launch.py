@@ -5,7 +5,7 @@ on a timeout. The process has the subprocess.Popen surface the runner uses:
 ``pid``, ``returncode``, ``communicate(timeout)`` and ``kill()``.
 
 * By default it is a fresh ``python -m pytest <file>`` in a session of its own.
-* With HERMES_TEST_FORKSERVER=1 on Linux it is a child of one multiprocessing
+* With SLAVE_TEST_FORKSERVER=1 on Linux it is a child of one multiprocessing
   fork server, which imports pytest and the common third-party modules once
   for the whole run (see run_tests_fork_child for what each child resets).
 
@@ -71,12 +71,12 @@ def _start_fork_server(repo_root: Path) -> _ForkServer:
 
 
 def _fork_server_for_run(repo_root: Path) -> _ForkServer | None:
-    """The run's fork server when HERMES_TEST_FORKSERVER=1 on Linux, started by the first file."""
+    """The run's fork server when SLAVE_TEST_FORKSERVER=1 on Linux, started by the first file."""
     global _fork_server, _fork_server_checked
     with _fork_lock:
         if not _fork_server_checked:
             _fork_server_checked = True
-            if os.environ.pop("HERMES_TEST_FORKSERVER", "") == "1" and sys.platform == "linux":
+            if os.environ.pop("SLAVE_TEST_FORKSERVER", "") == "1" and sys.platform == "linux":
                 _fork_server = _start_fork_server(repo_root)
                 print("  fork server: on (third-party imports shared; each file still a fresh process)", flush=True)
         return _fork_server
@@ -150,7 +150,7 @@ def start_pytest(
     """
     server = _fork_server_for_run(repo_root)
     # The first files copied os.environ before the knob was popped; no test sees it.
-    env.pop("HERMES_TEST_FORKSERVER", None)
+    env.pop("SLAVE_TEST_FORKSERVER", None)
     if server is not None:
         proc = _ForkedPytest(server, [server.argv0, str(file), *pytest_args], repo_root, env, scratch_dir)
         # The child's first act is setsid(), so its pid is its group. Never ask

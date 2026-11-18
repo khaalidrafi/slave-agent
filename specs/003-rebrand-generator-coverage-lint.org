@@ -39,7 +39,7 @@ vocabulary), so the signal was useless.
    - ~.js~ must not be dropped from ~CODE_EXTS~ when editing the table (the
      session nearly lost it and restored it).
 2. New mode ~--blind~ behind ~blindspots()~: walks the same tracked file set
-   (~git grep -l -I -i -e hermes -- .~; ~-I~ skips binaries) and diffs the
+   (~git grep -l -I -i -e slave -- .~; ~-I~ skips binaries) and diffs the
    extensions a tier reads against the extensions the tree actually carries
    the word in; fails (nonempty report) when any file is unreachable.
 3. New mode ~--lint~ behind ~hand_brands()~: finds brand words a person typed

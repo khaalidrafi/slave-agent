@@ -27,10 +27,10 @@ async def _gateway(tmp_path, monkeypatch):
     from gateway.run import GatewayRunner
     from gateway.session_ingress_context import register_transport_home
     from tests.gateway.test_command_bypass_active_session import _StubAdapter
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setenv('TELEGRAM_ALLOWED_USERS', '42')
-    monkeypatch.setattr('gateway.run._hermes_home', tmp_path)
-    monkeypatch.setattr('hermes_state.DEFAULT_DB_PATH', tmp_path / 'state.db')
+    monkeypatch.setattr('gateway.run._slave_home', tmp_path)
+    monkeypatch.setattr('slave_state.DEFAULT_DB_PATH', tmp_path / 'state.db')
     runner = GatewayRunner(GatewayConfig(multiplex_profiles=False, sessions_dir=tmp_path / 'sessions'))
     adapter = _StubAdapter(PlatformConfig(enabled=True, token='fixture', typing_indicator=False), Platform.TELEGRAM)
     sent, calls = [], []
@@ -70,13 +70,13 @@ async def _admitted_before_crash(runner, adapter, *, started, **event_fields):
     from gateway.platforms.event import MessageEvent
     from gateway.session_authority import initialize_session_authority
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     source = adapter.build_source(chat_id='42', chat_type='dm', user_id='42', thread_id='T1')
-    first = await initialize_session_authority(runner, profile_id=str(get_hermes_home()), instance_id='before-crash')
+    first = await initialize_session_authority(runner, profile_id=str(get_slave_home()), instance_id='before-crash')
     first._schedule = lambda ref: None  # the crash: its drain never ran
     original = MessageEvent(text='hello', source=source, message_id=MESSAGE_ID,
                             timestamp=datetime.now() - timedelta(seconds=40), **event_fields)
-    with native_callback(runner, original, get_hermes_home()):
+    with native_callback(runner, original, get_slave_home()):
         receipt = await first.admit_native(original)
     if started:
         first.persistence.admissions.claim(epoch=first.epoch, session_id=receipt.ref.session_id)
@@ -86,8 +86,8 @@ async def _admitted_before_crash(runner, adapter, *, started, **event_fields):
 async def _restart(runner):
     from gateway.run_runtime import recover_profile_native_sessions
     from gateway.session_authority import initialize_session_authority
-    from hermes_constants import get_hermes_home
-    second = await initialize_session_authority(runner, profile_id=str(get_hermes_home()), instance_id='after-restart')
+    from slave_constants import get_slave_home
+    second = await initialize_session_authority(runner, profile_id=str(get_slave_home()), instance_id='after-restart')
     await recover_profile_native_sessions(runner, second)
     _wire(runner, runner.adapters[next(iter(runner.adapters))])
     return second

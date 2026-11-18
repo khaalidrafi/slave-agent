@@ -4,7 +4,7 @@ repo: https://github.com/rkfshakti/hermes-sidecar
 sha: "33351728ae27beeea6643155e7fc56bc56878a86"
 version: "1.1.0"
 description: >-
-  Remote brain, local hands: a paired execution backend that lets a remote Hermes run
+  Remote brain, local hands: a paired execution backend that lets a remote slave-agent run
   terminal, file, patch, search and execute_code commands on the user's local machine.
   A local daemon applies a workspace boundary and a hard deny list (privilege escalation,
   recursive root deletes, download-to-shell, Apple Events, keychain access, outbound
@@ -29,7 +29,7 @@ screenshots:
   - https://raw.githubusercontent.com/rkfshakti/hermes-sidecar/33351728ae27beeea6643155e7fc56bc56878a86/demo/demo.gif
 platforms: [linux, macos]
 known_issues:
-  - "Under plugins.isolation: host, Hermes skips plugin CLI subcommands and hands the provider an opaque placeholder; run Sidecar in the default in-process plugin isolation."
+  - "Under plugins.isolation: host, slave-agent skips plugin CLI subcommands and hands the provider an opaque placeholder; run Sidecar in the default in-process plugin isolation."
 capabilities:
   provides_tools: [sidecar_status, sidecar_audit]
   provides_hooks: []

@@ -13,9 +13,9 @@ from gateway.config import Platform
 from gateway.kanban_watchers_notifier import _KanbanNotification, _notifier_collect
 from gateway.platforms.event import MessageEvent
 from gateway.wake import WakeNotAccepted, deliver_wake
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_notify as kbn
+from slave_cli import kanban_db as kb
+from slave_cli import kanban_db_connect as kbc
+from slave_cli import kanban_db_notify as kbn
 from tests.gateway.restart_test_helpers import make_restart_runner, make_restart_source
 
 
@@ -44,7 +44,7 @@ def wake_route():
 async def test_kanban_wake_during_restart_drain_runs_after_restart(
     tmp_path, monkeypatch
 ):
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(tmp_path / "board.db"))
+    monkeypatch.setenv("SLAVE_KANBAN_DB", str(tmp_path / "board.db"))
     runner, adapter, source, turns = wake_route()
     with kbc.connect() as conn:
         tid = kb.create_task(conn, title="long task", assignee="worker")

@@ -100,7 +100,7 @@ def test_revoke_transport_without_optional_http_packages(gateway, monkeypatch, r
             service.owe_grant_revoke(room_id='ended', member_id='peer', grant='opaque-grant',
                                      target_url=f'http://127.0.0.1:{peer.server_port}')
             assert service.retry_owed_revokes() == int(response == 'settles')
-            assert seen == ['HermesRoom opaque-grant']
+            assert seen == ['SlaveRoom opaque-grant']
             remaining = hosted_rooms.due_room_grant_revokes(service.store, placement=service.placement, limit=10, now=service.runtime.clock() + 10)
             assert len(remaining) == int(response != 'settles')
         finally:

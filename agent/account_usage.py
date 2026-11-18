@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 import httpx
 
 from agent.anthropic_credentials import _is_oauth_token, resolve_anthropic_token
-from hermes_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
-from hermes_cli.auth_codex import _codex_pool_route_base_url
-from hermes_cli.runtime_provider import resolve_runtime_provider
-from hermes_time import safe_strftime
+from slave_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
+from slave_cli.auth_codex import _codex_pool_route_base_url
+from slave_cli.runtime_provider import resolve_runtime_provider
+from slave_time import safe_strftime
 
 if TYPE_CHECKING:
     from typing import TypeGuard
@@ -50,7 +50,7 @@ class AccountUsageSnapshot:
     # fetcher cannot tell accounts apart, so the snapshot belongs to the provider's legacy slot.
     identity: Optional[str] = None
     # Exact decoded provider response body (no headers/credentials) for integrations that need
-    # fields Hermes does not normalize yet. Only populated by providers that fetch a JSON body.
+    # fields Slave does not normalize yet. Only populated by providers that fetch a JSON body.
     raw: Optional[dict] = None
     # Usage-window plans only: the stacked bar layout. Every other snapshot
     # renders exactly as before.
@@ -105,7 +105,7 @@ def _reset_phrase(dt: Optional[datetime]) -> str:
     if not dt:
         return "resets soon"
     try:
-        from hermes_cli.model_picker_usage import format_resets_in
+        from slave_cli.model_picker_usage import format_resets_in
         return format_resets_in(int(dt.timestamp() * 1000))
     except Exception:
         logger.debug("Reset phrase formatting failed", exc_info=True)
@@ -162,7 +162,7 @@ def _render_usage_window_lines(snapshot: AccountUsageSnapshot) -> list[str]:
         else:
             used = max(0.0, min(100.0, float(window.used_percent))) / 100.0
             try:
-                from hermes_cli.model_picker_usage import format_percent_used, render_bar
+                from slave_cli.model_picker_usage import format_percent_used, render_bar
                 bar, pct = render_bar(used), format_percent_used(used)
             except Exception:
                 logger.debug("Usage bar rendering failed", exc_info=True)
@@ -434,7 +434,7 @@ def _codex_reset_outcome(body: dict, available: int) -> CodexResetRedeemResult:
         # Quota is restored upstream — lift persisted pool cooldowns so the credential isn't frozen behind a
         # stale ``last_error_reset_at``.
         try:
-            from hermes_cli.auth import clear_codex_pool_quota_cooldowns
+            from slave_cli.auth import clear_codex_pool_quota_cooldowns
             clear_codex_pool_quota_cooldowns()
         except Exception:
             logger.debug("Failed to clear Codex pool cooldowns after reset redemption", exc_info=True)
@@ -455,7 +455,7 @@ def redeem_codex_reset_credit(
     try:
         token, resolved_base_url, account_id = _resolve_codex_usage_credentials(base_url, api_key)
     except Exception:
-        return _unavailable("No Codex credentials available. Run `hermes auth` to sign in with your ChatGPT account.")
+        return _unavailable("No Codex credentials available. Run `slave auth` to sign in with your ChatGPT account.")
     redeem_request_id = str(uuid.uuid4())
     try:
         for attempt in range(2):
@@ -491,7 +491,7 @@ def redeem_codex_reset_credit(
         code = exc.response.status_code
         if code in (401, 403):
             return _unavailable(f"Codex backend rejected the request (HTTP {code}). Reset credits require ChatGPT-account "
-                                "(OAuth) auth — run `hermes auth` and sign in with your ChatGPT account.")
+                                "(OAuth) auth — run `slave auth` and sign in with your ChatGPT account.")
         return _unavailable(f"Codex backend error (HTTP {code}) — try again shortly.")
     except Exception as exc:
         return _unavailable(f"Could not reach the Codex backend: {exc}")
@@ -632,7 +632,7 @@ def fetch_account_usage(
     return snapshot
 
 
-# Published plugin API (hermes_cli/data/plugin_api.json lists this whole module): names that moved to the Nous
+# Published plugin API (slave_cli/data/plugin_api.json lists this whole module): names that moved to the Nous
 # sibling stay importable here; catalog plugins import build_credits_view and build_nous_credits_snapshot.
 # Bottom of the file because the sibling late-imports this facade.
 from agent.usage_gauges import BP_FULL

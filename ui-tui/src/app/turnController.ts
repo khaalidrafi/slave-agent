@@ -1,5 +1,5 @@
-import type { MessageCompletePayload, SubagentEventPayload, ToolLabel } from '@hermes/shared/gateway-events'
-import type { SessionInterruptResponse } from '@hermes/shared/gateway-types'
+import type { MessageCompletePayload, SubagentEventPayload, ToolLabel } from '@slave-agent/shared/gateway-events'
+import type { SessionInterruptResponse } from '@slave-agent/shared/gateway-types'
 
 import {
   REASONING_PULSE_MS,

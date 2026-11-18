@@ -41,10 +41,10 @@ def test_ordinary_daemon_slash_skill_uses_durable_fifo(tmp_path):
         '---\nname: probe-skill\ndescription: Disposable slash fixture\n---\n'
         '# Probe\nSLASH_SKILL_BODY: follow this owned fixture instruction.\n')
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED='1',
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url,
-               HERMES_DASHBOARD_SESSION_TOKEN='owned-slash-negative')
+               SLAVE_DASHBOARD_SESSION_TOKEN='owned-slash-negative')
     receipts = []
 
     def rows():

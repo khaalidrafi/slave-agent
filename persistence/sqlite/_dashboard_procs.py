@@ -1,4 +1,4 @@
-"""The Desktop backend argv test the orphan holder reaper runs, as ``hermes_cli.dashboard_procs`` runs it."""
+"""The Desktop backend argv test the orphan holder reaper runs, as ``slave_cli.dashboard_procs`` runs it."""
 
 
 def _dashboard_subcommand_index(argv: list[str]) -> int | None:

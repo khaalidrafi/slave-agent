@@ -192,7 +192,7 @@ CASES = {
     "nix + python → both": (["nix/checks.nix", "agent/x.py"], _lanes(python=True, scan=True, nix=True)),
     # Product Python can still break the flake (nine checks run the built
     # binary), but the flake meets it on main, not on the PR.
-    "product python → no nix on the PR": (["hermes_cli/config.py"], _lanes(python=True, scan=True)),
+    "product python → no nix on the PR": (["slave_cli/config.py"], _lanes(python=True, scan=True)),
     # tests/ is not packaged, so the built binary cannot change.
     "tests-only → no nix": (
         ["tests/agent/test_foo.py"],
@@ -207,8 +207,8 @@ CASES = {
     # The Windows desktop-update hand-off is a PowerShell integration surface:
     # its tests spawn the real script and poll its loopback server. They run
     # when the script, the Electron side that launches it, or their own test
-    # files change — not on every hermes_state.py PR. The script runs a real
-    # `hermes update`, and the Windows crash cells that kill it mid-run live in
+    # files change — not on every slave_state.py PR. The script runs a real
+    # `slave update`, and the Windows crash cells that kill it mid-run live in
     # the install + update journey, so it starts e2e_upgrade as well.
     "windows.ps1 → desktop_updater": (
         ["scripts/desktop-update/windows.ps1"],
@@ -303,7 +303,7 @@ CASES = {
         _lanes(python=True),
     ),
     "mcp_catalog.py → python + scan": (
-        ["hermes_cli/mcp_catalog.py"],
+        ["slave_cli/mcp_catalog.py"],
         _lanes(python=True, scan=True),
     ),
     "eslint config → frontend": (
@@ -344,8 +344,8 @@ CASES = {
         ["scripts/install.sh"],
         _lanes(python=True, bootstrap=True, python_prod=True, e2e_upgrade=True, e2e_desktop_update=True),
     ),
-    "setup-hermes.sh → bootstrap lane": (
-        ["setup-hermes.sh"],
+    "setup-slave.sh → bootstrap lane": (
+        ["setup-slave.sh"],
         _lanes(python=True, bootstrap=True, python_prod=True, e2e_upgrade=True),
     ),
     "tauri installer source → bootstrap + rust": (
@@ -392,19 +392,19 @@ CASES = {
         _lanes(python=True, python_prod=False, scan=True, e2e_upgrade=True),
     ),
     "updater → e2e_upgrade + desktop update": (
-        ["hermes_cli/update_cmd_git.py"],
+        ["slave_cli/update_cmd_git.py"],
         _lanes(python=True, scan=True, e2e_upgrade=True, e2e_desktop_update=True),
     ),
     "PM → e2e_upgrade + docker": (["pm/environments.py"], _lanes(python=True, scan=True, e2e_upgrade=True, docker=True)),
     # The update pipeline lives beyond the update_* family too: the entry
     # point, launch-time recovery, the gateway restart/pause surface.
-    # main.py is also `hermes desktop --build-only`, the update's Desktop rebuild.
+    # main.py is also `slave desktop --build-only`, the update's Desktop rebuild.
     "cmd_update entry → both update suites": (
-        ["hermes_cli/main.py"], _lanes(python=True, scan=True, e2e_upgrade=True, e2e_desktop_update=True),
+        ["slave_cli/main.py"], _lanes(python=True, scan=True, e2e_upgrade=True, e2e_desktop_update=True),
     ),
     "gateway status stamp → e2e_upgrade": (["gateway/status.py"], _lanes(python=True, scan=True, e2e_upgrade=True)),
     "desktop verify → desktop_updater + both update suites": (
-        ["hermes_cli/desktop_update_verify.py"],
+        ["slave_cli/desktop_update_verify.py"],
         _lanes(python=True, scan=True, desktop_updater=True, e2e_upgrade=True, e2e_desktop_update=True),
     ),
     "electron main → desktop update": (
@@ -512,36 +512,36 @@ def test_every_slow_lane_path_matches_a_tracked_file():
     assert dead == set()
 
 
-# Every file the `hermes update` pipeline runs on the update path (the step
+# Every file the `slave update` pipeline runs on the update path (the step
 # tables of the updater audit's cli-update and desktop-update code maps). A
 # PR that edits only one of these must start the real-update suite that would
 # catch the regression; before, main.py / _early_recovery.py / relaunch.py /
-# gateway/ / hermes_bootstrap.py skipped both the Linux and Windows journeys.
+# gateway/ / slave_bootstrap.py skipped both the Linux and Windows journeys.
 _UPDATE_PATH_FILES = (
-    "hermes_cli/main.py",
-    "hermes_cli/main_dashboard.py",
-    "hermes_cli/main_desktop.py",
-    "hermes_cli/_early_recovery.py",
-    "hermes_cli/venv_sync.py",
-    "hermes_cli/update_lock.py",
-    "hermes_cli/update_cmd.py",
-    "hermes_cli/update_completion.py",
-    "hermes_cli/update_cmd_windows.py",
-    "hermes_cli/update_cmd_zip.py",
-    "hermes_cli/_update_takeover.py",
-    "hermes_cli/source_completion.py",
-    "hermes_cli/source_build.py",
-    "hermes_cli/source_releases.py",
-    "hermes_cli/_launchers.py",
-    "hermes_cli/gitlock.py",
-    "hermes_cli/process_identity.py",
-    "hermes_cli/relaunch.py",
-    "hermes_cli/gateway.py",
-    "hermes_cli/gateway_windows.py",
-    "hermes_cli/gateway_migrate.py",
-    "hermes_cli/desktop_update_verify.py",
-    "hermes_bootstrap.py",
-    "hermes_constants.py",
+    "slave_cli/main.py",
+    "slave_cli/main_dashboard.py",
+    "slave_cli/main_desktop.py",
+    "slave_cli/_early_recovery.py",
+    "slave_cli/venv_sync.py",
+    "slave_cli/update_lock.py",
+    "slave_cli/update_cmd.py",
+    "slave_cli/update_completion.py",
+    "slave_cli/update_cmd_windows.py",
+    "slave_cli/update_cmd_zip.py",
+    "slave_cli/_update_takeover.py",
+    "slave_cli/source_completion.py",
+    "slave_cli/source_build.py",
+    "slave_cli/source_releases.py",
+    "slave_cli/_launchers.py",
+    "slave_cli/gitlock.py",
+    "slave_cli/process_identity.py",
+    "slave_cli/relaunch.py",
+    "slave_cli/gateway.py",
+    "slave_cli/gateway_windows.py",
+    "slave_cli/gateway_migrate.py",
+    "slave_cli/desktop_update_verify.py",
+    "slave_bootstrap.py",
+    "slave_constants.py",
     "gateway/status.py",
     "gateway/control_socket.py",
     "gateway/code_skew.py",
@@ -560,8 +560,8 @@ _DESKTOP_UPDATE_PATH_FILES = (
     "apps/desktop/electron/local-gateway.ts",
     "scripts/desktop-update/windows.ps1",
     "scripts/desktop-update/posix.sh",
-    "hermes_cli/desktop_update_verify.py",
-    "hermes_cli/main_desktop.py",
+    "slave_cli/desktop_update_verify.py",
+    "slave_cli/main_desktop.py",
 )
 
 
@@ -581,7 +581,7 @@ _REPO = Path(__file__).resolve().parents[2]
 
 
 def _yaml(rel: str) -> dict:
-    yaml = pytest.importorskip("hermes_yaml")
+    yaml = pytest.importorskip("slave_yaml")
     return yaml.safe_load((_REPO / rel).read_text(encoding="utf-8-sig"))
 
 
@@ -820,7 +820,7 @@ def test_catalog_lane_runs_every_test_that_reads_the_shipped_catalog():
     spec.loader.exec_module(mod)
     files = set(mod.catalog_test_files())
     for must in (
-        "tests/hermes_cli/test_plugin_catalog.py",
+        "tests/slave_cli/test_plugin_catalog.py",
         "tests/scripts/test_validate_plugin_catalog.py",
         "tests/scripts/test_contributor_map.py",
         "tests/website/test_extract_plugins.py",

@@ -57,10 +57,10 @@ class _ChunkedImage(BaseHTTPRequestHandler):
 
 @pytest.fixture
 def image_host():
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools import url_safety
 
-    (get_hermes_home() / "config.yaml").write_text(
+    (get_slave_home() / "config.yaml").write_text(
         f"gateway:\n  max_inbound_media_bytes: {CAP}\nsecurity:\n  allow_private_urls: true\n")
     url_safety._reset_allow_private_cache()
     srv = ThreadingHTTPServer(("127.0.0.1", 0), _ChunkedImage)

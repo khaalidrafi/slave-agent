@@ -1,4 +1,4 @@
-import type { WakeStartResponse, WakeStatusResponse, WakeStopResponse } from '@hermes/shared/gateway-types'
+import type { WakeStartResponse, WakeStatusResponse, WakeStopResponse } from '@slave-agent/shared/gateway-types'
 
 import { t } from '../../../i18n/runtime.js'
 import type { TranslationKey } from '../../../i18n/types.js'
@@ -126,7 +126,7 @@ const WAKE_RUNNERS: Record<WakeSub, (ctx: SlashRunCtx) => void> = {
 
 export const wakeCommands: SlashCommand[] = [
   {
-    help: "toggle the 'Hey Hermes' wake word listener [on|off|status]",
+    help: "toggle the 'Hey slave-agent’ wake word listener [on|off|status]",
     name: 'wake',
     usage: '/wake [on|off|status]',
     run: (arg, ctx) => {

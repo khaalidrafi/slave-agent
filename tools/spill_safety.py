@@ -1,4 +1,4 @@
-"""Symlink-safe creation helpers for spill/cache files under ``~/.hermes`` (and for our own
+"""Symlink-safe creation helpers for spill/cache files under ``~/.slave`` (and for our own
 dirs in a shared temp root, ``ensure_owned_private_dir``), where a plain
 ``open(path, "w")`` would follow a pre-planted symlink onto ``~/.bashrc`` etc. New files use
 ``O_CREAT | O_EXCL`` (fails on ANY existing path, even a dangling link); overwrites ``lstat`` +
@@ -13,7 +13,7 @@ import os
 import stat
 from pathlib import Path
 from typing import IO
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
 __all__ = ["ensure_owned_private_dir", "ensure_spill_dir", "open_exclusive", "write_text_exclusive"]
 

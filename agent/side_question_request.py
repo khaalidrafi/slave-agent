@@ -29,7 +29,7 @@ SIDE_QUESTION_ORIGIN = "side_question"
 PLUGIN_SIDE_QUESTION_TASK = "plugin_side_question"
 
 # Tool entries the client executes; any other ``type`` (Responses ``web_search``, Anthropic
-# ``web_search_20250305``, ...) runs server-side and could act without Hermes seeing it.
+# ``web_search_20250305``, ...) runs server-side and could act without Slave seeing it.
 _CLIENT_TOOL_TYPES = frozenset({"function", "custom"})
 # OpenRouter request plugins that only pick the model; anything else (``web``, ...) executes.
 _ROUTING_ONLY_OPENROUTER_PLUGINS = frozenset({"pareto-router"})
@@ -70,10 +70,10 @@ def _agent_provider_refusal(agent: Any) -> Optional[str]:
     """Why ``agent``'s runtime cannot serve a text-only side request, or None.
 
     MoA fans out to advisor models; an agent-as-provider (ACP CLI shim, external-process
-    provider, codex app-server, a client declaring ``SUPPORTS_HERMES_TOOL_CALLS = False``)
+    provider, codex app-server, a client declaring ``SUPPORTS_SLAVE_TOOL_CALLS = False``)
     runs its own tools on the remote side, which no client-side drop can stop."""
     from agent.background_review import _parent_can_emit_tool_calls
-    from hermes_cli.runtime_provider_backends import _is_external_process_provider
+    from slave_cli.runtime_provider_backends import _is_external_process_provider
 
     if agent.provider == "moa":
         return "moa"

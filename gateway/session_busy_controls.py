@@ -19,7 +19,7 @@ def authorize(connection, ref, params, capability):
     connection.authority.authorize(connection.actor, ref, capability)
     # The contract's ``profile`` is nullable; null means this owner, as an omitted key does.
     if params.get('profile') is not None:
-        from hermes_cli.profiles import profile_matches_home
+        from slave_cli.profiles import profile_matches_home
         profile = params['profile']
         if not isinstance(profile, str):
             raise AuthorityRefusal('invalid_params')
@@ -131,7 +131,7 @@ _YOLO_WORDS = {'1': True, 'on': True, 'true': True, '0': False, 'off': False, 'f
 
 async def yolo_config(connection, ref, params, write):
     """Session-scoped /yolo (TUI slash + Shift+Tab, Desktop toggle): this session's approval bypass,
-    never HERMES_YOLO_MODE or approvals.mode. A ``--yolo`` launch is seeded first, so revoking it
+    never SLAVE_YOLO_MODE or approvals.mode. A ``--yolo`` launch is seeded first, so revoking it
     here is not re-enabled by the next turn's launch seeding. The write goes through the shared
     ``tools.approval_yolo.toggle_session_yolo`` contract on the route's persisted copy
     (``SessionEntry.yolo``, restored by ``restore_gateway_yolo``), like the messaging

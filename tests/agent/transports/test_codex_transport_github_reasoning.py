@@ -2,7 +2,7 @@
 
 Regression for #46527: the GitHub Responses branch must request ``summary: "auto"`` so
 Copilot returns reasoning text. Without it, reasoning items come back with no summary and
-Hermes persists no reasoning/thinking content.
+slave-agent persists no reasoning/thinking content.
 """
 
 import pytest

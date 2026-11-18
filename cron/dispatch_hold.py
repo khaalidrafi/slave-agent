@@ -1,6 +1,6 @@
 """A gateway drain holds cron dispatch; a one-shot due during the hold keeps its grace window.
 
-While the gateway drains (a restart or ``hermes update`` waiting on in-flight turns, up to
+While the gateway drains (a restart or ``slave update`` waiting on in-flight turns, up to
 ``agent.restart_after_turn_timeout``), the in-process ticker skips dispatch (``can_dispatch``).
 The one-shot grace (120s) kept counting from the due time, so a one-shot due mid-drain was retired
 as missed by the next gateway's first tick whenever the drain outlasted the grace: an update that

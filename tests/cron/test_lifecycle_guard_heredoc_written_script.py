@@ -9,7 +9,7 @@ import pytest
 
 from cron.lifecycle_guard import contains_gateway_lifecycle_command_or_referenced_script as guard
 
-BODY = "#!/usr/bin/env bash\nsleep 300\nsystemctl --user restart hermes-gateway.service\n"
+BODY = "#!/usr/bin/env bash\nsleep 300\nsystemctl --user restart slave-gateway.service\n"
 
 
 @pytest.mark.parametrize(
@@ -42,7 +42,7 @@ def test_written_but_not_executed_runbook_stays_allowed(tmp_path):
     """#88336: a cat body that is only written (or only read back) is documentation."""
     runbook = tmp_path / "runbook.md"
     command = (
-        f"cat > {runbook} <<'EOF'\na human can run: hermes gateway restart\nEOF\n"
+        f"cat > {runbook} <<'EOF'\na human can run: slave gateway restart\nEOF\n"
         f"cat {runbook}"
     )
     assert guard(command, cwd=str(tmp_path)) is False
@@ -130,14 +130,14 @@ def test_overwrites_are_scanned_as_separate_file_versions(tmp_path):
     """Joined, these two overwrites form a masked ``cat <<'DOC'`` heredoc, but the file the last
     write leaves runs the restart."""
     script = tmp_path / "gw.sh"
-    command = _write(script, "cat <<'DOC'\n") + _write(script, "hermes gateway restart\nDOC\n")
+    command = _write(script, "cat <<'DOC'\n") + _write(script, "slave gateway restart\nDOC\n")
     assert guard(command + f"bash {script}", cwd=str(tmp_path)) is True
 
 
 def test_command_split_across_appends_is_scanned_as_the_appended_file(tmp_path):
     """``>>`` appends build one file: a command split across two appended bodies still runs."""
     script = tmp_path / "gw.sh"
-    command = _write(script, "hermes \\\n", ">>") + _write(script, "gateway restart\n", ">>")
+    command = _write(script, "slave \\\n", ">>") + _write(script, "gateway restart\n", ">>")
     assert guard(command + f"bash {script}", cwd=str(tmp_path)) is True
 
 

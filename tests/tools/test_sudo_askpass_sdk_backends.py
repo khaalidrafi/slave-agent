@@ -183,7 +183,7 @@ _FACTORIES = {"modal": _modal_env, "managed_modal": _managed_modal_env, "daytona
 def make_backend(tmp_path, monkeypatch):
     """``make_backend(name, accepts_askpass=True, password=True)`` -> (env, runner)."""
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
     terminal_tool.set_sudo_password_callback(None)
     stops = []
 
@@ -222,7 +222,7 @@ def test_sdk_backend_spare_password_line_never_reaches_a_later_reader(make_backe
 
 
 def _wait_gone(temp_dir):
-    wait_until(lambda: not list(temp_dir.glob("hermes-sudo.*")), timeout=5, what="askpass dir removed")
+    wait_until(lambda: not list(temp_dir.glob("slave-sudo.*")), timeout=5, what="askpass dir removed")
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
@@ -300,7 +300,7 @@ def test_local_backend_sudo_rejecting_askpass_falls_back_to_stdin_form(tmp_path,
     from tools.environments.local import LocalEnvironment
 
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
     terminal_tool.set_sudo_password_callback(None)
     temp_dir = tmp_path / "tmp"
     temp_dir.mkdir()
@@ -349,7 +349,7 @@ def _noexec_dir_or_skip():
         if not os.path.isdir(mount) or not os.access(mount, os.W_OK | os.X_OK):
             continue
         try:
-            directory = Path(tempfile.mkdtemp(prefix="hermes-noexec-test.", dir=mount))
+            directory = Path(tempfile.mkdtemp(prefix="slave-noexec-test.", dir=mount))
         except OSError:
             continue
         script = directory / "x"
@@ -439,7 +439,7 @@ def test_sdk_backend_command_without_sudo_is_unchanged(make_backend, backend):
     result = env.execute("printf '%s\\n' hi; cat", stdin_data="rest\n")
     assert result["returncode"] == 0, result
     assert result["output"].split() == ["hi", "rest"]
-    assert all("__hermes_sudo" not in command for command in runner.commands)
+    assert all("__slave_sudo" not in command for command in runner.commands)
 
 
 @pytest.mark.parametrize("backend", BACKENDS)

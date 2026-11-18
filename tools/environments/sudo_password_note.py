@@ -23,10 +23,10 @@ _CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 
 def backend_label(env: object) -> str:
     """The backend name the user configured: a plugin backend's registered name (stamped as
-    ``_hermes_backend_name`` when it is created), else one built from the environment class:
+    ``_slave_backend_name`` when it is created), else one built from the environment class:
     ``DockerEnvironment`` -> ``docker``, ``VercelSandboxEnvironment`` -> ``vercel_sandbox``,
     ``SSHEnvironment`` -> ``ssh``."""
-    stamped = getattr(env, "_hermes_backend_name", None)
+    stamped = getattr(env, "_slave_backend_name", None)
     if isinstance(stamped, str) and stamped.strip():
         return stamped.strip()
     name = type(env).__name__
@@ -49,7 +49,7 @@ def note_sudo_password_sent(env: object, sudo_stdin: str | None) -> None:
     logger.warning(
         "The sudo password is sent to the %s terminal backend, where programs running in it can "
         "read it. Use a password that is only valid there, or passwordless sudo in that "
-        "environment's image, rather than the password of the machine running Hermes.",
+        "environment's image, rather than the password of the machine running Slave.",
         backend_label(env),
     )
 

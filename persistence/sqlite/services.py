@@ -29,7 +29,7 @@ def probe_state_db(path: Path) -> StorageProbe:
         return StorageProbe(status="degraded", detail=STORAGE_CORRUPT)
     try:
         # ``closing`` is required: sqlite3's context manager only commits or rolls back, never closes.
-        from hermes_cli.sqlite_safe_read import connect_tracked  # tracked: raw byte probes must see this reader
+        from slave_cli.sqlite_safe_read import connect_tracked  # tracked: raw byte probes must see this reader
         from persistence.sqlite._state.holders import read_only_db_uri
 
         with closing(connect_tracked(read_only_db_uri(path), uri=True, timeout=1.0, tracking_path=path)) as conn:

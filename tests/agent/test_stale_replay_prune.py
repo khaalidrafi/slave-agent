@@ -3,7 +3,7 @@
 Per-turn reasoning items are never pruned (they are replay continuity). Only
 checkpoints (type="compaction") that a newer carrier shadows are pruned: the
 wire builder discards them anyway
-(#102374; the durable twin lives in tests/hermes_state/test_append_messages_batch.py).
+(#102374; the durable twin lives in tests/slave_state/test_append_messages_batch.py).
 """
 
 from agent.context_compressor import (

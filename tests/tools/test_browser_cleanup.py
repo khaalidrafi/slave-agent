@@ -96,11 +96,11 @@ class TestInactivityJanitorMultiplex:
 
     def test_janitor_tears_down_under_owner_profile_scope(self, tmp_path, monkeypatch):
         from agent import secret_scope
-        from hermes_constants import (
-            get_hermes_home, reset_hermes_home_override, set_hermes_home_override,
+        from slave_constants import (
+            get_slave_home, reset_slave_home_override, set_slave_home_override,
         )
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         monkeypatch.delenv("BROWSER_USE_API_KEY", raising=False)
         monkeypatch.delenv("BROWSER_CDP_URL", raising=False)
         p1 = tmp_path / "profiles" / "p1"
@@ -108,7 +108,7 @@ class TestInactivityJanitorMultiplex:
         (p1 / ".env").write_text("BROWSER_USE_API_KEY=p1-key\n", encoding="utf-8")
 
         # Profile p1's turn opens the session; the janitor later runs unscoped.
-        home_tok = set_hermes_home_override(str(p1))
+        home_tok = set_slave_home_override(str(p1))
         scope_tok = secret_scope.set_secret_scope(secret_scope.build_profile_secret_scope(p1))
         try:
             lifecycle.update_session_activity("t1")
@@ -116,13 +116,13 @@ class TestInactivityJanitorMultiplex:
                                          "launcher_key": "t1", "features": {"local": True}}
         finally:
             secret_scope.reset_secret_scope(scope_tok)
-            reset_hermes_home_override(home_tok)
+            reset_slave_home_override(home_tok)
         bs._session_last_activity["t1"] -= 10
 
         seen = {}
 
         def fake_stop(launcher_key):
-            seen["home"] = str(get_hermes_home())
+            seen["home"] = str(get_slave_home())
             seen["key"] = secret_scope.get_secret("BROWSER_USE_API_KEY")
 
         with patch("tools.browser_launcher.stop_browser", side_effect=fake_stop):
@@ -178,7 +178,7 @@ class TestAtexitStopSwallowsInterrupt:
 
 class TestAtexitLifecycleUnimportable:
     def test_hook_stays_silent_when_lifecycle_import_fails(self, monkeypatch):
-        """Mid-`hermes update` the on-disk tree can be half-new, so the atexit hook's import of
+        """Mid-`slave update` the on-disk tree can be half-new, so the atexit hook's import of
         the lifecycle module raises; the hook must stay silent (#112437)."""
         monkeypatch.setitem(sys.modules, "tools.browser_session_lifecycle", None)  # import -> ImportError
         bs._atexit_cleanup()  # must not raise
@@ -296,7 +296,7 @@ def fake_sandbox(monkeypatch, isolated_sessions):
     monkeypatch.setattr(streams, "sandbox_temp_dir", lambda env: "/tmp")  # no-tmp: ok — sandbox-side path
     monkeypatch.setattr(runtime, "_sandbox_env", lambda create=False: env)
     monkeypatch.setattr(runtime, "published_env", lambda: {"DISPLAY": ":5"})
-    monkeypatch.setattr(sandbox_host, "_user_for", lambda env: "hermes")
+    monkeypatch.setattr(sandbox_host, "_user_for", lambda env: "slave")
     monkeypatch.setattr(sandbox_host, "browser_profile_dir", lambda env: "/home/hermes/.bot-browser")
     monkeypatch.setattr(sandbox_host, "chromium_executable", lambda env: "/usr/bin/chromium")
     return sandbox
@@ -466,19 +466,19 @@ def fake_containers(monkeypatch, isolated_sessions):
     monkeypatch.setattr(streams, "sandbox_temp_dir", lambda env: "/tmp")  # no-tmp: ok — sandbox-side path
     monkeypatch.setattr(runtime, "_sandbox_env", lambda create=False: containers.current)
     monkeypatch.setattr(runtime, "published_env", lambda: {"DISPLAY": ":5"})
-    monkeypatch.setattr(sandbox_host, "_user_for", lambda env: "hermes")
+    monkeypatch.setattr(sandbox_host, "_user_for", lambda env: "slave")
     monkeypatch.setattr(sandbox_host, "browser_profile_dir", lambda env: "/home/hermes/.bot-browser")
     monkeypatch.setattr(sandbox_host, "chromium_executable", lambda env: "/usr/bin/chromium")
     return containers
 
 
 def _in_home(home, fn):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(str(home))
+    from slave_constants import reset_slave_home_override, set_slave_home_override
+    token = set_slave_home_override(str(home))
     try:
         return fn()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 class TestSandboxBrowserPerContainer:

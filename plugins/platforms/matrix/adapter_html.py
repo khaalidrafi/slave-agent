@@ -19,9 +19,9 @@ from html.parser import HTMLParser
 # (a link URL) reverts to its $source$, since markup there would break out of
 # the quoted value. Tokens are plain printable text with no special
 # HTML/Markdown meaning, so the Markdown converter passes them through verbatim.
-_TEX_TOKEN_RE = re.compile(r"HERMESTEX(?:DISPLAY|INLINE)(\d+)HERMESTEXEND")
-_TEX_DISPLAY_TOKEN = "HERMESTEXDISPLAY%dHERMESTEXEND"
-_TEX_INLINE_TOKEN = "HERMESTEXINLINE%dHERMESTEXEND"
+_TEX_TOKEN_RE = re.compile(r"SLAVETEX(?:DISPLAY|INLINE)(\d+)SLAVETEXEND")
+_TEX_DISPLAY_TOKEN = "SLAVETEXDISPLAY%dSLAVETEXEND"
+_TEX_INLINE_TOKEN = "SLAVETEXINLINE%dSLAVETEXEND"
 
 
 def _latex_to_tokens(text: str) -> tuple[str, list[tuple[str, str]]]:

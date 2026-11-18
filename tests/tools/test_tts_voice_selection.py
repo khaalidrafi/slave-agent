@@ -108,11 +108,11 @@ def test_provider_switch_reshapes_the_schema_at_once(monkeypatch):
     import os
 
     import model_tools
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     monkeypatch.setenv("ELEVENLABS_API_KEY", "el-test-key")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    config_path = get_hermes_home() / "config.yaml"
+    config_path = get_slave_home() / "config.yaml"
 
     def tts_props(provider: str, stamp: int) -> set:
         config_path.write_text(f"tts:\n  provider: {provider}\n")
@@ -131,10 +131,10 @@ def test_deferred_find_voices_passes_the_bridge(monkeypatch):
     """A deferred text_to_speech is validated against the schema tool_describe serves: ElevenLabs'
     find_voices carries no text and must still reach the handler through tool_call."""
     import model_tools
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     monkeypatch.setenv("ELEVENLABS_API_KEY", "el-test-key")
-    (get_hermes_home() / "config.yaml").write_text("tts:\n  provider: elevenlabs\n")
+    (get_slave_home() / "config.yaml").write_text("tts:\n  provider: elevenlabs\n")
     monkeypatch.setattr(tts_tool, "_find_voices", lambda find: json.dumps({"success": True, "find": find}))
 
     call = {"calls": [{"name": "text_to_speech", "arguments": {"find_voices": {"query": "orc"}}}]}

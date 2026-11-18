@@ -6,7 +6,7 @@ Standard library only.
 from __future__ import annotations
 
 
-# Creation label -> agent surface. ``tool`` (third-party integrations, ``hermes chat --source tool``) and
+# Creation label -> agent surface. ``tool`` (third-party integrations, ``slave chat --source tool``) and
 # ``oneshot`` (finite ``chat -q`` / ``-z`` runs) run as the CLI but keep their own stored label, so human
 # pickers hide them (INTERNAL_LISTING_SOURCES).
 SURFACES = {'cli': 'cli', 'tui': 'tui', 'gui': 'desktop', 'acp': 'acp', 'tool': 'cli', 'oneshot': 'cli'}

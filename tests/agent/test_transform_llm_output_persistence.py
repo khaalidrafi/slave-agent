@@ -37,9 +37,9 @@ def _fake_completion(text):
 
 @pytest.fixture
 def db_agent(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir()
-    db = storage_handle(tmp_path / ".hermes")
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+    (tmp_path / ".slave").mkdir()
+    db = storage_handle(tmp_path / ".slave")
     with (
         patch("model_tools.get_tool_definitions", return_value=[]),
         patch("model_tools.check_toolset_requirements", return_value={}),
@@ -57,7 +57,7 @@ def db_agent(tmp_path, monkeypatch):
 def test_transformed_reply_is_the_stored_and_replayed_text(db_agent, monkeypatch):
     agent, db = db_agent
     calls = []
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", _rewriting_hook(calls))
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", _rewriting_hook(calls))
     agent.client.chat.completions.create = _fake_completion("RAW MODEL TEXT")
 
     result = agent.run_conversation("hello")
@@ -80,7 +80,7 @@ def test_recovery_path_tail_row_carries_transformed_text(db_agent, monkeypatch):
 
     agent, _db = db_agent
     calls = []
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", _rewriting_hook(calls))
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", _rewriting_hook(calls))
     agent._persist_session = lambda *a, **k: None
     agent._current_turn_id = "turn-r"
     messages = [

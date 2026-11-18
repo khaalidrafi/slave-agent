@@ -18,7 +18,7 @@ is reported so it can be dropped.
 Inside the backend (``persistence/sqlite/``) a store reads only beside its own profile folder, so
 the guard also flags each import or attribute read of a process or task home reader
 (``_HOME_READERS``) that ``_HOME_READS`` does not list for that file with its reason, and every
-import of the ``hermes_state`` stand-in. A listed read no longer present is reported so its entry
+import of the ``slave_state`` stand-in. A listed read no longer present is reported so its entry
 can be dropped.
 
 Run: python scripts/ci/check_backend_imports.py [--root DIR]
@@ -36,25 +36,25 @@ _BACKEND = "persistence.sqlite"
 _OWNERS = ("persistence/", "persistence_assembly.py")
 _SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", "tests"}
 _ALLOWED: dict[str, str] = {
-    "hermes_state_loop_guard.py": "the debug loop guard wraps the backend holder's two choke points",
+    "slave_state_loop_guard.py": "the debug loop guard wraps the backend holder's two choke points",
     "tools/session_search_tool.py": "the browse-preview redactor recognises the backend's preview cut by its length",
 }
 _BACKEND_DIR = "persistence/sqlite"
 _HOME_READERS = frozenset({
-    "get_hermes_home", "get_hermes_home_override", "get_process_hermes_home", "profile_cli_selector",
-    "display_hermes_home", "get_default_hermes_root", "load_config_readonly",
+    "get_slave_home", "get_slave_home_override", "get_process_slave_home", "profile_cli_selector",
+    "display_slave_home", "get_default_slave_root", "load_config_readonly",
 })
 _HOME_READS: dict[tuple[str, str], str] = {
-    ("persistence/sqlite/conversation/_store/sessions.py", "get_default_hermes_root"):
+    ("persistence/sqlite/conversation/_store/sessions.py", "get_default_slave_root"):
         "the owner name the store stamps: default for the install root, the profile name under <root>/profiles",
-    ("persistence/sqlite/admin/_reconcile.py", "get_default_hermes_root"):
+    ("persistence/sqlite/admin/_reconcile.py", "get_default_slave_root"):
         "the repair command the reconciler prints targets the install the operator's shell resolves",
     ("persistence/sqlite/_state/holders.py", "profile_cli_selector"):
         "the held-store refusal's -p guidance names the process's active profile",
     ("persistence/sqlite/_state/repair.py", "profile_cli_selector"):
         "the exhausted-repair error's -p guidance names the process's active profile",
-    ("persistence/sqlite/_state/repair.py", "get_hermes_home"): "the writability preflight checks the process home",
-    ("persistence/sqlite/_backend.py", "get_hermes_home"):
+    ("persistence/sqlite/_state/repair.py", "get_slave_home"): "the writability preflight checks the process home",
+    ("persistence/sqlite/_backend.py", "get_slave_home"):
         "a store's open binds its own profile folder as the home only when it differs from the current one",
 }
 
@@ -114,7 +114,7 @@ def find_backend_imports(root: Path) -> list[tuple[str, int]]:
 
 
 def home_read_lines(source: str) -> list[tuple[int, str]]:
-    """``(line, name)`` of each home reader ``source`` imports or reads as an attribute, and ``(line, "hermes_state")``
+    """``(line, name)`` of each home reader ``source`` imports or reads as an attribute, and ``(line, "slave_state")``
     of each import of the stand-in."""
     try:
         tree = ast.parse(source)
@@ -123,10 +123,10 @@ def home_read_lines(source: str) -> list[tuple[int, str]]:
     found = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            found |= {(node.lineno, "hermes_state") for alias in node.names if alias.name.startswith("hermes_state")}
+            found |= {(node.lineno, "slave_state") for alias in node.names if alias.name.startswith("slave_state")}
         elif isinstance(node, ast.ImportFrom):
-            if node.level == 0 and (node.module or "").startswith("hermes_state"):
-                found.add((node.lineno, "hermes_state"))
+            if node.level == 0 and (node.module or "").startswith("slave_state"):
+                found.add((node.lineno, "slave_state"))
             found |= {(node.lineno, alias.name) for alias in node.names if alias.name in _HOME_READERS}
         elif isinstance(node, ast.Attribute) and node.attr in _HOME_READERS:
             found.add((node.lineno, node.attr))
@@ -176,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Open storage through persistence_assembly (open_persistence, open_persistence_reader,"
               " open_store_admin) and use the contracts in persistence/.")
     if home_reads:
-        print("::error::the SQLite backend reads the process or task home, or imports hermes_state, where "
+        print("::error::the SQLite backend reads the process or task home, or imports slave_state, where "
               "_HOME_READS lists no reason")
         for rel, line, name in home_reads:
             print(f"  {rel}:{line} {name}")

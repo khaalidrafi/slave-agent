@@ -35,7 +35,7 @@ def canonical_bot(tmp_path, monkeypatch):
     home, user = tmp_path / 'state', tmp_path / 'user'
     home.mkdir(mode=0o700)
     user.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     monkeypatch.setenv('HOME', str(user))
     monkeypatch.setenv('USERPROFILE', str(user))
     model = ThreadingHTTPServer(('127.0.0.1', 0), Model)
@@ -52,7 +52,7 @@ def canonical_bot(tmp_path, monkeypatch):
     }))
     child_user = user / 'daemon'
     child_user.mkdir()
-    env = child_env() | dict(HOME=str(child_user), USERPROFILE=str(child_user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(child_user), USERPROFILE=str(child_user), SLAVE_HOME=str(home),
         PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base,
         PYTHONUNBUFFERED='1')
 

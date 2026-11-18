@@ -25,8 +25,8 @@ def test_pinned_git_extracts_without_a_bzip2_capable_tar(tmp_path):
     driver = tmp_path / "driver.ps1"
     driver.write_text(
         textwrap.dedent(f"""
-            . '{INSTALLER}' -HermesHome '{tmp_path / "home"}'
-            $env:HERMES_RUNTIME_DIR = '{tmp_path / "tools"}'
+            . '{INSTALLER}' -SlaveHome '{tmp_path / "home"}'
+            $env:SLAVE_RUNTIME_DIR = '{tmp_path / "tools"}'
             # This machine has no bzip2 (and nothing else to fall back on).
             $env:PATH = "$env:SystemRoot\\System32;$env:SystemRoot"
             $git = Get-PinnedGit
@@ -69,7 +69,7 @@ def test_held_file_never_leaves_a_partial_git_tree(tmp_path):
     driver = tmp_path / "driver.ps1"
     driver.write_text(
         textwrap.dedent(f"""
-            . '{INSTALLER}' -HermesHome '{tmp_path / "home"}'
+            . '{INSTALLER}' -SlaveHome '{tmp_path / "home"}'
             function New-Tree($Root) {{
                 foreach ($rel in 'cmd\\git.exe', 'mingw64\\libexec\\git-core\\git-remote-https.exe') {{
                     $p = Join-Path $Root $rel

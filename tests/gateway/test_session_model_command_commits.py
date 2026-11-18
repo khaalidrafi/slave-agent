@@ -34,7 +34,7 @@ def test_typed_model_command_on_a_local_session_moves_the_next_request(tmp_path)
         name: {'id': name, 'name': name, 'limit': {'context': 100000, 'output': 4000}}
         for name in ('original', 'switched')}}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
 
     async def run(desc):
@@ -114,7 +114,7 @@ def test_typed_alias_on_a_local_session_keeps_its_own_endpoint_and_key(tmp_path)
         name: {'id': name, 'name': name, 'limit': {'context': 100000, 'output': 4000}}
         for name in ('original', 'shared')}}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=launch, PYTHONUNBUFFERED='1')
 
     async def run(desc):

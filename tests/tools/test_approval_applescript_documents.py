@@ -143,12 +143,12 @@ def test_unreviewable_program_is_flagged(command):
 
 @pytest.mark.parametrize("command", [
     FRONTMOST,
-    # The exact read Hermes' own macOS `open` raise-ladder runs, inside $(...) and with a redirect.
+    # The exact read Slave' own macOS `open` raise-ladder runs, inside $(...) and with a redirect.
     '_H_APP="$(' + FRONTMOST + ' 2>/dev/null)"',
     "osascript -e 'tell application \"System Events\" to get frontmost of application process \"Safari\"' 2>/dev/null",
     "osascript -e 'tell application \"Finder\" to get the name of every disk'",
     "osascript -e 'tell application \"Keynote\" to activate'",
-    "osascript -e 'display notification \"Build done\" with title \"Hermes\"'",
+    "osascript -e 'display notification \"Build done\" with title \"slave-agent\"'",
     "osascript -e 'get volume settings' >/dev/null 2>&1 || true",
     "env LANG=C osascript -e 'tell application \"Music\" to get name of current track'",
     # Mentions that run no AppleScript.
@@ -205,9 +205,9 @@ def test_content_selector_assignments_need_human(selector, smart_interactive):
 def smart_interactive(monkeypatch):
     """Interactive smart mode with a guardian that would APPROVE everything and records its calls."""
     session_key = "test-141346"
-    monkeypatch.setenv("HERMES_SESSION_KEY", session_key)
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-    for name in ("HERMES_EXEC_ASK", "HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION", "HERMES_YOLO_MODE"):
+    monkeypatch.setenv("SLAVE_SESSION_KEY", session_key)
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
+    for name in ("SLAVE_EXEC_ASK", "SLAVE_GATEWAY_SESSION", "SLAVE_CRON_SESSION", "SLAVE_YOLO_MODE"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "smart")
     monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)

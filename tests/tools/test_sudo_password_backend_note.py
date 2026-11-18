@@ -56,7 +56,7 @@ def _forget_noted_backends():
 @pytest.fixture(autouse=True)
 def _clean_state(monkeypatch):
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
     terminal_tool.set_sudo_password_callback(None)
     terminal_tool_sudo._reset_cached_sudo_passwords()
     _forget_noted_backends()

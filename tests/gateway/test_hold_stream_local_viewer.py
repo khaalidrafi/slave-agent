@@ -26,9 +26,9 @@ from tests.gateway.test_run_progress_topics import _make_runner
 
 async def _local_turn(*, hold, monkeypatch):
     import gateway.run as gateway_run
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     authority = MagicMock()
     authority.sessions = {"sid": MagicMock()}
     authority.db.get_session.return_value = {"runtime_generation": 1}
@@ -37,7 +37,7 @@ async def _local_turn(*, hold, monkeypatch):
     with FakeLLMServer(redactor_turn(delay_per_chunk=0.01)) as srv:
         redactor_home(home, srv.base_url, hold=hold)
         plugins._reset_plugin_managers_for_tests()
-        monkeypatch.setattr(gateway_run, "_hermes_home", home)
+        monkeypatch.setattr(gateway_run, "_slave_home", home)
         monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {
             "api_key": "sk-fake-e2e", "base_url": srv.base_url, "provider": "custom", "api_mode": "chat_completions"})
         local = LocalSessionAdapter(authority)

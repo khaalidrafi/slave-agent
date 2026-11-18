@@ -353,7 +353,7 @@ def main(argv: list[str]) -> int:
     if len(argv) >= 2 and argv[0] == "submit":
         product_id = os.environ["MS_STORE_PRODUCT_ID"]
         package = argv[1]
-        result = submit(package, product_id=product_id, claim_tag=os.environ.get("HERMES_ARCHIVE_TAG"))
+        result = submit(package, product_id=product_id, claim_tag=os.environ.get("SLAVE_ARCHIVE_TAG"))
         print(json.dumps(result, sort_keys=True))
         return 0
     print("usage: python -m scripts.releases.store submit <package>", file=sys.stderr)

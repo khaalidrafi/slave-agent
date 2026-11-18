@@ -52,7 +52,7 @@ def test_untracked_state_connect_shapes(src, flagged):
 
 
 @pytest.mark.parametrize("path, applies", [
-    ("hermes_cli/backup.py", True), ("gateway/x.py", True),
+    ("slave_cli/backup.py", True), ("gateway/x.py", True),
     ("tests/test_x.py", False), ("evals/run.py", False),
 ])
 def test_scope_skips_tests_and_evals(path, applies):

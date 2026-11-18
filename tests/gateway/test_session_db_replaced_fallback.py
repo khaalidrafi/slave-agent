@@ -33,7 +33,7 @@ def _assert_diverted(tmp_path, sid, needle):
 def test_replaced_state_db_diverts_pending_without_fts_rebuild(tmp_path, monkeypatch):
     live = tmp_path / "state.db"
     other = tmp_path / "other"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
     store = SessionStore(sessions_dir=tmp_path, config=GatewayConfig())
     sid = "gw-replaced"
@@ -69,7 +69,7 @@ def test_copyfile_replaced_state_db_diverts_pending_without_fts_rebuild(
 ):
     live = tmp_path / "state.db"
     other = tmp_path / "other"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
     store = SessionStore(sessions_dir=tmp_path, config=GatewayConfig())
     sid = "gw-cp-replaced"

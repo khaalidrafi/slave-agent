@@ -3,7 +3,7 @@
 ``write_file`` asked the backend shell three questions per write (pre-write probe, atomic write,
 sha256 verification): three ``bash`` spawns, ~100 ms on a warm host before any real work.  On the
 local POSIX backend the file is on this host, so ``ShellFileOperations`` answers them here instead,
-under the same gate as the native read path (``_native_read_enabled``; ``HERMES_NATIVE_FILE_READ=0``
+under the same gate as the native read path (``_native_read_enabled``; ``SLAVE_NATIVE_FILE_READ=0``
 turns both off).  Semantics mirror the shell scripts they replace; anything they cannot answer
 (a FIFO, a device, an unexpected error) returns None and the caller takes the shell path.
 """

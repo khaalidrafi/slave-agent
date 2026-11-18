@@ -39,8 +39,8 @@ async def probe():
     from gateway.run import GatewayRunner
     from gateway.session_authority import initialize_session_authority
     from gateway.run_api import start_gateway_api, stop_gateway_api
-    from hermes_cli import web_server
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from slave_cli import web_server
+    from slave_cli.dashboard_auth.ws_tickets import mint_ticket
     import run_agent
     from agent.credits_tracker import AgentNotice
 
@@ -79,15 +79,15 @@ async def probe():
             while not any(f.get('params', {}).get('type') == 'message.complete' for f in frames):
                 frames.append(json.loads(await ws.recv()))
         events = [f['params'] for f in frames if f.get('method') == 'event']
-        # The classic `hermes chat` view renders what reached it on stderr.
+        # The classic `slave chat` view renders what reached it on stderr.
         import contextlib
         import io
-        from hermes_cli.gateway_chat_view import GatewayChatView
+        from slave_cli.gateway_chat_view import GatewayChatView
         view, printed = GatewayChatView(None, {'stored_session_id': sid}), io.StringIO()
         with contextlib.redirect_stderr(printed), contextlib.redirect_stdout(io.StringIO()):
             for params in events:
                 view._dispatch_event(params['type'], params.get('admission_id'), params.get('payload', {}))
-        Path(os.environ['HERMES_HOME'], 'receipt.json').write_text(json.dumps({
+        Path(os.environ['SLAVE_HOME'], 'receipt.json').write_text(json.dumps({
             'events': [[p['type'], p.get('payload')] for p in events if p['type'] in (
                 'status.update', 'notification.show', 'notification.clear')], 'cli_stderr': printed.getvalue()}))
     finally:
@@ -101,7 +101,7 @@ def main():
     threading.Thread(target=peer.serve_forever, daemon=True).start()
     url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, TERMINAL_ENV='local')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local-control\n  provider: custom\n  base_url: {url}\n'
         'streaming:\n  enabled: false\nauxiliary:\n  title_generation:\n    enabled: false\n'
         + ('display:\n  suppress_warning_notifications: true\n' if suppress else ''))

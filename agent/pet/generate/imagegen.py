@@ -42,7 +42,7 @@ class SpriteProvider:
 
 def _discover() -> None:
     try:
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from slave_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:
@@ -90,7 +90,7 @@ def _candidate(name: str) -> SpriteProvider | None:
 def resolve_provider(*, require_references: bool = True, prefer: str | None = None) -> SpriteProvider:
     """Pick the image provider for sprite work.
 
-    Preference: ``HERMES_PET_IMAGE_PROVIDER`` (QA override, unknown values ignored),
+    Preference: ``SLAVE_PET_IMAGE_PROVIDER`` (QA override, unknown values ignored),
     then *prefer* (desktop picker), then the active provider, then the first available
     — each only if ref-capable and configured (Nous with a native Krea model only while the
     Krea backend is available). With *require_references* off, any available active
@@ -99,7 +99,7 @@ def resolve_provider(*, require_references: bool = True, prefer: str | None = No
     _discover()
     from agent.image_gen_registry import get_active_provider
 
-    forced = os.environ.get("HERMES_PET_IMAGE_PROVIDER", "").strip().lower()
+    forced = os.environ.get("SLAVE_PET_IMAGE_PROVIDER", "").strip().lower()
     for name in (forced, prefer):
         if name in _REF_CAPABLE and (sprite := _candidate(name)) is not None:
             return sprite
@@ -119,13 +119,13 @@ def resolve_provider(*, require_references: bool = True, prefer: str | None = No
     if _available(NOUS_MANAGED_PROVIDER) is not None:
         raise GenerationError(
             "The selected Nous image model needs the Krea gateway, but that backend is "
-            "unavailable. Check Nous Subscription under `hermes tools` → Image Generation."
+            "unavailable. Check Nous Subscription under `slave tools` → Image Generation."
         )
     if not require_references and active is not None and active.is_available():
         return SpriteProvider(name=getattr(active, "name", "unknown"), provider=active, supports_references=False)
     raise GenerationError(
         "Pet generation needs an image backend that supports reference images. "
-        "Open `hermes tools` → Image Generation and configure Nous Portal, "
+        "Open `slave tools` → Image Generation and configure Nous Portal, "
         "OpenRouter, or OpenAI (gpt-image-2) with an API key."
     )
 

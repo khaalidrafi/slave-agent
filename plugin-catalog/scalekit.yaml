@@ -3,7 +3,7 @@ title: Scalekit
 repo: https://github.com/scalekit-inc/hermes-tools
 sha: 35bfcedf59442377a930c4c3ed1c818ca425c11a
 description: >-
-  Call any Scalekit connector from Hermes: 500+ connectors and 20,000+ tools.
+  Call any Scalekit connector from slave-agent: 500+ connectors and 20,000+ tools.
   Disclosure — HTTP calls go to the Scalekit environment URL you paste; the
   three Scalekit values are read with get_secret; one person id is stored at
   plugin-data/scalekit/identifier; the model can request an approval link, run

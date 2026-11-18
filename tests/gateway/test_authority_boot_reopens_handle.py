@@ -9,8 +9,8 @@ def _runner(home, monkeypatch):
     from gateway import run
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
-    monkeypatch.setattr(run, '_hermes_home', home)
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     store = SessionStore(home / 'sessions', GatewayConfig())
     return SimpleNamespace(session_store=store, adapters={}, _draining=False, persistence=None,
                            _cached_agent_for=lambda route: None, _adapter_for_source=lambda source: None,

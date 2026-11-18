@@ -8,7 +8,7 @@ profile has no such provider) and keeps billing until the provider's own timeout
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tools import browser_launcher as launcher
 from tools import browser_session as bs
 from tools import browser_session_cloud
@@ -30,7 +30,7 @@ class _ProfileProvider:
     closed: list = []
 
     def __init__(self):
-        self.home = str(get_hermes_home())
+        self.home = str(get_slave_home())
 
     def close_session(self, session_id):
         _ProfileProvider.closed.append((self.home, session_id))
@@ -40,7 +40,7 @@ def test_shutdown_closes_each_cloud_session_under_its_owning_profile(tmp_path, m
     launch, routed = tmp_path / "launch", tmp_path / "routed"
     for home in (launch, routed):
         home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setattr(_ProfileProvider, "closed", [])
     monkeypatch.setattr(browser_session_cloud, "get_cloud_provider", _ProfileProvider)
     isolated_sessions["task@routed"] = {"session_name": "bb_1", "bb_session_id": "bb-routed", "features": {},

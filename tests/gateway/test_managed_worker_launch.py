@@ -135,7 +135,7 @@ def test_ordinary_owner_launches_tool_worker_and_detach_does_not_cancel(tmp_path
         f"        with open({str(audit)!r}, 'a', encoding='utf-8') as f:\n"
         "            f.write(json.dumps({'pid': os.getpid(), 'path': str(args[0])}) + '\\n')\n"
         "sys.addaudithook(witness)\n")
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=os.pathsep.join([str(site), str(root)]),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=os.pathsep.join([str(site), str(root)]),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     def query(sql, args=()):

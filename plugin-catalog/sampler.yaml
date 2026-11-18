@@ -3,10 +3,10 @@ title: Sampler
 repo: https://github.com/salch-cred/sampler
 sha: 67995d13ba97af418547262e462304c0990a0a57
 description: >-
-  Set temperature and top_p for your Hermes agent (hermes-agent#17565): a
+  Set temperature and top_p for your slave-agent (slave-agent#17565): a
   default, first-match rules by platform, model or provider, and a per-session
   override with /sampler. Works through llm_request middleware on OpenAI-
-  compatible, Anthropic and Bedrock Converse requests. Models Hermes itself
+  compatible, Anthropic and Bedrock Converse requests. Models slave-agent itself
   sends without a temperature, such as reasoning models, are never changed.
   No model calls, network, files or dependencies.
 

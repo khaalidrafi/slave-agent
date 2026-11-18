@@ -12,16 +12,16 @@ def test_first_party_model_routes_keep_capabilities_and_reasoning(monkeypatch, m
     from agent import models_dev
     from agent.model_metadata import _resolve_codex_oauth_context_length_with_source, has_codex_context_variant
     from agent.reasoning_effort import codex_supported_efforts, is_astra_model
-    from hermes_cli.codex_models import get_codex_model_ids
-    from hermes_cli.model_normalize import normalize_model_for_provider
-    from hermes_cli import models
+    from slave_cli.codex_models import get_codex_model_ids
+    from slave_cli.model_normalize import normalize_model_for_provider
+    from slave_cli import models
     from run_agent import AIAgent
 
     monkeypatch.setattr(models_dev, "fetch_models_dev", lambda *a, **k: {})
     monkeypatch.setattr("agent.process_bootstrap.OpenAI", lambda **k: SimpleNamespace())
     monkeypatch.setattr("model_tools.get_tool_definitions", lambda *a, **k: [])
-    monkeypatch.setattr("hermes_cli.codex_models._read_default_model", lambda *a: None)
-    monkeypatch.setattr("hermes_cli.codex_models._read_cache_models", lambda *a: [])
+    monkeypatch.setattr("slave_cli.codex_models._read_default_model", lambda *a: None)
+    monkeypatch.setattr("slave_cli.codex_models._read_cache_models", lambda *a: [])
     monkeypatch.setattr(models, "fetch_api_models", lambda *a, **k: [model, "text-embedding-3-large"])
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
@@ -29,10 +29,10 @@ def test_first_party_model_routes_keep_capabilities_and_reasoning(monkeypatch, m
     assert models.provider_model_ids("openai-api", force_refresh=True) == [model]
     # Offline hints and stale catalogs aren't proof that the account offers GPT-6.2.
     assert model not in get_codex_model_ids()
-    monkeypatch.setattr("hermes_cli.codex_models._read_cache_models", lambda *a: [model, "gpt-6-sol"])
-    monkeypatch.setattr("hermes_cli.codex_models._read_default_model", lambda *a: model)
+    monkeypatch.setattr("slave_cli.codex_models._read_cache_models", lambda *a: [model, "gpt-6-sol"])
+    monkeypatch.setattr("slave_cli.codex_models._read_default_model", lambda *a: model)
     assert model not in get_codex_model_ids()
-    monkeypatch.setattr("hermes_cli.codex_models._fetch_models_from_api", lambda *a, **k: [model])
+    monkeypatch.setattr("slave_cli.codex_models._fetch_models_from_api", lambda *a, **k: [model])
     assert model in get_codex_model_ids(access_token="test-token")
     assert not is_astra_model(model)  # GPT-6 Astra's preview entitlement gate must not hide 6.2.
     assert not has_codex_context_variant(model)  # No unverified 900K opt-in.
@@ -79,7 +79,7 @@ def test_first_party_model_routes_keep_capabilities_and_reasoning(monkeypatch, m
 @pytest.mark.parametrize("model,rate", [("gpt-6.2-astra", Decimal(8)), ("gpt-6.2-sol", Decimal(2))])
 def test_published_tiers_price_the_served_request_not_the_subscription(monkeypatch, model, rate):
     from agent import usage_pricing as pricing
-    from hermes_cli.models import resolve_fast_mode_overrides
+    from slave_cli.models import resolve_fast_mode_overrides
 
     # The launch discount changes at midnight Pacific on March 1, not midnight UTC.
     for now, multiplier in ((datetime(2027, 3, 1, 7, 59, tzinfo=UTC), 3),
@@ -111,7 +111,7 @@ def test_published_tiers_price_the_served_request_not_the_subscription(monkeypat
 
 def test_new_contract_does_not_capture_predecessors_or_invent_variants():
     from agent.reasoning_effort import CODEX_LEGACY_EFFORTS, codex_supported_efforts
-    from hermes_cli.models import model_supports_ultrafast, resolve_fast_mode_overrides
+    from slave_cli.models import model_supports_ultrafast, resolve_fast_mode_overrides
 
     assert "none" in codex_supported_efforts("gpt-6-sol")
     for model in ("gpt-6.2-astra-pro", "gpt-6.2-sol-mini", "gpt-6.2-sol-900k", "gpt-6.20-sol"):

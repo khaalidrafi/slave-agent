@@ -13,7 +13,7 @@ def test_config_credentials_recover_only_exact_source(tmp_path, monkeypatch):
     from persistence.core.errors import AuthorityRefusal
     home = tmp_path / 'profile'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     cfg = {'model': {'provider': 'custom', 'api_key': 'owned-config-token',
                      'base_url': 'http://127.0.0.1:1234/v1'}}
     (home / 'config.yaml').write_text(json.dumps(cfg))
@@ -72,14 +72,14 @@ async def test_config_creation_retry_does_not_rebind_current_credentials(tmp_pat
 
 def test_dropped_top_level_setting_does_not_wedge_the_session(tmp_path, monkeypatch):
     """A profile that stops defining a frozen top-level setting (an env-routed key the user moved to
-    .env, where ``hermes config set`` writes it) leaves the session running on what its frozen tree
+    .env, where ``slave config set`` writes it) leaves the session running on what its frozen tree
     holds instead of failing every read of the chat with ``launch_credentials_unavailable``. A
     ROUTE credential that disappeared still refuses, and a settings-only read never needs either."""
     from gateway.session_policy import build_policy, bind_launch_key
     from persistence.core.errors import AuthorityRefusal
     home = tmp_path / 'profile'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     cfg = {'API_SERVER_KEY': 'owned-api-server-token',
            'model': {'provider': 'custom', 'api_key': 'route-token', 'base_url': 'http://127.0.0.1:1234/v1'}}
     config_path = home / 'config.yaml'
@@ -119,7 +119,7 @@ def test_an_unrelated_secret_edit_keeps_the_route_and_a_gone_route_key_is_named(
     from persistence.core.errors import AuthorityRefusal
     home = tmp_path / 'profile'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     cfg = {'model': {'provider': 'custom', 'api_key': 'route-token', 'base_url': 'http://127.0.0.1:1234/v1'},
            'mcp_servers': {'docs': {'command': 'docs-mcp', 'env': {'DOCS_TOKEN': 'old-mcp-token'}}}}
     config_path = home / 'config.yaml'
@@ -159,7 +159,7 @@ def _bound_session(tmp_path, monkeypatch, cfg):
     from gateway.session_policy import build_policy, bind_launch_key
     home = tmp_path / 'profile'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     (home / 'config.yaml').write_text(json.dumps(cfg))
     cfg = _load_gateway_config(home / 'config.yaml')
 
@@ -277,7 +277,7 @@ def test_a_changed_fallback_secret_removes_that_fallback(tmp_path, monkeypatch, 
     key used to leave the entry with ``api_key: null``, which means 'resolve another credential': the
     fallback then sent the provider's OTHER account key (or the rotated key re-seeded from live
     config). A changed fallback secret now removes that fallback; no credential is substituted."""
-    from hermes_cli.auth import AuthError
+    from slave_cli.auth import AuthError
     from tests.fakes.fake_llm_provider import FakeLLMServer
     for name in ('ANTHROPIC_API_KEY', 'ANTHROPIC_TOKEN', 'CLAUDE_CODE_OAUTH_TOKEN'):
         monkeypatch.delenv(name, raising=False)

@@ -21,13 +21,13 @@ def _tree(root: Path, shims: list) -> None:
 
 
 def test_a_new_shim_missing_from_the_manifest_fails(tmp_path):
-    _tree(tmp_path, [["hermes_cli.main", "_write_update_incomplete_marker"]])
+    _tree(tmp_path, [["slave_cli.main", "_write_update_incomplete_marker"]])
     proc = _run(tmp_path)
     assert proc.returncode == 1 and "tools.old.gone is not in" in proc.stdout, proc.stdout
 
 
 def test_a_complete_manifest_passes(tmp_path):
-    _tree(tmp_path, [["hermes_cli.main", "_write_update_incomplete_marker"], ["tools.old", "gone"]])
+    _tree(tmp_path, [["slave_cli.main", "_write_update_incomplete_marker"], ["tools.old", "gone"]])
     proc = _run(tmp_path)
     assert proc.returncode == 0, proc.stdout
 

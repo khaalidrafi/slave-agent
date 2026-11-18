@@ -31,7 +31,7 @@ def is_content_blank(content: Any) -> bool:
 
 
 def coerce_epoch(value: Any) -> Optional[float]:
-    from hermes_cli.timefmt import coerce_epoch as coerce
+    from slave_cli.timefmt import coerce_epoch as coerce
 
     result = coerce(value, field="message timestamp")
     return None if result is None else float(result)

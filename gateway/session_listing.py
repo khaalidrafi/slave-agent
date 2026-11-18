@@ -106,7 +106,7 @@ def stored_picker_sessions(authority, actor, *, limit, include_hidden=False, wor
 
     Canonical sessions are already in the live feed. Old local rows have no policy
     receipt until explicit resume; listing them must not claim or restore anything.
-    *workspace*: only the folder's rows (``hermes -c``'s rule). *picker*: each row carries the picker
+    *workspace*: only the folder's rows (``slave -c``'s rule). *picker*: each row carries the picker
     fields, from the columns the listing already read (``gateway/session_picker_fields.py``).
     *query*: only titles or ids containing it (``list_sessions_rich(search_query=)``). *cursor*: continue after
     the page that returned it; ``next_cursor`` is None once the storage listing is exhausted.

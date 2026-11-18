@@ -1,6 +1,6 @@
 """Session export timing evidence, over the SQLite store's export verbs and the export dict the CLI writes."""
 
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.sqlite.conversation._store.messages import append_message
 from persistence.sqlite.conversation._store.sessions import create_session, end_session
 

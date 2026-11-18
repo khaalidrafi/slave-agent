@@ -6,7 +6,7 @@ description: Adwave self-serve advertising through its hosted MCP server. Makes 
   only. Portable Agent Plugins v1 package with one skill. Sign-in is OAuth, and the package's mcp.json cannot
   set it, so add mcp_servers.adwave with url https://waverunner.adwave.com/api/mcp, auth oauth and trust
   untrusted to config.yaml. Disclosure — creates and changes real ad campaigns that spend your wallet. Spending
-  tools are marked destructive so hosts can ask first; Hermes asks only with trust untrusted, otherwise
+  tools are marked destructive so hosts can ask first; slave-agent asks only with trust untrusted, otherwise
   confirm-before-spend is enforced by skill instructions alone.
 maintainer: AdwaveInc
 tier: community

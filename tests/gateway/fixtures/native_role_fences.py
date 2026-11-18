@@ -12,7 +12,7 @@ async def fences(runner, authority, adapter, guild, event, peer, mode):
     from gateway.session_ingress_context import native_callback
     from persistence.core.errors import AuthorityRefusal
 
-    state = Path(os.environ['HERMES_HOME'])
+    state = Path(os.environ['SLAVE_HOME'])
 
     def rows(sid):
         return [admission_row(record) for record in authority.persistence.admissions.list(session_id=sid, pending_only=False)]

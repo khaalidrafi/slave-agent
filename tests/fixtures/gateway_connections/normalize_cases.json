@@ -53,7 +53,7 @@
           "id": "cloud-1",
           "kind": "cloud",
           "label": "My Cloud",
-          "url": "https://agent.example.hermes.cloud",
+          "url": "https://agent.example.slave.cloud",
           "org": " acme ",
           "name": "inst-1"
         },
@@ -83,7 +83,7 @@
           "label": "Box",
           "host": "ssh alice@box.lan:2222",
           "keyPath": " ~/.ssh/id ",
-          "remoteHermesPath": "/opt/hermes",
+          "remoteSlavePath": "/opt/hermes",
           "remoteProfile": "coder",
           "token": {
             "encoding": "plain",
@@ -457,7 +457,7 @@
           "id": "cloud-1",
           "kind": "cloud",
           "label": "My Cloud",
-          "url": "https://agent.example.hermes.cloud",
+          "url": "https://agent.example.slave.cloud",
           "authMode": "oauth",
           "name": "inst-1",
           "org": "acme"
@@ -488,7 +488,7 @@
           "user": "alice",
           "port": 2222,
           "keyPath": "~/.ssh/id",
-          "remoteHermesPath": "/opt/hermes",
+          "remoteSlavePath": "/opt/hermes",
           "remoteProfile": "coder",
           "token": {
             "encoding": "plain",

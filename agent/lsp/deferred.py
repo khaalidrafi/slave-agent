@@ -23,7 +23,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any, Iterator, Optional
 
-_OWNER: ContextVar[Optional[str]] = ContextVar("hermes_lsp_deferred_owner", default=None)
+_OWNER: ContextVar[Optional[str]] = ContextVar("slave_lsp_deferred_owner", default=None)
 _MAX_OWNERS = 64  # sessions that never drain (a one-shot caller) must not grow this forever
 _MAX_PER_OWNER = 32
 _LOCK = threading.Lock()

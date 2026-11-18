@@ -32,8 +32,8 @@ def _owner(home, monkeypatch):
     from gateway.session_controls import AuthorityConnection
     home.mkdir(parents=True, exist_ok=True)
     (home / 'config.yaml').write_text(json.dumps({'model': {'default': 'm'}}))
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     store = SessionStore(home / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,
                              _evict_cached_agent=lambda route: None, _cached_agent_for=lambda route: None,
@@ -186,7 +186,7 @@ async def test_compress_mutation_copies_parent_or_uses_the_policy_surface(tmp_pa
 
 def _listed(db, source, capsys):
     from argparse import Namespace
-    from hermes_cli.sessions_cmd import _cmd_list
+    from slave_cli.sessions_cmd import _cmd_list
     from persistence_assembly import open_persistence_reader
     with open_persistence_reader(store_location(db.scope)) as store:
         _cmd_list(Namespace(limit=20, source=source, workspace=None), persistence=store)
@@ -262,9 +262,9 @@ async def test_latest_skips_a_newer_empty_launch_stub(tmp_path, monkeypatch, adm
         authority.sessions.clear()
         expected = stub if admission else real
 
-        from hermes_cli.main import _resolve_last_session
-        monkeypatch.setattr('hermes_cli.main._resolve_workspace_key', lambda: None)
-        monkeypatch.setattr('hermes_cli.main.get_hermes_home', lambda: Path(store_location(authority.persistence.scope)).parent)
+        from slave_cli.main import _resolve_last_session
+        monkeypatch.setattr('slave_cli.main._resolve_workspace_key', lambda: None)
+        monkeypatch.setattr('slave_cli.main.get_slave_home', lambda: Path(store_location(authority.persistence.scope)).parent)
         assert _resolve_last_session('cli') == expected
 
         resumed = await _call(owner, 'session.resume', latest='cli')

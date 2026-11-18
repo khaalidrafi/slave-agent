@@ -91,15 +91,15 @@ def _env_number(key: str, default, cast):
 
 
 def ptb_request_kwargs() -> dict:
-    """PTB ``HTTPXRequest`` sizing and timeouts (``HERMES_TELEGRAM_HTTP_*`` overrides): PTB's 1s pool
+    """PTB ``HTTPXRequest`` sizing and timeouts (``SLAVE_TELEGRAM_HTTP_*`` overrides): PTB's 1s pool
     timeout trips "Pool timeout" on flaky networks. ``media_write_timeout`` is httpx's per-write
     stall budget, so 60s rides out congested-link buffer stalls."""
     return {
-        "connection_pool_size": _env_number("HERMES_TELEGRAM_HTTP_POOL_SIZE", 512, int),
-        "pool_timeout": _env_number("HERMES_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0, float),
-        "connect_timeout": _env_number("HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0, float),
-        "read_timeout": _env_number("HERMES_TELEGRAM_HTTP_READ_TIMEOUT", 20.0, float),
-        "write_timeout": _env_number("HERMES_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0, float),
+        "connection_pool_size": _env_number("SLAVE_TELEGRAM_HTTP_POOL_SIZE", 512, int),
+        "pool_timeout": _env_number("SLAVE_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0, float),
+        "connect_timeout": _env_number("SLAVE_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0, float),
+        "read_timeout": _env_number("SLAVE_TELEGRAM_HTTP_READ_TIMEOUT", 20.0, float),
+        "write_timeout": _env_number("SLAVE_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0, float),
         "media_write_timeout": 60.0,
     }
 

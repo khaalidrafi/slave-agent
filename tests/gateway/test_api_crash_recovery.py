@@ -30,7 +30,7 @@ def test_api_crash_queue_and_identified_result_retry(tmp_path):
            'auxiliary': {'title_generation': {'enabled': False}}, 'terminal': {'cwd': str(home)}}
     (home / 'config.yaml').write_text(json.dumps(cfg))
     env = {**child_env(), **{k: os.environ[k] for k in ('TIRITH_ENABLED',) if k in os.environ}}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, API_SERVER_KEY='ordinary-daemon-owned-secret',
                API_SERVER_ENABLED='true', API_SERVER_PORT=str(port), PYTHONUNBUFFERED='1')
     url = f'http://127.0.0.1:{port}/v1'
@@ -59,12 +59,12 @@ def test_api_crash_queue_and_identified_result_retry(tmp_path):
         async with aiohttp.ClientSession(headers=headers) as client:
             # Warm before the exact model barrier (onboarding may decorate first input).
             async with client.post(url + '/chat/completions', json={'messages': [{'role': 'user', 'content': 'WARM'}]},
-                                   headers={'X-Hermes-Session-Id': 'unknown'}) as response:
+                                   headers={'X-Slave-Session-Id': 'unknown'}) as response:
                 assert response.status == 200, await response.text()
             async def block():
                 async with client.post(url + '/chat/completions',
                     json={'messages': [{'role': 'user', 'content': 'BLOCK_STARTED'}]},
-                    headers={'X-Hermes-Session-Id': 'unknown', 'Idempotency-Key': 'started'}) as response:
+                    headers={'X-Slave-Session-Id': 'unknown', 'Idempotency-Key': 'started'}) as response:
                     await response.read()
             blocked = asyncio.create_task(block())
             assert await asyncio.to_thread(peer.blocked.wait, 15)
@@ -83,7 +83,7 @@ def test_api_crash_queue_and_identified_result_retry(tmp_path):
             assert rows()[runs['started']] == 'unknown' and rows()[runs['follower']] == 'queued', rows()
             async with client.post(url + '/chat/completions',
                 json={'messages': [{'role': 'user', 'content': 'BLOCK_STARTED'}]},
-                headers={'X-Hermes-Session-Id': 'unknown', 'Idempotency-Key': 'started'}) as response:
+                headers={'X-Slave-Session-Id': 'unknown', 'Idempotency-Key': 'started'}) as response:
                 unknown = await response.json()
                 assert response.status == 409 and unknown['error']['code'] == 'unknown_execution', unknown
             before = len(peer.requests)
@@ -95,7 +95,7 @@ def test_api_crash_queue_and_identified_result_retry(tmp_path):
             # A new identified chat submission executes once; retry after another SIGKILL
             # must use retained results, independent of delivery format.
             body = {'messages': [{'role': 'user', 'content': 'RESULT_ONCE'}]}
-            hs = {'X-Hermes-Session-Id': 'result', 'Idempotency-Key': 'result-once'}
+            hs = {'X-Slave-Session-Id': 'result', 'Idempotency-Key': 'result-once'}
             async with client.post(url + '/chat/completions', json=body, headers=hs) as response:
                 reply = await response.json()
                 assert response.status == 200 and 'RESULT_ONCE' in reply['choices'][0]['message']['content'], reply

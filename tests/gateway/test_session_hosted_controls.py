@@ -14,7 +14,7 @@ def test_unknown_discard_is_exact_and_never_requeues(tmp_path, monkeypatch):
     from gateway.session_hosted_service import CanonicalHostedRoomService
     from gateway import hosted_room_driver as tasks
     from gateway.hosted_rooms import local_authority_gateway_id
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     class Service(CanonicalHostedRoomService):
         pass
     with open_persistence(profile_scope(home=tmp_path)) as db:

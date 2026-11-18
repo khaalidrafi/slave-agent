@@ -9,7 +9,7 @@ import itertools
 import os
 import time
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from gateway.config import Platform, load_gateway_config
@@ -26,15 +26,15 @@ def _write(home, doc):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     for name in list(os.environ):
-        if name.startswith(("DISCORD_", "TELEGRAM_", "HERMES_BRIDGED_", "GATEWAY_ALLOW")):
+        if name.startswith(("DISCORD_", "TELEGRAM_", "SLAVE_BRIDGED_", "GATEWAY_ALLOW")):
             monkeypatch.delenv(name)
     for var in ("DISCORD_ALLOWED_USERS", "TELEGRAM_ALLOWED_USERS"):  # teardown removes bridged writes
         monkeypatch.setenv(var, "")
         monkeypatch.delenv(var)
-        monkeypatch.setenv(f"HERMES_BRIDGED_{var}", "")
-        monkeypatch.delenv(f"HERMES_BRIDGED_{var}")
+        monkeypatch.setenv(f"SLAVE_BRIDGED_{var}", "")
+        monkeypatch.delenv(f"SLAVE_BRIDGED_{var}")
     return tmp_path
 
 
@@ -82,7 +82,7 @@ def test_a_non_strict_load_that_fails_mid_bridge_restores_the_last_good_env(home
     transaction never unwinds: only the abort may undo the partial write, and it must retract nothing."""
     from gateway.platforms._shared import bridged_env_marker
 
-    for var in ("DISCORD_ALLOWED_ROLES", "HERMES_BRIDGED_DISCORD_ALLOWED_ROLES"):  # teardown removes bridged writes
+    for var in ("DISCORD_ALLOWED_ROLES", "SLAVE_BRIDGED_DISCORD_ALLOWED_ROLES"):  # teardown removes bridged writes
         monkeypatch.setenv(var, "")
         monkeypatch.delenv(var)
     _write(home, {"discord": {"allow_from": ["111"], "allowed_roles": ["2"]}})

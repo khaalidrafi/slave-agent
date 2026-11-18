@@ -18,8 +18,8 @@ def test_an_adopted_row_with_no_provider_runs_on_the_entry_that_serves_its_model
     from run_agent import AIAgent
     with FakeLLMServer([Text('main')]) as main, FakeLLMServer([Text('entry-b ok')]) as other:
         entry_b = main if shared_relay else other
-        home = Path(os.environ['HERMES_HOME'])
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])
+        monkeypatch.setattr('gateway.run._slave_home', home)
         home.mkdir(parents=True, exist_ok=True)
         (home / 'config.yaml').write_text(
             'model:\n  default: profile-model\n  provider: custom:entry-a\n'

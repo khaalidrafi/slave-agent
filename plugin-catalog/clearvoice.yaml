@@ -9,7 +9,7 @@ category: voice
 requires_hermes: ">=0.22.0"
 docs_url: https://github.com/thebangarang/clearvoice-hermes-plugin/blob/d4bc366ec72d4f2af1a1772b3a94f48bd0e0b156/README.md
 version: "0.7.2"
-title: ClearVoice Hermes Plugin
+title: ClearVoice slave-agent Plugin
 image: https://raw.githubusercontent.com/thebangarang/clearvoice-hermes-plugin/d4bc366ec72d4f2af1a1772b3a94f48bd0e0b156/docs/banner.png
 screenshots:
   - https://raw.githubusercontent.com/thebangarang/clearvoice-hermes-plugin/d4bc366ec72d4f2af1a1772b3a94f48bd0e0b156/docs/shot-verbatim.png

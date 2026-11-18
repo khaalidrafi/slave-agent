@@ -18,7 +18,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
 
 logger = logging.getLogger(__name__)
 
@@ -63,24 +63,24 @@ def _best_effort(label: str, fn) -> None:
 
 
 def update_session_activity(cache_key: str) -> None:
-    """Touch the activity timestamp and record the owning Hermes home on first sight (#86402)."""
+    """Touch the activity timestamp and record the owning slave-agent home on first sight (#86402)."""
     bs = _bs()
     with bs._cleanup_lock:
         bs._session_last_activity[cache_key] = time.time()
-        bs._session_owner_homes.setdefault(cache_key, str(get_hermes_home()))
+        bs._session_owner_homes.setdefault(cache_key, str(get_slave_home()))
 
 
 @contextlib.contextmanager
 def _session_owner_scope(cache_key: str):
-    """Run under the Hermes home + secret scope owning ``cache_key``'s session (no-op when unrecorded); the
+    """Run under the slave-agent home + secret scope owning ``cache_key``'s session (no-op when unrecorded); the
     janitor is process-global, so each teardown re-enters ITS profile, never ``os.environ``."""
     owner_home = _bs()._session_owner_homes.get(cache_key)
     if owner_home is None:
         yield
         return
     from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-    from hermes_cli.env_loader import hydrate_profile_secret_sources
-    home_token = set_hermes_home_override(owner_home)
+    from slave_cli.env_loader import hydrate_profile_secret_sources
+    home_token = set_slave_home_override(owner_home)
     try:
         hydrate_profile_secret_sources(Path(owner_home))
         secret_token = set_secret_scope(build_profile_secret_scope(Path(owner_home)), profile_home=owner_home)
@@ -89,7 +89,7 @@ def _session_owner_scope(cache_key: str):
         finally:
             reset_secret_scope(secret_token)
     finally:
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
 
 
 def _forget_session_tracking(cache_key: str, *, activity: bool = True, session: bool = False) -> None:
@@ -235,7 +235,7 @@ def cleanup_all_browsers() -> None:
 
 
 def emergency_cleanup_all_sessions() -> None:
-    """atexit: close this process's browsers, then reap orphans left by crashed Hermes processes (every
+    """atexit: close this process's browsers, then reap orphans left by crashed slave-agent processes (every
     clean exit sweeps accumulated orphans). Idempotent."""
     bs = _bs()
     if bs._cleanup_done:
@@ -253,7 +253,7 @@ def emergency_cleanup_all_sessions() -> None:
 
 
 def reap_orphaned_browser_sessions() -> int:
-    """Stop Chromium / ``lightpanda serve`` processes whose owning Hermes process is gone (Chromium: in every
+    """Stop Chromium / ``lightpanda serve`` processes whose owning slave-agent process is gone (Chromium: in every
     profile this process serves, incl. each live session's owning home)."""
     from tools.browser_launcher import reap_orphaned_browsers
     from tools.browser_lightpanda import reap_orphaned_lightpanda

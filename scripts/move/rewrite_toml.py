@@ -1,5 +1,5 @@
 """Old module names a move leaves in ``pyproject.toml``: entry points and package-data keys change, package-list rows
-with no generated old-path file behind them go, ``[tool.hermes] update-startup-files`` follows its files; the rest is
+with no generated old-path file behind them go, ``[tool.slave] update-startup-files`` follows its files; the rest is
 flagged."""
 from __future__ import annotations
 
@@ -17,9 +17,9 @@ _STRING = re.compile(r"""(["'])([^"'\n]*)\1""")
 _PACKAGE_ROW = re.compile(r"""^\s*(["'])([\w.]+?)(\.\*)?\1\s*,?\s*(?:#.*)?$""")
 _ENTRY_TABLES = ("project.scripts", "project.gui-scripts")
 _PACKAGE_TABLES = ("tool.setuptools.packages.find",)
-_REQUIRED = "hermes_agent/compat/required_names.py"
+_REQUIRED = "slave_agent/compat/required_names.py"
 _SHIM_WRITER = "scripts/move/generate_shims.py"
-_STARTUP_TABLE, _STARTUP_KEY = "tool.hermes", "update-startup-files"
+_STARTUP_TABLE, _STARTUP_KEY = "tool.slave", "update-startup-files"
 _STARTUP_START = re.compile(rf"^\s*{_STARTUP_KEY}\s*=\s*\[")
 _STARTUP_ENTRY = re.compile(r'"([^"\\\n]+)"')
 _STARTUP_WIDTH = 120
@@ -31,7 +31,7 @@ def rewrite_pyproject(root: Path, plan, write: bool) -> tuple[int, list[str]]:
 
     Entry-point values (``module:attr``) and ``[tool.setuptools.package-data]`` keys follow their module. A
     package-list row (``"pkg"``, ``"pkg.*"``) of a moved package stays while a generated old-path file lives under
-    it (``required_names.py``) and goes otherwise: ``hermes_agent.*`` already covers the new place. Each
+    it (``required_names.py``) and goes otherwise: ``slave_agent.*`` already covers the new place. Each
     ``update-startup-files`` entry this move relocated becomes its new path, and the old path stays beside it while a
     file stays there (generated, or hand-written). Any other string naming a moved module or path is flagged.
     """
@@ -88,7 +88,7 @@ def _rewrite_line(line: str, table: str, plan, shimmed: set[str]) -> tuple[str |
 
 
 def _startup_span(lines: list[str]) -> tuple[int, int] | None:
-    """First and last index of the ``[tool.hermes] update-startup-files`` array; None when there is none."""
+    """First and last index of the ``[tool.slave] update-startup-files`` array; None when there is none."""
     table, first = "", None
     for index, line in enumerate(lines):
         if first is None:

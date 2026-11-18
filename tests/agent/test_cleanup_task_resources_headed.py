@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent.chat_completion_helpers import cleanup_task_resources
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 
 @pytest.fixture
@@ -22,11 +22,11 @@ def run(tmp_path, monkeypatch):
 
     def go(config_text: str) -> list:
         (tmp_path / "config.yaml").write_text(config_text, encoding="utf-8")
-        token = set_hermes_home_override(str(tmp_path))
+        token = set_slave_home_override(str(tmp_path))
         try:
             cleanup_task_resources(SimpleNamespace(verbose_logging=False), "task-1")
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
         return closed
 
     return go

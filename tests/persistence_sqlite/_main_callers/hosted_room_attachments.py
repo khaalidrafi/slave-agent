@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from persistence.gateway.hosted_rooms import EventAttachmentConflictError
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
 import base64
 import binascii

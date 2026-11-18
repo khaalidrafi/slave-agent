@@ -2,7 +2,7 @@ name: survey-desk
 repo: https://github.com/ferzerz5-lab/survey-desk
 sha: "0e2e45b25a56883033d13746484123c975f22f4f"
 title: "Survey Desk"
-description: "Exact land-survey computation for Hermes: closed traverses with misclosure and Bowditch/transit adjustment, area cross-checked by two independent methods, blunder-leg detection when a traverse fails tolerance, PROJ datum conversion (Minna, Nigeria belts, UTM, any EPSG) with the published datum-shift accuracy, and plan drawings exported as PNG, PDF, DXF, KML and GeoJSON, driven from a /survey field-book command or the agent. Disclosure: no network calls (PROJ network access stays off), no shell commands, no background processes, no credentials, no telemetry. Plans are written to <hermes home>/plugin-data/survey-desk/plans/. Dependencies: pyproj, matplotlib, ezdxf."
+description: "Exact land-survey computation for slave-agent: closed traverses with misclosure and Bowditch/transit adjustment, area cross-checked by two independent methods, blunder-leg detection when a traverse fails tolerance, PROJ datum conversion (Minna, Nigeria belts, UTM, any EPSG) with the published datum-shift accuracy, and plan drawings exported as PNG, PDF, DXF, KML and GeoJSON, driven from a /survey field-book command or the agent. Disclosure: no network calls (PROJ network access stays off), no shell commands, no background processes, no credentials, no telemetry. Plans are written to <slave home>/plugin-data/survey-desk/plans/. Dependencies: pyproj, matplotlib, ezdxf."
 maintainer: ferzerz5-lab
 tier: community
 category: tools

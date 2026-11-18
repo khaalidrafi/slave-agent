@@ -34,7 +34,7 @@ def test_unavailable_post_strategy_probe_preserves_source_and_retry_budget(cjk_d
     def constrained_connect(path, *args, **kwargs):
         conn = connect(path, *args, **kwargs)
         # Repair staging fits; the health probe's separate temporary destination does not.
-        if Path(path).parent.name.startswith("hermes-cjk-probe-"):
+        if Path(path).parent.name.startswith("slave-cjk-probe-"):
             constrained_probes.append(conn.execute("PRAGMA max_page_count=5").fetchone()[0])
         return conn
 

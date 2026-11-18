@@ -438,7 +438,7 @@ jobs:
             --version "$RELEASE_VERSION"
           actual="$(cargo metadata --no-deps --format-version 1 \
             --manifest-path "$tree/apps/bootstrap-installer/src-tauri/Cargo.toml" \
-            | jq -r '.packages[] | select(.name == "hermes-bootstrap") | .version')"
+            | jq -r '.packages[] | select(.name == "slave-bootstrap") | .version')"
           test "$actual" = "$RELEASE_VERSION" || {
             echo "::error::Bootstrap Cargo version $actual != $RELEASE_VERSION"
             exit 1
@@ -606,7 +606,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Reconcile ordered stable publication
-        # The macOS feed merge parses YAML (hermes_yaml -> ruamel); the node toolchain has none.
+        # The macOS feed merge parses YAML (slave_yaml -> ruamel); the node toolchain has none.
         run: python -m scripts.ci.python_packages ruamel.yaml==0.18.17 -- -m scripts.releases.sequencer
         env:
           GH_TOKEN: ${{ github.token }}

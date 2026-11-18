@@ -2,7 +2,7 @@
 
 The gateway binds its Webapp on loopback with a public URL, which puts it behind the sign-in gate, and
 the bundled password provider. A browser signs in, opens its chat socket and a host terminal, and a
-native client is attached. ``webapp-sign-out`` (what ``hermes webapp --sign-out`` asks for) then ends
+native client is attached. ``webapp-sign-out`` (what ``slave webapp --sign-out`` asks for) then ends
 the browser's login: its sockets close with 4401, its requests get 401 and the page sends it to sign
 in, tickets it minted open nothing, and its cookies replayed elsewhere get nothing, nor do the provider
 tokens they held, presented on their own. The native client stays connected, and the browser can sign
@@ -33,7 +33,7 @@ def signed_out(tmp_path_factory):
     for path in (home, user):
         path.mkdir()
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                PYTHONUNBUFFERED="1")
     result = subprocess.run(
         [sys.executable, str(root / "tests/gateway/fixtures/webapp_gated_sign_out_peer.py"), str(_free_port())],

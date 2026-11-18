@@ -48,7 +48,7 @@ def test_overlapping_turns_each_build_their_agent_with_their_own_service_tier(tm
     from gateway import session_policy
     from gateway.run import GatewayRunner
     from gateway.session_policy import build_policy
-    monkeypatch.setattr('hermes_cli.models.resolve_fast_mode_overrides', lambda *a, **k: {})
+    monkeypatch.setattr('slave_cli.models.resolve_fast_mode_overrides', lambda *a, **k: {})
     policies = {
         'fast': build_policy({'cwd': str(tmp_path), **LAUNCH}, {'agent': {'service_tier': 'fast'}}),
         'normal': build_policy({'cwd': str(tmp_path), **LAUNCH}, {}),

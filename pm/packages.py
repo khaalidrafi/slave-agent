@@ -1,4 +1,4 @@
-"""Package definitions for the tools hermes manages. Versions and hashes
+"""Package definitions for the tools slave manages. Versions and hashes
 live in pm/lock.json (written by `pm lock`), never here."""
 
 from __future__ import annotations
@@ -256,7 +256,7 @@ class Python(_BionicDebArm, BinaryPackage, DebPackage):
         super().stage(store, staged, version, target)
         binary = self.binary(staged, target)
         if binary is not None and sys.platform == "darwin":
-            from hermes_cli.macos_signing import sign_managed_python
+            from slave_cli.macos_signing import sign_managed_python
 
             sign_managed_python(binary)
         # python-build-standalone ships the x64 VC runtime (vcruntime140_1.dll)
@@ -411,16 +411,16 @@ def _seed_tree(src: Path, dst: Path, root: Path) -> None:
 
 
 def uv_cache_path() -> Path:
-    """Where the hermes-owned uv cache lives; unlike uv_cache_dir(), never seeds or writes."""
-    from hermes_constants import get_default_hermes_root
+    """Where the slave-owned uv cache lives; unlike uv_cache_dir(), never seeds or writes."""
+    from slave_constants import get_default_slave_root
 
-    return get_default_hermes_root() / "cache" / "uv"
+    return get_default_slave_root() / "cache" / "uv"
 
 
 def uv_cache_dir() -> Path:
-    """The hermes-owned uv cache: machine-scoped and shared (keyed by
+    """The slave-owned uv cache: machine-scoped and shared (keyed by
     content — two profiles reuse one cache), anchored to the DEFAULT
-    hermes root like partials_root(). A bundle ships a seeded copy at
+    slave root like partials_root(). A bundle ships a seeded copy at
     the payload root (uv-cache/); the first call under each uv.lock
     merges it into the writable machine cache (the read-only payload
     can't serve uv's working cache), and a warm `uv sync --offline`
@@ -689,11 +689,11 @@ def npm_env(cache_dir: Path, base_env: Optional[dict] = None) -> dict[str, str]:
 
 def pnpm_env(base_env: Optional[dict] = None) -> dict[str, str]:
     """pnpm's store, metadata cache and state default to the user's XDG dirs. Keep them
-    Hermes-owned beside the uv cache: shared by every profile, gone with the Hermes root."""
-    from hermes_constants import get_default_hermes_root
+    Slave-owned beside the uv cache: shared by every profile, gone with the slave-agent root."""
+    from slave_constants import get_default_slave_root
 
     env = dict(os.environ if base_env is None else base_env)
-    root = get_default_hermes_root() / "cache" / "pnpm"
+    root = get_default_slave_root() / "cache" / "pnpm"
     for name in ("store", "cache", "state"):
         key = f"pnpm_config_{name}_dir"
         # Windows env names are case-insensitive and Python upper-cases inherited ones:
@@ -770,7 +770,7 @@ class Npm(BinaryPackage):
         # there turns its removal into a tree delete that fails on Windows
         # while Defender still holds the fresh copy (WinError 145). Cleanup
         # of this throwaway cache must never fail the install.
-        with tempfile.TemporaryDirectory(prefix="hermes-npm-cache-", ignore_cleanup_errors=True) as cache:
+        with tempfile.TemporaryDirectory(prefix="slave-npm-cache-", ignore_cleanup_errors=True) as cache:
             proc = subprocess.run(
                 [
                     native(node_bin), native(bundled_cli), "install", "--global",
@@ -809,7 +809,7 @@ class Pnpm(BinaryPackage):
     flatten = False
     # pnpm names its Termux build after the OS, not the libc: a bionic-linked executable.
     exe_platforms = {"linux-arm64-bionic": "android-arm64"}
-    on_demand = {"linux-arm64-bionic": "the Termux .deb ships a prebuilt TUI; `hermes dashboard` fetches pnpm to build the web UI"}
+    on_demand = {"linux-arm64-bionic": "the Termux .deb ships a prebuilt TUI; `slave dashboard` fetches pnpm to build the web UI"}
 
     def fetch_urls(self, version: str, target: str) -> list[str]:
         exe = self.exe_platforms.get(target, target)
@@ -956,7 +956,7 @@ class Gh(BinaryPackage):
 class Ffmpeg(_BionicDebArm, BinaryPackage, DebPackage):
     """FFmpeg builds for supported targets; BtbN Linux archives require glibc.
     optional=False: ffmpeg is a required runtime tool where supported. Sealed bundles ship
-    it baked into the payload; every `hermes update` and `hermes pm install`
+    it baked into the payload; every `slave update` and `slave pm install`
     re-ensures it from the new lockfile before the venv sync
     (pm.client.ensure_tools_for_sync), so a pin bump lands. Windows + Linux:
     BtbN/FFmpeg-Builds (month-end autobuild tag, kept two years; ships ffprobe too).
@@ -1162,7 +1162,7 @@ class Chromium(Package):
     target downloads that Chrome build from the Chrome-for-Testing CDN.
     The revision only names the store directory (`chromium-<revision>`),
     which is all Playwright's resolver reads. It has to be the revision
-    of the Playwright release Hermes pins, even when the Chrome build is
+    of the Playwright release slave-agent pins, even when the Chrome build is
     a later patch of that same milestone."""
 
     name = "chromium"
@@ -1226,8 +1226,8 @@ class Chromium(Package):
             raise InstallError(self.name, f"Chromium executable missing under {native(entry)}")
         # Playwright launches without an executable_path (e.g. the
         # har-derived-api-client skill's `chromium.launch(channel="chromium")`)
-        # find this build through the root; Hermes's own launcher asks
-        # hermes_cli.browser_runtime.chromium_executable() instead.
+        # find this build through the root; Slave's own launcher asks
+        # slave_cli.browser_runtime.chromium_executable() instead.
         return {"PLAYWRIGHT_BROWSERS_PATH": str(entry.parent)}
 
 

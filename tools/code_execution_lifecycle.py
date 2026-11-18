@@ -24,7 +24,7 @@ import ast
 from typing import Optional
 
 # Modules with no way to spawn, signal or exec anything. Everything else (os, sys, subprocess,
-# importlib, ctypes, asyncio, multiprocessing, shutil, pty, hermes_tools, ...) keeps the scan.
+# importlib, ctypes, asyncio, multiprocessing, shutil, pty, slave_tools, ...) keeps the scan.
 _INERT_IMPORTS = frozenset({
     "base64", "collections", "csv", "dataclasses", "datetime", "decimal", "difflib", "enum",
     "fractions", "functools", "hashlib", "html", "itertools", "json", "math", "pathlib", "pprint",

@@ -1,4 +1,4 @@
-"""A read or write through a live handle after the shutdown sweep closed its store logs the reopen warning main's store logged, under the ``hermes_state`` logger, once per swept store, and answers as before."""
+"""A read or write through a live handle after the shutdown sweep closed its store logs the reopen warning main's store logged, under the ``slave_state`` logger, once per swept store, and answers as before."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def _home(name: str, mode: str):
 
 def _reopen_warnings(caplog, home) -> list[str]:
     return [r.getMessage().replace(str(home), "<home>") for r in caplog.records
-            if r.name == "hermes_state" and "reopening" in r.getMessage()]
+            if r.name == "slave_state" and "reopening" in r.getMessage()]
 
 
 @pytest.mark.parametrize("mode", ["wal", "delete"])
@@ -32,7 +32,7 @@ def test_a_read_after_the_sweep_logs_the_reopen_once(mode, caplog):
     assert store.sessions.get("nope") is None
     close_all_stores()
 
-    with caplog.at_level(logging.WARNING, logger="hermes_state"):
+    with caplog.at_level(logging.WARNING, logger="slave_state"):
         assert store.sessions.get("nope") is None
         assert open_persistence(profile_scope(home=home)).sessions.get("nope") is None
     assert _reopen_warnings(caplog, home) == [_WARNING.format("<home>/state.db", "read")]
@@ -45,7 +45,7 @@ def test_a_write_after_the_sweep_logs_the_reopen_as_a_write(mode, caplog):
     assert store.sessions.get("nope") is None
     close_all_stores()
 
-    with caplog.at_level(logging.WARNING, logger="hermes_state"):
+    with caplog.at_level(logging.WARNING, logger="slave_state"):
         seed_session(store, "s1", "cli")
         assert store.sessions.get("s1") is not None
     assert _reopen_warnings(caplog, home) == [_WARNING.format("<home>/state.db", "write")]
@@ -53,6 +53,6 @@ def test_a_write_after_the_sweep_logs_the_reopen_as_a_write(mode, caplog):
 
 def test_a_first_open_logs_no_reopen(caplog):
     home = _home("alpha", "wal")
-    with caplog.at_level(logging.WARNING, logger="hermes_state"):
+    with caplog.at_level(logging.WARNING, logger="slave_state"):
         assert open_persistence(profile_scope(home=home)).sessions.get("nope") is None
     assert _reopen_warnings(caplog, home) == []

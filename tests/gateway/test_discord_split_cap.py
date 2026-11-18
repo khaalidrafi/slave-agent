@@ -58,7 +58,7 @@ def _huge_content(chars: int = 60_000) -> str:
 class TestSendDeliversEveryChunk:
     @pytest.mark.asyncio
     async def test_send_delivers_every_chunk_past_the_cap(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         adapter = _make_adapter()
         sends = []
 
@@ -83,7 +83,7 @@ class TestSendDeliversEveryChunk:
 class TestForumDeliversEveryChunk:
     @pytest.mark.asyncio
     async def test_send_to_forum_delivers_every_followup_chunk(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         adapter = _make_adapter()
         thread_sends = []
 
@@ -117,7 +117,7 @@ class TestForumDeliversEveryChunk:
 class TestEditOverflowDeliversEveryChunk:
     @pytest.mark.asyncio
     async def test_edit_overflow_split_delivers_every_chunk(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         adapter = _make_adapter()
         edits = []
         sends = []

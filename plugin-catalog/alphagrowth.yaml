@@ -3,7 +3,7 @@ title: AlphaGrowth
 repo: https://github.com/alphagrowth/alphagrowth-mcp
 sha: 1fb99ff5fec9e61b6dba843f9c0532b1e4d10287
 description: >-
-  Free, read-only crypto data in Hermes: project metrics and TVL history, chains, fees and revenue,
+  Free, read-only crypto data in slave-agent: project metrics and TVL history, chains, fees and revenue,
   funding rounds and investors, DeFi yield pools, stablecoins, token unlocks and DAO treasuries,
   through AlphaGrowth's hosted MCP server (Streamable HTTP, no account or API key), with three
   research skills bundled. Portable Agent Plugins v1 package (plugin.json + mcp.json + skills/).

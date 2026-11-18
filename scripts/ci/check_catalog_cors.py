@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Fetch a docs catalog URL the way Hermes Desktop does, and fail when a browser would block it.
+"""Fetch a docs catalog URL the way slave-agent Desktop does, and fail when a browser would block it.
 
 The Desktop renderer fetches ``/docs/api/plugins.json`` cross-origin (a packaged build sends
 ``Origin: null``). A browser checks CORS on every response of a redirect chain, so the docs host's
 redirect to GitHub Pages needs ``Access-Control-Allow-Origin`` as much as the final response does
 (#136483). ``curl -L`` never checks it, which is why the skills-index watchdog stayed green while
-every ``hermes://plugin/install?catalog=`` link failed.
+every ``slave://plugin/install?catalog=`` link failed.
 
 Exit 0: every hop allows the origin and the final body is a non-empty JSON array.
 Exit 1: a browser would reject the fetch (missing header, error status, unusable body).

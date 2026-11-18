@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.active_sessions import try_acquire_active_session
+from slave_cli.active_sessions import try_acquire_active_session
 from persistence.conversation.messages import ConversationRequest
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_read import conversation
@@ -45,10 +45,10 @@ class _Agent:
 @pytest.fixture
 def taken_chat(monkeypatch):
     """An idle Desktop record the real reaper released, then Telegram claimed and extended."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     monkeypatch.setattr(server, "_emit", lambda *a, **k: None)
-    db = open_persistence(profile_scope(home=get_hermes_home()))
+    db = open_persistence(profile_scope(home=get_slave_home()))
     monkeypatch.setattr(server, "_db", db)
     sid = "taken-chat"
     seed_session(db, sid, "desktop")
@@ -90,9 +90,9 @@ def _outcome(response: dict, chat) -> dict:
 
 
 def test_model_switch_never_writes_its_marker_into_the_new_owners_transcript(taken_chat, monkeypatch):
-    from hermes_cli.model_switch import ModelSwitchResult
+    from slave_cli.model_switch import ModelSwitchResult
 
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
+    monkeypatch.setattr("slave_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
         success=True, new_model="other/model", target_provider="prov"))
     monkeypatch.setattr(server, "_expensive_model_confirm", lambda *a, **k: None)
     monkeypatch.setattr(server, "_merge_preflight_warning", lambda *a, **k: None)

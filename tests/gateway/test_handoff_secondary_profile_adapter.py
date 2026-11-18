@@ -10,7 +10,7 @@ the default profile's bot, to the default profile's chat, while persisting a
 false positive that looks fine in the database and is wrong on the wire.
 
 This was caught by an adversarial review reading gateway.log, not by the
-end-to-end test — the log line showed ``hermes_plugins.telegram_platform``
+end-to-end test — the log line showed ``slave_plugins.telegram_platform``
 (primary) instead of the secondary's ``..._home_<hash>`` adapter module.
 """
 
@@ -148,7 +148,7 @@ async def test_secondary_profile_handoff_uses_its_own_adapter(monkeypatch):
     assert captured["source"].profile == "medicina"
     # The turn answers through medicina's bot, so once ingress pins its identity medicina's allowlist
     # authorizes it, not the primary's.
-    from hermes_cli.profiles import get_profile_dir
+    from slave_cli.profiles import get_profile_dir
     runner._canonicalize(captured["source"])
     assert runner._authorization_home_for_source(captured["source"]) == get_profile_dir("medicina")
 

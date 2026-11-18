@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tools import mcp_tool
 from tools import mcp_tool_handlers as _mcp_handlers
 from tools import mcp_tool_registration as _mcp_registration
@@ -52,7 +52,7 @@ def _configure(trust, **extra):
     entry = {"command": "fake-mcp-server", **extra}
     if trust is not None:
         entry["trust"] = trust
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"mcp_servers": {"srv": entry}}))  # JSON is YAML
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"mcp_servers": {"srv": entry}}))  # JSON is YAML
     return entry
 
 
@@ -115,7 +115,7 @@ def test_templated_untrusted_server_is_gated_under_unscoped_multiplex(session, c
 
 
 def test_unparsable_config_fails_closed(session, caplog):
-    (get_hermes_home() / "config.yaml").write_text("mcp_servers:\n  srv: {command: x, trust: untrusted\n  [")
+    (get_slave_home() / "config.yaml").write_text("mcp_servers:\n  srv: {command: x, trust: untrusted\n  [")
     with caplog.at_level(logging.WARNING, logger=_mcp_handlers.logger.name):
         assert _write_call_asks()
     session.call_tool.assert_not_awaited()
@@ -123,7 +123,7 @@ def test_unparsable_config_fails_closed(session, caplog):
 
 
 def test_server_in_no_config_source_fails_closed(session, caplog):
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"mcp_servers": {"other": {"command": "x"}}}))
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"mcp_servers": {"other": {"command": "x"}}}))
     with caplog.at_level(logging.WARNING, logger=_mcp_handlers.logger.name):
         assert _write_call_asks()
     session.call_tool.assert_not_awaited()
@@ -133,9 +133,9 @@ def test_server_in_no_config_source_fails_closed(session, caplog):
 def test_explicit_null_trust_keeps_the_registration_default(session):
     """``trust: null`` registers as ``full``; the fallback must normalize it the same way, not as 'not found'."""
     _configure(None)
-    config = json.loads((get_hermes_home() / "config.yaml").read_text())
+    config = json.loads((get_slave_home() / "config.yaml").read_text())
     config["mcp_servers"]["srv"]["trust"] = None
-    (get_hermes_home() / "config.yaml").write_text(json.dumps(config))
+    (get_slave_home() / "config.yaml").write_text(json.dumps(config))
     assert _mcp_registration._normalize_server_trust(None) == mcp_tool._TRUST_FULL
     assert not _write_call_asks()
     session.call_tool.assert_awaited_once()
@@ -143,10 +143,10 @@ def test_explicit_null_trust_keeps_the_registration_default(session):
 
 @pytest.fixture
 def managed_dir(tmp_path, monkeypatch):
-    from hermes_cli.managed_scope import invalidate_managed_cache
+    from slave_cli.managed_scope import invalidate_managed_cache
     path = tmp_path / "managed"
     path.mkdir()
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(path))
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", str(path))
     invalidate_managed_cache()
     yield path
     invalidate_managed_cache()
@@ -183,12 +183,12 @@ def test_unstattable_managed_overlay_fails_closed(session, managed_dir, caplog):
 
 def test_config_backend_outage_fails_closed(session, caplog):
     """``ConfigBackendUnavailable`` is a ``SystemExit``: the gate must still answer untrusted, not abort the turn."""
-    from hermes_cli.config_backend import ConfigBackendUnavailable
+    from slave_cli.config_backend import ConfigBackendUnavailable
 
     def outage(*_args, **_kwargs):
         raise ConfigBackendUnavailable("config plane unreachable")
     with caplog.at_level(logging.WARNING, logger=_mcp_handlers.logger.name), \
-         patch("hermes_cli.config_backend.read_config_doc_readonly", outage):
+         patch("slave_cli.config_backend.read_config_doc_readonly", outage):
         assert _write_call_asks()
     session.call_tool.assert_not_awaited()
     assert any("config read failed (ConfigBackendUnavailable)" in r.getMessage() for r in caplog.records)

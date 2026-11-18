@@ -1,5 +1,5 @@
 """Reset the Bot Desktop lease between tests: no listeners in this process, no lease files under the
-current HERMES_HOME."""
+current SLAVE_HOME."""
 import contextlib
 
 from tools.bot_desktop import lease

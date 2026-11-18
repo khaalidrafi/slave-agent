@@ -42,7 +42,7 @@ def _cron_tool_names():
 @pytest.mark.parametrize("surface", ["clarify_disabled_profile", "cron_delivering_to_telegram"])
 def test_telegram_hint_never_recommends_clarify_without_the_tool(surface, monkeypatch):
     if surface == "cron_delivering_to_telegram":
-        monkeypatch.setenv("HERMES_CRON_AUTO_DELIVER_PLATFORM", "telegram")
+        monkeypatch.setenv("SLAVE_CRON_AUTO_DELIVER_PLATFORM", "telegram")
         names = _cron_tool_names()
         assert "clarify" not in names
         stable = _stable("cron", names)

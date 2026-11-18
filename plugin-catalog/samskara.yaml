@@ -18,7 +18,7 @@ description: >-
   Disclosure — with session-end extraction enabled (default), the plugin sends
   the recent turns of a session to the user's own model through ctx.llm
   (host-owned credentials, no provider override) to extract facts. If the host
-  does not expose ctx.llm — Hermes' in-process memory-provider path does not
+  does not expose ctx.llm — slave-agent’ in-process memory-provider path does not
   today — extraction is skipped rather than redirected: the session records its
   entity mentions lexically and no model is called. The plugin reads no provider
   API key from the environment and has no default model host. The graph endpoint

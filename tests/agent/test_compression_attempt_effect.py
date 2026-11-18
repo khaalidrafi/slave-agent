@@ -16,8 +16,8 @@ from agent.context_compressor import ContextCompressor
 from agent.conversation_compression import compress_context
 from agent.conversation_compression_checkpoint import CompressionCheckpointUnavailable
 from agent.transports.codex_app_server_session import TurnResult
-from hermes_cli.observability import shared_metrics_events
-from hermes_cli.observability.shared_metrics_fields import compression_fields
+from slave_cli.observability import shared_metrics_events
+from slave_cli.observability.shared_metrics_fields import compression_fields
 from tests.fixtures.storage_seed import seed_session
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
 
@@ -104,7 +104,7 @@ def test_committed_summary_records_trigger_effect_and_method_without_content(cap
 
     [record] = _attempt_records(caplog)
     assert record["trigger_source"] == "pre_api"
-    assert (record["route"], record["commit_status"], record["method"]) == ("hermes", "committed", "llm_summary")
+    assert (record["route"], record["commit_status"], record["method"]) == ("slave", "committed", "llm_summary")
     assert record["items_dropped"] == 0
     assert record["messages_before"] == len(_messages())
     assert record["messages_after"] < record["messages_before"]
@@ -206,8 +206,8 @@ def _codex_agent(result, auto_mode):
     ("auto_mode", "force", "result", "expected"),
     [
         ("native", False, TurnResult(thread_id="t1"), ("skipped", "codex_auto_native", "none")),
-        ("hermes", True, TurnResult(thread_id="t1", turn_id="c1"), ("committed", None, "provider")),
-        ("hermes", True, TurnResult(thread_id="t1", error="boom"), ("failed", "codex_compaction_failed", "none")),
+        ("slave", True, TurnResult(thread_id="t1", turn_id="c1"), ("committed", None, "provider")),
+        ("slave", True, TurnResult(thread_id="t1", error="boom"), ("failed", "codex_compaction_failed", "none")),
     ],
 )
 def test_codex_route_logs_exactly_one_record_per_exit(caplog, shared_metric_rows, auto_mode, force, result, expected):
@@ -226,7 +226,7 @@ def test_codex_route_logs_exactly_one_record_per_exit(caplog, shared_metric_rows
 
 def test_codex_compact_that_raises_logs_one_record_and_reraises_the_same_error(caplog, shared_metric_rows):
     error = RuntimeError(f"boom {SECRET}")
-    agent = _codex_agent(error, "hermes")
+    agent = _codex_agent(error, "slave")
 
     with caplog.at_level(logging.INFO, logger="agent.conversation_compression"):
         with pytest.raises(RuntimeError) as excinfo:
@@ -243,7 +243,7 @@ def test_codex_compact_that_raises_logs_one_record_and_reraises_the_same_error(c
 
 
 def test_codex_route_refused_for_a_required_checkpoint_logs_one_record_and_raises(caplog, shared_metric_rows):
-    agent = _codex_agent(TurnResult(thread_id="t1"), "hermes")
+    agent = _codex_agent(TurnResult(thread_id="t1"), "slave")
     agent.compression_checkpoint_required = True
 
     with caplog.at_level(logging.INFO, logger="agent.conversation_compression"):

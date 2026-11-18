@@ -22,7 +22,7 @@ from persona.schema import persona_slug, validate_persona
 
 
 def _migrate(args):
-    from hermes_cli import state_migrate
+    from slave_cli import state_migrate
     return state_migrate.cmd_migrate_state(args)
 
 
@@ -188,43 +188,43 @@ def _write(tmp_path, data) -> Path:
 
 
 class TestCompatKey:
-    """slave_compat is canonical, hermes_compat the alias (board row)."""
+    """slave_compat is canonical, slave_compat the alias (board row)."""
 
     def test_both_spellings_enable_the_overlay_off(self):
-        from hermes_cli.lean_defaults import COMPAT_KEY, hermes_compat_enabled
+        from slave_cli.lean_defaults import COMPAT_KEY, slave_compat_enabled
         assert COMPAT_KEY == "slave_compat"
-        assert hermes_compat_enabled({"hermes_compat": True}) is True
-        assert hermes_compat_enabled({"slave_compat": True}) is True
-        assert hermes_compat_enabled({"slave_compat": "yes"}) is True
-        assert hermes_compat_enabled({}) is False
+        assert slave_compat_enabled({"slave_compat": True}) is True
+        assert slave_compat_enabled({"slave_compat": True}) is True
+        assert slave_compat_enabled({"slave_compat": "yes"}) is True
+        assert slave_compat_enabled({}) is False
 
     def test_an_explicit_canonical_no_beats_a_stale_alias_yes(self):
         # The overlay's own precedence: an explicit value beats both switches.
         # A user who turned compat OFF with the new key keeps it off, even if
         # the old spelling still says on.
-        from hermes_cli.lean_defaults import hermes_compat_enabled
-        assert hermes_compat_enabled({"slave_compat": False, "hermes_compat": True}) is False
+        from slave_cli.lean_defaults import slave_compat_enabled
+        assert slave_compat_enabled({"slave_compat": False, "slave_compat": True}) is False
 
 
 class TestMigrateState:
     def _no_env_home(self, monkeypatch):
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("SLAVE_HOME", raising=False)
 
     def test_same_name_tree_is_a_clean_noop(self, tmp_path, monkeypatch):
         self._no_env_home(monkeypatch)
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".slave"
         home.mkdir()
-        monkeypatch.setattr("hermes_constants._get_platform_default_hermes_home", lambda: home)
+        monkeypatch.setattr("slave_constants._get_platform_default_slave_home", lambda: home)
         # On this dev tree default and legacy are the same word: nothing to do.
         rc = _migrate(SimpleNamespace(dry_run=False))
         assert rc == 0 and home.exists()
 
     def test_legacy_dir_moves_once_and_is_idempotent(self, tmp_path, monkeypatch):
         self._no_env_home(monkeypatch)
-        legacy = tmp_path / ".hermes"
+        legacy = tmp_path / ".slave"
         (legacy / "personas").mkdir(parents=True)
         (legacy / "personas" / "x.json").write_text("{}", encoding="utf-8")
-        monkeypatch.setattr("hermes_constants._get_platform_default_hermes_home",
+        monkeypatch.setattr("slave_constants._get_platform_default_slave_home",
                             lambda: tmp_path / ".slave")
 
         rc = _migrate(SimpleNamespace(dry_run=False))
@@ -236,10 +236,10 @@ class TestMigrateState:
 
     def test_a_nonempty_target_is_a_conflict_not_an_override(self, tmp_path, monkeypatch):
         self._no_env_home(monkeypatch)
-        legacy = tmp_path / ".hermes"
+        legacy = tmp_path / ".slave"
         legacy.mkdir()
         target = tmp_path / ".slave"
         (target / "nested").mkdir(parents=True)
-        monkeypatch.setattr("hermes_constants._get_platform_default_hermes_home", lambda: target)
+        monkeypatch.setattr("slave_constants._get_platform_default_slave_home", lambda: target)
         assert _migrate(SimpleNamespace(dry_run=False)) == 2
         assert legacy.exists() and target.exists()

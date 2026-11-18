@@ -9,7 +9,7 @@ def test_named_sender_uses_own_remote_roster_and_outbox(tmp_path, monkeypatch):
     root = tmp_path / 'state'
     sender = root / 'profiles' / 'sender'
     sender.mkdir(parents=True)
-    (sender / 'profile.yaml').write_text('ui_meta:\n  hermes-bots:\n    shape: cloud\n')
+    (sender / 'profile.yaml').write_text('ui_meta:\n  slave-bots:\n    shape: cloud\n')
     own = dict(profile='remote', handle='remote', connection_id='own', title='Owned remote')
     other = dict(profile='remote', handle='remote', connection_id='foreign', title='Foreign remote')
     bot_relay.write_remote_roster(sender, [own])

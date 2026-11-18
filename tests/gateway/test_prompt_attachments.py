@@ -18,7 +18,7 @@ async def _authority(tmp_path, monkeypatch, answer):
     from gateway.session import SessionSource, SessionStore
     from gateway.session_authority import LiveSession, initialize_session_authority
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(_session_db=store.persistence, session_store=store, _draining=False,
                              _handle_message=answer, _adapter_for_source=lambda source: None)

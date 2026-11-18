@@ -66,7 +66,7 @@ def test_a_carried_extra_that_cannot_build_is_left_out_and_not_carried_again(ven
     assert extras.declined_extras() == {"matrix"}
     assert extras.declined_reasons() == {"matrix": "it no longer builds on this machine"}
     notice = capsys.readouterr().err
-    assert "'matrix'" in notice and "hermes pm install --extra matrix" in notice
+    assert "'matrix'" in notice and "slave pm install --extra matrix" in notice
     # The next update finds the environment current: nothing is rebuilt or re-carried.
     builds = len(package.applied)
     install.sync_venv(None, explicit=True)
@@ -108,7 +108,7 @@ def test_a_carried_extra_that_fails_for_the_moment_is_retried_by_the_next_update
     package.apply = apply
     with pytest.raises(InstallError, match=r"\['matrix'\].*could not be prepared") as refused:
         install.sync_venv(["all", "fal", "matrix"], explicit=True, carried=["fal", "matrix"])
-    assert "hermes pm install --without matrix" in refused.value.remedy
+    assert "slave pm install --without matrix" in refused.value.remedy
     assert _recorded() is None
     assert extras.declined_extras() == frozenset()
 

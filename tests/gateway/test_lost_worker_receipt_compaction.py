@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import psutil
 
 from gateway.session_authority import admission_row
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 from persistence.authority.runtime import Reset
 from persistence.conversation.messages import NewMessage
 from persistence_assembly import open_persistence, profile_scope, store_location

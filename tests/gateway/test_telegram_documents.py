@@ -128,7 +128,7 @@ def adapter():
 
 @pytest.fixture(autouse=True)
 def _redirect_cache(tmp_path, monkeypatch):
-    """Point document/video cache to tmp_path so tests don't touch ~/.hermes."""
+    """Point document/video cache to tmp_path so tests don't touch ~/.slave."""
     monkeypatch.setattr(
         "gateway.platforms.base.DOCUMENT_CACHE_DIR", tmp_path / "doc_cache"
     )
@@ -270,7 +270,7 @@ class TestDocumentDownloadBlock:
 
     @pytest.mark.asyncio
     async def test_video_note_failure_reply_is_localized(self, adapter, monkeypatch):
-        monkeypatch.setenv("HERMES_LANGUAGE", "de")
+        monkeypatch.setenv("SLAVE_LANGUAGE", "de")
         msg = _make_message()
         msg.video_note = _make_video()
         msg.video_note.file_size = 100

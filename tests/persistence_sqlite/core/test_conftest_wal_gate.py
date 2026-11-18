@@ -32,7 +32,7 @@ from tests.conftest import _wal_is_usable
         (3, 53, 1),   # the managed runtime
     ],
 )
-def test_conftest_gate_agrees_with_hermes_state(version_info, monkeypatch):
+def test_conftest_gate_agrees_with_slave_state(version_info, monkeypatch):
     """``_wai_is_usable`` must be the exact inverse of the canonical predicate."""
     monkeypatch.setattr(sqlite3, "sqlite_version_info", version_info)
     assert _wal_is_usable() is not is_sqlite_wal_reset_vulnerable(version_info), (

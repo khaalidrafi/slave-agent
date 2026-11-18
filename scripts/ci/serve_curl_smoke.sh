@@ -12,7 +12,7 @@ PORT="${SMOKE_PORT:-8901}"
 KEY="${SMOKE_KEY:-smoke-key}"
 BASE="http://127.0.0.1:${PORT}"
 
-python -m hermes_cli.main serve --host 127.0.0.1 --port "${PORT}" --no-open &
+python -m slave_cli.main serve --host 127.0.0.1 --port "${PORT}" --no-open &
 SERVE_PID=$!
 trap 'kill "${SERVE_PID}" 2>/dev/null || true' EXIT
 

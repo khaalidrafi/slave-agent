@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.sessions_repair_profiles import _EMPTY_STORE
+from slave_cli.sessions_repair_profiles import _EMPTY_STORE
 from persistence import PermanentStoreError, ProfileScope
 from persistence.sqlite import SQLiteBackend
 from persistence.sqlite.admin import SQLiteProfileRepairAdmin
@@ -45,7 +45,7 @@ def _store_seed(path: Path) -> Path:
     """One store holding every crossing the profile-repair finders name, the rows the fixers settle and a ledgered session."""
     path.parent.mkdir(parents=True, exist_ok=True)
     scope = ProfileScope(profile_dir=path.parent, name="default")
-    backend = SQLiteBackend({scope.hermes_home_key: path})
+    backend = SQLiteBackend({scope.slave_home_key: path})
     try:
         store = backend.open(scope)
         _store_session(store, "ok-root", ROOT_KEY, profile="default")

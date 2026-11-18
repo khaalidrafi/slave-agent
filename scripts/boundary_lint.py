@@ -1,9 +1,9 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-slave-env" python3 "$0" "$@"'
 """Report-only import lint for the core/module boundary, in both directions.
 
-* **module -> core internals**: a bundled module imports a Hermes module or name that is not on the
-  published plugin API (``hermes_cli/data/plugin_api.json``), e.g. ``gateway.run``. The rule is the one
-  ``hermes plugins validate`` warns with (``plugin_validate_private_imports.private_import_findings``),
+* **module -> core internals**: a bundled module imports a slave-agent module or name that is not on the
+  published plugin API (``slave_cli/data/plugin_api.json``), e.g. ``gateway.run``. The rule is the one
+  ``slave plugins validate`` warns with (``plugin_validate_private_imports.private_import_findings``),
   so the lint and the plugin-author warning cannot drift.
 * **core -> module**: core code imports a specific module (``plugins.platforms.discord.adapter``)
   instead of reaching it through discovery and the plugin contracts.
@@ -33,7 +33,7 @@ from typing import NoReturn
 ROOT = Path(__file__).resolve().parent.parent
 BASELINE = ROOT / "scripts" / "boundary_lint_baseline.json"
 DIRECTIONS = ("module_to_core", "core_to_module")
-FIX_HINT = ("Import the published plugin API (hermes_cli/data/plugin_api.json) or reach the module through"
+FIX_HINT = ("Import the published plugin API (slave_cli/data/plugin_api.json) or reach the module through"
             " discovery; if the import is intended, run `python scripts/boundary_lint.py --update` and say why"
             " in the PR.")
 _SKIP_PARTS = {"tests", "__pycache__", "node_modules", "dist", ".venv", "venv"}
@@ -41,9 +41,9 @@ _SKIP_PARTS = {"tests", "__pycache__", "node_modules", "dist", ".venv", "venv"}
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from hermes_agent.compat.paths import original_module, original_path, tree_moves
-from hermes_cli.plugin_validate_private_imports import (
-    _hermes_packages,
+from slave_agent.compat.paths import original_module, original_path, tree_moves
+from slave_cli.plugin_validate_private_imports import (
+    _slave_packages,
     _imported,
     _type_checking_nodes,
     private_import_findings,
@@ -77,7 +77,7 @@ def module_to_core(root: Path = ROOT) -> list[str]:
 
 def _core_files(root: Path, modules: list[Path]):
     seen: set[Path] = set()
-    for top in sorted(_hermes_packages()):
+    for top in sorted(_slave_packages()):
         package = root / tree_moves(root).current(top)
         paths = sorted(package.rglob("*.py")) if package.is_dir() else [root / tree_moves(root).current(f"{top}.py")]
         for path in paths:

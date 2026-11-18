@@ -1,6 +1,6 @@
 """Plugin-mirrored ``PROVIDER_REGISTRY`` rows are per profile home.
 
-One process serves many profiles (multiplex gateway, Desktop ``serve``). A ``$HERMES_HOME`` plugin
+One process serves many profiles (multiplex gateway, Desktop ``serve``). A ``$SLAVE_HOME`` plugin
 mirrors its profile into the process-wide auth registry, so after profile A served a turn, profile B
 (no such plugin) auto-detected that provider from a stray env token and handed the raw token to the
 plugin's endpoint through the generic env ladder. A home with no profile for a slug must see the slug
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 SLUG = "ambient-fake"
 TOKEN = "fake-ambient-token-0123456789abcdef"
@@ -36,15 +36,15 @@ _PLUGIN = textwrap.dedent(
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
     import providers
-    from hermes_cli import auth_plugin_providers as app
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from slave_cli import auth_plugin_providers as app
+    from slave_cli.auth import PROVIDER_REGISTRY
 
     plugin_home, bare_home = tmp_path / "with_plugin", tmp_path / "bare"
     plugin = plugin_home / "plugins" / "model-providers" / SLUG
     plugin.mkdir(parents=True)
     (plugin / "__init__.py").write_text(_PLUGIN, encoding="utf-8")
     bare_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(bare_home))
+    monkeypatch.setenv("SLAVE_HOME", str(bare_home))
     monkeypatch.setenv("FAKE_AMBIENT_GH_TOKEN", TOKEN)
     monkeypatch.setenv("GEMINI_API_KEY", "AIza" + "x" * 35)
     monkeypatch.setattr(providers, "_REGISTRY", dict(providers._REGISTRY))
@@ -56,24 +56,24 @@ def homes(tmp_path, monkeypatch):
     yield plugin_home, bare_home
     PROVIDER_REGISTRY.clear()
     PROVIDER_REGISTRY.update(rows)
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_slave_user_provider")]:
         del sys.modules[mod]
 
 
 def _bound(home: Path, fn):
-    token = set_hermes_home_override(home)
+    token = set_slave_home_override(home)
     try:
         return fn()
     except Exception as exc:  # the outcome under test may be a refusal
         return exc
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _view(home: Path) -> dict:
-    from hermes_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials, resolve_provider
-    from hermes_cli.auth_plugin_providers import canonical_registry_rows
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from slave_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials, resolve_provider
+    from slave_cli.auth_plugin_providers import canonical_registry_rows
+    from slave_cli.runtime_provider import resolve_runtime_provider
 
     def runtime(requested):
         out = resolve_runtime_provider(requested=requested)
@@ -106,7 +106,7 @@ def _assert_owner(view: dict) -> None:
 
 
 def _assert_absent(view: dict) -> None:
-    from hermes_cli.auth import AuthError
+    from slave_cli.auth import AuthError
 
     assert view["profile"] is None
     assert view["rows"] is False
@@ -128,7 +128,7 @@ def test_mirrored_row_is_absent_in_a_home_without_the_plugin_a_b_a(homes):
 
 
 def test_setup_detection_ignores_another_homes_mirrored_row(homes, monkeypatch):
-    from hermes_cli.setup_migration import _model_section_has_credentials
+    from slave_cli.setup_migration import _model_section_has_credentials
 
     import providers
 
@@ -141,8 +141,8 @@ def test_setup_detection_ignores_another_homes_mirrored_row(homes, monkeypatch):
 
 def test_hidden_rows_survive_registry_reordering(homes):
     """A later mirror inserted mid-registry while another home is bound must not drop hidden rows."""
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.auth_plugin_providers import _insert_row
+    from slave_cli.auth import PROVIDER_REGISTRY
+    from slave_cli.auth_plugin_providers import _insert_row
 
     import providers
 

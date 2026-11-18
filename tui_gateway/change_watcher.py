@@ -20,7 +20,7 @@ def skin_payload(config: dict) -> dict:
     """The ``skin.changed`` / ``gateway.ready`` skin for ``config``'s ``display.skin`` (``{}`` when the
     skin engine fails). Pure of server state: the shared owner calls it under the profile's scope."""
     try:
-        from hermes_cli.skin_engine import init_skin_from_config, get_active_skin
+        from slave_cli.skin_engine import init_skin_from_config, get_active_skin
         init_skin_from_config(config)
         skin = get_active_skin()
         # light/dark are paired palettes: the TUI prefers the block matching terminal polarity.
@@ -43,8 +43,8 @@ _last_skin_sig: tuple[str, float | None] | None = None
 
 def _watcher_home() -> Path:
     """Active profile home for the change watcher's signature probes."""
-    override = get_hermes_home_override()
-    return Path(override if isinstance(override, str) and override else _hermes_home)
+    override = get_slave_home_override()
+    return Path(override if isinstance(override, str) and override else _slave_home)
 
 
 def _watcher_mtime_ns(path: Path):
@@ -98,24 +98,24 @@ def _skin_home_for(profile_id) -> str | None:
     """The profile home a peer's skin follows, or None for the launch home (the ambient scope)."""
     with contextlib.suppress(Exception):
         home = Path(str(profile_id))
-        if home.is_absolute() and home.is_dir() and home.resolve() != Path(_hermes_home).resolve():
+        if home.is_absolute() and home.is_dir() and home.resolve() != Path(_slave_home).resolve():
             return str(home)
     return None
 
 
 def _under_home(home: str, fn):
-    token = set_hermes_home_override(home)
+    token = set_slave_home_override(home)
     try:
         return fn()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _note_skin_broadcast() -> None:
     """Sync the baseline after the /skin RPC emits so the watcher doesn't re-broadcast it."""
     global _last_skin_sig
     with contextlib.suppress(Exception):
-        if home := _skin_home_for(get_hermes_home_override()):
+        if home := _skin_home_for(get_slave_home_override()):
             _skin_sig_by_home[home] = _skin_sig()
         else:
             _last_skin_sig = _skin_sig()
@@ -318,7 +318,7 @@ def _pairing_roots(home: Path) -> list:
     cached = _pairing_roots_cache
     if cached is not None and cached[0] == home and cached[1] == dir_mtime and now - cached[2] < _PAIRING_ROOTS_TTL_S:
         return cached[3]
-    from hermes_constants import named_profile_is_live
+    from slave_constants import named_profile_is_live
     roots = [home / "pairing", home / "platforms" / "pairing"]
     with contextlib.suppress(OSError):
         for profile_dir in profiles_dir.iterdir():
@@ -444,7 +444,7 @@ def _groups_changed_payload(before: dict, after: dict) -> dict:
 def _skills_sig():
     """The skill roots' stat signature for every scope a session resolved commands in (each profile
     home and session repo, not only the launch one: ``agent.skill_commands.published_scopes_signature``):
-    a skill installed or removed from another terminal (``hermes skills install``, a dropped SKILL.md,
+    a skill installed or removed from another terminal (``slave skills install``, a dropped SKILL.md,
     nested under a category) moves it, and attached clients refetch ``commands.catalog`` from this
     gateway instead of rescanning disk."""
     from agent.skill_commands import published_scopes_signature
@@ -528,7 +528,7 @@ def _ensure_skin_watcher() -> None:
             # A failed wake must never end this thread: every push (skin, sessions, groups...) runs on it.
             with contextlib.suppress(Exception):  # health: allow BLE001 -- the driver's own idle poll still runs
                 _wake_room_drivers()
-    threading.Thread(target=_loop, name="hermes-change-watcher", daemon=True).start()
+    threading.Thread(target=_loop, name="slave-change-watcher", daemon=True).start()
 
 
 def register(server) -> None:

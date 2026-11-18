@@ -7,7 +7,7 @@ rules hold however the plugin implements ``LoginBackend``:
   can change later. Ownership is decided here, so a plugin's own ``owns()`` is never consulted and it
   is never handed a handle outside its namespace (built-in ``vault_``/``op:``/``bw:`` or another plugin's).
 - It is handed the handle and nothing else: no page, CDP session, task id, other entries or master
-  password. ``needs_unlock`` is always False, so Hermes' master-password prompt never runs for it.
+  password. ``needs_unlock`` is always False, so slave-agent’ master-password prompt never runs for it.
 - Its exceptions are replaced by a fixed-text ``PluginBackendError`` raised outside the ``except``, so a
   secret in a plugin's error text reaches no tool result, log line or exception chain. Returned values
   are validated and copied into core-owned objects inside the same guard: reading a field of a

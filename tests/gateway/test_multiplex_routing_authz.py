@@ -1,6 +1,6 @@
 """Routing/authorization invariants for a multiplexed gateway (#104933, #103717).
 
-Every test builds a bare ``GatewayRunner`` with stub adapters against a temp ``HERMES_HOME`` and
+Every test builds a bare ``GatewayRunner`` with stub adapters against a temp ``SLAVE_HOME`` and
 exercises the real resolvers (no patched predicates).
 """
 
@@ -45,7 +45,7 @@ def mux(tmp_path, monkeypatch):
     (home / ".env").write_text("TELEGRAM_ALLOWED_USERS=777\n")
     (home / "profiles" / "team_b" / ".env").write_text("TELEGRAM_ALLOWED_USERS=72719239\n")
     (home / "profiles" / "ops" / ".env").write_text("")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     for key in ("TELEGRAM_ALLOWED_USERS", "GATEWAY_ALLOW_ALL_USERS", "GATEWAY_ALLOWED_USERS"):
         monkeypatch.delenv(key, raising=False)
     prev = secret_scope.is_multiplex_active()
@@ -65,9 +65,9 @@ def mux(tmp_path, monkeypatch):
     runner.adapters = {Platform.TELEGRAM: primary}
     runner._profile_adapters = {"team_b": {Platform.TELEGRAM: team_b}, "ops": {}}
     served = [("default", home), ("ops", home / "profiles" / "ops"), ("team_b", home / "profiles" / "team_b")]
-    with patch("hermes_cli.profiles.profiles_to_serve", return_value=served), \
-            patch("hermes_cli.profiles.get_profile_dir", side_effect=lambda n: home / "profiles" / n), \
-            patch("hermes_cli.profiles.profile_exists", return_value=True):
+    with patch("slave_cli.profiles.profiles_to_serve", return_value=served), \
+            patch("slave_cli.profiles.get_profile_dir", side_effect=lambda n: home / "profiles" / n), \
+            patch("slave_cli.profiles.profile_exists", return_value=True):
         yield SimpleNamespace(runner=runner, home=home, primary=primary, team_b=team_b)
     secret_scope.set_multiplex_active(prev)
 
@@ -170,7 +170,7 @@ def test_raw_api_server_child_notice_follows_the_served_profile_policy(
     home = tmp_path / "home"
     served = home / "profiles" / "builder"
     served.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     policy = "delegation:\n  surface_child_process_notifications: {}\ndisplay:\n  background_process_notifications: all\n"
     (home / "config.yaml").write_text(policy.format(str(launch_policy).lower()))
     (served / "config.yaml").write_text(policy.format(str(served_policy).lower()))

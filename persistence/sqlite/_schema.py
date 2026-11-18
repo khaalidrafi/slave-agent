@@ -22,7 +22,7 @@ import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
-from hermes_startup_watchdog import report_startup_progress
+from slave_startup_watchdog import report_startup_progress
 from utils import safe_json_loads
 from persistence.sqlite._state.common import (
     TITLE_SOURCE_DERIVED as _TITLE_SOURCE_DERIVED, TITLE_SOURCE_LLM as _TITLE_SOURCE_LLM,
@@ -49,7 +49,7 @@ except ImportError:  # pragma: no cover - stripped/scaffold installs only
     psutil = None  # type: ignore[assignment]
 
 # Pre-split logger identity so log filtering/capture is unchanged.
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 
 def _meta_row(conn, key: str) -> Optional[sqlite3.Row]:
@@ -89,7 +89,7 @@ def next_title_in_lineage(conn, base_title: str) -> str:
 _FTS_HOLDER_ESCALATE_ATTEMPTS = 3
 _FTS_HOLDER_ESCALATE_SECONDS = 60.0
 # The same holder PID set blocking this many deferrals over this long is a structurally resident
-# peer (a supervised service on the same HERMES_HOME), not a transient one worth waiting out (#106393).
+# peer (a supervised service on the same SLAVE_HOME), not a transient one worth waiting out (#106393).
 _FTS_HOLDER_FUTILE_ATTEMPTS = 10
 _FTS_HOLDER_FUTILE_SECONDS = 1800.0
 # retry_deferred_fts_recovery cadence: startup paid the full admission wait once; later
@@ -268,8 +268,8 @@ def _dedupe_legacy_system_prompts(holder: StoreHolder, cursor: sqlite3.Cursor) -
 
 def _sqlite_supports_fts5(holder: StoreHolder, cursor: sqlite3.Cursor) -> bool:
     try:
-        cursor.execute("CREATE VIRTUAL TABLE temp._hermes_fts5_probe USING fts5(x)")
-        cursor.execute("DROP TABLE temp._hermes_fts5_probe")
+        cursor.execute("CREATE VIRTUAL TABLE temp._slave_fts5_probe USING fts5(x)")
+        cursor.execute("DROP TABLE temp._slave_fts5_probe")
         return True
     except sqlite3.OperationalError as exc:
         if not _is_fts5_unavailable_error(exc):
@@ -583,15 +583,15 @@ def _defer_stale_fts_for_holders(holder: StoreHolder, cursor: sqlite3.Cursor, fo
         logger.error(
             "state.db FTS repair has been blocked by the same holder(s) for %d deferrals over %.0f min "
             "(%s); waiting is futile. Stop ONLY the other holder(s) — this process keeps running and its "
-            "own retry admits the rebuild within %.0fs of the holder leaving. `hermes doctor` shows this.",
+            "own retry admits the rebuild within %.0fs of the holder leaving. `slave doctor` shows this.",
             holders_attempts, (now - holders_since) / 60.0,
             ", ".join(f"pid {pid}: {_holder_cmdline(pid)}" for pid in holder_pids), _FTS_STALE_RETRY_SECONDS,
         )
     elif attempts >= _FTS_HOLDER_ESCALATE_ATTEMPTS and now - first_seen >= _FTS_HOLDER_ESCALATE_SECONDS:
         logger.error(
             "state.db FTS repair remains blocked after %d deferrals by holder(s) %s. Stop the listed "
-            "processes (this process's own retry then rebuilds), or run `hermes sessions optimize-storage` "
-            "with every holder stopped. `hermes doctor` reports this degraded state.", attempts, foreign_holders,
+            "processes (this process's own retry then rebuilds), or run `slave sessions optimize-storage` "
+            "with every holder stopped. `slave doctor` reports this degraded state.", attempts, foreign_holders,
         )
     logger.warning(
         "Deferred stale state.db FTS rebuild while foreign processes "
@@ -729,7 +729,7 @@ def _recover_stale_fts_locked(holder: StoreHolder, cursor: sqlite3.Cursor, *, le
 
 def _trigram_tokenizer_available(holder: StoreHolder, cursor: sqlite3.Cursor) -> bool:
     """Probe trigram support without publishing a persistent FTS object."""
-    probe = "temp.hermes_fts5_trigram_probe"
+    probe = "temp.slave_fts5_trigram_probe"
     cursor.execute(f"DROP TABLE IF EXISTS {probe}")
     try:
         cursor.execute(f"CREATE VIRTUAL TABLE {probe} USING fts5(content, tokenize='trigram')")
@@ -1036,7 +1036,7 @@ def _init_schema(holder: StoreHolder):
     if drop_retired_cjk_index(cursor):
         logger.warning(
             "Removed the retired messages_fts_cjk index; CJK search now uses the trigram index. "
-            "`hermes sessions optimize-storage` reclaims its disk space. "
+            "`slave sessions optimize-storage` reclaims its disk space. "
             "%s is no longer loaded and can be deleted.", holder.db_path.parent / "lib" / "libfts5_cjk.so",
         )
 
@@ -1185,7 +1185,7 @@ def _run_data_migrations(holder: StoreHolder, cursor: sqlite3.Cursor, current_ve
         _migrate_v22_session_model_usage(holder, cursor)
     # v23: FTS storage redesign (external-content tables). OPT-IN, NOT AUTOMATIC: the
     # transition is disk-heavy (~2x transient) and long (hours on 25 GB), so an existing
-    # install only gets a flag; `hermes sessions optimize-storage` performs it. The FTS
+    # install only gets a flag; `slave sessions optimize-storage` performs it. The FTS
     # layout is tracked by the independent `fts_storage_version` marker, so
     # schema_version still advances for legacy-FTS users.
     if current_version < 23 and fts5_available and _db_needs_fts_storage_upgrade(cursor):
@@ -1229,7 +1229,7 @@ def _run_data_migrations(holder: StoreHolder, cursor: sqlite3.Cursor, current_ve
     # and long (~1-2h background on a 25 GB DB). Doing it silently on every big user's next open — with
     # a completeness guarantee that depends on the process staying alive long enough — is the wrong
     # default. So on an EXISTING install we touch nothing here: the v22 inline FTS keeps working exactly
-    # as before, and we only record a flag advertising that the optimization is available. `hermes
+    # as before, and we only record a flag advertising that the optimization is available. `slave
     # sessions optimize-storage` performs the whole transition as one deliberate, disk-checked,
     # progress-reported foreground operation. DECOUPLED VERSIONING. Crucially, this does NOT hold back
     # the main schema_version. The FTS storage LAYOUT is tracked by an independent `fts_storage_version`
@@ -1546,7 +1546,7 @@ def _warn_fts5_unavailable(holder: StoreHolder, exc: sqlite3.OperationalError) -
     holder._fts_unavailable_warned = True
     logger.warning(
         "SQLite FTS5 unavailable for %s; full-text session search "
-        "disabled. Run `hermes update` to rebuild the venv with a "
+        "disabled. Run `slave update` to rebuild the venv with a "
         "current Python (managed uv guarantees FTS5). (underlying error: %s)",
         holder.db_path,
         exc,
@@ -1584,7 +1584,7 @@ def _is_fts_write_corruption_error(exc: sqlite3.DatabaseError) -> bool:
     """Corruption SQLite identifies as FTS-scoped (SQLITE_CORRUPT_VTAB, or an ``fts5:``
     report naming ``messages_fts*`` on builds without result codes); a bare malformed
     image is structural. One rule, shared with ``classify_persistence_error`` and the
-    gateway transcript retry: see :func:`hermes_state_errors.is_fts_scoped_corruption_error`."""
+    gateway transcript retry: see :func:`slave_state_errors.is_fts_scoped_corruption_error`."""
     return is_fts_scoped_corruption_error(exc)
 
 

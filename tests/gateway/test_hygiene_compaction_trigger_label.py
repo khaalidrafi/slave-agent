@@ -32,7 +32,7 @@ def _history() -> list:
 async def _drive_codex_hygiene(agent: SimpleNamespace) -> None:
     gateway = SimpleNamespace(_agent_cache={"tg:1": (agent, 0.0)}, _agent_cache_lock=None)
     await run_codex_hygiene_compaction(
-        gateway, "tg:1", "sess-1", auto_mode="hermes", history=_history(),
+        gateway, "tg:1", "sess-1", auto_mode="slave", history=_history(),
         approx_tokens=100_000, timeout_seconds=5.0,
     )
 

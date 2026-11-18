@@ -4,15 +4,15 @@ sha: 4c71d9c13593eb4fbc37525d3ab1d83b35afe8e8
 subdir: ""
 title: xscapes
 description: |
-  xscapes are cozy ASCII scenes that show what your agent is doing, at a glance. They run under Hermes in your terminal.
+  xscapes are cozy ASCII scenes that show what your agent is doing, at a glance. They run under slave-agent in your terminal.
 
   - See how hard your agent is working and what it just did
   - Keep an eye on your session's context
   - Never miss a failed command
-  - Leave the room: your companion knocks with a sound when Hermes needs you
+  - Leave the room: your companion knocks with a sound when slave-agent needs you
   - Multiple scenes and companions, all on your own clock
 
-  Needs the xscapes program, installed separately. Disclosure: sends each tool call with its arguments, approval commands, the folder Hermes runs in, and the first line of each prompt and reply to the xscapes program (not covered by this pin), which keeps them under ~/.config/xscapes/.
+  Needs the xscapes program, installed separately. Disclosure: sends each tool call with its arguments, approval commands, the folder slave-agent runs in, and the first line of each prompt and reply to the xscapes program (not covered by this pin), which keeps them under ~/.config/xscapes/.
 maintainer: donlucasx
 tier: community
 category: general

@@ -43,15 +43,15 @@ class _Authorities:
 def lender(tmp_path, monkeypatch):
     """A multiplexed lender: default + profiles/helper, each with its own config, .env and state.db."""
     from gateway.run import _profile_runtime_scope
-    root = tmp_path / 'hermes'
+    root = tmp_path / 'slave'
     helper = root / 'profiles' / 'helper'
     helper.mkdir(parents=True)
     (root / 'config.yaml').write_text('approvals:\n  mode: manual\nagent:\n  max_turns: 90\n')
     (root / '.env').write_text('ROOMLINK_PROBE_KEY=default-secret\n')
     (helper / 'config.yaml').write_text('approvals:\n  mode: manual\nagent:\n  max_turns: 17\n')
     (helper / '.env').write_text('ROOMLINK_PROBE_KEY=helper-secret\n')
-    monkeypatch.setenv('HERMES_HOME', str(root))
-    monkeypatch.delenv('HERMES_ROOM_LINK_URL', raising=False)
+    monkeypatch.setenv('SLAVE_HOME', str(root))
+    monkeypatch.delenv('SLAVE_ROOM_LINK_URL', raising=False)
     monkeypatch.delenv('ROOMLINK_PROBE_KEY', raising=False)
     adapter = APIServerAdapter(PlatformConfig(enabled=True, extra={'key': 'lender-gateway-api-key'}))
     adapter._run_idempotency_store.close()
@@ -94,7 +94,7 @@ def _app(adapter):
 
 def test_a_named_profile_is_lent_through_its_own_mirror_and_mints_its_own_grants(lender, monkeypatch):
     from gateway.hosted_room_peer import decode_room_grant, gateway_room_grant_secret
-    monkeypatch.setenv('HERMES_ROOM_LINK_URL', 'https://lender.example.test/hermes/')
+    monkeypatch.setenv('SLAVE_ROOM_LINK_URL', 'https://lender.example.test/hermes/')
     link = lender.link(lender.helper)
     assert link['enabled'] is True and link['profile'] == 'helper', link
     catalog = link['catalog']
@@ -112,17 +112,17 @@ def test_a_named_profile_is_lent_through_its_own_mirror_and_mints_its_own_grants
     assert claims['execution_policy_digest'] == catalog['execution_policy']['policy_digest']
 
     # A profile that advertises its own endpoint keeps it as configured.
-    monkeypatch.delenv('HERMES_ROOM_LINK_URL')
+    monkeypatch.delenv('SLAVE_ROOM_LINK_URL')
     (lender.helper / 'config.yaml').write_text(
         'approvals:\n  mode: manual\ngateway:\n  room_link_url: https://helper.example.test/link\n')
     assert lender.link(lender.helper)['endpoint']['url'] == 'https://helper.example.test/link'
 
 
 def test_a_single_profile_gateway_never_advertises_the_root_gateways_listener(lender, monkeypatch):
-    # `hermes -p helper gateway run`: its own process. The root gateway's listener neither serves
+    # `slave -p helper gateway run`: its own process. The root gateway's listener neither serves
     # helper nor holds this process's grant secret, so its /p/helper mirror would never answer.
     secret_scope.set_multiplex_active(False)
-    monkeypatch.setenv('HERMES_HOME', str(lender.helper))
+    monkeypatch.setenv('SLAVE_HOME', str(lender.helper))
     (lender.root / 'config.yaml').write_text(
         'approvals:\n  mode: manual\ngateway:\n  room_link_url: https://root.example.test/link\n')
     assert lender.link(lender.helper) == {'enabled': False, 'reason': 'endpoint_required'}
@@ -131,23 +131,23 @@ def test_a_single_profile_gateway_never_advertises_the_root_gateways_listener(le
 @pytest.mark.asyncio
 async def test_a_granted_run_executes_in_the_lent_profile_and_its_grant_answers_nowhere_else(lender, monkeypatch):
     from gateway.hosted_room_peer import PROTOCOL_VERSION
-    from hermes_constants import get_hermes_home
-    from hermes_cli.config import load_config
+    from slave_constants import get_slave_home
+    from slave_cli.config import load_config
     seen = []
 
     class Agent:
         def run_conversation(self, **kwargs):
-            seen.append({'home': get_hermes_home(), 'secret': secret_scope.get_secret('ROOMLINK_PROBE_KEY'),
+            seen.append({'home': get_slave_home(), 'secret': secret_scope.get_secret('ROOMLINK_PROBE_KEY'),
                          'max_turns': load_config()['agent']['max_turns'], 'prompt': kwargs['user_message']})
             return {'final_response': 'helper reply'}
 
     monkeypatch.setattr(lender.adapter, '_create_agent', lambda **kwargs: Agent())
     async with TestClient(TestServer(_app(lender.adapter))) as client:
-        monkeypatch.setenv('HERMES_ROOM_LINK_URL', str(client.make_url('')).rstrip('/'))
+        monkeypatch.setenv('SLAVE_ROOM_LINK_URL', str(client.make_url('')).rstrip('/'))
         catalog = lender.link(lender.helper)['catalog']
         grant = lender.invite(lender.helper)['grant']
         default_grant = lender.invite(lender.root, member_id='host')['grant']
-        auth = {'Authorization': f'HermesRoom {grant}'}
+        auth = {'Authorization': f'SlaveRoom {grant}'}
 
         async def get(path, headers=auth):
             response = await client.get(path, headers=headers)
@@ -158,7 +158,7 @@ async def test_a_granted_run_executes_in_the_lent_profile_and_its_grant_answers_
         # No cross-profile use: the helper's grant on the default route, the default's on the helper's.
         assert (await get('/v1/room-members/capabilities'))[1]['error']['code'] == 'invalid_room_grant'
         assert (await get('/p/helper/v1/room-members/capabilities',
-                          {'Authorization': f'HermesRoom {default_grant}'}))[1]['error']['code'] == 'invalid_room_grant'
+                          {'Authorization': f'SlaveRoom {default_grant}'}))[1]['error']['code'] == 'invalid_room_grant'
 
         prompt = 'review the helper side'
         dispatch = {**ROOM, 'protocol_version': PROTOCOL_VERSION, 'target_install_id': catalog['installation_id'],

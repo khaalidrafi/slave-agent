@@ -1,7 +1,7 @@
 name: "backfill"
 repo: "https://github.com/wth-amna/hermes-backfill"
 sha: "b99250c2e8fe400549291abaee2ff4f093562474"
-description: "Switch memory providers without Hermes forgetting you: replays your past Hermes sessions into the memory provider you use now, with a dry run, resume, no double imports and a before/after recall check. Disclosure — reads state.db read-only and config.yaml; sends past user/assistant turns to the memory provider you configured (a cloud provider receives them over the network); writes only its own plugin state (imported session ids, 16-character turn hashes, recall-check results); the optional `hermes backfill check` uses your Hermes model through its own auxiliary slot. No network calls, credentials or telemetry of its own."
+description: "Switch memory providers without slave-agent forgetting you: replays your past slave-agent sessions into the memory provider you use now, with a dry run, resume, no double imports and a before/after recall check. Disclosure — reads state.db read-only and config.yaml; sends past user/assistant turns to the memory provider you configured (a cloud provider receives them over the network); writes only its own plugin state (imported session ids, 16-character turn hashes, recall-check results); the optional `slave backfill check` uses your slave-agent model through its own auxiliary slot. No network calls, credentials or telemetry of its own."
 maintainer: "wth-amna"
 tier: "community"
 category: "memory"

@@ -15,8 +15,8 @@ BARE_400 = {"detail": "Bad Request"}
 
 @pytest.fixture(autouse=True)
 def profile_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.delenv("SLAVE_IGNORE_USER_CONFIG", raising=False)
     return tmp_path
 
 
@@ -91,7 +91,7 @@ def test_plain_json_rejection_is_returned_without_another_resend(async_mode):
 def test_raw_body_is_not_kept_alive_with_the_response():
     pytest.importorskip("compression.zstd")
     response, _ = _post_against([(200, {"ok": True})], {"model": "x", "input": "hi"})
-    assert "hermes_codex_raw_body" not in response.request.extensions
+    assert "slave_codex_raw_body" not in response.request.extensions
 
 
 @pytest.mark.parametrize("async_mode", [False, True], ids=["sync", "async"])
@@ -171,7 +171,7 @@ def test_opt_out_sends_plain_json(profile_home):
 def test_ignore_user_config_keeps_the_default(profile_home, monkeypatch):
     pytest.importorskip("compression.zstd")
     _disable_compression(profile_home)
-    monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+    monkeypatch.setenv("SLAVE_IGNORE_USER_CONFIG", "1")
     client = build_keepalive_http_client(OFFICIAL)
     try:
         request = _send_through_hooks(client, f"{OFFICIAL}/responses", {"model": "x", "input": "hello"})
@@ -197,12 +197,12 @@ def test_other_destinations_stay_raw_json(base_url, path):
 
 
 def test_config_read_failure_keeps_the_http_client(monkeypatch):
-    import hermes_cli.config
+    import slave_cli.config
 
     def boom():
         raise RuntimeError("config unavailable")
 
-    monkeypatch.setattr(hermes_cli.config, "load_config_readonly", boom)
+    monkeypatch.setattr(slave_cli.config, "load_config_readonly", boom)
     client = build_keepalive_http_client(OFFICIAL)
     assert client is not None
     try:
@@ -212,11 +212,11 @@ def test_config_read_failure_keeps_the_http_client(monkeypatch):
 
 
 def test_unavailable_config_backend_keeps_plain_json(monkeypatch):
-    import hermes_cli.config
-    from hermes_cli.config_backend import ConfigBackendUnavailable
+    import slave_cli.config
+    from slave_cli.config_backend import ConfigBackendUnavailable
 
     def unavailable():
         raise ConfigBackendUnavailable("backend down")
 
-    monkeypatch.setattr(hermes_cli.config, "load_config_readonly", unavailable)
+    monkeypatch.setattr(slave_cli.config, "load_config_readonly", unavailable)
     assert codex_request_compression_hooks(OFFICIAL) is None

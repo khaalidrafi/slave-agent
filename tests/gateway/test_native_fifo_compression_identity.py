@@ -14,7 +14,7 @@ async def test_native_fifo_identity_is_stable_across_compression(tmp_path, monke
     from gateway.run import GatewayRunner
     from gateway.session_authority import initialize_session_authority, SessionAuthority
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from plugins.platforms.discord.adapter import DiscordAdapter
 
     monkeypatch.setattr(SessionAuthority, '_schedule', lambda self, ref: None)
@@ -28,7 +28,7 @@ async def test_native_fifo_identity_is_stable_across_compression(tmp_path, monke
     events = [MessageEvent(text=name, source=source, message_id=name) for name in ('first', 'second')]
     receipts = []
     for event in events:
-        with native_callback(runner, event, get_hermes_home()):
+        with native_callback(runner, event, get_slave_home()):
             receipts.append(await authority.admit_native(event))
     key = runner.session_store._generate_session_key(source)
     parent = runner.session_store.peek_session_id(key)
@@ -61,10 +61,10 @@ async def test_native_fifo_identity_is_stable_across_compression(tmp_path, monke
     assert [(r.request_id, r.status) for r in rows] == [('first', 'terminal'), ('second', 'terminal')]
 
     # An exact retry of the first event is the same admission, and a third follows the same FIFO.
-    with native_callback(runner, events[0], get_hermes_home()):
+    with native_callback(runner, events[0], get_slave_home()):
         assert (await authority.admit_native(events[0])).admission_id == receipts[0].admission_id
     third = MessageEvent(text='third', source=source, message_id='third')
-    with native_callback(runner, third, get_hermes_home()):
+    with native_callback(runner, third, get_slave_home()):
         receipt = await authority.admit_native(third)
     assert receipt.ref.session_id == parent
     await SessionAuthority._drain(authority, ref)

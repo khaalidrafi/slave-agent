@@ -13,9 +13,9 @@ def run_worker(tmp_path, body, mode="safe"):
     home = tmp_path / mode
     home.mkdir(exist_ok=True)
     root = Path(__file__).resolve().parents[2]
-    env = dict(os.environ, HERMES_HOME=str(home), HOME=str(home), PROBE_MODE=mode,
+    env = dict(os.environ, SLAVE_HOME=str(home), HOME=str(home), PROBE_MODE=mode,
                TERMINAL_ENV="local", TERMINAL_CWD=str(home))
-    for key in ("HERMES_SAFE_MODE", "HERMES_IGNORE_USER_CONFIG", "HERMES_IGNORE_RULES"):
+    for key in ("SLAVE_SAFE_MODE", "SLAVE_IGNORE_USER_CONFIG", "SLAVE_IGNORE_RULES"):
         env.pop(key, None)
     script = home / "probe.py"
     script.write_text(f"import sys; sys.path.insert(0, {str(root)!r})\n" + textwrap.dedent(body), encoding="utf-8")
@@ -31,12 +31,12 @@ def test_actual_agent_tool_round_never_loads_plugins_in_safe_worker(tmp_path, mo
         import json, os, sys, threading
         from pathlib import Path
         from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-        home = Path(os.environ['HERMES_HOME'])
+        home = Path(os.environ['SLAVE_HOME'])
         mode = os.environ['PROBE_MODE']
         plugin = home / 'plugins' / 'sentinel'
         plugin.mkdir(parents=True)
         (plugin / 'plugin.yaml').write_text('name: sentinel\nversion: 1.0.0\nkind: standalone\n')
-        (plugin / '__init__.py').write_text("from pathlib import Path\nimport os\nPath(os.environ['HERMES_HOME'], 'plugin-executed').touch()\ndef register(ctx): pass\n")
+        (plugin / '__init__.py').write_text("from pathlib import Path\nimport os\nPath(os.environ['SLAVE_HOME'], 'plugin-executed').touch()\ndef register(ctx): pass\n")
         config = {'plugins': {'enabled': ['sentinel']}, 'agent': {'environment_probe': False},
                   'auxiliary': {'title_generation': {'enabled': False}},
                   'terminal': {'backend': 'local', 'cwd': str(home)}}

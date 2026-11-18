@@ -19,7 +19,7 @@ def _session(tmp_path, monkeypatch, source, session_id):
     from run_agent import AIAgent
     home = tmp_path / 'home'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     db = open_persistence(profile_scope(home=home))
     seed_session(db, session_id, source)
     agent = AIAgent.__new__(AIAgent)
@@ -92,7 +92,7 @@ async def test_reap_of_a_segment_of_an_adopted_conversation_respects_the_owner_l
     from persistence.conversation.lineage import CompressionChild
     from persistence.conversation.messages import NewMessage
     from tui_gateway import server
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     db = store.persistence

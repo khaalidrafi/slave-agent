@@ -1,4 +1,4 @@
-"""Base class for all Hermes execution environment backends.
+"""Base class for all slave-agent execution environment backends.
 
 Unified spawn-per-call model: every command spawns a fresh ``bash -c`` process.
 A session snapshot (env vars, functions, aliases) is captured once at init and
@@ -21,7 +21,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Iterable
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tools.interrupt import consume_yield, is_interrupted, is_thread_interrupted
 from tools.environments.base_output import (
     ProcessHandle, _finalize_wait_result, _new_output_collector, _start_drain_thread,
@@ -38,8 +38,8 @@ from utils import atomic_json_write, env_var_enabled, file_signature, read_json_
 logger = logging.getLogger(__name__)
 
 # Opt-in debug tracing for the interrupt/activity/poll machinery
-# (HERMES_DEBUG_INTERRUPT=1). Off by default to avoid flooding gateway logs.
-_DEBUG_INTERRUPT = env_var_enabled("HERMES_DEBUG_INTERRUPT")
+# (SLAVE_DEBUG_INTERRUPT=1). Off by default to avoid flooding gateway logs.
+_DEBUG_INTERRUPT = env_var_enabled("SLAVE_DEBUG_INTERRUPT")
 
 # Extra seconds the ``run_bounded_sync`` backstop waits past the inner ``_wait_for_process``
 # deadline: the inner loop returns partial output + 124; the outer bound only fires when that
@@ -207,9 +207,9 @@ def touch_activity_if_due(state: dict, label: str) -> None:
 
 def get_sandbox_dir() -> Path:
     """Host-side root for all sandbox storage (Docker workspaces, plugin backends'
-    host-side state). ``TERMINAL_SANDBOX_DIR`` overrides ``{HERMES_HOME}/sandboxes``."""
+    host-side state). ``TERMINAL_SANDBOX_DIR`` overrides ``{SLAVE_HOME}/sandboxes``."""
     custom = os.getenv("TERMINAL_SANDBOX_DIR")
-    p = Path(custom) if custom else get_hermes_home() / "sandboxes"
+    p = Path(custom) if custom else get_slave_home() / "sandboxes"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -232,7 +232,7 @@ def _update_json_store(path: Path, update: Callable[[dict], None]) -> None:
     update: a sandbox lifecycle step (modal's restore fallback included) must not abort on it."""
     from contextlib import ExitStack
 
-    from hermes_cli.auth import _file_lock
+    from slave_cli.auth import _file_lock
 
     lock_path = path.with_name(f"{path.name}.lock")
     with ExitStack() as stack:
@@ -273,7 +273,7 @@ def env_uses_host_filesystem(env: object) -> bool:
 
 
 class BaseEnvironment(LongLivedProcessMixin, ABC):
-    """Common interface and unified execution flow for all Hermes backends. Subclasses
+    """Common interface and unified execution flow for all slave-agent backends. Subclasses
     implement ``_run_bash()`` and ``cleanup()``; the base provides ``execute()`` with
     snapshot sourcing, CWD tracking, interrupt handling and timeout enforcement, and the
     long-lived process surface (``start_process`` / ``attach_process`` / ``stop_process``,
@@ -285,7 +285,7 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
     # "heredoc" (embedded in the command; no built-in backend, plugins only).
     _stdin_mode: str = "pipe"  # "pipe" | "payload" | "heredoc"
 
-    # True only when commands execute on the SAME host as the Hermes process
+    # True only when commands execute on the SAME host as the Slave process
     # (LocalEnvironment); controller-host facts then describe the execution target.
     is_local: bool = False
 
@@ -380,7 +380,7 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
         """
         import base64
         import binascii
-        marker = f"__HERMES_FETCH_{uuid.uuid4().hex[:12]}__"
+        marker = f"__SLAVE_FETCH_{uuid.uuid4().hex[:12]}__"
         quoted = shlex.quote(remote_path)
         # ``[ -f ]`` follows symlinks, so a link to a denied host file is judged by the CALLER on
         # ``readlink -f`` output before any bytes move.
@@ -525,7 +525,7 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
         Redirections apply left to right, so the substitution inherits the heredoc as its stdin;
         the heredoc stays outside ``<( )`` because bash 3.2 mis-parses bodies inside it. ``|| :``
         keeps an inherited ``set -e`` from killing the reader on read's EOF status."""
-        delimiter = f"HERMES_STDIN_{uuid.uuid4().hex[:12]}"
+        delimiter = f"SLAVE_STDIN_{uuid.uuid4().hex[:12]}"
         return (f"{{\n{command}\n}} << '{delimiter}' < <(IFS= read -r -d '' s || :; printf '%s' \"${{s%?}}\")\n"
                 f"{stdin_data}\n{delimiter}")
 
@@ -589,7 +589,7 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
                     trace.interrupted()
                     _kill_and_join()
                     return {**self._finalize_wait_result(output, output.render(suffix="\n[Command interrupted]"), 130),
-                            "hermes_interrupted": True}
+                            "slave_interrupted": True}
                 if yield_handler is not None and consume_yield(watch_interrupt_tid):
                     drain_stop.set()
                     drain_thread.join(timeout=1)
@@ -609,8 +609,8 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
                     rendered = output.render(suffix=f"\n[Command timed out after {timeout}s]")
                     if output.total_chars == 0:
                         rendered = rendered.lstrip()
-                    # The flag tells Hermes' own deadline apart from a command's own ``exit 124``.
-                    return {**self._finalize_wait_result(output, rendered, 124), "hermes_timed_out": True}
+                    # The flag tells Slave' own deadline apart from a command's own ``exit 124``.
+                    return {**self._finalize_wait_result(output, rendered, 124), "slave_timed_out": True}
                 touch_activity_if_due(_activity_state, "terminal command running")
                 trace.heartbeat()
                 time.sleep(_poll_sleep)
@@ -636,12 +636,12 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
         # Join the stdin writer before reading its error list: a child that exits without
         # reading stdin can otherwise race ahead of a recorded encode failure. The timeout
         # is a pure safety net (write raises BrokenPipeError once the pipe closes).
-        stdin_thread = getattr(proc, "_hermes_stdin_thread", None)
+        stdin_thread = getattr(proc, "_slave_stdin_thread", None)
         if stdin_thread is not None:
             stdin_thread.join(timeout=5)
         rendered = output.render()
         result = self._finalize_wait_result(output, rendered, proc.returncode)
-        if stdin_errors := getattr(proc, "_hermes_stdin_errors", None):
+        if stdin_errors := getattr(proc, "_slave_stdin_errors", None):
             result["stdin_error"] = err = str(stdin_errors[0])
             result["output"] = rendered + f"\n[stdin write failed: {err}]"
         return result
@@ -670,7 +670,7 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
             self.cwd = result["cwd"]
 
     def _parse_cwd_marker(self, result: dict):
-        """Strip the ``__HERMES_CWD_{session}__`` (and PIPESTATUS) marker lines from
+        """Strip the ``__SLAVE_CWD_{session}__`` (and PIPESTATUS) marker lines from
         ``result["output"]``. ``result["cwd_observed"]``/``["cwd"]`` are set only when THIS
         command emitted a marker: a killed/timed-out command emits none. Concurrent callers
         must read ``result["cwd"]`` rather than ``self.cwd``."""
@@ -835,7 +835,7 @@ class BaseEnvironment(LongLivedProcessMixin, ABC):
                 result = self._finalize_wait_result(collector, collector.render(suffix=suffix).lstrip("\n"), 124)
             else:
                 result = {"output": suffix.lstrip(), "returncode": 124}
-            result["hermes_timed_out"] = True
+            result["slave_timed_out"] = True
         else:
             result = bounded.value
         # Housekeeping from "/" (the background poller) or a one-off workdir must not move the session.

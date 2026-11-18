@@ -5,7 +5,7 @@ import threading
 from contextlib import suppress
 from typing import Any
 
-from hermes_cli.process_identity import own_process_groups, release_process_groups, spawn_owned
+from slave_cli.process_identity import own_process_groups, release_process_groups, spawn_owned
 
 
 class ProcessOwnershipMixin:
@@ -55,7 +55,7 @@ class ProcessOwnershipMixin:
     def _take_handoff_group(self, session: Any, proc: subprocess.Popen) -> None:
         """A foreground command that yields to background hands its supervised group over with the
         pipe (LocalEnvironment._run_bash): the job keeps it, unless jobs here must outlive us."""
-        owned_pgid, proc._hermes_owned_pgid = getattr(proc, "_hermes_owned_pgid", None), None
+        owned_pgid, proc._slave_owned_pgid = getattr(proc, "_slave_owned_pgid", None), None
         if owned_pgid is not None and self._owns_job(False):
             session._owned_pgid = owned_pgid
         elif owned_pgid is not None:
@@ -68,7 +68,7 @@ class ProcessOwnershipMixin:
             session._owned_pgid = None
         if owned_pgid is not None:
             own_process_groups([owned_pgid])  # re-covers a group the gateway path released
-            proc._hermes_owned_pgid = owned_pgid
+            proc._slave_owned_pgid = owned_pgid
 
     def _release_job_group(self, session: Any) -> None:
         """The job's own process exited or was killed: stop covering its group. What it left behind on

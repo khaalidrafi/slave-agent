@@ -113,7 +113,7 @@ def connect(
                 conn.rollback()
                 raise
     # Late import: a gateway that outlives an on-disk upgrade has the OLD sqlite_util cached.
-    from hermes_cli.sqlite_util import open_db
+    from slave_cli.sqlite_util import open_db
 
     return open_db(db_path, db_label=db_label, busy_timeout_ms=10_000, foreign_keys=True,
                    wal_lock_retries=lock_retries, initialize=_initialize)
@@ -138,6 +138,6 @@ def transaction(
     connect: Callable[[DbPath], sqlite3.Connection], db_path: DbPath, *, immediate: bool
 ) -> Iterator[sqlite3.Connection]:
     """Open via ``connect``, optionally ``BEGIN IMMEDIATE``, commit on success, always close."""
-    from hermes_cli.sqlite_util import transaction as _transaction
+    from slave_cli.sqlite_util import transaction as _transaction
 
     return _transaction(connect(db_path), immediate=immediate)

@@ -18,7 +18,7 @@ description: >-
   (never runs git or tests; the diff is passed in), no third-party
   dependencies, no self-update; XML entity declarations are refused.
   Disclosure: reads the local report and diff paths you pass it (read-only),
-  only regular files, and honours Hermes' core read denylist.
+  only regular files, and honours slave-agent’ core read denylist.
 maintainer: rodricksz4h5
 tier: community
 category: tools

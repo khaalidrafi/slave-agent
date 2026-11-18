@@ -23,7 +23,7 @@ from gateway.session_events import SessionEvents
 from gateway.session_pending_controls import PendingControls
 from gateway.session_persistence import authority_persistence
 from gateway.session_producer_lifecycle import drop_producer_turn, mark_producer_admission
-from hermes_cli.observability.shared_metrics_busy import busy_row_settled
+from slave_cli.observability.shared_metrics_busy import busy_row_settled
 from persistence.authority.admissions import GateRefusal
 from persistence.authority.vocabulary import STEERING
 from persistence.core.errors import STORE_FAILURES, AuthorityRefusal, CorruptStoreError, StoreReplaced
@@ -1528,7 +1528,7 @@ async def initialize_session_authority(runner, *, profile_id, instance_id, persi
     if persistence is None:
         from persistence import StoreUnavailable
         raise StoreUnavailable('the session store has no storage interface handle')
-    store_key = persistence.scope.hermes_home_key
+    store_key = persistence.scope.slave_home_key
     epoch = await asyncio.to_thread(persistence.runtime.begin_epoch, instance_id=instance_id)
     # Hot-serve builds a profile while the loop serves the others: both writes stay off it.
     await asyncio.to_thread(persistence.admissions.recover, epoch=epoch)

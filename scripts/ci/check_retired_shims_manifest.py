@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Fail when a retired updater shim is missing from the tested manifest.
 
-Every function in ``hermes_cli/``, ``tools/`` and ``gateway/`` that can start the
+Every function in ``slave_cli/``, ``tools/`` and ``gateway/`` that can start the
 old-updater takeover (a bare ``stop_for_relaunch()`` or the shared
 ``stop_historical_updater(...)`` gate) must be listed in
 ``tests/fixtures/retired_updater_shims.json``.
-``tests/hermes_cli/test_retired_shims_runtime.py`` parametrizes over that
+``tests/slave_cli/test_retired_shims_runtime.py`` parametrizes over that
 manifest and calls every shim for real (#122656); tests never read source, so
 this AST scan is what keeps a new shim from skipping those contracts.
 
@@ -23,10 +23,10 @@ import sys
 from pathlib import Path
 
 MANIFEST = Path("tests/fixtures/retired_updater_shims.json")
-_TREES = ("hermes_cli", "tools", "gateway")
+_TREES = ("slave_cli", "tools", "gateway")
 _GATES = {"stop_for_relaunch", "stop_historical_updater"}
-# hermes_cli.main's lazy frozen export, resolved through main.__getattr__ (no def in main.py).
-_LAZY_EXPORTS = (("hermes_cli.main", "_write_update_incomplete_marker"),)
+# slave_cli.main's lazy frozen export, resolved through main.__getattr__ (no def in main.py).
+_LAZY_EXPORTS = (("slave_cli.main", "_write_update_incomplete_marker"),)
 
 
 def _calls_gate(fn: ast.FunctionDef) -> bool:

@@ -1,7 +1,7 @@
 """#115325: the peer-DM transport (``POST /api/sessions/{id}/chat``) retries a transiently failed
 turn once, resuming the DM row the failed attempt already persisted.
 
-``hermes peer dm`` is the third Bot-DM transport. The local (``tools.bot_mode_dm``) and relayed
+``slave peer dm`` is the third Bot-DM transport. The local (``tools.bot_mode_dm``) and relayed
 (``tui_gateway.methods_bot_relay``) lanes both re-run a transiently failed turn once and resume the
 row the failed attempt left as the transcript's unanswered tail (``tools/bot_failure_reasons``
 ``retry_action`` / ``RESUME_UNANSWERED_TURN``); the peer lane ran the turn once and handed whatever
@@ -21,7 +21,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from gateway.config import PlatformConfig
 from gateway.platforms.api_server import APIServerAdapter
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.fixtures.storage_seed import seed_messages, seed_session
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
 
@@ -60,7 +60,7 @@ def _adapter(tmp_path, api_store) -> tuple[APIServerAdapter, str]:
     sid = seed_session(db, SESSION_ID, "api_server")
     seed_messages(db, sid, {"role": "user", "content": DM})
     adapter = APIServerAdapter(PlatformConfig(enabled=True))
-    adapter._home_stores[str(get_hermes_home())] = db
+    adapter._home_stores[str(get_slave_home())] = db
     api_store(db)
     return adapter, sid
 

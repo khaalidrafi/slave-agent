@@ -78,7 +78,7 @@ def _gateway_room_grant_secret_for_home(home_value: str) -> bytes:
                 fsync_directory(home)
         finally:
             temporary.unlink(missing_ok=True)
-    return hmac.new(material, b"hermes-hosted-room-installation-grant-v1", hashlib.sha256).digest()
+    return hmac.new(material, b"slave-hosted-room-installation-grant-v1", hashlib.sha256).digest()
 
 
 def gateway_room_grant_secret(root: Path | str | None = None) -> bytes:
@@ -89,10 +89,10 @@ def gateway_room_grant_secret(root: Path | str | None = None) -> bytes:
     or capability RPCs, and is shared only by this installation's gateway processes.
     """
     if root is None:
-        from hermes_constants import get_hermes_home
-        # Profile routing uses a context-local HERMES_HOME override; the process environment
+        from slave_constants import get_slave_home
+        # Profile routing uses a context-local SLAVE_HOME override; the process environment
         # retains the installation root and is the authority here.
-        root = os.environ.get("HERMES_HOME") or get_hermes_home()
+        root = os.environ.get("SLAVE_HOME") or get_slave_home()
     return _gateway_room_grant_secret_for_home(str(Path(root).expanduser().resolve()))
 
 
@@ -101,8 +101,8 @@ def gateway_room_grant_secret_available(root: Path | str | None = None) -> bool:
     read-only capability probe must never create the file (``gateway_room_grant_secret`` does,
     when a grant is first issued)."""
     if root is None:
-        from hermes_constants import get_hermes_home
-        root = os.environ.get("HERMES_HOME") or get_hermes_home()
+        from slave_constants import get_slave_home
+        root = os.environ.get("SLAVE_HOME") or get_slave_home()
     home = Path(root).expanduser().resolve()
     path = home / _ROOM_GRANT_SECRET_FILE
     try:
@@ -121,7 +121,7 @@ def derive_room_grant_secret(api_key: str) -> bytes:
     """
     if not isinstance(api_key, str) or len(api_key) < 8:
         raise HostedRoomGrantError("room grants require a strong gateway API key")
-    return hmac.new(api_key.encode("utf-8"), b"hermes-hosted-room-grant-v1", hashlib.sha256).digest()
+    return hmac.new(api_key.encode("utf-8"), b"slave-hosted-room-grant-v1", hashlib.sha256).digest()
 
 
 def _identifier(value: Any, *, field: str) -> str:
@@ -267,9 +267,9 @@ def catalog_mapping(
     """Build a canonical catalog mapping with its digest for the SERVED ``target_profile``.
 
     The profile is the session's, never the process's: a multiplexed gateway advertises one
-    catalog per served profile, so there is no env (``HERMES_PROFILE``) fallback (#116900)."""
+    catalog per served profile, so there is no env (``SLAVE_PROFILE``) fallback (#116900)."""
     # A Desktop-managed gateway exits with the app: the caller's flag is only an upper bound.
-    persistent_process = bool(persistent_process and os.getenv("HERMES_DESKTOP") != "1")
+    persistent_process = bool(persistent_process and os.getenv("SLAVE_DESKTOP") != "1")
     profile = _identifier(target_profile, field="target_profile")
     checked_policy = RoomExecutionPolicy.from_mapping(
         execution_policy or execution_policy_mapping(target_profile=profile))
@@ -311,21 +311,21 @@ def served_room_link_endpoint(target_profile: str) -> dict[str, Any]:
     """The endpoint a catalog for the served *target_profile* advertises.
 
     A named profile that sets its own ``gateway.room_link_url`` advertises it as is. One that
-    inherits the gateway's endpoint (root config or ``HERMES_ROOM_LINK_URL``) advertises that
+    inherits the gateway's endpoint (root config or ``SLAVE_ROOM_LINK_URL``) advertises that
     listener's ``/p/<profile>`` mirror, so every lender call runs in that profile's request scope
     and its grant (``target_profile``) never answers on another profile's route. The root config's
     listener is inherited only by a multiplexed gateway, whose shared listener serves the mirror: a
-    single-profile ``hermes -p <profile> gateway run`` is its own process, and the root gateway
+    single-profile ``slave -p <profile> gateway run`` is its own process, and the root gateway
     neither serves that profile nor holds its grant secret."""
     if target_profile == "default":
         return local_room_link_endpoint()
     from agent.secret_scope import is_multiplex_active
-    from hermes_cli.profiles import get_profile_dir
-    override = os.getenv("HERMES_ROOM_LINK_URL")
+    from slave_cli.profiles import get_profile_dir
+    override = os.getenv("SLAVE_ROOM_LINK_URL")
     if override is None and (own := _room_link_url_from_config(str(get_profile_dir(target_profile)))):
         return local_room_link_endpoint(own)
-    from hermes_constants import get_default_hermes_root
-    root_listener = _room_link_url_from_config(str(get_default_hermes_root())) if is_multiplex_active() else None
+    from slave_constants import get_default_slave_root
+    root_listener = _room_link_url_from_config(str(get_default_slave_root())) if is_multiplex_active() else None
     inherited = str((override if override is not None else root_listener) or "").strip()
     if not inherited:
         return {"available": False, "reason": "not_configured"}
@@ -336,29 +336,29 @@ def served_room_link_endpoint(target_profile: str) -> dict[str, Any]:
 def _room_link_url_from_config(home: str) -> str | None:
     """Read the restart-scoped user setting without polling config on probes."""
     from gateway.config import load_gateway_config
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
-    if str(get_hermes_home()) == home:
+    from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
+    if str(get_slave_home()) == home:
         value = load_gateway_config().room_link_url
     else:
-        token = set_hermes_home_override(home)
+        token = set_slave_home_override(home)
         try:
             value = load_gateway_config().room_link_url
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
     return value.strip() if isinstance(value, str) and value.strip() else None
 
 
 def _configured_room_link_url() -> str | None:
     """Resolve the explicit endpoint: env override > profile config > root config."""
-    if (override := os.getenv("HERMES_ROOM_LINK_URL")) is not None:
+    if (override := os.getenv("SLAVE_ROOM_LINK_URL")) is not None:
         return override
-    from hermes_constants import get_default_hermes_root, get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_default_slave_root, get_slave_home
+    home = get_slave_home()
     if configured := _room_link_url_from_config(str(home)):
         return configured
     # RoomLink is a gateway reachability property, not a Bot personality setting: named profiles may
     # override it but otherwise inherit the process gateway's root endpoint.
-    root = get_default_hermes_root()
+    root = get_default_slave_root()
     return _room_link_url_from_config(str(root)) if root != home else None
 
 

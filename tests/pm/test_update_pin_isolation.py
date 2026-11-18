@@ -5,7 +5,7 @@ resolution bug or one target's rolling-pool 404), so `lockfile.save()`
 never ran and every unrelated package stayed un-updated. Pins are now
 isolated per package: successes are pinned and saved, failures are
 reported and summarized, exit stays non-zero, and the latest pm receipt
-(`hermes pm status`, the desktop) records the run as failed.
+(`slave pm status`, the desktop) records the run as failed.
 """
 
 import pytest
@@ -51,8 +51,8 @@ def prepare(tmp_path, monkeypatch):
     lock.save()
     monkeypatch.setattr(paths, "lockfile_path", lambda: lock.path)
     monkeypatch.setattr(paths, "repo_root", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "tools"))
 
     real_pin_artifacts = cli._pin_artifacts
 

@@ -4,11 +4,11 @@ sha: 6c5cd7fc468a314eef0b524a29b1f12c68c0e569
 subdir: keryx
 title: Keryx
 description: >-
-  Outbound phone calls from your own phone. Hermes writes a brief and calls place_call; after
+  Outbound phone calls from your own phone. slave-agent writes a brief and calls place_call; after
   you approve (every call, single use), your phone dials over Bluetooth hands-free through
   PipeWire's telephony API, the plugin plays an AI-disclosure line, and a realtime voice model
   (OpenAI Realtime or GPT-Live) holds the conversation, asking you mid-call when it needs a
-  decision. The outcome, details and transcript go back to Hermes; /calls lists recent calls.
+  decision. The outcome, details and transcript go back to slave-agent; /calls lists recent calls.
   Guardrails in code: emergency, short-code and premium numbers blocked, quiet hours, hourly
   rate limit, hard 5-minute cap. Linux only (PipeWire >= 1.4, a paired phone). Disclosure —
   places real calls on the user's SIM; call audio streams to OpenAI (wss://api.openai.com
@@ -16,7 +16,7 @@ description: >-
   Responses request per call; runs busctl, pw-dump, pw-record, pw-play, pw-link, pw-cli and
   espeak-ng; audio processes and two temporary virtual PipeWire nodes exist only during an
   approved call; stores a call log (and recordings only if `record: true`) under
-  plugin-data/keryx; reads OPENAI_API_KEY through Hermes secrets only.
+  plugin-data/keryx; reads OPENAI_API_KEY through slave-agent secrets only.
 maintainer: hsyvy
 tier: community
 category: voice

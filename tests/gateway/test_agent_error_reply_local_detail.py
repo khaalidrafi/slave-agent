@@ -22,7 +22,7 @@ def _committed_error(platform, err=None):
     runner._session_state = lambda key: SimpleNamespace(turn=SimpleNamespace(agent=None))
     source = SessionSource(platform=platform, chat_id="c", user_id="u")
     prepared = runner._PreparedTurn([], "", None, None, None, None)
-    err = err or ImportError("The 'anthropic' package is required for the Anthropic provider: restart Hermes")
+    err = err or ImportError("The 'anthropic' package is required for the Anthropic provider: restart slave-agent")
     captured = {}
     token = execution_result.set(captured)
     try:
@@ -35,7 +35,7 @@ def _committed_error(platform, err=None):
 
 
 def test_local_client_sees_the_raised_cause_and_chat_keeps_the_apology():
-    from hermes_cli.cli_chat_error_copy import chat_error_response
+    from slave_cli.cli_chat_error_copy import chat_error_response
 
     panel = chat_error_response(_committed_error(Platform.LOCAL), provider="anthropic")
     assert "Details: ImportError: The 'anthropic' package is required" in panel, panel

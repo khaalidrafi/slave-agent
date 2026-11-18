@@ -28,7 +28,7 @@ def db(tmp_path):
 def test_replayed_stop_leaves_a_new_message_queued(db, restart):
     service = _service(db)
     service.create_room(room_id="room", name="Stop replay", members=[
-        {"member_id": "default", "profile": "default", "handle": "hermes"},
+        {"member_id": "default", "profile": "default", "handle": "slave"},
         {"member_id": "ops", "profile": "ops", "handle": "ops"}])
     service.send(room_id="room", event_id="first", payload={"text": "@hermes First", "thread_id": "first"})
     assert service.stop_room("room", cancel_id="old-stop") == 1
@@ -46,7 +46,7 @@ def test_replayed_stop_leaves_a_new_message_queued(db, restart):
 def test_message_admitted_between_stop_fence_and_task_scan_survives(db, monkeypatch):
     service = _service(db)
     service.create_room(room_id="room", name="Concurrent Stop", members=[
-        {"member_id": "default", "profile": "default", "handle": "hermes"},
+        {"member_id": "default", "profile": "default", "handle": "slave"},
         {"member_id": "ops", "profile": "ops", "handle": "ops"}])
     append_stop = hosted_rooms.request_room_stop
 

@@ -9,7 +9,7 @@ or ``_reset_session_agent``, ``_stored_session_runtime_overrides`` fed
 provider="custom" back into ``_make_agent`` →
 ``resolve_runtime_provider(requested="custom")``, which cannot match an entry
 named "mimo-v2.5-pro". Depending on config the rebuild either raised
-"No LLM provider configured. Run `hermes model`..." (resume failed) or
+"No LLM provider configured. Run `slave model`..." (resume failed) or
 silently resolved placeholder credentials ("no-key-required") against the
 patched-back base_url.
 
@@ -28,7 +28,7 @@ import json
 import types
 from unittest.mock import MagicMock, patch
 
-import hermes_cli.runtime_provider as rp
+import slave_cli.runtime_provider as rp
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_read import session_row
 from tests.fixtures.storage_seed import seed_messages, seed_session
@@ -113,7 +113,7 @@ def _make_agent_with_override(override, monkeypatch, config, model_cfg=None):
     patched config, returning the kwargs AIAgent was constructed with."""
     monkeypatch.setattr(rp, "load_config", lambda: config)
     monkeypatch.setattr(rp, "_get_model_config", lambda: model_cfg or {})
-    # Keep credential-pool resolution off the developer's real HERMES home.
+    # Keep credential-pool resolution off the developer's real SLAVE home.
     monkeypatch.setattr(rp, "_try_resolve_from_custom_pool", lambda *a, **k: None)
 
     fake_cfg = {"agent": {"system_prompt": ""}, "model": model_cfg or {"default": "unused"}}
@@ -179,7 +179,7 @@ class TestResumeRoundTrip:
 class TestMakeAgentForwardsProviderRequestBody:
     """#103738 hole 1: the resolver lifts a custom entry's ``extra_body`` onto ``request_overrides``; the
     TUI/Desktop build must hand it to AIAgent like the CLI and cron do, or a proxy that requires a body field
-    (``user``) 400s in the app while ``hermes chat`` works."""
+    (``user``) 400s in the app while ``slave chat`` works."""
 
     def test_entry_extra_body_reaches_agent(self, monkeypatch):
         entry = {**LEGACY_LIST_CONFIG["custom_providers"][0], "extra_body": {"user": "proxy-user"}}
@@ -341,10 +341,10 @@ ULTRA_CONFIG = {
     # fallback must not fire; only the model lookup can recover the entry.
     "model": {"default": "some-nous-model", "provider": "nous"},
     "providers": {
-        "hermes-ultra": {
+        "slave-ultra": {
             "api": ULTRA_URL,
             "api_key": "sk-ultra",
-            "models": ["hermes-ultra-sft"],
+            "models": ["slave-ultra-sft"],
         }
     },
 }
@@ -353,10 +353,10 @@ ULTRA_LEGACY_CONFIG = {
     "model": {"default": "some-nous-model", "provider": "nous"},
     "custom_providers": [
         {
-            "name": "hermes-ultra",
+            "name": "slave-ultra",
             "base_url": ULTRA_URL,
             "api_key": "sk-ultra",
-            "model": "hermes-ultra-sft",
+            "model": "slave-ultra-sft",
         }
     ],
 }
@@ -367,8 +367,8 @@ class TestModelNameRecoversEntryIdentity:
         monkeypatch.setattr(rp, "load_config", lambda: ULTRA_CONFIG)
 
         assert (
-            rp.find_custom_provider_identity_by_model("hermes-ultra-sft")
-            == "custom:hermes-ultra"
+            rp.find_custom_provider_identity_by_model("slave-ultra-sft")
+            == "custom:slave-ultra"
         )
 
 
@@ -621,8 +621,8 @@ class TestFollowProfileConfigRuntimeOverrides:
             def switch_model(self, **kw):
                 self.model, self.provider = kw["new_model"], kw["new_provider"]
 
-        monkeypatch.setenv("HERMES_HOME", str(launch))
-        monkeypatch.setattr(server, "_hermes_home", str(launch))
+        monkeypatch.setenv("SLAVE_HOME", str(launch))
+        monkeypatch.setattr(server, "_slave_home", str(launch))
         monkeypatch.setattr(server, "_profile_home", lambda p: secondary if p == "b" else None)
         monkeypatch.setattr(server, "_get_db", lambda: storage_handle(launch))
         monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
@@ -639,8 +639,8 @@ class TestFollowProfileConfigRuntimeOverrides:
         known = set(server._sessions)
         try:
             with (
-                patch("hermes_cli.model_switch.resolve_persist_behavior", return_value=False),
-                patch("hermes_cli.model_switch.switch_model", return_value=result),
+                patch("slave_cli.model_switch.resolve_persist_behavior", return_value=False),
+                patch("slave_cli.model_switch.switch_model", return_value=result),
                 server._profile_build_scope(secondary),
             ):
                 server._apply_model_switch("sid-live", live, "glm-5.1")
@@ -682,8 +682,8 @@ class TestFollowProfileConfigRuntimeOverrides:
             home.mkdir()
             (home / "config.yaml").write_text(f"model:\n  default: {model}\n  provider: nous\n")
             (home / ".env").write_text("")
-        monkeypatch.setenv("HERMES_HOME", str(launch))
-        monkeypatch.setattr(server, "_hermes_home", str(launch))
+        monkeypatch.setenv("SLAVE_HOME", str(launch))
+        monkeypatch.setattr(server, "_slave_home", str(launch))
         monkeypatch.setattr(server, "_profile_home", lambda p: secondary if p == "b" else None)
         monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
         monkeypatch.setattr(server, "_schedule_agent_build", lambda *a, **k: None)

@@ -65,14 +65,14 @@ def test_refused_within_patience_and_classified_as_in_process_contention(db):
     # ... but it is told apart from a foreign SQLite writer.
     assert exc.sqlite_errorcode == sqlite3.SQLITE_BUSY
     assert "in-process" in str(exc)
-    assert "another Hermes process" not in str(exc)
+    assert "another slave-agent process" not in str(exc)
     assert get_session(db, "owned")["title"] == "kept"  # the refused write never ran
 
 
 def test_refusal_names_the_in_process_holder_without_sql_or_values(db, caplog):
     holder, release = _hold_writer_mutex(db, hold_s=5)
     try:
-        with caplog.at_level(logging.WARNING, logger="hermes_state"), pytest.raises(WriterMutexTimeout):
+        with caplog.at_level(logging.WARNING, logger="slave_state"), pytest.raises(WriterMutexTimeout):
             db._write_sql("UPDATE sessions SET title = ? WHERE id = ?", ("secret-title-value", "owned"),
                           patience_s=0.05)
     finally:
@@ -99,7 +99,7 @@ def test_holder_record_is_cleared_after_release(db):
 
 def test_queued_token_delta_survives_a_mutex_refusal(db, monkeypatch, caplog):
     """The token writer applies queued deltas with routine patience; a refusal must requeue, not drop."""
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     for name in ("_WRITE_PATIENCE_S", "_TRANSCRIPT_WRITE_PATIENCE_S"):
         monkeypatch.setattr(StoreHolder, name, 0.05)
     holder, release = _hold_writer_mutex(db, hold_s=5)

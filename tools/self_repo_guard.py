@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from hermes_cli._startup_fast import project_root_str
+from slave_cli._startup_fast import project_root_str
 from tools.approval_detection import (
     _bash_exec_payload, _deobfuscate_shell_word_for_detection, _iter_shell_command_starts,
     _is_shell_comment_start, _read_shell_word)
@@ -553,15 +553,15 @@ def detect_self_repo_git_mutation(
 
 
 def _block_message(operation: str, root: Path) -> str:
-    from hermes_constants import get_scratch_dir
+    from slave_constants import get_scratch_dir
 
     scratch = get_scratch_dir()
     return (
-        f"Blocked: `{operation}` would rewrite Hermes's live source checkout "
+        f"Blocked: `{operation}` would rewrite slave-agent’s live source checkout "
         f"({root}) and can mix module versions in this running process. "
         f"Use a separate worktree or a shared clone on real disk, e.g. "
         f"`git clone --shared {root} {scratch}/<task>` — avoid /tmp for "  # no-tmp: ok — guidance telling the model to AVOID /tmp
         "clones that install node/python deps: /tmp is usually RAM-backed tmpfs and a few "  # no-tmp: ok — guidance telling the model to AVOID /tmp
         "dependency installs can fill it and ENOSPC other work. Delete the clone when the branch "
-        "is pushed. To change this checkout, stop Hermes, run the command externally, then restart "
-        "Hermes.")
+        "is pushed. To change this checkout, stop slave-agent, run the command externally, then restart "
+        "Slave.")

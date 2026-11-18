@@ -82,7 +82,7 @@ async def test_status_text_is_never_taken_for_the_operators_and_never_written_wi
     bot.read_fails = False
     long_label = "Online " + "x" * 200  # longer than Telegram's 120-char cap
     await _adapter(tmp_path, bot, status_indicator=True, status_online=long_label)._set_status_indicator(online=True)
-    # The operator renames both labels between runs: the old Hermes text is still not theirs.
+    # The operator renames both labels between runs: the old Slave text is still not theirs.
     renamed = _adapter(tmp_path, bot, status_indicator=True, status_online="Up", status_offline="Down")
     await renamed._set_status_indicator(online=True)
     await _adapter(tmp_path, bot)._set_status_indicator(online=True)
@@ -107,7 +107,7 @@ async def test_botfather_edit_made_while_connected_survives_offline_and_comes_ba
     bot = _Bot("Original profile")
     running = _adapter(tmp_path, bot, status_indicator=True)
     await running._set_status_indicator(online=True)
-    bot.text = "New profile"  # operator edits BotFather while Hermes is connected
+    bot.text = "New profile"  # operator edits BotFather while Slave is connected
     await running._set_status_indicator(online=False)
     assert bot.text == "Offline"  # documented clean-disconnect indicator stays
 

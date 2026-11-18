@@ -80,7 +80,7 @@ def _gateway(tmp_path, named=False, plugin_task=None, extra_auxiliary=None):
                               'extra_headers': {'X-Route-Token': 'edge-token'}}] if named else [],
         'auxiliary': auxiliary}))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     try:
         with daemon(root, home, env, barrier=False) as (proc, desc):

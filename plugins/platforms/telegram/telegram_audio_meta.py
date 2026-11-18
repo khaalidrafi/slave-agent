@@ -88,10 +88,10 @@ def audio_player_fields(path: str) -> dict[str, str]:
 
 def _extract_cover_jpeg(path: str) -> Optional[str]:
     """A temporary JPEG of ``path``'s embedded cover art (see :func:`fit_thumbnail_jpeg`), or None."""
-    return fit_thumbnail_jpeg(path, prefix="hermes-tg-cover-")
+    return fit_thumbnail_jpeg(path, prefix="slave-tg-cover-")
 
 
-def fit_thumbnail_jpeg(path: str, *, seek: Optional[int] = None, prefix: str = "hermes-tg-thumb-",
+def fit_thumbnail_jpeg(path: str, *, seek: Optional[int] = None, prefix: str = "slave-tg-thumb-",
                        timeout: int = 20) -> Optional[str]:
     """A temporary JPEG of one frame of ``path`` (at ``seek`` seconds) fitted inside 320x320, or None.
 

@@ -12,8 +12,8 @@ vi.mock('../config/env.js', async importOriginal => ({ ...await importOriginal<R
 
 it('startup image bytes travel with the literal prompt and attachment failure prevents a text-only run', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-startup-image-'))
-  vi.stubEnv('HERMES_HOME', home)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', '')
+  vi.stubEnv('SLAVE_HOME', home)
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', '')
   startup.image = join(home, 'startup.png')
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nL8AAAAASUVORK5CYII=', 'base64')
   writeFileSync(startup.image, png)

@@ -18,10 +18,10 @@ from agent import shell_hooks
 def home(tmp_path, monkeypatch):
     h = tmp_path / "home"
     h.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(h))
-    for name in ("HERMES_ACCEPT_HOOKS", "HERMES_TUI_GATEWAY_URL", "HERMES_SAFE_MODE", "HERMES_IGNORE_USER_CONFIG"):
+    monkeypatch.setenv("SLAVE_HOME", str(h))
+    for name in ("SLAVE_ACCEPT_HOOKS", "SLAVE_TUI_GATEWAY_URL", "SLAVE_SAFE_MODE", "SLAVE_IGNORE_USER_CONFIG"):
         monkeypatch.delenv(name, raising=False)
-    from hermes_cli import plugins
+    from slave_cli import plugins
     monkeypatch.setattr(plugins.get_plugin_manager(), "_hooks", {})
     shell_hooks.reset_for_tests()
     yield h
@@ -40,7 +40,7 @@ def _cfg(*commands):
 
 
 def _wired(event="pre_tool_call"):
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
     return sorted(cb.__name__ for cb in get_plugin_manager()._hooks.get(event, []))
 
 
@@ -143,7 +143,7 @@ def test_resync_keeps_in_memory_consent_and_never_disarms_on_bad_input(home, tmp
     refresh_profile_hooks(policy)
     assert f"shell_hook[pre_tool_call:{c}]" in _wired()
     shell_hooks.reset_for_tests()
-    from hermes_cli import plugins
+    from slave_cli import plugins
     plugins.get_plugin_manager()._hooks = {}
 
     # Ordering: a sync that read the old config first still applies before the newer one.
@@ -209,9 +209,9 @@ def test_register_never_reasks_for_a_wired_hook(home, tmp_path, monkeypatch):
 
 
 def test_classic_cli_asks_on_its_terminal_before_opening_the_session(home, tmp_path, monkeypatch):
-    from hermes_cli import cli_init_mixin
-    from hermes_cli.gateway_session_store import GatewaySessionStore
-    import hermes_cli.config as config_mod
+    from slave_cli import cli_init_mixin
+    from slave_cli.gateway_session_store import GatewaySessionStore
+    import slave_cli.config as config_mod
     hook = _script(tmp_path, "guard.sh")
     monkeypatch.setattr(config_mod, "load_config", lambda: _cfg(hook))
     monkeypatch.setattr(sys, "stdin", SimpleNamespace(isatty=lambda: True))
@@ -228,24 +228,24 @@ def test_classic_cli_asks_on_its_terminal_before_opening_the_session(home, tmp_p
             opened.append(shell_hooks.allowlist_entry_for("pre_tool_call", hook) is not None)
             return "local-x"
 
-    monkeypatch.setattr("hermes_cli.gateway_tools.bind_session", lambda *a: None)
+    monkeypatch.setattr("slave_cli.gateway_tools.bind_session", lambda *a: None)
     for _ in range(2):
         cli = SimpleNamespace(_session_db=Store(), session_id="local-x", _resumed=False)
         cli_init_mixin.CLIInitMixin._ensure_gateway_session(cli)
     assert opened == [False, True]  # "n" records nothing, "y" lands before the second open
 
-    # --accept-hooks / HERMES_ACCEPT_HOOKS approves without asking; a remote gateway is not asked for.
+    # --accept-hooks / SLAVE_ACCEPT_HOOKS approves without asking; a remote gateway is not asked for.
     other = _script(tmp_path, "other.sh")
     monkeypatch.setattr(config_mod, "load_config", lambda: _cfg(other))
     monkeypatch.setattr("builtins.input", lambda *_: pytest.fail("prompted"))
-    monkeypatch.setenv("HERMES_TUI_GATEWAY_URL", "ws://remote.example/api/ws")
+    monkeypatch.setenv("SLAVE_TUI_GATEWAY_URL", "ws://remote.example/api/ws")
     cli_init_mixin._record_shell_hook_consent()
     assert shell_hooks.allowlist_entry_for("pre_tool_call", other) is None
-    monkeypatch.delenv("HERMES_TUI_GATEWAY_URL")
-    monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+    monkeypatch.delenv("SLAVE_TUI_GATEWAY_URL")
+    monkeypatch.setenv("SLAVE_IGNORE_USER_CONFIG", "1")
     cli_init_mixin._record_shell_hook_consent()
     assert shell_hooks.allowlist_entry_for("pre_tool_call", other) is None
-    monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG")
-    monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+    monkeypatch.delenv("SLAVE_IGNORE_USER_CONFIG")
+    monkeypatch.setenv("SLAVE_ACCEPT_HOOKS", "1")
     cli_init_mixin._record_shell_hook_consent()
     assert json.loads((home / shell_hooks.ALLOWLIST_FILENAME).read_text())["approvals"][-1]["command"] == other

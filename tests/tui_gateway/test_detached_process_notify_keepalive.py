@@ -21,11 +21,11 @@ import pytest
 
 @pytest.fixture()
 def server(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    with patch.dict("sys.modules", {"hermes_cli.env_loader": MagicMock(), "hermes_cli.banner": MagicMock()}):
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    with patch.dict("sys.modules", {"slave_cli.env_loader": MagicMock(), "slave_cli.banner": MagicMock()}):
         mod = importlib.import_module("tui_gateway.server")
         yield mod
         mod._sessions.clear()
@@ -92,7 +92,7 @@ def _spawn(registry, owner: str, **kw):
     """A background process as the TUI turn spawns it: owner_task_id is the turn's task id (the session key)."""
     from tools.process_registry import ProcessSession
 
-    proc = ProcessSession(id=f"proc_{len(registry._running)}", command="hermes -p reviewer chat",
+    proc = ProcessSession(id=f"proc_{len(registry._running)}", command="slave -p reviewer chat",
                           session_key=owner, owner_task_id=owner, started_at=time.time(), **kw)
     registry._running[proc.id] = proc
     return proc
@@ -245,7 +245,7 @@ def test_recovered_process_whose_pid_died_releases_session(server, registry, det
     assert server._session_is_reapable(sid, session)
 
 
-@pytest.mark.parametrize("unit", ["", "hermes-proc.scope"])
+@pytest.mark.parametrize("unit", ["", "slave-proc.scope"])
 def test_uncollected_recovered_exit_never_pins_session(server, registry, detached, unit):
     """A recovered entry closed without a collected exit (exited_at stays 0, a scope keeps it retained) queues no
     completion, so it must not hold its owner however long ago it ended."""

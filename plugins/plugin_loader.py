@@ -79,10 +79,10 @@ def register_synthetic_package(name: str, search_locations: list[str]) -> None:
 
 
 def user_plugins_dir() -> Optional[Path]:
-    """Return ``$HERMES_HOME/plugins/`` or None if unavailable."""
+    """Return ``$SLAVE_HOME/plugins/`` or None if unavailable."""
     try:
-        from hermes_constants import get_hermes_home
-        d = get_hermes_home() / "plugins"
+        from slave_constants import get_slave_home
+        d = get_slave_home() / "plugins"
         return d if d.is_dir() else None
     except Exception:
         return None
@@ -178,7 +178,7 @@ def load_plugin_module(module_name: str, plugin_dir: Path, *, parents: tuple[str
     if not init_file.exists():
         return None
     if synthetic_namespace:  # user code: never imported in-process under plugins.isolation: host
-        from hermes_cli.plugin_isolation import in_process_import_refusal
+        from slave_cli.plugin_isolation import in_process_import_refusal
         refusal = in_process_import_refusal(f"plugin {plugin_dir.name!r} (loaded as {module_name})")
         if refusal:
             logger.warning("%s", refusal)

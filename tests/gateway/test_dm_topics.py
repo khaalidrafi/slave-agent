@@ -73,7 +73,7 @@ async def test_setup_dm_topics_creates_when_no_thread_id():
     adapter._bot.create_forum_topic.return_value = mock_topic
 
     # Mock the persist method so it doesn't touch the filesystem, and the re-read so the
-    # sandboxed (config-less) HERMES_HOME doesn't wipe the in-memory snapshot under test.
+    # sandboxed (config-less) SLAVE_HOME doesn't wipe the in-memory snapshot under test.
     adapter._persist_dm_topic_thread_id = MagicMock()
     adapter._reload_dm_topics_from_config = MagicMock()
 
@@ -121,7 +121,7 @@ async def test_setup_dm_topics_mixed_persisted_and_new():
 async def test_setup_dm_topics_reuses_persisted_ids_after_adapter_rebuild(tmp_path):
     """A rebuilt adapter must not recreate topics whose thread_ids were persisted after its
     (startup-time) config snapshot was taken (#132522)."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
     # In-memory snapshot the gateway hands the rebuilt adapter: created on the first run,
     # still missing the thread_ids the adapter persisted to config.yaml afterwards.
@@ -154,13 +154,13 @@ async def test_setup_dm_topics_reuses_persisted_ids_after_adapter_rebuild(tmp_pa
             }
         }
     }
-    home_dir = tmp_path / "hermes-home"
+    home_dir = tmp_path / "slave-home"
     home_dir.mkdir(parents=True)
     config_file = home_dir / "config.yaml"
     config_file.write_text(yaml.safe_dump(config_data), encoding="utf-8")
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"HERMES_HOME": str(home_dir)}):
+         patch.dict(os.environ, {"SLAVE_HOME": str(home_dir)}):
         await adapter._setup_dm_topics()
 
     # No API call: the persisted thread_ids are reused, not duplicated.
@@ -217,7 +217,7 @@ async def test_ensure_dm_topic_creates_on_demand_and_persists():
 
 def test_persist_dm_topic_thread_id_writes_config(tmp_path):
     """Should write thread_id into the correct topic in config.yaml."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
     config_data = {
         "platforms": {
@@ -237,7 +237,7 @@ def test_persist_dm_topic_thread_id_writes_config(tmp_path):
         }
     }
 
-    config_file = tmp_path / ".hermes" / "config.yaml"
+    config_file = tmp_path / ".slave" / "config.yaml"
     config_file.parent.mkdir(parents=True)
     with open(config_file, "w") as f:
         yaml.safe_dump(config_data, f)
@@ -245,7 +245,7 @@ def test_persist_dm_topic_thread_id_writes_config(tmp_path):
     adapter = _make_adapter()
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"HERMES_HOME": str(tmp_path / ".hermes")}):
+         patch.dict(os.environ, {"SLAVE_HOME": str(tmp_path / ".slave")}):
         adapter._persist_dm_topic_thread_id(111, "General", 999)
 
     with open(config_file) as f:
@@ -261,7 +261,7 @@ def test_persist_dm_topic_thread_id_writes_config(tmp_path):
 
 def test_persist_dm_topic_thread_id_preserves_config_on_write_failure(tmp_path):
     """Failed writes should leave the original config.yaml intact."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
     config_data = {
         "platforms": {
@@ -280,7 +280,7 @@ def test_persist_dm_topic_thread_id_preserves_config_on_write_failure(tmp_path):
         }
     }
 
-    config_file = tmp_path / ".hermes" / "config.yaml"
+    config_file = tmp_path / ".slave" / "config.yaml"
     config_file.parent.mkdir(parents=True)
     original_text = yaml.safe_dump(config_data)
     config_file.write_text(original_text, encoding="utf-8")
@@ -291,7 +291,7 @@ def test_persist_dm_topic_thread_id_preserves_config_on_write_failure(tmp_path):
         raise RuntimeError("boom")
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"HERMES_HOME": str(tmp_path / ".hermes")}), \
+         patch.dict(os.environ, {"SLAVE_HOME": str(tmp_path / ".slave")}), \
          patch("ruamel.yaml.YAML.dump", side_effect=fail_dump):
         adapter._persist_dm_topic_thread_id(111, "General", 999)
 
@@ -322,7 +322,7 @@ def test_get_dm_topic_info_finds_cached_topic():
 
 def test_get_dm_topic_info_hot_reloads_from_config(tmp_path):
     """Should find a topic added to config after startup (hot-reload)."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
     # Start with empty topics
     adapter = _make_adapter([
@@ -346,13 +346,13 @@ def test_get_dm_topic_info_hot_reloads_from_config(tmp_path):
             }
         }
     }
-    config_file = tmp_path / ".hermes" / "config.yaml"
+    config_file = tmp_path / ".slave" / "config.yaml"
     config_file.parent.mkdir(parents=True)
     with open(config_file, "w") as f:
         yaml.safe_dump(config_data, f)
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"HERMES_HOME": str(tmp_path / ".hermes")}):
+         patch.dict(os.environ, {"SLAVE_HOME": str(tmp_path / ".slave")}):
         result = adapter._get_dm_topic_info("111", "555")
 
     assert result is not None
@@ -527,12 +527,12 @@ def test_recovered_lobby_message_carries_the_topics_prompt_inputs(lobby_thread_i
     """A lobby-shaped DM recovered into a topic runs in that topic's session, so it must carry
     the same prompt inputs as a message sent inside the topic: the session context prompt and
     the channel prompt would otherwise flip between the root's and the topic's every turn."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
     from gateway.platforms.event import MessageType
 
     dm_topics = [{"chat_id": 111, "topics": [{"name": "Research", "skill": "arxiv", "thread_id": 100}]}]
     # A General-topic lookup misses the cache and hot-reloads config.yaml, so it must hold the topics.
-    with open(Path(os.environ["HERMES_HOME"]) / "config.yaml", "w") as f:
+    with open(Path(os.environ["SLAVE_HOME"]) / "config.yaml", "w") as f:
         yaml.safe_dump({"platforms": {"telegram": {"extra": {"dm_topics": dm_topics}}}}, f)
     adapter = _make_adapter(dm_topics)
     adapter.config.extra["channel_prompts"] = {"111": "root prompt", "100": "research prompt"}

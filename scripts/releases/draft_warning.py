@@ -8,7 +8,7 @@ without a cycle.
 """
 from __future__ import annotations
 
-WARNING_OPEN = "<!-- hermes-release:draft-warning -->"
+WARNING_OPEN = "<!-- slave-release:draft-warning -->"
 WARNING_CLOSE = "<!-- /hermes-release:draft-warning -->"
 
 _WARNING = """> [!CAUTION]

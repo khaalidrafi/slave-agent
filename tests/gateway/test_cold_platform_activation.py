@@ -26,22 +26,22 @@ _PROBE = textwrap.dedent("""
     print(json.dumps({
         "enabled": sorted(p.value for p, c in config.platforms.items() if c.enabled),
         "adapters": sorted(m.split("__", 1)[1].split(".")[0] for m in sys.modules
-                           if m.startswith("hermes_plugins.platforms__") and m.endswith(".adapter")),
+                           if m.startswith("slave_plugins.platforms__") and m.endswith(".adapter")),
         "registered": sorted(platform_registry.registered_names()),
     }))
 """)
 
 
 def _load(tmp_path, *, config_yaml="", env=None, dotenv=""):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     (home / "config.yaml").write_text(config_yaml, encoding="utf-8")
     (home / ".env").write_text(dotenv, encoding="utf-8")
     # A clean child: the suite process has already imported adapters, and the developer's shell
     # may carry platform env vars that are genuine activation evidence.
     child_env = {k: v for k, v in os.environ.items()
-                 if k in {"PATH", "LANG", "TZ", "HERMES_RUNTIME_DIR", "TMPDIR", "SYSTEMROOT"}}
-    child_env.update(HOME=str(tmp_path), HERMES_HOME=str(home), PYTHONPATH=str(REPO), **(env or {}))
+                 if k in {"PATH", "LANG", "TZ", "SLAVE_RUNTIME_DIR", "TMPDIR", "SYSTEMROOT"}}
+    child_env.update(HOME=str(tmp_path), SLAVE_HOME=str(home), PYTHONPATH=str(REPO), **(env or {}))
     out = subprocess.run([sys.executable, "-c", _PROBE], cwd=str(REPO), env=child_env,
                          capture_output=True, text=True, timeout=120, check=False)
     assert out.returncode == 0, out.stderr[-2000:]

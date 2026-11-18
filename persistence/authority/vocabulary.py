@@ -48,7 +48,7 @@ NOT_CLIENT_LABELS = frozenset({"cron", "subagent", "kanban", "bot_room", "a2a", 
 
 @dataclass(frozen=True, slots=True)
 class OwnerRule:
-    """The host data the owner rule reads (``session_rules.legacy_local.same_owner``): the host owner's own OS subject (``uid:<n>`` / ``sid:<sid>``), the dashboard sign-in providers whose stamps name that owner, and the labels of every messaging platform Hermes ships (a routeless row under one is no client app's chat). The caller builds it; operations that compare a stored owner take it as data."""
+    """The host data the owner rule reads (``session_rules.legacy_local.same_owner``): the host owner's own OS subject (``uid:<n>`` / ``sid:<sid>``), the dashboard sign-in providers whose stamps name that owner, and the labels of every messaging platform slave-agent ships (a routeless row under one is no client app's chat). The caller builds it; operations that compare a stored owner take it as data."""
 
     host_subject: str
     login_providers: frozenset[str]

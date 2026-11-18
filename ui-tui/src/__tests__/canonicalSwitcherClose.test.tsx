@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
-import { canonicalRequest, canonicalResult } from '@hermes/shared/gateway-canonical'
+import { renderSync, Text } from '@slave-agent/ink'
+import { canonicalRequest, canonicalResult } from '@slave-agent/shared/gateway-canonical'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -27,7 +27,7 @@ const liveRow = { id: 'live', session_id: 'live', title: 'Current conversation',
 
 function detachFixture() {
   const home = mkdtempSync(join(tmpdir(), 'ink-switcher-close-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   const subscriptions = new Map<string, string>()
   const pending: Array<{ resolve: () => void }> = []

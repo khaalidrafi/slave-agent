@@ -24,7 +24,7 @@ from agent.checkpoints.manager import (
 from agent.checkpoints.maintenance import (
     clear_all, clear_legacy, maybe_auto_prune_checkpoints, prune_checkpoints, store_status,
 )
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 # =========================================================================
@@ -42,8 +42,8 @@ def work_dir(tmp_path):
 
 @pytest.fixture()
 def checkpoint_base():
-    """The active profile's checkpoint base (conftest isolates HERMES_HOME per test)."""
-    return get_hermes_home() / "checkpoints"
+    """The active profile's checkpoint base (conftest isolates SLAVE_HOME per test)."""
+    return get_slave_home() / "checkpoints"
 
 
 @pytest.fixture()
@@ -51,7 +51,7 @@ def fake_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(home / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(home / ".slave"))
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.delenv("HOMEDRIVE", raising=False)
     monkeypatch.delenv("HOMEPATH", raising=False)
@@ -112,7 +112,7 @@ class TestStoreInit:
         fake_repo = base / "deadbeefcafebabe"
         fake_repo.mkdir()
         (fake_repo / "HEAD").write_text("ref: refs/heads/main\n")
-        (fake_repo / "HERMES_WORKDIR").write_text(str(work_dir) + "\n")
+        (fake_repo / "SLAVE_WORKDIR").write_text(str(work_dir) + "\n")
         (fake_repo / "objects").mkdir()
 
         # Init store — should migrate the fake pre-v2 repo
@@ -248,7 +248,7 @@ class TestRealPruning:
         store = _store_path(checkpoint_base)
         assert _init_store(store, str(wd)) is None
         assert _run_git(
-            ["config", "filter.must-not-run.clean", "hermes-filter-must-not-run"],
+            ["config", "filter.must-not-run.clean", "slave-filter-must-not-run"],
             store, str(wd),
         )[0]
         assert _run_git(
@@ -284,7 +284,7 @@ class TestRealPruning:
         (wd / ".gitattributes").write_text("weights.bin filter=must-not-run\n")
         store = _store_path(checkpoint_base)
         assert _run_git(
-            ["config", "filter.must-not-run.clean", "hermes-filter-must-not-run"],
+            ["config", "filter.must-not-run.clean", "slave-filter-must-not-run"],
             store, str(wd),
         )[0]
         assert _run_git(
@@ -392,7 +392,7 @@ class TestRestore:
 
 
 class TestSafeRestore:
-    """Safe restore: preserve user hand-edits, revert only Hermes-authored changes.
+    """Safe restore: preserve user hand-edits, revert only Slave-authored changes.
 
     Inspired by Copilot CLI's /rewind, which "restores only the files Copilot
     changed, skipping any file whose contents no longer match what Copilot
@@ -409,16 +409,16 @@ class TestSafeRestore:
     def test_safe_restore_skips_user_edited_file(self, mgr, work_dir):
         base = self._checkpoint(mgr, work_dir)
 
-        # Hermes writes main.py and records it in the ledger.
+        # Slave writes main.py and records it in the ledger.
         (work_dir / "main.py").write_text("agent version\n")
         mgr.record_agent_write(str(work_dir / "main.py"))
 
-        # The user then hand-edits README.md (Hermes never wrote it).
+        # The user then hand-edits README.md (Slave never wrote it).
         (work_dir / "README.md").write_text("user hand edit\n")
 
         result = mgr.restore(str(work_dir), base, safe=True)
         assert result["success"] is True
-        # Hermes-authored change reverted...
+        # Slave-authored change reverted...
         assert (work_dir / "main.py").read_text() == "print('hello')\n"
         # ...user's hand edit preserved.
         assert (work_dir / "README.md").read_text() == "user hand edit\n"
@@ -449,14 +449,14 @@ class TestSafeRestore:
     def test_safe_restore_skips_file_user_edited_after_agent(self, mgr, work_dir):
         base = self._checkpoint(mgr, work_dir)
 
-        # Hermes writes the file, then the user modifies it afterwards.
+        # Slave writes the file, then the user modifies it afterwards.
         (work_dir / "main.py").write_text("agent version\n")
         mgr.record_agent_write(str(work_dir / "main.py"))
         (work_dir / "main.py").write_text("user tweaked the agent's file\n")
 
         result = mgr.restore(str(work_dir), base, safe=True)
         assert result["success"] is True
-        # Content no longer matches what Hermes last wrote → preserved.
+        # Content no longer matches what Slave last wrote → preserved.
         assert (work_dir / "main.py").read_text() == "user tweaked the agent's file\n"
         assert "main.py" in result["skipped_user_edits"]
 
@@ -485,7 +485,7 @@ class TestSafeRestore:
     def test_safe_restore_removes_agent_created_file_keeps_user_edit(self, mgr, work_dir):
         base = self._checkpoint(mgr, work_dir)
 
-        # Hermes creates a brand-new file after the checkpoint...
+        # Slave creates a brand-new file after the checkpoint...
         (work_dir / "agent.txt").write_text("agent file\n")
         mgr.record_agent_write(str(work_dir / "agent.txt"))
         # ...and the user hand-edits an existing one.
@@ -493,7 +493,7 @@ class TestSafeRestore:
 
         result = mgr.restore(str(work_dir), base, safe=True)
         assert result["success"] is True
-        # User edit preserved; Hermes-created file removed (not in checkpoint).
+        # User edit preserved; Slave-created file removed (not in checkpoint).
         assert (work_dir / "README.md").read_text() == "user edit\n"
         assert not (work_dir / "agent.txt").exists()
         assert "README.md" in result["skipped_user_edits"]
@@ -504,7 +504,7 @@ class TestSafeRestore:
     # ``max_file_size_mb`` keeps generated assets out of a checkpoint
     # (test_max_file_size_mb_skips_large_files). Safe restore then sees such a
     # file as "changed since the checkpoint and absent from it" — the same
-    # shape as a file Hermes created — and the delete branch treats absence as
+    # shape as a file Slave created — and the delete branch treats absence as
     # proof of authorship. For a capped file that is wrong: no checkpoint holds
     # a copy, so deleting it destroys the only one.
 
@@ -985,7 +985,7 @@ def _seed_legacy_repo(base: Path, name: str, workdir: Path, mtime: float | None 
     shadow = base / name
     shadow.mkdir(parents=True)
     (shadow / "HEAD").write_text("ref: refs/heads/main\n")
-    (shadow / "HERMES_WORKDIR").write_text(str(workdir) + "\n")
+    (shadow / "SLAVE_WORKDIR").write_text(str(workdir) + "\n")
     (shadow / "info").mkdir()
     (shadow / "info" / "exclude").write_text("node_modules/\n")
     if mtime is not None:
@@ -1039,7 +1039,7 @@ class TestPruneCheckpointsV2:
     """v2 pruning walks the shared store's projects/ metadata."""
 
     def test_deletes_orphan_project_entry(self, tmp_path, monkeypatch):
-        base = get_hermes_home() / "checkpoints"
+        base = get_slave_home() / "checkpoints"
 
         alive = tmp_path / "alive"
         alive.mkdir()
@@ -1069,7 +1069,7 @@ class TestPruneCheckpointsV2:
     def test_retention_prunes_stale_projects_and_legacy_archives(
         self, tmp_path, monkeypatch,
     ):
-        base = get_hermes_home() / "checkpoints"
+        base = get_slave_home() / "checkpoints"
 
         fresh = tmp_path / "fresh"
         fresh.mkdir()
@@ -1119,7 +1119,7 @@ class TestPruneCheckpointsOrphanAllowlist:
     """
 
     def test_v2_allowlist_restricts_deletion_to_approved_hash(self, tmp_path, monkeypatch):
-        base = get_hermes_home() / "checkpoints"
+        base = get_slave_home() / "checkpoints"
 
         previewed = tmp_path / "previewed-gone"
         previewed.mkdir()
@@ -1165,14 +1165,14 @@ class TestPruneCheckpointsOrphanAllowlist:
 
     def test_end_to_end_timing_change_during_confirmation_prompt(self, tmp_path, monkeypatch):
         """Reproduces the exact PR #69141 review scenario end-to-end through
-        `hermes checkpoints prune`: the preview shows one pre-v2 orphan; a
+        `slave checkpoints prune`: the preview shows one pre-v2 orphan; a
         second project's workdir is removed by the input() callback while
         the human is "answering" the prompt. Only the previewed orphan may
         be deleted.
         """
-        import hermes_cli.checkpoints as checkpoints_cli
+        import slave_cli.checkpoints as checkpoints_cli
 
-        base = get_hermes_home() / "checkpoints"
+        base = get_slave_home() / "checkpoints"
 
         previewed_work = tmp_path / "was-deleted-before-preview"
         still_alive_work = tmp_path / "still-alive-during-preview"
@@ -1207,7 +1207,7 @@ class TestPruneSweepsTmpPackDebris:
 
     def test_sweeps_debris_even_when_no_ref_moved(self, checkpoint_base, tmp_path, monkeypatch):
         import agent.checkpoints.manager as cm
-        monkeypatch.setattr("hermes_cli.gitlock._git_proc_running", lambda: False)
+        monkeypatch.setattr("slave_cli.gitlock._git_proc_running", lambda: False)
         work = tmp_path / "proj"
         work.mkdir()
         (work / "f").write_text("f")
@@ -1259,7 +1259,7 @@ class TestMaybeAutoPruneCheckpoints:
 
 class TestStoreStatus:
     def test_reports_projects_and_legacy(self, tmp_path, monkeypatch, work_dir):
-        base = get_hermes_home() / "checkpoints"
+        base = get_slave_home() / "checkpoints"
 
         m = CheckpointManager(enabled=True)
         m.ensure_checkpoint(str(work_dir), "initial")
@@ -1280,7 +1280,7 @@ class TestStoreStatus:
 
 class TestClearFunctions:
     def test_clear_all_wipes_base_then_is_a_noop(self, tmp_path, monkeypatch, work_dir):
-        base = get_hermes_home() / "checkpoints"
+        base = get_slave_home() / "checkpoints"
         m = CheckpointManager(enabled=True)
         m.ensure_checkpoint(str(work_dir), "initial")
         assert base.exists()
@@ -1298,7 +1298,7 @@ class TestClearFunctions:
     def test_clear_legacy_only_removes_legacy_dirs(
         self, tmp_path, monkeypatch, work_dir,
     ):
-        base = get_hermes_home() / "checkpoints"
+        base = get_slave_home() / "checkpoints"
         m = CheckpointManager(enabled=True)
         m.ensure_checkpoint(str(work_dir), "initial")
 

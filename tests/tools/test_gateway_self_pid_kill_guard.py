@@ -127,7 +127,7 @@ def test_pid_check_is_scoped_to_local_supervised_gateway(run, monkeypatch):
     "stop-process -id {pid} -WHATIF",
     "Stop-Process -Id {pid} -Force -WhatIf",
     "Stop-Process -WhatIf -Id {pid}",
-    "Stop-Process -Name hermes -WhatIf",
+    "Stop-Process -Name slave -WhatIf",
     "spps -Id {pid} -WhatIf",
 ])
 def test_stop_process_whatif_preview_is_safe_but_disabled_switch_is_blocked(run, command):

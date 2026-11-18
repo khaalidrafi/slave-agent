@@ -13,7 +13,7 @@ import time
 
 import pytest
 
-from hermes_cli.active_sessions import active_session_registry_snapshot, try_acquire_active_session
+from slave_cli.active_sessions import active_session_registry_snapshot, try_acquire_active_session
 from tui_gateway import server
 
 

@@ -162,7 +162,7 @@ def bind_api_steps(authority, session_id, *, hosted_dispatch=None, declared_key=
                    walked_from=None):
     """``bind_api_session`` as write steps (``run_steps``): the binding transaction is yielded.
 
-    ``caller_key`` is this request's validated ``X-Hermes-Session-Key`` even when an explicit
+    ``caller_key`` is this request's validated ``X-Slave-Session-Key`` even when an explicit
     session id selected the conversation (``declared_key`` is set only when the key selected it).
     It is used only to adopt a row an earlier release stamped with that same key, and is then
     registered as that session's declared key (and stamped into its binding receipt).

@@ -5,7 +5,7 @@ Runs on the ``pull_request`` merge commit: HEAD diffed against its first parent 
 the PR would land. Anything else is refused rather than silently diffing a single commit.
 
 Admission PRs must be data-only: the gate's own enforcement code (the workflow, the validator,
-the composite actions, the built hermes) resolves from the PR checkout, so an entry PR that also
+the composite actions, the built slave) resolves from the PR checkout, so an entry PR that also
 touches tooling could neuter the gate vetting it. Contributor email maps are data the gate never
 executes; README/policy/CI PRs with no entry change skip this check.
 

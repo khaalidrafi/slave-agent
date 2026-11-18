@@ -102,7 +102,7 @@ def test_a_secondary_whose_retirement_times_out_keeps_its_lock_but_is_never_star
         assert beta in all_authorities(runner), "shutdown must still settle the retained authority"
 
         # Adapter startup and the adapter-level served status (the real runner methods).
-        monkeypatch.setenv("HERMES_HOME", str(launch))
+        monkeypatch.setenv("SLAVE_HOME", str(launch))
         started, published = [], {}
         host = object.__new__(GatewayRunner)
         host.config, host.adapters, host._profile_adapters = runner.config, {}, {}
@@ -115,7 +115,7 @@ def test_a_secondary_whose_retirement_times_out_keeps_its_lock_but_is_never_star
 
         host._start_one_profile_adapters = start_one
         host._restore_secondary_completion_ledgers = lambda profile_homes: None
-        monkeypatch.setattr("hermes_cli.profiles.profiles_to_serve", lambda *a, **k: [])
+        monkeypatch.setattr("slave_cli.profiles.profiles_to_serve", lambda *a, **k: [])
         monkeypatch.setattr("gateway.status.publish_runtime_status", lambda **kw: published.update(kw))
         monkeypatch.setattr("gateway.pairing.PairingStore", lambda profile: SimpleNamespace(profile=profile))
         asyncio.run(host._start_secondary_profile_adapters())

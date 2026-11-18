@@ -2,7 +2,7 @@ name: innernet
 title: innernet
 repo: https://github.com/your-innernet/innernet-mcp
 sha: 9da4f24e04dffc526129c11546eb4bb2ef60ef81
-subdir: hermes
+subdir: slave
 version: "1.4.0"
 description: >-
   One memory for every AI tool: load a project's context, answer from what was decided before,
@@ -17,14 +17,14 @@ description: >-
   the user's model provider. Some tools write to the user's innernet account (save context, capture a
   note, write a handoff, update a task, forget on request); every write is versioned and can be read,
   edited or deleted on the user's dashboard. The tool list is served by the remote server at run time
-  and is not covered by the pinned sha. Hermes stores and refreshes the OAuth tokens. OAuth must be
+  and is not covered by the pinned sha. slave-agent stores and refreshes the OAuth tokens. OAuth must be
   enabled with an `mcp_servers.innernet` entry in config.yaml (url https://innernet.live/api/mcp,
-  `auth: oauth`) and `hermes mcp login innernet`; the bundled mcp.json alone yields 401.
+  `auth: oauth`) and `slave mcp login innernet`; the bundled mcp.json alone yields 401.
 maintainer: your-innernet
 tier: community
 category: tools
 requires_hermes: ">=0.22.0"
-docs_url: https://innernet.live/docs/everywhere#hermes-agent
+docs_url: https://innernet.live/docs/everywhere#slave-agent
 readme: true
 platforms: []
 capabilities:

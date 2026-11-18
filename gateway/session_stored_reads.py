@@ -41,7 +41,7 @@ from gateway.session_transcript_rows import (
 )
 
 MAX_PAGE_ROWS = 500
-# Projected JSON per page: well under the gateway clients' 8 MiB frame (hermes_cli/gateway_client.py),
+# Projected JSON per page: well under the gateway clients' 8 MiB frame (slave_cli/gateway_client.py),
 # with room for the reply envelope; the resume reply's archive budget is 3 MiB.
 PAGE_BYTES = 2 * 1024 * 1024
 # Tool results kept on their call's page beyond ``limit`` (a tool row is labelled from its call).

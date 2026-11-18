@@ -16,7 +16,7 @@ import re
 
 import pytest
 
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.sqlite._holder import StoreHolder
 from persistence.sqlite.conversation._store.compression import publish_compression_child
 from persistence.sqlite.conversation._store.messages import (
@@ -65,7 +65,7 @@ def db(store):
 
 
 def _export(store, sid):
-    """The export dict the CLI writes (``hermes sessions export``) and ``import_sessions`` reads back."""
+    """The export dict the CLI writes (``slave sessions export``) and ``import_sessions`` reads back."""
     return to_legacy_export_dict(store.maintenance.export_session(sid))
 
 
@@ -473,9 +473,9 @@ def test_a_branch_copy_writes_the_uids_its_live_history_keeps(tmp_path, monkeypa
     from persistence_assembly import open_persistence, profile_scope
     from tui_gateway import server
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     with open_persistence(profile_scope(home=home), eager=True) as handle:
         db = raw_holder(handle)
         create_session(db, "parent", source="desktop", model="m")

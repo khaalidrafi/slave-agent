@@ -140,8 +140,8 @@ async def test_config_get_reports_the_reasoning_display_the_session_streams(tmp_
     (home / 'config.yaml').write_text(
         'model: {default: m, provider: custom, base_url: "http://127.0.0.1:9/v1"}\nplatform_toolsets: {cli: []}\n'
         + display)
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,
                              _cached_agent_for=lambda route: None)

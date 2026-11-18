@@ -8,7 +8,7 @@ description: >-
   Patent and scientific-literature search through Patsnap's own hosted MCP server: prior-art and
   landscape searches across WIPO/EPO/USPTO/CNIPA/JPO/KIPO and more, paper search (PubMed, Nature,
   arXiv and others), assignee resolution, corporate trees and a patent's legal lifecycle, with a
-  bundled patsnap-search workflow skill. Needs PATSNAP_API_KEY from the Patsnap Open Platform. A Hermes
+  bundled patsnap-search workflow skill. Needs PATSNAP_API_KEY from the Patsnap Open Platform. A slave-agent
   Labs plugin: built by Nous Research, not supported. Disclosure — connects to connect.patsnap.com over
   HTTPS and sends your queries and record ids there under your key (every call spends Patsnap credits);
   gets only PATSNAP_API_KEY from your profile and sends it in a request header, never in the URL; no

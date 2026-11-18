@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 MAX_PICKS = 4
 MAX_LABEL = 32
 # The one fixed row: always last on the card, never one of the model's picks.
-FIXED_ID = "hermes"
+FIXED_ID = "slave"
 # The value a task the user names in words records; it is never on the card.
 OWN_ID = "own"
 
@@ -58,8 +58,8 @@ def _macos(facts: Facts, picks: Mapping[str, Any]) -> bool:
 
 FIRST_TASKS: tuple[FirstTask, ...] = (
     FirstTask(
-        "hermes", "Explain how Hermes works", lambda facts, picks: False, ("hermes-agent", "claude-design", "p5js"),
-        goal="build a living page that shows how Hermes works, from the real docs and this install",
+        "slave", "Explain how slave-agent works", lambda facts, picks: False, ("slave-agent", "claude-design", "p5js"),
+        goal="build a living page that shows how slave-agent works, from the real docs and this install",
         steps=(
             "Read https://hermes-agent.nousresearch.com/docs/llms.txt once with web_extract. Open a page only to "
             "check a fact you show.",
@@ -121,8 +121,8 @@ FIRST_TASKS: tuple[FirstTask, ...] = (
             "MCP bridge on port 9876. Check again each time they say done.",
             "Offer three scene ideas in one clarify: two that fit them, one that shows off this machine.",
             "First capture their Blender window with get_screenshot_of_window_as_image, copy the image it saved "
-            "over preview.png and open that in the preview pane, so they watch Hermes work. Then build it in a new "
-            "scene named Hermes, in camera view, in four calls they can watch: ground and camera, main objects, "
+            "over preview.png and open that in the preview pane, so they watch slave-agent work. Then build it in a new "
+            "scene named slave-agent, in camera view, in four calls they can watch: ground and camera, main objects, "
             "materials and light, framing. After each, capture the window over preview.png again; the pane "
             "reloads it.",
             "Render one 1280x720 EEVEE still with render_viewport_to_path, copy the filepath it returns to "
@@ -160,7 +160,7 @@ FIRST_TASKS: tuple[FirstTask, ...] = (
         quality="Every item comes from a connected app and says which one. Nothing invented.",
         done="The page is shown with all five parts filled from real data."),
     FirstTask(
-        "mac", "Set up my Mac helpers", _macos, ("apple-reminders", "apple-notes", "hermes-agent"),
+        "mac", "Set up my Mac helpers", _macos, ("apple-reminders", "apple-notes", "slave-agent"),
         goal="set up their Mac helpers: one real reminder, one real note and a morning routine",
         steps=(
             "Ask in one clarify what the reminder and the note should be, with three concrete suggestions.",
@@ -249,7 +249,7 @@ FIRST_TASKS: tuple[FirstTask, ...] = (
 )
 # A task the user names in words: the same prompt shape, without a catalog row.
 OWN_TASK = FirstTask(
-    OWN_ID, "", lambda facts, picks: False, ("hermes-agent",),
+    OWN_ID, "", lambda facts, picks: False, ("slave-agent",),
     goal="build the task they named in their own words",
     steps=(
         "Also load the skills that fit what they asked.",

@@ -3,7 +3,7 @@ version: 0.1.0
 description: >
   Storefront toolset — an agent that can read a real shop. Four tools
   (shop_queue, shop_orders, shop_order, shop_catalog) over one adapter
-  contract, plus `hermes shop` and `/shop`. The adapter is configured by
+  contract, plus `slave shop` and `/shop`. The adapter is configured by
   `plugins.entries.shop.settings` in the profile's config.yaml, so the shop's
   URL, path layout, filter names and status vocabulary are data, not code:
   one plugin serves an organic-food shop, a clinic's appointment API, or a

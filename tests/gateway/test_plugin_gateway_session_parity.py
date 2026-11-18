@@ -30,7 +30,7 @@ async def test_keyless_injection_from_a_cli_session_turn_lands_in_that_session(t
     from gateway.session_local import create_local_session
     from gateway.session_policy import _ACTIVE_POLICY
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(SessionAuthority, "_schedule", lambda self, ref: None)
     runner = GatewayRunner(GatewayConfig(sessions_dir=tmp_path / "sessions"))
     authority = await initialize_session_authority(runner, profile_id="default", instance_id="owner")
@@ -71,10 +71,10 @@ async def test_keyed_local_injection_stays_inside_the_plugins_own_profile(tmp_pa
     from gateway.session_local import create_local_session
     from gateway.session_policy import _ACTIVE_POLICY
 
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     beta = launch / "profiles" / "beta"
     beta.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setattr(SessionAuthority, "_schedule", lambda self, ref: None)
     runner = GatewayRunner(GatewayConfig(sessions_dir=launch / "sessions"))
     runner.config.multiplex_profiles = True
@@ -161,10 +161,10 @@ async def test_keyed_messaging_injection_stays_inside_the_plugins_own_profile(tm
     from gateway.run import GatewayRunner
     from gateway.session import SessionEntry, SessionSource
 
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     beta = launch / "profiles" / "beta"
     beta.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     runner = GatewayRunner(GatewayConfig(sessions_dir=launch / "sessions"))
     runner.config.multiplex_profiles = True
     runner.config._runtime_profile_homes = [("default", launch), ("beta", beta)]
@@ -218,7 +218,7 @@ def test_gateway_approval_hooks_report_a_cli_sessions_surface(tmp_path, monkeypa
 
     seen = []
     approval_hooks = {"pre_approval_request", "post_approval_response"}
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook",
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook",
                         lambda name, **kw: seen.append((name, kw)) if name in approval_hooks else None)
 
     def boom(_data):

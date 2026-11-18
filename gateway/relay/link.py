@@ -1,6 +1,6 @@
 """Account linking to the shared Team Gateway bot, done from the instance itself.
 
-A relay-fronted deployment (Hermes Cloud with Team Gateway) reaches Telegram, Discord and Slack
+A relay-fronted deployment (slave-agent Cloud with Team Gateway) reaches Telegram, Discord and Slack
 only through the connector's SHARED bot: the gateway turns every direct adapter off
 (``config_env._relay``), and the connector routes a chat account's messages to this instance once
 that account is linked (``/link <code>`` DMed to the shared bot). The Portal can mint those codes;
@@ -152,8 +152,8 @@ def _get(path: str) -> dict:
 
 def portal_agents_url() -> str:
     """The Portal this instance signs in to (operator override, stored login, then default)."""
-    from hermes_cli.auth import get_provider_auth_state
-    from hermes_cli.auth_nous import _nous_portal_base_url
+    from slave_cli.auth import get_provider_auth_state
+    from slave_cli.auth_nous import _nous_portal_base_url
 
     return f"{_nous_portal_base_url(get_provider_auth_state('nous') or {})}/agents"
 

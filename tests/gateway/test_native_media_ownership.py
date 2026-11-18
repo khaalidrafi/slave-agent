@@ -24,7 +24,7 @@ def test_rejected_batch_publishes_nothing(tmp_path, monkeypatch):
     with no admission to release it — while a file an EARLIER capture published (and so an
     earlier admission may own) is not rolled back with the rejected batch."""
     from gateway.platforms import base
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(base, 'get_inbound_media_max_bytes', lambda: 3 * 1024)
     from persistence.core.errors import AuthorityRefusal
     owned = Path(capture_native_media([_staged('owned.png', 512)])[0]['path'])
@@ -38,7 +38,7 @@ def test_equal_bytes_under_different_basenames_are_fully_released(tmp_path, monk
     """(b) Two admissions retain the same digest as ``<digest>/a.png`` and ``<digest>/b.png``.
     Cancelling A while B is live keeps A's bytes (shared digest); after B is terminal too,
     nothing under the digest directory may remain."""
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     seed_session(db, 's', 'test')
     epoch = db.runtime.begin_epoch(instance_id='current')

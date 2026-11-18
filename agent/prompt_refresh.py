@@ -2,7 +2,7 @@
 
 A continuing session replays its stored system prompt verbatim so the provider prefix cache stays
 warm, which also means SOUL.md, skills and project-context edits never reach it before ``/new``.
-``hermes sessions refresh-prompts`` records a refresh epoch in the profile's state.db. At the start
+``slave sessions refresh-prompts`` records a refresh epoch in the profile's state.db. At the start
 of the session's next turn this module compares that epoch with the one stamped when the session's
 prompt was built (``model_config``) and, when the prompt is older, rebuilds it once through the
 normal builder: history, session id and the tools[] pin are kept, ``on_session_start`` does not
@@ -90,7 +90,7 @@ def rebuild_for_refresh(agent: Any, system_message: Any, conversation_history: A
     from agent.agent_init_session import agent_interface
     from agent.prompt_builder import clear_skills_system_prompt_cache
     from agent.surface_switch import stage_surface_switch_note
-    from hermes_cli.observability.shared_metrics_efficiency import record_cache_break
+    from slave_cli.observability.shared_metrics_efficiency import record_cache_break
 
     logger.info("Operator requested a system prompt refresh (epoch %d) for session %s; rebuilding it "
                 "from current SOUL.md, skills and context files (one-time prefix-cache break).",

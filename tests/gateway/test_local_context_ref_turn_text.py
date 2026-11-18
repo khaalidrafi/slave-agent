@@ -13,7 +13,7 @@ from gateway.config import GatewayConfig, Platform
 from gateway.platforms.event import MessageEvent
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource
-from hermes_cli.cli_render import _prepend_note_to_message
+from slave_cli.cli_render import _prepend_note_to_message
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ async def _prepare(runner, event):
 
 
 # The classic CLI's API-only prefixes: a voice turn, and the one-shot /model and /reload-skills notes
-# (hermes_cli/cli_chat_turn_mixin.py puts them in front through _prepend_note_to_message).
+# (slave_cli/cli_chat_turn_mixin.py puts them in front through _prepend_note_to_message).
 _API_ONLY_PREFIXES = {
     'voice': lambda text: f'[voice] {text}',
     'model': lambda text: _prepend_note_to_message(

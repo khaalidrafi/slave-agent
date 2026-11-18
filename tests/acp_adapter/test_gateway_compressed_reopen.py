@@ -22,7 +22,7 @@ class _Bridge:
         self.connection, self.events = connection, asyncio.Queue()
 
     async def rpc(self, method, _timeout=None, **params):  # the client budget is never on the wire
-        from hermes_cli.gateway_client import GatewayClientError
+        from slave_cli.gateway_client import GatewayClientError
         reply = await self.connection.dispatch({'id': 1, 'method': method, 'params': params})
         if 'error' in reply:
             raise GatewayClientError(reply['error']['message'])
@@ -47,7 +47,7 @@ async def test_compressed_acp_chat_lists_and_reopens_under_its_logical_id(tmp_pa
     from gateway.session_local import create_local_session
     from acp_adapter.gateway_server import GatewayACPAgent
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'acp': []}})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,

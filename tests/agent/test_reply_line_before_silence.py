@@ -105,7 +105,7 @@ def test_the_chosen_reply_runs_through_the_output_transform(real_loop):
             return ["Answer [REDACTED]." if "SECRET_TOKEN" in kwargs["response_text"] else kwargs["response_text"]]
         return []
 
-    with patch("hermes_cli.lifecycle.invoke_hook", hook):
+    with patch("slave_cli.lifecycle.invoke_hook", hook):
         result = real_loop.run(_reply_then_marker("Answer SECRET_TOKEN"), "token?")
 
     assert hook_inputs == ["Answer SECRET_TOKEN"]

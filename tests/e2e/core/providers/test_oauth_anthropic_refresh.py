@@ -1,6 +1,6 @@
 """Anthropic OAuth access token expires mid-turn: one refresh, the turn completes, the rotation persists.
 
-Real ``hermes -z`` process (the aux-call cell: a real ``tui_gateway`` session, since
+Real ``slave -z`` process (the aux-call cell: a real ``tui_gateway`` session, since
 one-shots send no title call), native ``anthropic`` provider on the OAuth route
 (``sk-ant-oat…`` pool credential), inference against the SDK-oracle loopback
 Messages endpoint (accepted base-URL override ``http://127.0.0.1:<port>/anthropic``),

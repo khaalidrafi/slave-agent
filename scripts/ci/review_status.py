@@ -69,12 +69,12 @@ FINDINGS = {
         "Prompt surface changed",
         "This PR changes the system prompt or tool schemas every session sends.",
         "Read the rendered change below (full text under tests/fixtures/prompt_surface/ "
-        "in the Files tab). Merging needs a hermes-agent-core approval."),
+        "in the Files tab). Merging needs a slave-agent-core approval."),
     "lockfile-diff": Finding(
         "CHANGED", "lockfile-diff.md", "lockfile-diff", "lockfile-diff",
         "JS lockfiles",
         "Locked JS dependency versions changed.",
-        "Verify the version changes are expected. Lockfile changes need a hermes-agent-core review.",
+        "Verify the version changes are expected. Lockfile changes need a slave-agent-core review.",
         compact=True),
     # No artifact: the merge subcommand combines these two into the supply-chain artifact.
     "supply-chain-scan": Finding(

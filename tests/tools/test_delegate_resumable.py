@@ -3,7 +3,7 @@ rebuilds it from after the process is gone, the record says how it may resume, a
 startup sweep for the record's life.
 
 Only the model is scripted; the child build, registry, store, async dispatch, boot recovery and the worktree
-sweep are the real ones, against a temp HERMES_HOME.
+sweep are the real ones, against a temp SLAVE_HOME.
 """
 
 import json
@@ -191,11 +191,11 @@ def test_crashed_childs_worktree_survives_the_sweep_until_its_record_expires(tmp
     sweep keeps it past 24 h; once the record expires the same sweep archives and removes it."""
     import sqlite3
 
-    from hermes_cli.worktree_sweep import plan_sweep, run_sweep, sweep_settings
+    from slave_cli.worktree_sweep import plan_sweep, run_sweep, sweep_settings
     from persistence_assembly import open_persistence, profile_scope
     from tools.async_delegation import recover_abandoned_delegations
     from tools.delegate_tool_resumable import _upsert, _write
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -206,9 +206,9 @@ def test_crashed_childs_worktree_survives_the_sweep_until_its_record_expires(tmp
     tree = repo / ".worktrees" / "subagent-sa-crash"
     _git("worktree", "add", "-q", str(tree), "-b", "subagent-sa-crash", cwd=repo)
     (tree / "work.txt").write_text("unsaved child work")
-    open_persistence(profile_scope(home=get_hermes_home()), eager=True).close()
+    open_persistence(profile_scope(home=get_slave_home()), eager=True).close()
 
-    db = get_hermes_home() / "state.db"
+    db = get_slave_home() / "state.db"
     assert _write(db, lambda ledger: _upsert(ledger, "sa-crash", {
         "session_id": "s", "cwd": str(tree), "owner_pid": 2 ** 22 + 7, "owners": ["parent-sess"],
         "worktrees_at_start": [str(repo)]}, state="running", pinned=True, expires_at=time.time() + 3600,

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 
-import { renderSync } from '@hermes/ink'
+import { renderSync } from '@slave-agent/ink'
 import chalk from 'chalk'
 import React from 'react'
 import stripAnsi from 'strip-ansi'
@@ -541,7 +541,7 @@ describe('Enter on an image prompt', () => {
   })
 
   it("on a remote gateway whose files this machine cannot read, the notes stay in the text and it says so", async () => {
-    vi.stubEnv('HERMES_TUI_GATEWAY_URL', 'ws://gateway.example:9119')
+    vi.stubEnv('SLAVE_TUI_GATEWAY_URL', 'ws://gateway.example:9119')
 
     const vision =
       "[The user sent an image~ Here's what I can see:\nA blue square on red.]\n" +

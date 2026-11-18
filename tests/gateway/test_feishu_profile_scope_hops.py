@@ -1,6 +1,6 @@
 """Profile scope must survive the Feishu adapter's thread hops under a multiplexed gateway.
 
-The adapter is constructed and connected inside ``_profile_runtime_scope`` (HERMES_HOME override +
+The adapter is constructed and connected inside ``_profile_runtime_scope`` (SLAVE_HOME override +
 secret scope as contextvars). Two hops used to start from an EMPTY context, so the work ran under
 the LAUNCH profile: the drive-comment agent turn (a full ``AIAgent`` on a bare default executor)
 and the lark WS client thread (every SDK callback, and its ``run_coroutine_threadsafe`` hop back
@@ -25,7 +25,7 @@ from agent.secret_scope import (
     set_multiplex_active,
     set_secret_scope,
 )
-from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
 
 
 def _observe(routed_home: Path) -> tuple:
@@ -33,7 +33,7 @@ def _observe(routed_home: Path) -> tuple:
         secret = get_secret("FEISHU_PROBE_TOKEN")
     except UnscopedSecretError:
         secret = "<unscoped>"
-    return ("routed" if Path(get_hermes_home()) == routed_home else "launch", secret)
+    return ("routed" if Path(get_slave_home()) == routed_home else "launch", secret)
 
 
 @pytest.fixture
@@ -42,13 +42,13 @@ def routed_scope(tmp_path):
     routed_home = tmp_path / "profiles" / "b"
     routed_home.mkdir(parents=True)
     set_multiplex_active(True)
-    home_token = set_hermes_home_override(str(routed_home))
+    home_token = set_slave_home_override(str(routed_home))
     secret_token = set_secret_scope({"FEISHU_PROBE_TOKEN": "routed-value"})
     try:
         yield routed_home
     finally:
         reset_secret_scope(secret_token)
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
         set_multiplex_active(False)
 
 
@@ -97,13 +97,13 @@ def test_drive_comment_agent_turn_binds_the_unscoped_launch_profile(tmp_path):
 
     @contextmanager
     def _launch_scope():
-        home_token = set_hermes_home_override(str(launch_home))
+        home_token = set_slave_home_override(str(launch_home))
         secret_token = set_secret_scope({"FEISHU_PROBE_TOKEN": "launch-value"})
         try:
             yield
         finally:
             reset_secret_scope(secret_token)
-            reset_hermes_home_override(home_token)
+            reset_slave_home_override(home_token)
 
     def _fake_agent(prompt, client, session_key=""):
         seen["turn"] = _observe(launch_home)
@@ -142,7 +142,7 @@ def test_drive_comment_on_the_launch_adapter_reads_the_launch_env_through_the_re
     launch_home = tmp_path / "launch"
     launch_home.mkdir()
     (launch_home / ".env").write_text("FEISHU_PROBE_TOKEN=launch-env-value\n")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("SLAVE_HOME", str(launch_home))
     seen = {}
 
     def _fake_agent(prompt, client, session_key=""):
@@ -233,7 +233,7 @@ def test_an_unscoped_comment_from_a_secondary_adapter_fails_closed(tmp_path, mon
     launch_home = tmp_path / "launch"
     launch_home.mkdir()
     (launch_home / ".env").write_text("FEISHU_PROBE_TOKEN=launch-env-value\n")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("SLAVE_HOME", str(launch_home))
     ran = []
     event = SimpleNamespace(event={
         "comment_id": "c1", "reply_id": "", "is_mentioned": True, "timestamp": "1",

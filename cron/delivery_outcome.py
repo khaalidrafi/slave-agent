@@ -4,7 +4,7 @@ An agent run hands its send to ``cron.delivery_queue`` and books ``last_status =
 "delivery_queued"`` / ledger ``delivery_outcome = "queued"``. Once a gateway drain sends,
 refuses, suppresses or fences the send ``unknown``, the job record and the execution
 ledger must carry the real result (main's inline ``ok``/``delivered`` and
-``delivery_failed``/``failed`` + ``last_delivery_error``); otherwise ``hermes cron list``
+``delivery_failed``/``failed`` + ``last_delivery_error``); otherwise ``slave cron list``
 says "delivery still in progress" forever and refused sends never surface.
 
 Both sides call :func:`settle_queued_delivery`: the drain right after it terminalizes a

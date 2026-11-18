@@ -12,7 +12,7 @@ from tests.docker.conftest import docker_exec, docker_exec_sh, start_container
 def test_stage2_discovers_chromium_binary(
     built_image: str, container_name: str,
 ) -> None:
-    """The build bakes the full-browser path, not a shell or .so, and Hermes resolves it.
+    """The build bakes the full-browser path, not a shell or .so, and slave-agent resolves it.
 
     Exercise it as the runtime user: an executable bit alone does not prove
     Chromium can load its shared libraries.
@@ -28,11 +28,11 @@ def test_stage2_discovers_chromium_binary(
     browser_path = r.stdout.strip()
     assert browser_path, "/etc/hermes/chromium-executable-path is empty"
 
-    # Hermes's own resolver (the launcher's binary) lands on the same build.
+    # Slave's own resolver (the launcher's binary) lands on the same build.
     r = docker_exec(
         container_name,
         "/opt/hermes/.venv/bin/python", "-c",
-        "from hermes_cli.browser_runtime import chromium_executable; "
+        "from slave_cli.browser_runtime import chromium_executable; "
         "print(chromium_executable(allow_override=False))",
         timeout=30,
     )

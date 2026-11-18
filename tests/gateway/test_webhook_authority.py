@@ -11,7 +11,7 @@ import sys
 
 def test_signed_webhook_storage_failure_is_retryable(tmp_path):
     result = subprocess.run([sys.executable, __file__],
-        env=dict(os.environ, HERMES_HOME=str(tmp_path)), capture_output=True, text=True, timeout=90, check=False)
+        env=dict(os.environ, SLAVE_HOME=str(tmp_path)), capture_output=True, text=True, timeout=90, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     print((tmp_path / 'webhook-receipt.json').read_text())
 
@@ -69,7 +69,7 @@ async def probe(peer):
             await async_wait_until(lambda: not adapter._background_tasks, timeout=5,
                                    what='the webhook background tasks to finish')
             assert authority.persistence.sessions.get(rows()[0].target_session_id).ended_at is not None
-            Path(os.environ['HERMES_HOME'], 'webhook-receipt.json').write_text(json.dumps({
+            Path(os.environ['SLAVE_HOME'], 'webhook-receipt.json').write_text(json.dumps({
                 'failed_status': failed.status, 'retry_status': accepted.status,
                 'admissions': len(rows()), 'inferences': len(peer.requests), 'signature_denied': denied.status}))
     finally:
@@ -89,7 +89,7 @@ def main():
     threading.Thread(target=peer.serve_forever, daemon=True).start()
     url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local-wire-stub\n  provider: custom\n  base_url: {url}\n'
         'streaming:\n  enabled: false\nauxiliary:\n  title_generation:\n    enabled: false\n')
     try:

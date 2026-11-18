@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
-import { JsonRpcGatewayError } from '@hermes/shared/json-rpc-channel'
+import { renderSync, Text } from '@slave-agent/ink'
+import { JsonRpcGatewayError } from '@slave-agent/shared/json-rpc-channel'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -42,7 +42,7 @@ let unmount = () => {}
 
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'backtrack-async-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   resetOverlayState()
   $pendingRewind.set(null)

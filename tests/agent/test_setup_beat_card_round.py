@@ -79,7 +79,7 @@ def _loop_agent(db):
 
 def test_a_card_closed_by_a_message_ends_the_turn_without_another_model_call(tmp_path, monkeypatch):
     """The message runs as the user's own next turn, so the old turn must not go on to answer it."""
-    monkeypatch.setattr("hermes_cli.onboarding_run.set_run", lambda *a, **k: None)
+    monkeypatch.setattr("slave_cli.onboarding_run.set_run", lambda *a, **k: None)
     db = open_persistence(profile_scope(home=tmp_path))
     agent = _loop_agent(db)
     agent.setup_beat_callback = lambda payload: {"wrote_instead": True}

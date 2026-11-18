@@ -16,7 +16,7 @@ def _prefill(home, mark):
 
 async def _owner(tmp_path, monkeypatch):
     from tests.gateway.test_local_create_env_refs import _owner
-    monkeypatch.delenv('HERMES_PREFILL_MESSAGES_FILE', raising=False)
+    monkeypatch.delenv('SLAVE_PREFILL_MESSAGES_FILE', raising=False)
     home = tmp_path / 'home'
     home.mkdir()
     (home / 'config.yaml').write_text(CONFIG)

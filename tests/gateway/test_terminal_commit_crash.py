@@ -31,13 +31,13 @@ def test_terminal_commit_before_publication_survives_kill(tmp_path):
            'auxiliary': {'title_generation': {'enabled': False}}, 'terminal': {'cwd': str(home)}}
     (home / 'config.yaml').write_text(json.dumps(cfg))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, API_SERVER_KEY='ordinary-daemon-owned-secret',
                API_SERVER_ENABLED='true', API_SERVER_PORT=str(port), PYTHONUNBUFFERED='1')
     url = f'http://127.0.0.1:{port}/v1'
     headers = {'Authorization': 'Bearer ordinary-daemon-owned-secret'}
     body = {'messages': [{'role': 'user', 'content': 'BLOCK_STARTED'}]}
-    identity = {'X-Hermes-Session-Id': 'used', 'Idempotency-Key': 'once'}
+    identity = {'X-Slave-Session-Id': 'used', 'Idempotency-Key': 'once'}
     pids = []
 
     def snapshot():
@@ -49,7 +49,7 @@ def test_terminal_commit_before_publication_survives_kill(tmp_path):
     async def first(proc):
         async with aiohttp.ClientSession(headers=headers) as client:
             async with client.post(url + '/chat/completions', json={'messages': [{'role': 'user', 'content': 'WARM'}]},
-                                   headers={'X-Hermes-Session-Id': 'used'}) as response:
+                                   headers={'X-Slave-Session-Id': 'used'}) as response:
                 assert response.status == 200, await response.text()
             async def request():
                 async with client.post(url + '/chat/completions', json=body, headers=identity) as response:

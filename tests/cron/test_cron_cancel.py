@@ -1,4 +1,4 @@
-"""Coverage for on-demand cancellation of an in-flight cron run (`hermes cron cancel`)."""
+"""Coverage for on-demand cancellation of an in-flight cron run (`slave cron cancel`)."""
 
 import threading
 import time
@@ -100,7 +100,7 @@ def test_operator_cancel_is_not_treated_as_claim_loss():
 
     # The run stops...
     assert fence.cancel_event.is_set()
-    assert scheduler.cancel_reason(fence.cancel_event) == "cancelled on request (hermes cron cancel)"
+    assert scheduler.cancel_reason(fence.cancel_event) == "cancelled on request (slave cron cancel)"
     # ...but a cancel is a real outcome the run records itself, not a lost fire claim.
     assert not fence.transport_cancelled()
     assert fence.claim_lost is None
@@ -118,22 +118,22 @@ def test_cancelling_a_script_job_kills_it_and_names_the_reason(tmp_path, monkeyp
     from cron.cancellation import CancelRequest, request_cancel
 
     # Script paths resolve under the firing profile's home; point it at the scratch dir.
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "_get_slave_home", lambda: tmp_path)
     monkeypatch.setattr(scheduler_script, "_get_script_timeout", lambda: 60)
     # Spawn through a scratch dependency environment: the store interpreter resolves under the
-    # real Hermes home, which the home-I/O guard refuses. Pinned the same way
+    # real Slave home, which the home-I/O guard refuses. Pinned the same way
     # tests/cron/test_cron_script.py pins this seam — what is under test is the marker and the
     # kill, not interpreter selection.
     venv = tmp_path / "venv"
     (venv / "bin").mkdir(parents=True)
     (venv / "bin" / "python").symlink_to(sys.executable)
-    monkeypatch.setattr("hermes_cli._launchers.resolve_store_python", lambda repo: Path(sys.executable))
+    monkeypatch.setattr("slave_cli._launchers.resolve_store_python", lambda repo: Path(sys.executable))
     monkeypatch.setattr("pm.environments.selected_venv", lambda repo: venv)
     # Spawning sanitizes PATH, which resolves the real install's bin dir; the guard refuses that
     # read. The bin dir is irrelevant to the kill, and None is the documented "no install" answer.
     from tools.environments import local as local_env
 
-    monkeypatch.setattr(local_env, "_resolve_hermes_bin_dir", lambda: None)
+    monkeypatch.setattr(local_env, "_resolve_slave_bin_dir", lambda: None)
     monkeypatch.delenv("PYTHONPATH", raising=False)
     scripts = tmp_path / "scripts"
     scripts.mkdir()

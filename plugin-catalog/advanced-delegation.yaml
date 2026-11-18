@@ -6,11 +6,11 @@ title: Advanced Delegation
 description: 'Two extra delegation modes for `delegate_task`, next to the built-in default. Model routes
   (`delegation.backend: model_map`): the agent picks a named model route per subagent from a list you
   define (e.g. fast, deep, local). Profile routes (`delegation.backend: profile_routes`): the agent runs a
-  subagent as one of your Hermes profiles, with that profile''s own model, credentials, skills and SOUL.md.
-  Only route names and their one-line descriptions reach the model. Adds `hermes delegation config` (pick
+  subagent as one of your slave-agent profiles, with that profile''s own model, credentials, skills and SOUL.md.
+  Only route names and their one-line descriptions reach the model. Adds `slave delegation config` (pick
   the mode and edit its routes; `--show` prints the setup) and the `/delegation` slash command (save a mode
-  for the next session, or `--now` to apply it to the current chat). Needs Hermes 0.22.5 or newer, the
-  first release with pluggable delegation providers; Hermes 0.22.0 to 0.22.4 refuses to install it, and on
+  for the next session, or `--now` to apply it to the current chat). Needs slave-agent 0.22.5 or newer, the
+  first release with pluggable delegation providers; slave-agent 0.22.0 to 0.22.4 refuses to install it, and on
   a core older than 0.22.0 it installs, logs one warning and does nothing. A model route can set
   `daybreak: true` to run its model with OpenAI''s Daybreak trusted-access program; it is sent only
   from your own CLI, TUI or Desktop chats, on `openai-codex`, for models your Codex catalog lists,

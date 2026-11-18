@@ -2,7 +2,7 @@
 seen from the host CLI, or the other way round) is never launched over, deleted or reaped from here.
 
 Its ``SingletonLock`` names a pid of ANOTHER PID namespace (written under another hostname, or by a launch record
-from another namespace), so the number proves nothing here. When its DevTools endpoint answers, Hermes attaches
+from another namespace), so the number proves nothing here. When its DevTools endpoint answers, slave-agent attaches
 and leases it as usual; when it does not, the launch fails with an error naming the profile instead of starting a
 second Chromium on the same user-data-dir (which would wipe the running browser's ``DevToolsActivePort`` and fight
 it for the profile).
@@ -42,7 +42,7 @@ def _relock(udd, host: str, pid: int) -> None:
 
 
 def _foreign_launch_record(udd, pid: int) -> None:
-    """The launch record a Hermes in another PID namespace wrote for ``pid`` (its own number for the browser)."""
+    """The launch record a slave-agent in another PID namespace wrote for ``pid`` (its own number for the browser)."""
     state = launcher._shared_state_dir(str(udd))
     name = f"{launcher._profile_digest(str(udd))[:16]}-{pid}-nffffffffffff.json"
     (state / name).write_text(json.dumps({

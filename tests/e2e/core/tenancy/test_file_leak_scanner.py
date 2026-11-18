@@ -13,7 +13,7 @@ from . import _helpers as H
 
 
 def _tenants(tmp_path: Path) -> dict[str, H.Tenant]:
-    home = tmp_path / "home" / ".hermes"
+    home = tmp_path / "home" / ".slave"
     return {name: H.Tenant(name=name, home=home if name == "default" else home / "profiles" / name,
                            workdir=tmp_path / f"work-{name}")
             for name in ("default", "alpha", "beta")}

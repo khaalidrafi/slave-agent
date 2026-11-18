@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import psutil
 import pytest
 
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 from tests.fixtures.storage_holder import raw_holder
 from tests.fixtures.storage_seed import seed_session
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
@@ -23,7 +23,7 @@ async def test_worker_register_requires_the_owners_launched_worker(tmp_path, mon
     from gateway.session_worker import worker_request
     from persistence.core.errors import AuthorityRefusal
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     seed_session(db, 'owned', 'telegram')
     runner = SimpleNamespace(_draining=False, config=SimpleNamespace(multiplex_profiles=False),

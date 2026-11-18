@@ -17,7 +17,7 @@ description: >-
   subprocess (never runs an analyzer), no third-party dependencies, no
   self-update.
   Disclosure: reads the local SARIF paths you pass it (read-only), only regular
-  files, and honours Hermes' core read denylist.
+  files, and honours slave-agent’ core read denylist.
 maintainer: rodricksz4h5
 tier: community
 category: tools

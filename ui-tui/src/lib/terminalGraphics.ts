@@ -17,7 +17,7 @@ export const detectTerminalGraphics = (env: NodeJS.ProcessEnv = process.env): Te
   const program = lower(env.TERM_PROGRAM)
 
   // VS Code/Cursor don't scrub an inherited KITTY_WINDOW_ID; xterm.js shows tofu.
-  if (program === 'vscode' || env.HERMES_PTY_HOST === 'dashboard') {
+  if (program === 'vscode' || env.SLAVE_PTY_HOST === 'dashboard') {
     return 'unicode'
   }
 

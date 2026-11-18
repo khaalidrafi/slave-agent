@@ -114,8 +114,8 @@ _PY_SKIP = ("docs/", "website/") + _FRONTEND
 # Python lane — otherwise dropping a redirect URI goes green here and breaks
 # every CIMD login on main.
 # website/docs/ and website/scripts/ are asserted about the same way. The docs
-# tree generates llms.txt — the index every LLM (Hermes included, via the
-# hermes-agent skill) reads to learn what Hermes can do — and
+# tree generates llms.txt — the index every LLM (Slave included, via the
+# slave-agent skill) reads to learn what Slave can do — and
 # tests/website/test_generate_llms_txt.py holds every page to appearing in it.
 # Skipping Python on a docs-only PR is how the index drifted to 53% coverage.
 _PY_RELEVANT_SITE = (
@@ -129,11 +129,11 @@ _PY_RELEVANT_SITE = (
 # that can catch the drift, so these force the Python lane too.
 _PY_RELEVANT_CONTRACT_FILES = {
     # tests/tui_gateway/contracts/test_generated.py (rendered from tui_gateway/contracts)
-    # tests/hermes_cli/test_desktop_slash_registry.py
+    # tests/slave_cli/test_desktop_slash_registry.py
     # tests/tui_gateway/test_show_reasoning_display_gate.py (card-tool names vs the gateway lifecycle set)
     # tests/website/test_catalog_rules_mirror.py (docs page mirrors the canonical rules)
     "plugin-catalog/README.md",
-    # tests/hermes_cli/test_plugin_docs_public_imports.py (its examples import only the plugin API)
+    # tests/slave_cli/test_plugin_docs_public_imports.py (its examples import only the plugin API)
     "plugins/AGENTS.md",
 }
 
@@ -150,7 +150,7 @@ _SCAN_FILES = {"setup.cfg", "pyproject.toml"}
 # (the .rs/Cargo files are the ``rust`` lane's job). Changes here get the
 # bootstrap-installer.yml lane — a real sandboxed install + stamp check.
 _BOOTSTRAP_PATHS = ()
-_BOOTSTRAP_FILES = {"scripts/install.sh", "setup-hermes.sh"}
+_BOOTSTRAP_FILES = {"scripts/install.sh", "setup-slave.sh"}
 # Windows desktop-update hand-off (scripts/desktop-update/windows.ps1 + the
 # Electron side that launches it) and the pytest files that spawn it. The PowerShell
 # hand-off and its python suite went with the updater (FORK.org P0); what still ships an
@@ -174,7 +174,7 @@ _DESKTOP_UPDATER_FILES = {
 _SHARED_FIXTURE_CONSUMERS: dict[str, tuple[str, ...]] = {
     # A7 rule 7: the update-marker parse / judge / release corpus.
     "tests/fixtures/update_marker_corpus.json": (
-        "tests/hermes_cli/test_update_marker_corpus.py",  # Python: update_lock
+        "tests/slave_cli/test_update_marker_corpus.py",  # Python: update_lock
         "apps/bootstrap-installer/src-tauri/src/marker_tests.rs",  # Rust: cargo test
         "apps/desktop/electron/update-marker-corpus.test.ts",  # Electron: vitest
         "tests/scripts/desktop_update/test_desktop_update_posix_marker_corpus.py",  # marker.sh
@@ -184,7 +184,7 @@ _SHARED_FIXTURE_CONSUMERS: dict[str, tuple[str, ...]] = {
     ),
     # Which halves a plugin folder ships: the gateway's and native Desktop's inspectors.
     "tests/fixtures/plugin_component_detection.json": (
-        "tests/hermes_cli/test_plugins_cmd_inspect.py",  # Python: detect_components
+        "tests/slave_cli/test_plugins_cmd_inspect.py",  # Python: detect_components
         "apps/desktop/electron/desktop-plugin-install.test.ts",  # Electron: detectPluginComponents
     ),
 }
@@ -193,7 +193,7 @@ _SHARED_FIXTURE_CONSUMERS: dict[str, tuple[str, ...]] = {
 # electron/update-* starts the Desktop update E2E, which never reads the corpus).
 _FIXTURE_CONSUMER_LANES = ("python", "rust", "frontend", "desktop_updater")
 
-# Rust crates — currently just the Tauri bootstrap installer (Hermes-Setup).
+# Rust crates — currently just the Tauri bootstrap installer (Slave-Setup).
 # These live under ``apps/``, so before this lane existed a ``.rs`` edit matched
 # ``frontend`` and nothing more: the TypeScript matrix built, cargo never ran,
 # and the crate's unit tests had never executed in CI at all.
@@ -238,46 +238,46 @@ _DESKTOP_E2E_SHARED = (
 # The Tauri updater (update.rs, its marker claim marker.rs, the paths.rs both resolve) is
 # compiled and tested by ``cargo test`` alone (the ``rust`` lane, via ``.rs``): no slow lane
 # builds the bootstrap installer, so none of the three starts one.
-# What `hermes update` runs outside the update_* module family: the steps of the
+# What `slave update` runs outside the update_* module family: the steps of the
 # pipeline (entry, lock, early recovery, completion tail, launchers, fleet
 # restart/verify, Windows pause/resume) and the lock / marker / recovery state
 # the update_* modules import. Editing any of these changes what a real update
 # does, so the real-update suites (Linux e2e-upgrade and the Windows
 # install + update journey, including its crash cells) must run on the PR.
 _UPDATE_PIPELINE = (
-    "hermes_cli/main.py",  # cmd_update: lock, pre-update backup, receipt boundary
-    "hermes_cli/main_dashboard.py",  # hangup protection + update.log mirror
-    "hermes_cli/main_web_build.py",  # completion's bytecode sweep and dropped-folder prune
+    "slave_cli/main.py",  # cmd_update: lock, pre-update backup, receipt boundary
+    "slave_cli/main_dashboard.py",  # hangup protection + update.log mirror
+    "slave_cli/main_web_build.py",  # completion's bytecode sweep and dropped-folder prune
     # Prefix: main_desktop.py (staged Desktop swap / rebuild in the tail) and the
     # main_desktop_* siblings it imports (macOS signing identity).
-    "hermes_cli/main_desktop",
+    "slave_cli/main_desktop",
     # Prefix: _early_recovery.py and its _early_recovery_* siblings (ZIP swap journal).
-    "hermes_cli/_early_recovery",  # interrupted pull / shim restore at launch
-    "hermes_cli/venv_sync.py",  # completion obligation + launch-time tail
-    "hermes_cli/source_",  # source_completion/_build/_releases/_check/_stamp
-    "hermes_cli/_launchers.py",
-    "hermes_cli/release_channels.py",
-    "hermes_cli/gitlock.py",  # git self-heal + partial-clone fetch
-    "hermes_cli/git_commit_graph.py",  # every update starts the install checkout's graph refresh
-    "hermes_cli/process_identity.py",  # marker owner liveness
-    "hermes_cli/runtime_state.py",
-    "hermes_cli/relaunch.py",
-    "hermes_cli/managed_uv.py",
-    "hermes_cli/npm_engine.py",
-    "hermes_cli/_scan_venv_blockers.py",
-    "hermes_cli/dashboard_procs.py",
-    "hermes_cli/desktop_update",  # desktop_update_verify
-    "hermes_cli/gateway.py",  # fleet restart / verify
-    "hermes_cli/gateway_windows",  # Windows pause / resume
-    "hermes_cli/gateway_launchd.py",
-    "hermes_cli/gateway_migrate",
-    "hermes_cli/gateway_supervised_restart.py",
-    "hermes_cli/gateway_restart_env.py",  # the fleet restart watcher's env
-    "hermes_cli/gateway_runtime_start.py",  # supervisor-marker strip for the watcher and the pause replay
-    "hermes_cli/git_pack_tidy.py",  # partial-clone pack tidy: every update's pre-fetch runs it
-    "hermes_bootstrap.py",  # every launch's prepare_launch
-    "hermes_constants.py",  # root home = update marker location
-    "hermes_dir_acl.py",  # update restores the Windows user ACL on the home after elevation
+    "slave_cli/_early_recovery",  # interrupted pull / shim restore at launch
+    "slave_cli/venv_sync.py",  # completion obligation + launch-time tail
+    "slave_cli/source_",  # source_completion/_build/_releases/_check/_stamp
+    "slave_cli/_launchers.py",
+    "slave_cli/release_channels.py",
+    "slave_cli/gitlock.py",  # git self-heal + partial-clone fetch
+    "slave_cli/git_commit_graph.py",  # every update starts the install checkout's graph refresh
+    "slave_cli/process_identity.py",  # marker owner liveness
+    "slave_cli/runtime_state.py",
+    "slave_cli/relaunch.py",
+    "slave_cli/managed_uv.py",
+    "slave_cli/npm_engine.py",
+    "slave_cli/_scan_venv_blockers.py",
+    "slave_cli/dashboard_procs.py",
+    "slave_cli/desktop_update",  # desktop_update_verify
+    "slave_cli/gateway.py",  # fleet restart / verify
+    "slave_cli/gateway_windows",  # Windows pause / resume
+    "slave_cli/gateway_launchd.py",
+    "slave_cli/gateway_migrate",
+    "slave_cli/gateway_supervised_restart.py",
+    "slave_cli/gateway_restart_env.py",  # the fleet restart watcher's env
+    "slave_cli/gateway_runtime_start.py",  # supervisor-marker strip for the watcher and the pause replay
+    "slave_cli/git_pack_tidy.py",  # partial-clone pack tidy: every update's pre-fetch runs it
+    "slave_bootstrap.py",  # every launch's prepare_launch
+    "slave_constants.py",  # root home = update marker location
+    "slave_dir_acl.py",  # update restores the Windows user ACL on the home after elevation
     "gateway/status.py",  # code_sha stamp the fleet verify reads
     "gateway/status_inline_source.py",  # the Windows pause identifies inline-bootstrapped gateways
     "gateway/status_lock_dir.py",  # gateway/status.py imports it at module level
@@ -288,41 +288,41 @@ _UPDATE_PIPELINE = (
     "gateway/restart.py",
     "gateway/host_topology.py",  # update --force: the served homes of a host multiplexer
     "tools/process_registry.py",  # update --force: sweeps a killed gateway's background processes
-    "scripts/desktop-update/",  # the hand-off scripts run `hermes update`
+    "scripts/desktop-update/",  # the hand-off scripts run `slave update`
 )
 # Selectors are owned by the import graph, not remembered. The update
-# transaction's own modules (what `hermes update` and the launch-time completion
+# transaction's own modules (what `slave update` and the launch-time completion
 # run between the lock and the receipt) are the entry points;
 # tests/ci/test_update_ci_routing.py reads every repo module they import (AST,
 # module level and lazy) and every build script they run, and fails until each
 # one is routed to the suite below or is a _SHARED_HUBS entry.
 _UPDATE_ENTRY_POINTS = (
-    "hermes_cli/update_",
-    "hermes_cli/_update_",
-    "hermes_cli/source_",
-    "hermes_cli/old_updater",
-    "hermes_cli/_old_updater",
-    "hermes_cli/post_update",
-    "hermes_cli/venv_sync.py",
-    "hermes_cli/_early_recovery",
-    "hermes_cli/main_desktop.py",
-    "hermes_cli/desktop_update_verify.py",
-    "hermes_cli/desktop_build_lock.py",
-    "hermes_cli/subcommands/update",
+    "slave_cli/update_",
+    "slave_cli/_update_",
+    "slave_cli/source_",
+    "slave_cli/old_updater",
+    "slave_cli/_old_updater",
+    "slave_cli/post_update",
+    "slave_cli/venv_sync.py",
+    "slave_cli/_early_recovery",
+    "slave_cli/main_desktop.py",
+    "slave_cli/desktop_update_verify.py",
+    "slave_cli/desktop_build_lock.py",
+    "slave_cli/subcommands/update",
 )
 # The entry points that build or verify the Desktop app inside an update
-# (`hermes desktop --build-only`, the source build/completion that feeds it).
+# (`slave desktop --build-only`, the source build/completion that feeds it).
 _DESKTOP_BUILD_ENTRY_POINTS = (
-    "hermes_cli/source_build.py",
-    "hermes_cli/source_completion.py",
-    "hermes_cli/main_desktop.py",
-    "hermes_cli/desktop_update_verify.py",
-    "hermes_cli/desktop_build_lock.py",
+    "slave_cli/source_build.py",
+    "slave_cli/source_completion.py",
+    "slave_cli/main_desktop.py",
+    "slave_cli/desktop_update_verify.py",
+    "slave_cli/desktop_build_lock.py",
 )
 # What the entry points import, outside the update_* family and the pipeline above.
 _UPDATE_DEPENDENCIES = (
-    "hermes_cli/_subprocess_compat.py",  # update git env, process-tree kill, PM git exposure
-    "hermes_cli/local_runtime/processes.py",  # bounded probes' spawn_server/job custody
+    "slave_cli/_subprocess_compat.py",  # update git env, process-tree kill, PM git exposure
+    "slave_cli/local_runtime/processes.py",  # bounded probes' spawn_server/job custody
     "agent/deadline.py",  # bounded probes' process-tree timeout cleanup
     # migrate_all_homes' second-hop provider/profile decisions, run on every update. Its
     # plugin-install branch (plugins_cmd, plugins_cmd_install) runs only for a home whose
@@ -332,49 +332,49 @@ _UPDATE_DEPENDENCIES = (
     "pm/plugins_state.py",
     "pm/install.py",  # also sealed()/lazy_installs_allowed(): every update's default-tool install
     "pm/packages.py",  # source_build's pnpm environment (pnpm_env)
-    "pm/index_config.py",  # source_build's npmrc bridge (read_npmrc, user_npmrc, hermes_npmrc)
-    "hermes_cli/desktop_build_lock.py",
-    "hermes_cli/desktop_build_reuse.py",  # source_build keeps the packaged app when no input changed
-    "hermes_cli/desktop_release_holders.py",  # main_desktop names/closes a holder of release/ on a failed swap
-    "hermes_cli/memory_provider_migration.py",
-    "hermes_cli/left_core_migration.py",  # source_build migrates plugins that left core
-    "hermes_cli/default_plugins.py",  # the update tail and boot bootstrap install catalog defaults
-    "hermes_cli/config_version_stamp.py",  # post_update converts legacy AGENT_BROWSER_* before stamping
-    "hermes_cli/web_build_limits.py",  # source_build caps the dashboard Node build
-    "hermes_cli/desktop_console.py",
-    "hermes_cli/bundled_app.py",
-    "hermes_cli/gui_uninstall.py",
-    "hermes_cli/linux_desktop_entry.py",
-    "hermes_cli/github_api.py",  # source_check's release lookup
-    "hermes_cli/build_info.py",
-    "hermes_cli/image_provenance.py",
-    "hermes_cli/backup.py",  # pre-update backup
-    "hermes_cli/backup_cron_prompts.py",  # restore_cron_prompt_fields_if_degraded (update_cmd_config)
-    "hermes_cli/backup_restore.py",
-    "hermes_cli/config_backend.py",  # update_channel writes the channel key through the seam
-    "hermes_cli/env_loader.py",  # update_proxy_env keeps proxy keys a .env load wrote
+    "pm/index_config.py",  # source_build's npmrc bridge (read_npmrc, user_npmrc, slave_npmrc)
+    "slave_cli/desktop_build_lock.py",
+    "slave_cli/desktop_build_reuse.py",  # source_build keeps the packaged app when no input changed
+    "slave_cli/desktop_release_holders.py",  # main_desktop names/closes a holder of release/ on a failed swap
+    "slave_cli/memory_provider_migration.py",
+    "slave_cli/left_core_migration.py",  # source_build migrates plugins that left core
+    "slave_cli/default_plugins.py",  # the update tail and boot bootstrap install catalog defaults
+    "slave_cli/config_version_stamp.py",  # post_update converts legacy AGENT_BROWSER_* before stamping
+    "slave_cli/web_build_limits.py",  # source_build caps the dashboard Node build
+    "slave_cli/desktop_console.py",
+    "slave_cli/bundled_app.py",
+    "slave_cli/gui_uninstall.py",
+    "slave_cli/linux_desktop_entry.py",
+    "slave_cli/github_api.py",  # source_check's release lookup
+    "slave_cli/build_info.py",
+    "slave_cli/image_provenance.py",
+    "slave_cli/backup.py",  # pre-update backup
+    "slave_cli/backup_cron_prompts.py",  # restore_cron_prompt_fields_if_degraded (update_cmd_config)
+    "slave_cli/backup_restore.py",
+    "slave_cli/config_backend.py",  # update_channel writes the channel key through the seam
+    "slave_cli/env_loader.py",  # update_proxy_env keeps proxy keys a .env load wrote
     "agent/proxy_bypass.py",  # update_proxy_env reads NO_PROXY entries with it
-    "hermes_cli/relay_plugin_migrate.py",
-    "hermes_cli/macos_tcc_anchor.py",
-    "hermes_cli/model_catalog.py",
-    "hermes_cli/sqlite_runtime.py",
-    "hermes_cli/sqlite_safe_read.py",
-    "hermes_cli/sizefmt.py",
-    "hermes_cli/tools_config_cua.py",
-    "hermes_cli/_startup_fast.py",
-    "hermes_cli/_parser.py",
-    "hermes_cli/gateway_multiplex_mode.py",
-    "hermes_cli/plugin_catalog.py",
-    "hermes_cli/plugins_auto_update.py",  # update_cmd_maint's catalog-pin notice after the code swap
-    "hermes_cli/steward.py",
-    "hermes_cli/observability/shared_metrics_update.py",
-    "hermes_cli/main_install_repair.py",
-    "hermes_logging.py",
-    "hermes_platform/host/__init__.py",
-    "hermes_platform/host/facts.py",
-    "hermes_platform/resolver/__init__.py",  # update_cmd_commit's interpreter lookup
-    "hermes_platform/resolver/base.py",
-    "hermes_platform/resolver/core.py",
+    "slave_cli/relay_plugin_migrate.py",
+    "slave_cli/macos_tcc_anchor.py",
+    "slave_cli/model_catalog.py",
+    "slave_cli/sqlite_runtime.py",
+    "slave_cli/sqlite_safe_read.py",
+    "slave_cli/sizefmt.py",
+    "slave_cli/tools_config_cua.py",
+    "slave_cli/_startup_fast.py",
+    "slave_cli/_parser.py",
+    "slave_cli/gateway_multiplex_mode.py",
+    "slave_cli/plugin_catalog.py",
+    "slave_cli/plugins_auto_update.py",  # update_cmd_maint's catalog-pin notice after the code swap
+    "slave_cli/steward.py",
+    "slave_cli/observability/shared_metrics_update.py",
+    "slave_cli/main_install_repair.py",
+    "slave_logging.py",
+    "slave_platform/host/__init__.py",
+    "slave_platform/host/facts.py",
+    "slave_platform/resolver/__init__.py",  # update_cmd_commit's interpreter lookup
+    "slave_platform/resolver/base.py",
+    "slave_platform/resolver/core.py",
     "agent/curator.py",
     "plugins/memory/__init__.py",
     "agent/checkpoints/maintenance.py",
@@ -385,7 +385,7 @@ _UPDATE_DEPENDENCIES = (
     # tui, web, desktop and their shared frontend-common).
     "scripts/build/",
     "apps/desktop/scripts/build-webapp.mjs",  # source_build's Webapp renderer build
-    "hermes_cli/webapp.py",  # source_build rebuilds the Webapp bundle a home serves
+    "slave_cli/webapp.py",  # source_build rebuilds the Webapp bundle a home serves
     "gateway/webapp_listener.py",  # source_build reads which homes serve the Webapp
 )
 # General-purpose modules an entry point imports but that half the product
@@ -395,17 +395,17 @@ _UPDATE_DEPENDENCIES = (
 # them run on most PRs. Never an update-specific module: own those above.
 HUB_MIN_IMPORTERS = 25
 _SHARED_HUBS = frozenset({
-    "hermes_cli/__init__.py",
-    "hermes_cli/config.py",
-    "hermes_cli/profiles.py",
-    "hermes_cli/version_info.py",
+    "slave_cli/__init__.py",
+    "slave_cli/config.py",
+    "slave_cli/profiles.py",
+    "slave_cli/version_info.py",
     "utils/__init__.py",
     "persistence_assembly.py",
     "agent/__init__.py",
     "cron/jobs.py",
     "tools/environments/local.py",
     # Desktop lane only (the upgrade lane owns these outright):
-    "hermes_constants.py",
+    "slave_constants.py",
     "gateway/status.py",
     "pm/__init__.py",
     "pm/paths.py",
@@ -434,16 +434,16 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "tests/compat/",
         "pm/",
         "scripts/install.",
-        "setup-hermes.sh",
+        "setup-slave.sh",
         # What is left of "getting this tree onto a newer revision": the package-manager
         # pointer, the install/maintenance tail, launcher publication, the steward ladder
         # and the build stamp. The in-place updater these paths used to name was removed
         # in FORK.org P0.
-        "hermes_cli/config_migrations",
-        "hermes_cli/subcommands/update",
-        "hermes_cli/install_maint.py",
-        "hermes_cli/_launchers.py",
-        "hermes_cli/steward.py",
+        "slave_cli/config_migrations",
+        "slave_cli/subcommands/update",
+        "slave_cli/install_maint.py",
+        "slave_cli/_launchers.py",
+        "slave_cli/steward.py",
         "scripts/write_install_stamp.py",
     ),
     "e2e_desktop_core": (
@@ -452,7 +452,7 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
     "e2e_desktop_update": (
         *_DESKTOP_E2E_SHARED,
         # The last three entries named the Python-side updater (scripts/desktop-update/,
-        # hermes_cli/desktop_update*, hermes_cli/update_*), which this fork deleted in
+        # slave_cli/desktop_update*, slave_cli/update_*), which this fork deleted in
         # FORK.org P0. The Electron shell's updater is intact and owns this lane; the
         # desktop app never updates the Python backend in place, so no Python path
         # belongs here except the shared installer it shells out to.
@@ -519,7 +519,7 @@ def _is_catalog_data(p: str) -> bool:
 def _py_test_only(p: str) -> bool:
     """Is ``p`` inside the test suite (never shipped / imported by the product)?
 
-    Product jobs (Desktop E2E's ``hermes serve`` backend, the Docker image)
+    Product jobs (Desktop E2E's ``slave serve`` backend, the Docker image)
     run installed code — nothing under ``tests/`` is packaged or importable
     there. scripts/run_tests.sh and scripts/run_tests_parallel.py are deliberately
     NOT test-only: they are runner infrastructure, and a bad edit there can

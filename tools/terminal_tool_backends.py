@@ -23,7 +23,7 @@ from tools.tool_backend_helpers import (has_direct_modal_credentials, managed_no
 logger = logging.getLogger("tools.terminal_tool")
 
 # Human reason for the most recent failed requirements check (None after a passing one). The CLI
-# startup notice and `hermes doctor` read it through terminal_backend_unavailable_reason() so the user
+# startup notice and `slave doctor` read it through terminal_backend_unavailable_reason() so the user
 # hears WHY the terminal tool is missing instead of discovering it on first use.
 _last_unavailable_reason: Optional[str] = None
 
@@ -136,7 +136,7 @@ def _build_local_env(*, cwd, timeout, local_config=None, **_):
 def _build_docker_env(*, image, cwd, timeout, cc, task_id, host_cwd, **_):
     from tools.terminal_tool import (_docker_session_isolation_enabled, _has_isolation_overrides,
                                      _maybe_reap_docker_orphans)
-    # One-shot reaper for labeled containers orphaned by prior Hermes processes that died before
+    # One-shot reaper for labeled containers orphaned by prior Slave processes that died before
     # atexit (SIGKILL / OOM / closed terminal); ``terminal.docker_orphan_reaper: false`` disables it.
     _maybe_reap_docker_orphans(cc)
     # A session-keyed container must not outlive its session, so cross-process reuse/persist is
@@ -227,20 +227,20 @@ def _stamp_sandbox_home(env_obj, provider, cwd) -> None:
         home = declared
     if isinstance(home, str) and home.startswith("/") and home != "/":
         try:
-            env_obj._hermes_sandbox_home = home
+            env_obj._slave_sandbox_home = home
         except AttributeError:
             pass
 
 
 def _refuse_plugin_host_provider(provider, env_type) -> None:
-    from hermes_cli.plugin_host import is_hosted_object
+    from slave_cli.plugin_host import is_hosted_object
     if is_hosted_object(provider):
         # The environment would come back as an opaque placeholder, and its execute() would run outside
         # this process's interrupt, activity and terminal-scope state: refuse before the host starts a
         # sandbox nothing here could use or clean up.
         raise ValueError(
             f"terminal.backend is {env_type}, a plugin that runs in the plugin host (plugins.isolation: host), "
-            f"and the host cannot hand its environment to Hermes, so commands cannot run in it. Set "
+            f"and the host cannot hand its environment to slave-agent, so commands cannot run in it. Set "
             f"plugins.isolation: in_process to use this backend.")
 
 
@@ -248,7 +248,7 @@ def _stamp_plugin_env(env_obj, provider, cwd):
     # Stamp the backend name so path-resolution and progress surfaces can identify plugin
     # backends without class-name sniffing. Test doubles may reject attributes.
     try:
-        env_obj._hermes_backend_name = provider.name.strip().lower()
+        env_obj._slave_backend_name = provider.name.strip().lower()
     except AttributeError:
         pass
     _stamp_sandbox_home(env_obj, provider, cwd)
@@ -268,7 +268,7 @@ def _build_plugin_env(*, env_type, image, cwd, timeout, cc, task_id, **_):
     except Exception:
         plugin_names = []
     known = ", ".join(f"'{n}'" for n in [*_ENV_BUILDERS, *plugin_names])
-    from hermes_cli.left_core_migration import terminal_backend_install_hint
+    from slave_cli.left_core_migration import terminal_backend_install_hint
     raise ValueError(f"Unknown environment type: {env_type}. Use {known}{terminal_backend_install_hint(env_type)}")
 
 
@@ -335,7 +335,7 @@ def _check_vercel(config: dict[str, Any]) -> bool:
                        "Use the default shared setting (51200 MB).")
     if importlib.util.find_spec("vercel") is None:
 
-        return _reject("vercel is required for the Vercel Sandbox terminal backend. Run hermes setup terminal and select Vercel Sandbox.")
+        return _reject("vercel is required for the Vercel Sandbox terminal backend. Run slave setup terminal and select Vercel Sandbox.")
     from agent.secret_scope import get_secret
     if get_secret("VERCEL_OIDC_TOKEN"):
         return True
@@ -362,7 +362,7 @@ def _ssh_pre(config: dict[str, Any]) -> bool:
     if config.get("ssh_host") and config.get("ssh_user"):
         return True
     return _reject("the SSH host and user are not configured (TERMINAL_SSH_HOST / TERMINAL_SSH_USER); "
-                   "run `hermes setup terminal` to enter them or pick the 'local' backend")
+                   "run `slave setup terminal` to enter them or pick the 'local' backend")
 
 
 def _daytona_post(config: dict[str, Any]) -> bool:
@@ -377,7 +377,7 @@ _BACKEND_SPECS: dict[str, dict[str, Any]] = {
                           "Docker is not installed — no docker executable in PATH or the usual install locations")},
     "ssh": {"pre": _ssh_pre},
     "modal": {"pre": _modal_pre,
-              "module": ("modal", "modal is required for direct modal terminal backend. Run hermes setup terminal and select Modal.")},
+              "module": ("modal", "modal is required for direct modal terminal backend. Run slave setup terminal and select Modal.")},
     "vercel_sandbox": {"pre": _check_vercel},
     "daytona": {"post": _daytona_post},
 }
@@ -417,7 +417,7 @@ def _check_plugin_requirements(config: dict[str, Any]) -> bool:
     if provider is not None:
         ok = bool(provider.check_requirements(config))
         return ok or _reject(f"the {env_type!r} plugin backend reported its requirements are not met")
-    from hermes_cli.left_core_migration import terminal_backend_install_hint
+    from slave_cli.left_core_migration import terminal_backend_install_hint
     return _reject(f"Unknown TERMINAL_ENV '{env_type}'. Use one of: {', '.join(_ENV_BUILDERS)}, or a plugin-registered "
                    f"backend{terminal_backend_install_hint(env_type)}")
 

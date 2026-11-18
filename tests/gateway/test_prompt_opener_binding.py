@@ -93,7 +93,7 @@ async def _tap_discord(tapper, monkeypatch):
 @pytest.mark.parametrize("platform", ["telegram", "discord"])
 @pytest.mark.parametrize("tapper", ["bob", "alice"])
 async def test_admin_picker_answers_only_its_opener(platform, tapper, tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     tap = _tap_telegram if platform == "telegram" else _tap_discord
     applied, alerts, still_open = await tap(tapper, monkeypatch)
     if tapper == "bob":
@@ -108,16 +108,16 @@ async def test_admin_picker_answers_only_its_opener(platform, tapper, tmp_path, 
 async def test_update_prompt_answers_only_its_opener(surface, sender, tmp_path, monkeypatch):
     """Alice's /update recorded her as the opener; only her reply (or an admin's) answers its prompt."""
     runner = _runner(MagicMock(send=AsyncMock()))
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "checkout" / "gateway").mkdir(parents=True)
     (tmp_path / "checkout" / ".git").mkdir()
     runner._schedule_update_notification_watch = lambda: None
     with patch("gateway.slash_commands.project_root_str", lambda: str(tmp_path / "checkout")), \
             patch("gateway.slash_commands._spawn_detached_update"), \
-            patch("gateway.run._resolve_hermes_bin", return_value=["hermes"]), \
-            patch("hermes_cli.config.is_managed", return_value=False), \
-            patch("hermes_cli.config.detect_install_method", return_value="git"):
+            patch("gateway.run._resolve_slave_bin", return_value=["slave"]), \
+            patch("slave_cli.config.is_managed", return_value=False), \
+            patch("slave_cli.config.detect_install_method", return_value="git"):
         assert await runner._handle_update_command(MessageEvent(text="/update", source=_source("alice")))
     key = runner._session_key_for_source(_source("alice"))
     runner._session_state(key).persistent.update_prompt_pending = True
@@ -125,7 +125,7 @@ async def test_update_prompt_answers_only_its_opener(surface, sender, tmp_path, 
 
     if surface == "typed":
         typed = MessageEvent(text="yes", source=_source(sender))
-        with patch("agent.estop.paused_reply", return_value="PAUSED"):  # `hermes pause` is on
+        with patch("agent.estop.paused_reply", return_value="PAUSED"):  # `slave pause` is on
             # Only the opener's reply is the prompt's answer; anyone else's is a new turn, still paused.
             assert (runner._hm_estop_gate(typed, typed.source, False) is None) is (sender == "alice")
         reply = runner._hm_update_prompt_reply(typed, key)
@@ -151,16 +151,16 @@ async def test_second_update_while_one_runs_keeps_the_first_opener(tmp_path, mon
     from gateway.approval_actor import update_prompt_refusal
 
     runner = _runner(MagicMock(send=AsyncMock()))
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "checkout" / "gateway").mkdir(parents=True)
     (tmp_path / "checkout" / ".git").mkdir()
     runner._schedule_update_notification_watch = lambda: None
     with patch("gateway.slash_commands.project_root_str", lambda: str(tmp_path / "checkout")), \
             patch("gateway.slash_commands._spawn_detached_update") as spawn, \
-            patch("gateway.run._resolve_hermes_bin", return_value=["hermes"]), \
-            patch("hermes_cli.config.is_managed", return_value=False), \
-            patch("hermes_cli.config.detect_install_method", return_value="git"):
+            patch("gateway.run._resolve_slave_bin", return_value=["slave"]), \
+            patch("slave_cli.config.is_managed", return_value=False), \
+            patch("slave_cli.config.detect_install_method", return_value="git"):
         await runner._handle_update_command(MessageEvent(text="/update", source=_source("alice")))
         reply = await runner._handle_update_command(MessageEvent(text="/update", source=_source("bob")))
     assert spawn.call_count == 1 and "already running" in reply

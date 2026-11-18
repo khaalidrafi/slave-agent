@@ -12,19 +12,19 @@ from tools.environments.ssh import SSHEnvironment
 from tools.environments import ssh as ssh_env
 
 # A real sshd to run against: scripts/ci/start_test_sshd.sh starts a throwaway one
-# and prints these (the remote-backends CI lane exports them). HERMES_TEST_* rather
+# and prints these (the remote-backends CI lane exports them). SLAVE_TEST_* rather
 # than the product's TERMINAL_SSH_* so the hermetic conftest, which blanks
 # TERMINAL_SSH_KEY as a credential, cannot strip them before the tests read them.
-_SSH_HOST = os.getenv("HERMES_TEST_SSH_HOST", "")
-_SSH_USER = os.getenv("HERMES_TEST_SSH_USER", "")
-_SSH_PORT = int(os.getenv("HERMES_TEST_SSH_PORT", "22"))
-_SSH_KEY = os.getenv("HERMES_TEST_SSH_KEY", "")
+_SSH_HOST = os.getenv("SLAVE_TEST_SSH_HOST", "")
+_SSH_USER = os.getenv("SLAVE_TEST_SSH_USER", "")
+_SSH_PORT = int(os.getenv("SLAVE_TEST_SSH_PORT", "22"))
+_SSH_KEY = os.getenv("SLAVE_TEST_SSH_KEY", "")
 
 _has_ssh = bool(_SSH_HOST and _SSH_USER)
 
 requires_ssh = pytest.mark.skipif(
     not _has_ssh,
-    reason="HERMES_TEST_SSH_HOST / HERMES_TEST_SSH_USER not set (scripts/ci/start_test_sshd.sh)",
+    reason="SLAVE_TEST_SSH_HOST / SLAVE_TEST_SSH_USER not set (scripts/ci/start_test_sshd.sh)",
 )
 
 
@@ -108,7 +108,7 @@ class TestBuildSSHCommand:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-must-not-forward")
         monkeypatch.setattr(env_passthrough, "get_all_passthrough",
                             lambda: frozenset({"NEXTCLOUD_URL", "NEXTCLOUD_PASS", "OPENAI_API_KEY"}))
-        monkeypatch.setattr(ssh_env, "load_hermes_env_vars", lambda: {"NEXTCLOUD_PASS": "from-dotenv"})
+        monkeypatch.setattr(ssh_env, "load_slave_env_vars", lambda: {"NEXTCLOUD_PASS": "from-dotenv"})
 
         captured = self._capture_run_bash(monkeypatch, env)
 
@@ -160,7 +160,7 @@ class TestControlSocketPath:
         # macOS $TMPDIR shape from #11840: ``/var/folders/XX/YYYYYYYYY/T``.
         "/var/folders/2t/wbkw5yb158jc3zhswgl7tz9c0000gn/T",
         # Named-profile scratch TMPDIR from #133436.
-        "/home/raffymontemayor/.hermes/profiles/video-agent/cache/scratch",
+        "/home/raffymontemayor/.slave/profiles/video-agent/cache/scratch",
     ], ids=["macos-tmpdir", "profile-scratch"])
     def test_fits_under_macos_socket_limit_with_ipv6_host(self, monkeypatch, fake_tmp):
         """A deep $TMPDIR + IPv6 host must still produce a control socket
@@ -174,7 +174,7 @@ class TestControlSocketPath:
 
         env = SSHEnvironment(
             host="9373:9b91:4480:558d:708e:e601:24e8:d8d0",
-            user="hermes",
+            user="slave",
             port=22,
         )
 
@@ -369,8 +369,8 @@ class TestOneShotSSH:
     def test_state_does_not_persist(self):
         """Exports stay in their own command; cwd still carries (file tools rely on it)."""
         home = _run("pwd")["output"].strip()
-        _run("mkdir -p oneshot && cd oneshot && export HERMES_ONESHOT_TEST=yes")
-        r = _run("echo ${HERMES_ONESHOT_TEST:-unset}; pwd")
+        _run("mkdir -p oneshot && cd oneshot && export SLAVE_ONESHOT_TEST=yes")
+        r = _run("echo ${SLAVE_ONESHOT_TEST:-unset}; pwd")
         assert r["output"].split() == ["unset", f"{home}/oneshot"]
 
 
@@ -389,8 +389,8 @@ class TestPersistentSSH:
         assert "hello-persistent" in r["output"]
 
     def test_env_var_persists(self):
-        _run("export HERMES_PERSIST_TEST=works")
-        r = _run("echo $HERMES_PERSIST_TEST")
+        _run("export SLAVE_PERSIST_TEST=works")
+        r = _run("echo $SLAVE_PERSIST_TEST")
         assert r["output"].strip() == "works"
 
 
@@ -434,14 +434,14 @@ class TestRealSSHBackend:
 
     def test_passthrough_env_reaches_remote_via_sendenv(self, monkeypatch):
         """#14091 end to end: the name rides SendEnv, the value the ssh client env, and the
-        test sshd's ``AcceptEnv HERMES_RB_*`` hands it to the remote shell."""
+        test sshd's ``AcceptEnv SLAVE_RB_*`` hands it to the remote shell."""
         from tools import env_passthrough
 
-        monkeypatch.setenv("HERMES_RB_PASS", "through-sendenv")
-        monkeypatch.setenv("HERMES_RB_PRIVATE", "stays-local")
-        env_passthrough.register_env_passthrough(["HERMES_RB_PASS"])
+        monkeypatch.setenv("SLAVE_RB_PASS", "through-sendenv")
+        monkeypatch.setenv("SLAVE_RB_PRIVATE", "stays-local")
+        env_passthrough.register_env_passthrough(["SLAVE_RB_PASS"])
         try:
-            r = _run('echo "p=$HERMES_RB_PASS q=${HERMES_RB_PRIVATE:-unset}"')
+            r = _run('echo "p=$SLAVE_RB_PASS q=${SLAVE_RB_PRIVATE:-unset}"')
         finally:
             env_passthrough.clear_env_passthrough()
         assert r["output"].strip() == "p=through-sendenv q=unset"

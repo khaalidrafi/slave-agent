@@ -12,7 +12,7 @@ description: >-
   Separate from the official hindsight memory-provider plugin — talks only to the
   public HTTP API. Disclosure — network calls only to the configured Hindsight
   base URL (list, GET, PATCH invalidate/restore, retain checkpoint); optional
-  Bearer auth via HINDSIGHT_API_KEY through Hermes secrets; writes invalidations,
+  Bearer auth via HINDSIGHT_API_KEY through slave-agent secrets; writes invalidations,
   restores, and one checkpoint fact to that server; stores plans/apply
   events/whitelist/history/skipped reasons in the profile plugin-data directory;
   Desktop half uses ctx.rest to the plugin dashboard API; no shell, no background

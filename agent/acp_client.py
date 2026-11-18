@@ -51,7 +51,7 @@ _ROLE_LABELS = {"system": "System", "user": "User", "assistant": "Assistant", "t
 # True/False is cached, so a CLI installed mid-session is picked up.
 _ACP_PROBE_CACHE: dict[str, bool] = {}
 _PROMPT_PREAMBLE = (
-    "You are being used as the active ACP agent backend for Hermes.",
+    "You are being used as the active ACP agent backend for Slave.",
     "Use ACP capabilities to complete tasks.",
     "IMPORTANT: If you take an action with a tool, you MUST output tool calls using <tool_call>{...}</tool_call> blocks with JSON exactly in OpenAI function-call shape.",
     "If no tool is needed, answer normally.",
@@ -59,7 +59,7 @@ _PROMPT_PREAMBLE = (
 _INITIALIZE_PARAMS = {
     "protocolVersion": 1,
     "clientCapabilities": {"fs": {"readTextFile": True, "writeTextFile": True}},
-    "clientInfo": {"name": "hermes-agent", "title": "Hermes Agent", "version": "0.0.0"},
+    "clientInfo": {"name": "slave-agent", "title": "slave-agent", "version": "0.0.0"},
 }
 def _acp_supported(command: str, args: list[str]) -> bool | None:
     """Tri-state ``--acp`` probe (a CLI without the flag exits 1 and the parent would wait the
@@ -105,15 +105,15 @@ def _resolve_home_dir() -> str:
 
 
 def _build_subprocess_env() -> dict[str, str]:
-    # Lazy: the env policy imports hermes_cli.config, and provider plugins import this module
-    # while hermes_cli.config is still initializing (discovery runs from it).
-    from hermes_constants import apply_subprocess_home_env
-    from tools.environments.local import hermes_subprocess_env
+    # Lazy: the env policy imports slave_cli.config, and provider plugins import this module
+    # while slave_cli.config is still initializing (discovery runs from it).
+    from slave_constants import apply_subprocess_home_env
+    from tools.environments.local import slave_subprocess_env
 
     # An ACP agent drives a model and needs LLM provider credentials; the central helper still
     # strips Tier-1 secrets (bot tokens, GitHub auth, infra).
     # See #29157.
-    env = hermes_subprocess_env(inherit_credentials=True)
+    env = slave_subprocess_env(inherit_credentials=True)
     env["HOME"] = _resolve_home_dir()
     apply_subprocess_home_env(env)
     return env
@@ -189,7 +189,7 @@ def _format_messages_as_prompt(
 ) -> str:
     # Deliberately no "requested model" line: the model is applied for real via ACP session/set_model;
     # a prompt-text mention makes a substituted backend model FALSELY self-identify as the requested
-    # one. The whole Hermes toolset is forwarded; the agent's own tools run inside the agent.
+    # one. The whole Slave toolset is forwarded; the agent's own tools run inside the agent.
     sections: list[str] = [*_PROMPT_PREAMBLE, *_render_tool_bridge_sections(tools, tool_choice)]
     transcript: list[str] = []
     for message in (m for m in messages if isinstance(m, dict)):
@@ -277,8 +277,8 @@ class ACPClient:
 
     # Declared for agent/auxiliary_client.py: this shim drives an ACP subprocess over stdio, so it is
     # already a complete client (never re-dispatch through a wire adapter) and async-safe as-is.
-    HERMES_SKIP_TRANSPORT_WRAP = True
-    HERMES_SKIP_ASYNC_WRAP = True
+    SLAVE_SKIP_TRANSPORT_WRAP = True
+    SLAVE_SKIP_ASYNC_WRAP = True
 
     #: Binary and argv tail used when the caller passes no command/args; env vars win, in order.
     default_command: str = ""
@@ -401,7 +401,7 @@ class ACPClient:
                 + self.unsupported_transport_hint
             )
         try:
-            from hermes_cli._subprocess_compat import windows_hide_flags  # hide the Windows console flash (#56747); pipes intact for the ACP wire
+            from slave_cli._subprocess_compat import windows_hide_flags  # hide the Windows console flash (#56747); pipes intact for the ACP wire
 
             # Hide the console the CLI child would otherwise flash on Windows (#56747). Hide-only — stdio
             # pipes stay intact for the ACP wire.
@@ -556,7 +556,7 @@ class ACPClient:
                 except Exception as exc:
                     response = _jsonrpc_error(message_id, -32602, str(exc))
         else:
-            response = _jsonrpc_error(message_id, -32601, f"ACP client method '{method}' is not supported by Hermes yet.")
+            response = _jsonrpc_error(message_id, -32601, f"ACP client method '{method}' is not supported by slave-agent yet.")
         process.stdin.write(json.dumps(response) + "\n")
         process.stdin.flush()
         return True

@@ -7,7 +7,7 @@ description: 'One post in, every platform out. Fixes and rewrites your draft for
   stays in frame; when two people talk, the choice is a split screen, a cut to whoever is talking or the whole wide
   shot. Burns captions from an .srt or .vtt file inside the platform''s safe area. Checks every file against the
   platform''s published limits and repairs failures before a file is marked ready. /postkitty doctor checks the
-  setup, and the hermes postkitty terminal command runs the same steps from a script. Covers Instagram, TikTok,
+  setup, and the slave postkitty terminal command runs the same steps from a script. Covers Instagram, TikTok,
   YouTube Shorts, X, LinkedIn, Threads, Bluesky and Facebook. Runs locally with ffmpeg and OpenCV; no API keys.'
 maintainer: mertkayacs
 tier: community

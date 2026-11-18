@@ -6,7 +6,7 @@ from contextlib import closing
 
 import pytest
 
-from hermes_constants import get_hermes_home, hermes_home_key
+from slave_constants import get_slave_home, slave_home_key
 from tools import async_delegation as ad
 from persistence_assembly import store_location
 
@@ -50,7 +50,7 @@ def test_requeue_returns_an_acknowledged_completion_to_pending_and_offers_it():
     assert _column("requeue-ok", "delivered_at") is None
     evt = offered.get_nowait()
     assert evt["delegation_id"] == "requeue-ok" and evt["restored"] is True
-    assert (hermes_home_key(get_hermes_home()), "requeue-ok") in ad._offered
+    assert (slave_home_key(get_slave_home()), "requeue-ok") in ad._offered
 
 
 def test_requeue_past_the_delivery_budget_drops_the_completion():

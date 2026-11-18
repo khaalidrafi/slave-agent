@@ -13,7 +13,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from hermes_platform.resolver import LookupContext, locate_command
+from slave_platform.resolver import LookupContext, locate_command
 from tests.ci import _gha_expr as gha
 
 

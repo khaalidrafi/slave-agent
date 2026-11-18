@@ -20,7 +20,7 @@ async def _authority(tmp_path, monkeypatch, answer):
     from gateway.session import SessionSource, SessionStore
     from gateway.session_authority import LiveSession, initialize_session_authority
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(_session_db=store.persistence, session_store=store, _draining=False,
                              _handle_message=answer, _adapter_for_source=lambda source: None)
@@ -123,7 +123,7 @@ def test_real_daemon_accepts_hud_and_voice_live_submits_and_notes_the_model(tmp_
     home, user = tmp_path / 'state', tmp_path / 'user'
     home.mkdir(mode=0o700)
     user.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     monkeypatch.setenv('HOME', str(user))
     monkeypatch.setenv('USERPROFILE', str(user))
     model = ThreadingHTTPServer(('127.0.0.1', 0), Model)
@@ -138,7 +138,7 @@ def test_real_daemon_accepts_hud_and_voice_live_submits_and_notes_the_model(tmp_
         'auxiliary': {'title_generation': {'enabled': False}},
         'platform_toolsets': {'gui': []}, 'terminal': {'cwd': str(home)},
     }))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
         PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, PYTHONUNBUFFERED='1')
 
     async def drive(desc):
@@ -203,7 +203,7 @@ def test_managed_worker_turn_carries_the_committed_surface_to_the_model(tmp_path
             'provider': 'custom', 'model': 'voice-model', 'base_url': base, 'api_key': 'loopback-only'}},
         'platform_toolsets': {'cli': []},
     }))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
         PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, PYTHONUNBUFFERED='1')
 
     async def drive(desc):

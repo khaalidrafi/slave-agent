@@ -29,7 +29,7 @@ class _PTBLikeRequest:
 def _connect(monkeypatch, caplog, proxy, **env):
     from plugins.platforms.telegram import adapter as tg
 
-    for name in ("TELEGRAM_PROXY", "HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "TELEGRAM_FALLBACK_IPS", "NO_PROXY", "no_proxy"):
+    for name in ("TELEGRAM_PROXY", "SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS", "TELEGRAM_FALLBACK_IPS", "NO_PROXY", "no_proxy"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("HTTPS_PROXY", proxy)
     for name, value in env.items():
@@ -52,7 +52,7 @@ def test_fallback_ip_discovery_error_hides_the_env_proxy_secret(monkeypatch, cap
 
 @pytest.mark.parametrize("proxy", SHAPES)
 def test_plain_ptb_client_error_hides_the_env_proxy_secret(monkeypatch, caplog, proxy):
-    adapter = _connect(monkeypatch, caplog, proxy, NO_PROXY="api.telegram.org", HERMES_TELEGRAM_DISABLE_FALLBACK_IPS="true")
+    adapter = _connect(monkeypatch, caplog, proxy, NO_PROXY="api.telegram.org", SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS="true")
     assert adapter.fatal_error_message and " via " in adapter.fatal_error_message, adapter.fatal_error_message
     assert SECRET not in caplog.text
     assert SECRET not in adapter.fatal_error_message

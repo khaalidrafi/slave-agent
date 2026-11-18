@@ -26,16 +26,16 @@ class TestEnvFloatClamped:
 
 
     def test_rejects_nan(self, monkeypatch):
-        monkeypatch.setenv("HERMES_TEST_VAR", "nan")
-        result = TelegramAdapter._env_float_clamped("HERMES_TEST_VAR", 0.5)
+        monkeypatch.setenv("SLAVE_TEST_VAR", "nan")
+        result = TelegramAdapter._env_float_clamped("SLAVE_TEST_VAR", 0.5)
         assert math.isfinite(result)
         assert result == 0.5
 
 
     def test_clamps_below_min(self, monkeypatch):
-        monkeypatch.setenv("HERMES_TEST_VAR", "0.01")
+        monkeypatch.setenv("SLAVE_TEST_VAR", "0.01")
         assert TelegramAdapter._env_float_clamped(
-            "HERMES_TEST_VAR", 0.5, min_value=0.1,
+            "SLAVE_TEST_VAR", 0.5, min_value=0.1,
         ) == 0.1
 
 
@@ -44,8 +44,8 @@ class TestTelegramTextBatchDefaults:
 
     def test_default_delay_table(self, monkeypatch):
         """Production defaults preserve fast tiers and widen long-text tiers."""
-        monkeypatch.delenv("HERMES_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", raising=False)
-        monkeypatch.delenv("HERMES_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", raising=False)
+        monkeypatch.delenv("SLAVE_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", raising=False)
+        monkeypatch.delenv("SLAVE_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", raising=False)
         adapter = TelegramAdapter(PlatformConfig(enabled=True, token="test-token"))
 
         pending = [
@@ -67,8 +67,8 @@ class TestTelegramTextBatchDefaults:
 
     def test_operator_override_below_fast_tier_wins(self, monkeypatch):
         """An operator cap below a fast tier remains the effective delay."""
-        monkeypatch.setenv("HERMES_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", "0.1")
-        monkeypatch.delenv("HERMES_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", raising=False)
+        monkeypatch.setenv("SLAVE_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", "0.1")
+        monkeypatch.delenv("SLAVE_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", raising=False)
         adapter = TelegramAdapter(PlatformConfig(enabled=True, token="test-token"))
         pending = SimpleNamespace(text="short", _last_chunk_len=5)
 

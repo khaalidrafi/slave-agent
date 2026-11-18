@@ -178,13 +178,13 @@ def restore_identity(
     existing = identity_of(source)
     if existing is not None:
         return existing
-    from hermes_cli.profiles import get_profile_dir
-    from hermes_constants import get_process_hermes_home
+    from slave_cli.profiles import get_profile_dir
+    from slave_constants import get_process_slave_home
 
     primary_profile = _name(getattr(runner, "_primary_profile_name", None)) or "default"
     runtime_name = _name(getattr(source, "profile", None)) or primary_profile
     authorization_home = (
-        Path(get_process_hermes_home()) if transport_name == primary_profile
+        Path(get_process_slave_home()) if transport_name == primary_profile
         else get_profile_dir(transport_name))
     from gateway.profile_routing import ProfileRouteRejected
     try:
@@ -225,7 +225,7 @@ def resolve_identity(
     Raises :class:`IdentityUnresolved` under multiplexing when the route is rejected.
     """
     from gateway.profile_routing import ProfileRouteRejected
-    from hermes_constants import get_hermes_home, get_process_hermes_home
+    from slave_constants import get_slave_home, get_process_slave_home
 
     multiplexed = bool(getattr(getattr(runner, "config", None), "multiplex_profiles", False))
     primary_profile = _name(getattr(runner, "_primary_profile_name", None))
@@ -248,7 +248,7 @@ def resolve_identity(
     transport_ref = weakref.ref(adapter) if adapter is not None else None
 
     if not multiplexed:
-        home = Path(get_hermes_home())
+        home = Path(get_slave_home())
         identity = RoutingIdentity(
             transport_profile=primary_profile, runtime_profile=primary_profile,
             authorization_home=home, runtime_home=home, multiplexed=False, transport=transport_ref)
@@ -256,9 +256,9 @@ def resolve_identity(
         return identity
 
     if transport_name == primary_profile:
-        authorization_home = Path(primary_home) if primary_home is not None else Path(get_process_hermes_home())
+        authorization_home = Path(primary_home) if primary_home is not None else Path(get_process_slave_home())
     else:
-        from hermes_cli.profiles import get_profile_dir
+        from slave_cli.profiles import get_profile_dir
         authorization_home = get_profile_dir(transport_name)
     source._authorization_profile_home = authorization_home
 
@@ -333,7 +333,7 @@ def authenticated_subject(identity):
 
 def is_authenticated_identity(identity: object) -> bool:
     """True for a server-minted, non-internal ``{user_id, provider}`` WS-upgrade identity."""
-    from hermes_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
+    from slave_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
     if not isinstance(identity, dict):
         return False
     user_id, provider = identity.get("user_id"), identity.get("provider")

@@ -32,7 +32,7 @@ def layer_env(tmp_path, monkeypatch):
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(providers, "_REGISTRY", dict(providers._REGISTRY))
     monkeypatch.setattr(providers, "_ALIASES", dict(providers._ALIASES))
     monkeypatch.setattr(providers, "_PROVIDER_LIST_CACHE", None)
@@ -43,7 +43,7 @@ def layer_env(tmp_path, monkeypatch):
     real = providers._plugin_dir_stamps
     monkeypatch.setattr(providers, "_plugin_dir_stamps", lambda h: stats.append(1) or real(h))
     yield home, clock, stats
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_slave_user_provider")]:
         del sys.modules[mod]
 
 

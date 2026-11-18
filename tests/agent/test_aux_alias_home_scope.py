@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 _PLUGIN = textwrap.dedent(
     """
@@ -35,13 +35,13 @@ def _install(home: Path) -> None:
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
     import providers
-    from hermes_cli import auth_plugin_providers as app
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from slave_cli import auth_plugin_providers as app
+    from slave_cli.auth import PROVIDER_REGISTRY
 
     plugin_home, bare_home = tmp_path / "with_plugin", tmp_path / "bare"
     plugin_home.mkdir()
     bare_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(bare_home))
+    monkeypatch.setenv("SLAVE_HOME", str(bare_home))
     monkeypatch.setattr(providers, "_REGISTRY", dict(providers._REGISTRY))
     monkeypatch.setattr(providers, "_ALIASES", dict(providers._ALIASES))
     monkeypatch.setattr(providers, "_PROVIDER_LIST_CACHE", None)
@@ -52,18 +52,18 @@ def homes(tmp_path, monkeypatch):
     yield plugin_home, bare_home
     PROVIDER_REGISTRY.clear()
     PROVIDER_REGISTRY.update(rows)
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_slave_user_provider")]:
         del sys.modules[mod]
 
 
 def _normalize_in(home: Path, name: str) -> str:
     from agent.auxiliary_client import _normalize_aux_provider
 
-    token = set_hermes_home_override(home)
+    token = set_slave_home_override(home)
     try:
         return _normalize_aux_provider(name)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_alias_table_is_per_home_in_either_order(homes):

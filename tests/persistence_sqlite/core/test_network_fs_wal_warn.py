@@ -22,7 +22,7 @@ def _detect_network_fs(directory, mountinfo_path):
 def _isolate(monkeypatch, tmp_path):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: False)
     monkeypatch.setattr(sqlite_support, "path_on_cross_vm_fs", lambda p: False)
     for name in ("_network_fs_warned_paths", "_network_fs_new_store_warned_paths",
@@ -93,8 +93,8 @@ BIND_VIRTIOFS = "623 25 0:63 / /data rw,relatime - virtiofs mount0 rw"
 @pytest.mark.parametrize("path,expected", [
     ("/srv/nas/agent", True),
     ("/mnt/share/db", True),
-    ("/home/remote/.hermes", True),
-    ("/home/local/.hermes", False),
+    ("/home/remote/.slave", True),
+    ("/home/local/.slave", False),
     ("/data/agent", False),  # virtiofs belongs to the cross-VM class, not this one
 ])
 def test_only_network_mounts_are_flagged(tmp_path, path, expected):
@@ -108,7 +108,7 @@ def test_only_network_mounts_are_flagged(tmp_path, path, expected):
 ])
 def test_local_and_generic_fuse_filesystems_never_flagged(tmp_path, fstype):
     mi = _mountinfo(tmp_path, [f"25 1 8:1 / / rw,relatime shared:1 - {fstype} /dev/sda1 rw"])
-    assert _detect_network_fs("/home/user/.hermes", mountinfo_path=mi) is False
+    assert _detect_network_fs("/home/user/.slave", mountinfo_path=mi) is False
 
 
 def test_missing_mountinfo_conservative_false(tmp_path):

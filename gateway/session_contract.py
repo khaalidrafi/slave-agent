@@ -6,7 +6,7 @@ from typing import Literal, Mapping, Protocol
 JsonObject = Mapping[str, object]
 
 # Authenticated local WebSocket family, separate from the legacy Desktop API contract.
-CANONICAL_GATEWAY_PROTOCOL = 'hermes-gateway-v1'
+CANONICAL_GATEWAY_PROTOCOL = 'slave-gateway-v1'
 
 
 @dataclass(frozen=True)

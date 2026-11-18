@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from plugins.platforms.whatsapp.adapter import _bridge_media_type, _standalone_send
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ def _session_with(responses, health=None, *, token="standalone-test-token-012345
 
     def _get(url, **kwargs):
         if url.endswith("/auth-proof"):
-            challenge = (kwargs.get("headers") or {})["X-Hermes-Bridge-Challenge"]
+            challenge = (kwargs.get("headers") or {})["X-Slave-Bridge-Challenge"]
             resp = _resp(200, {"authProof": _bridge_auth_proof(token, challenge)})
         else:
             calls.append((url, kwargs.get("json")))
@@ -184,11 +184,11 @@ def test_missing_captioned_file_falls_back_to_text():
 
 def test_standalone_send_uses_persisted_secondary_bridge_port(tmp_path, monkeypatch):
     """A secondary's automatic port must route standalone sends to its bridge."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     record = home / "platforms" / "whatsapp" / "bridge_port"
     record.parent.mkdir(parents=True)
     record.write_text("3042", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     session_ctx, calls = _session_with([_resp(200, {"messageId": "t1"})])
     with patch("aiohttp.ClientSession", return_value=session_ctx):
         result = asyncio.run(_standalone_send(SimpleNamespace(token="", extra={}), "12345", "hello"))
@@ -212,7 +212,7 @@ def test_secondary_standalone_sends_use_active_profile_port_for_text_media_and_m
     if persisted_port is not None:
         record.parent.mkdir(parents=True)
         record.write_text(str(persisted_port), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("SLAVE_HOME", str(launch_home))
     media = tmp_path / "image.png"
     media.write_bytes(b"image")
     for home, config_extra, port in (
@@ -224,7 +224,7 @@ def test_secondary_standalone_sends_use_active_profile_port_for_text_media_and_m
             [_resp(200, {"messageId": "text"}), _resp(200, {"messageId": "media"})],
             health=_resp(200, {"capabilities": {"outboundMentions": True}}),
         )
-        override = set_hermes_home_override(home)
+        override = set_slave_home_override(home)
         try:
             with patch("aiohttp.ClientSession", return_value=session_ctx):
                 result = asyncio.run(_standalone_send(
@@ -232,7 +232,7 @@ def test_secondary_standalone_sends_use_active_profile_port_for_text_media_and_m
                     media_files=[(str(media), False)], mentions=["12345"],
                 ))
         finally:
-            reset_hermes_home_override(override)
+            reset_slave_home_override(override)
         assert result.get("success") is True, result
         assert [url for url, _ in calls] == [
             f"http://127.0.0.1:{port}/health",

@@ -27,7 +27,7 @@ WORKFLOW = "stable-release.yml"
 # A fetch refspec may hold one ``*``; the parsers filter what the globs over-match.
 _ATTEMPT_GLOBS = ("rc.*", "abandoned-rc.*")
 # Local namespace for the remote's release-line branches, kept apart from the user's own remotes.
-_RELEASE_LINE_PREFIX = "hermes-release"
+_RELEASE_LINE_PREFIX = "slave-release"
 
 
 class ReleaseRefused(RuntimeError):
@@ -329,7 +329,7 @@ def release(commit: str, *, bump: str, repo: Path, remote: str, repository: str,
             url = (execute([
                 "gh", "release", "create", tag, "--repo", repository,
                 "--verify-tag", "--draft", "--notes-file", file.name,
-                "--title", f"Hermes Agent v{version}",
+                "--title", f"slave-agent v{version}",
             ]) or "").strip()
         finally:
             os.unlink(file.name)
@@ -431,7 +431,7 @@ def publish(version: str, *, repository: str, dispatch, inspect=None, head_versi
             repo: Path | None = None, remote: str | None = None) -> dict:
     """Request ordered publication through the one production sequencer."""
     tag = f"v{version}"
-    from hermes_cli.release_channels import STABLE_TAG_RE
+    from slave_cli.release_channels import STABLE_TAG_RE
 
     if not STABLE_TAG_RE.fullmatch(tag):
         raise ReleaseRefused(f"{version} is not a stable version")

@@ -19,7 +19,7 @@ async def test_cold_refine_keeps_the_sessions_terminal(tmp_path, monkeypatch):
     from run_agent import AIAgent
     from tools.environments.local import LocalEnvironment
     from tools import terminal_tool
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setenv('HOME', str(tmp_path))
     monkeypatch.setenv('TMPDIR', str(tmp_path))
     monkeypatch.setenv('TERMINAL_TEMP_DIR', str(tmp_path))

@@ -133,7 +133,7 @@ let
   # Python source: everything except JS/TS/docs/infra directories.
   pythonSrc = lib.cleanSourceWith {
     src = repoRoot;
-    name = "hermes-python-source";
+    name = "slave-python-source";
     filter =
       path: type:
       let
@@ -162,16 +162,16 @@ let
             "plans"
             # Nix build definitions (Python build doesn't need these)
             "nix"
-            # Skills are shipped via HERMES_BUNDLED_SKILLS /
-            # HERMES_OPTIONAL_SKILLS (see hermes-agent.nix), not via the
+            # Skills are shipped via SLAVE_BUNDLED_SKILLS /
+            # SLAVE_OPTIONAL_SKILLS (see slave-agent.nix), not via the
             # wheel's data_files — setup.py's _data_file_tree returns []
             # for a missing dir, so the wheel builds fine without them.
             # This keeps SKILL.md edits from rebuilding the Python venv.
             "skills"
             "optional-skills"
             # locales/ and optional-mcps/ are bare data dirs (no
-            # __init__.py) shipped via symlinks + HERMES_BUNDLED_LOCALES
-            # / HERMES_OPTIONAL_MCPS, not via the wheel. Excluding them
+            # __init__.py) shipped via symlinks + SLAVE_BUNDLED_LOCALES
+            # / SLAVE_OPTIONAL_MCPS, not via the wheel. Excluding them
             # keeps catalog edits from rebuilding the Python venv.
             "locales"
             "optional-mcps"
@@ -197,7 +197,7 @@ let
           "SECURITY.md"
           "README.zh-CN.md"
           ".gitignore"
-          "setup-hermes.sh"
+          "setup-slave.sh"
         ];
       in
       if relPath == "" then
@@ -241,7 +241,7 @@ let
   # nix/pnpm-deps-hash: after a pnpm-lock.yaml change, run
   # `nix run .#update-pnpm-lockfile` (CI prints the expected hash too).
   pnpmDeps = fetchPnpmDeps {
-    pname = "hermes-agent";
+    pname = "slave-agent";
     src = pnpmDepsSrc;
     inherit pnpm;
     # pnpm >= 11 keeps the store index in SQLite, which only fetcher
@@ -284,7 +284,7 @@ let
   # too, e.g. apps/desktop depends on apps/shared.
   #
   # Usage:
-  #   hermesNpmLib.buildPnpmPackage {
+  #   slaveNpmLib.buildPnpmPackage {
   #     dirs = [ "apps/desktop" "apps/shared" ];
   #     buildPhase = '' ... '';
   #     installPhase = '' ... '';

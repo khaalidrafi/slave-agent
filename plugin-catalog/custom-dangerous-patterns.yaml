@@ -2,10 +2,10 @@ name: custom-dangerous-patterns
 repo: https://github.com/scross01/hermes-custom-dangerous-patterns-plugin
 sha: 6b9bda685fb6271d2be7f13b75cd59fafc30f263
 description: >-
-  Add custom dangerous command patterns to Hermes's built-in approval
+  Add custom dangerous command patterns to slave-agent’s built-in approval
   system. Users define regex patterns in YAML; a pre_tool_call hook sends
-  block patterns to Hermes's human approval gate and blocks deny patterns
-  immediately. Modifies no Hermes internals.
+  block patterns to slave-agent’s human approval gate and blocks deny patterns
+  immediately. Modifies no slave-agent internals.
 maintainer: scross01
 tier: community
 category: tools

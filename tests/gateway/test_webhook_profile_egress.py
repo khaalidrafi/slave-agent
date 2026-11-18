@@ -3,7 +3,7 @@
 A ``/p/<profile>/`` route's reply, deliver_only message, home-channel fallback and
 ``github_comment`` credential all belong to THAT profile; a default-bound route never
 borrows a secondary's adapter. Real ``GatewayAuthorizationMixin`` resolver, real
-``load_gateway_config`` against a temp HERMES_HOME — no patched predicates.
+``load_gateway_config`` against a temp SLAVE_HOME — no patched predicates.
 """
 import os
 from unittest.mock import AsyncMock, MagicMock
@@ -40,12 +40,12 @@ def _webhook(runner) -> WebhookAdapter:
 @pytest.fixture
 def profile_homes(tmp_path, monkeypatch):
     """Default home with a DEFAULT-HOME Slack home channel; ``profiles/sec`` with SEC-HOME + its own GH_TOKEN."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     sec = home / "profiles" / "sec"
     sec.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr("hermes_cli.profiles._get_default_hermes_home", lambda: home)
-    monkeypatch.setattr("hermes_cli.profiles._get_profiles_root", lambda: home / "profiles")
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr("slave_cli.profiles._get_default_slave_home", lambda: home)
+    monkeypatch.setattr("slave_cli.profiles._get_profiles_root", lambda: home / "profiles")
     (sec / "config.yaml").write_text(
         "gateway:\n  multiplex_profiles: true\nplatforms:\n  slack:\n    enabled: true\n"
         "    home_channel:\n      platform: slack\n      chat_id: SEC-HOME\n")
@@ -134,8 +134,8 @@ async def test_retained_destination_keeps_profile_and_freezes_its_home(profile_h
     delivery = snapshot_destination(adapter, {"deliver": "slack", "deliver_extra": {}, "profile": "sec"})
     assert delivery == {"deliver": "slack", "deliver_extra": {"chat_id": "SEC-HOME"}, "profile": "sec"}
     adapter._delivery_info["retained"] = delivery
-    from hermes_constants import get_hermes_home
-    (get_hermes_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
+    from slave_constants import get_slave_home
+    (get_slave_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
     result = await adapter.send("retained", "answer")
     assert result.success
     assert secondary.send.await_args.args[0] == "SEC-HOME"
@@ -146,11 +146,11 @@ async def test_retained_destination_keeps_profile_and_freezes_its_home(profile_h
 
 
 def test_destination_missing_profile_home_does_not_borrow_default(profile_homes):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from persistence.core.errors import AuthorityRefusal
     from gateway.platforms.webhook_delivery import snapshot_destination, validate_destination
 
-    (get_hermes_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
+    (get_slave_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
     adapter = _webhook(_Runner({}, {}, profile_homes))
     with pytest.raises(AuthorityRefusal):
         snapshot_destination(adapter, {"deliver": "slack", "deliver_extra": {}, "profile": "sec"})

@@ -11,7 +11,7 @@ gateway = gateway_fixture
 
 
 def test_renewable_invitation_through_standalone_dispatch(gateway, monkeypatch):
-    monkeypatch.setenv('HERMES_ROOM_LINK_URL', 'http://127.0.0.1:9')
+    monkeypatch.setenv('SLAVE_ROOM_LINK_URL', 'http://127.0.0.1:9')
     monkeypatch.setattr(methods_groups_forward, '_discover', lambda home: SimpleNamespace(state='ready', endpoint=object()))
     forwarded = []
 

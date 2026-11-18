@@ -1,6 +1,6 @@
 """#140665 (#134889 CLI-39): a gateway-owned session's client cwd reaches the Docker terminal backend.
 
-Before #106742 every ``hermes chat`` was its own process with its own ``TERMINAL_CWD`` and its own
+Before #106742 every ``slave chat`` was its own process with its own ``TERMINAL_CWD`` and its own
 container. Now the turn runs in the gateway: the client's cwd (or ``--in DIR``) is frozen into the
 session's policy, but never reached ``resolve_task_overrides(task_id)['cwd']``, the per-session mount
 source. So ``container_persistent: false`` mounted no ``/workspace`` at all, and ``true`` shared ONE
@@ -17,7 +17,7 @@ def home(tmp_path, monkeypatch):
     from tools import terminal_tool
     home = tmp_path / 'home'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     monkeypatch.delenv('TERMINAL_ENV', raising=False)
     monkeypatch.delenv('TERMINAL_CWD', raising=False)
     monkeypatch.delenv('TERMINAL_CONTAINER_PERSISTENT', raising=False)
@@ -91,7 +91,7 @@ def test_desktop_workspace_registration_preserves_unmounted_profile_sandbox(
 
     profile_home = home if profile == "default" else home / "profiles" / profile
     profile_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("SLAVE_HOME", str(profile_home))
     workspaces = [tmp_path / "first", tmp_path / "second"]
     plans = []
     for index, workspace in enumerate(workspaces):
@@ -343,7 +343,7 @@ def test_named_launch_profiles_side_agent_keeps_its_sessions_workspace_container
     ws1.mkdir()
     beta = home / 'profiles' / 'beta'
     beta.mkdir(parents=True)
-    monkeypatch.setenv('HERMES_HOME', str(beta))  # `hermes -p beta gateway`
+    monkeypatch.setenv('SLAVE_HOME', str(beta))  # `slave -p beta gateway`
     policy = _policy(beta, ws1, persistent=True)
     with _turn(policy, 'local-a'):
         session_key = _plan('local-a')[0]
@@ -385,7 +385,7 @@ def test_secondary_profiles_managed_worker_turn_keys_its_own_workspace_container
     ws1.mkdir()
     beta = home / 'profiles' / 'beta'
     beta.mkdir(parents=True)
-    monkeypatch.setenv('HERMES_HOME', str(beta))  # the worker process runs under its owning home
+    monkeypatch.setenv('SLAVE_HOME', str(beta))  # the worker process runs under its owning home
     policy = _policy(beta, ws1, persistent=True)
     seen = {}
 
@@ -403,7 +403,7 @@ def test_secondary_profiles_managed_worker_turn_keys_its_own_workspace_container
 
 
 def test_named_launch_profiles_managed_worker_turn_keeps_its_sessions_workspace_container(home, tmp_path, monkeypatch):
-    # `hermes -p beta gateway` (a named profile never multiplexes): its routes are `agent:main`, its
+    # `slave -p beta gateway` (a named profile never multiplexes): its routes are `agent:main`, its
     # in-process turns and side agents bind no profile, and its worker turns must key the same container.
     from gateway import session_kanban
     from gateway.session_policy import policy_scope
@@ -411,7 +411,7 @@ def test_named_launch_profiles_managed_worker_turn_keeps_its_sessions_workspace_
     ws1.mkdir()
     beta = home / 'profiles' / 'beta'
     beta.mkdir(parents=True)
-    monkeypatch.setenv('HERMES_HOME', str(beta))
+    monkeypatch.setenv('SLAVE_HOME', str(beta))
     policy = _policy(beta, ws1, persistent=True)
     with _turn(policy, 'local-a'):
         session_key = _plan('local-a')[0]

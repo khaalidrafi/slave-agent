@@ -31,8 +31,8 @@ def _connected() -> dict:
 
 
 def _installed() -> dict:
-    from hermes_cli.plugin_catalog_presence import onboarding_names
-    from hermes_cli.plugins_cmd import _catalog_installed_dir
+    from slave_cli.plugin_catalog_presence import onboarding_names
+    from slave_cli.plugins_cmd import _catalog_installed_dir
 
     return {"installed": [name for name in onboarding_names() if _catalog_installed_dir(name) is not None]}
 
@@ -78,7 +78,7 @@ def _reply_event(beat: str, reply: Mapping[str, Any] | None) -> flow.Event:
 def _skill_resolver() -> Callable[[str], str | None]:
     """A written first-task skill name -> the name skill_view loads it with here, or None. A plugin skill
     (``blender:blender``) resolves through the installed catalog plugin to its registered name."""
-    from hermes_cli.plugins_activation_live import catalog_plugin_skill
+    from slave_cli.plugins_activation_live import catalog_plugin_skill
     from tools.skills_tool import find_all_skills
 
     bundled = {skill["name"] for skill in find_all_skills()}
@@ -154,7 +154,7 @@ def setup_beat_tool(args: Mapping[str, Any], *, db=None, persistence=None, sessi
             return json.dumps({"next": "done", "reminder": finish_reminder(record)} if flow.is_active(record)
                               else {"error": "Onboarding is over in this chat; it is a normal chat now."})
     if callback is None:
-        return tool_error("setup_beat cards show only in the Hermes desktop app.")
+        return tool_error("setup_beat cards show only in the slave-agent desktop app.")
     if beat == "connectors" and (refused := _unlisted_suggestions(args)):
         return refused
     shown = records.advance(db, session_id, flow.Shown(beat, tool_call_id, args.get("options"), args.get("suggest")),

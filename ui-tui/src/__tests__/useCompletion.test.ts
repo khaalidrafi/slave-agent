@@ -14,10 +14,10 @@ describe('completionRequestForInput', () => {
 
   it('does not route absolute paths through slash completion', () => {
     expect(
-      completionRequestForInput('/home/d/Desktop/agenda/CrimsonRed/.hermes/plans/2026-05-04-HANDOFF-NEXT.md')
+      completionRequestForInput('/home/d/Desktop/agenda/CrimsonRed/.slave/plans/2026-05-04-HANDOFF-NEXT.md')
     ).toMatchObject({
       method: 'complete.path',
-      params: { word: '/home/d/Desktop/agenda/CrimsonRed/.hermes/plans/2026-05-04-HANDOFF-NEXT.md' },
+      params: { word: '/home/d/Desktop/agenda/CrimsonRed/.slave/plans/2026-05-04-HANDOFF-NEXT.md' },
       replaceFrom: 0
     })
   })
@@ -37,7 +37,7 @@ describe('completionRequestForInput', () => {
   // The shared gateway's own cwd is its daemon folder: the listing must name the session's.
   it('lists paths in the session folder, else the launch folder', () => {
     try {
-      vi.stubEnv('HERMES_CWD', '/launch/dir')
+      vi.stubEnv('SLAVE_CWD', '/launch/dir')
       patchUiState({ info: { cwd: '/work/repo' } as never })
       expect(completionRequestForInput('read @file:sr')).toMatchObject({
         method: 'complete.path',

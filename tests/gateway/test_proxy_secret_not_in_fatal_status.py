@@ -1,5 +1,5 @@
 """A connect failure through a proxy whose URL carries a secret never puts that secret into the
-adapter's fatal message, the runtime status (``hermes gateway status`` / Desktop) or the startup
+adapter's fatal message, the runtime status (``slave gateway status`` / Desktop) or the startup
 "queued for retry" warning: those all show ``adapter.fatal_error_message``, built from the error
 text that aiohttp/httpx echo the proxy URL into.
 
@@ -95,7 +95,7 @@ def test_connect_failure_keeps_proxy_secret_out_of_fatal_status_and_retry(
     from gateway.run import GatewayRunner
     from gateway.status import read_runtime_status
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     proxy = shape.format(pw=PASSWORD)
     built = []
 

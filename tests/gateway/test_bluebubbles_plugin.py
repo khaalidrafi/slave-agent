@@ -624,7 +624,7 @@ class TestBlueBubblesGateBeforeDownload:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("text, downloads, handled_count", [
         ("look at this", 0, 0),          # unmentioned group attachment: never fetched
-        ("hermes look at this", 1, 1),   # mentioned: fetched and dispatched
+        ("slave look at this", 1, 1),   # mentioned: fetched and dispatched
     ])
     async def test_unmentioned_group_attachment_is_not_downloaded(
             self, monkeypatch, text, downloads, handled_count):
@@ -713,7 +713,7 @@ class TestBlueBubblesPluginRegistration:
         from gateway.outbound import senders
         import gateway.outbound.send as smt
         from gateway.run import _BUILTIN_ADAPTERS
-        from hermes_cli import gateway_setup_wizard as wiz
+        from slave_cli import gateway_setup_wizard as wiz
 
         assert Platform.BLUEBUBBLES not in _BUILTIN_ADAPTERS
         # Text is not routed straight to a standalone sender (was: not a _TEXT_SENDERS row).

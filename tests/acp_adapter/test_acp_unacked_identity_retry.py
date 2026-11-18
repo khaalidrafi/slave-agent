@@ -5,7 +5,7 @@ import asyncio
 import acp
 import pytest
 
-from hermes_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_client import GatewayClientError
 from tests.acp_adapter import test_retained_identity_retirement as base
 from tests.acp_adapter.test_retained_identity_retirement import _acp, _model, _settled
 from tests.fixtures.storage_read import session_row

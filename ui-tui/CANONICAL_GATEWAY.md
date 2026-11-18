@@ -13,7 +13,7 @@ a fresh single-use ticket using discovery; when discovery finds no owner but the
 owner's retained `gateway_state.json` still claims it live (a crash: SIGKILL, OOM),
 up to three reconnects per minute re-ensure it. It never resurrects an explicitly
 stopped gateway (`stopped` state or `desired_state: stopped`). An initial ensure failure is visible and does not create a rival
-owner. Local profile selection remains the launcher's exact effective HERMES_HOME.
+owner. Local profile selection remains the launcher's exact effective SLAVE_HOME.
 
 Ink requires `runtime.describe.session_create` to advertise the `tui` source and
 every requested creation parameter. It sends a fresh `request_id`, `source: tui`,
@@ -77,7 +77,7 @@ corrections are refused and retained: use queue mode for an image-bearing turn.
 ## Native verification
 
 `python ui-tui/scripts/native_canonical_probe.py <receipt-directory>` uses a
-private temporary HOME/HERMES_HOME, an ordinary no-platform daemon, a loopback
+private temporary HOME/SLAVE_HOME, an ordinary no-platform daemon, a loopback
 OpenAI-compatible model, and real Ink processes on native Linux PTYs. It creates
 an explicitly labelled seed session with the runtime's supported policy, resumes
 it from two Ink viewers, submits through the real renderer, checks both rendered
@@ -92,8 +92,8 @@ Optional mode argument after the receipt directory:
 - `approval` / `clarify`: detach both viewers with a pending card, restore and answer
   natively, then verify the owned effect / exact tool response on the model wire.
 - `startup`: absent owner → native Ink ensure → one fresh TUI-policy session and reply.
-- `launcher`: the same fresh path through `python -m hermes_cli.main --tui chat -q ...`,
-  using the supported prebuilt `HERMES_TUI_DIR` path (no dependency install).
+- `launcher`: the same fresh path through `python -m slave_cli.main --tui chat -q ...`,
+  using the supported prebuilt `SLAVE_TUI_DIR` path (no dependency install).
 - `stop` / `stop-control` / `stop-launcher`: hold the loopback inference stream before a harmless
   fixture-owned tool effect. `stop-launcher` starts the viewer through the Python
   launcher and discovers its one fresh TUI-policy session, without seeding one.
@@ -104,7 +104,7 @@ Optional mode argument after the receipt directory:
   observation-only dispatch wrapper records the unchanged real interrupt RPC
   request/response. No response or execution predicate is replaced.
 
-Use the repository Python environment. Every mode keeps HOME/HERMES_HOME temporary,
+Use the repository Python environment. Every mode keeps HOME/SLAVE_HOME temporary,
 uses only a loopback model, and cleans up its owned processes. Raw PTY output and
 JSON receipts stay in the requested receipt directory; timeout is a failure, never
 an invitation to rerun until green.

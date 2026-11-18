@@ -3,7 +3,7 @@ title: Composio Connections
 repo: https://github.com/luisced/hermes-composio-connections
 sha: 4d707f7cfef14db6996bb25ee934193f921a5df5
 subdir: ""
-description: "Connect and disconnect Composio accounts from Hermes Desktop and the web dashboard. Lists every row the Composio CLI returns, including expired, duplicate, and unaliased accounts, opens OAuth in the user's browser, and disconnects one exact account after confirmation. No agent tools or hooks. Catalog metadata uses COMPOSIO_USER_API_KEY through agent.secret_scope.get_secret and requests only https://backend.composio.dev. Disclosure — inventory, connect, and disconnect run the composio CLI already logged in on the gateway; the API key never reaches the browser. Removing a Composio connection does not revoke every permission at the provider. The bundled service logos include an Ngrok mark; the plugin does not open a tunnel."
+description: "Connect and disconnect Composio accounts from slave-agent Desktop and the web dashboard. Lists every row the Composio CLI returns, including expired, duplicate, and unaliased accounts, opens OAuth in the user's browser, and disconnects one exact account after confirmation. No agent tools or hooks. Catalog metadata uses COMPOSIO_USER_API_KEY through agent.secret_scope.get_secret and requests only https://backend.composio.dev. Disclosure — inventory, connect, and disconnect run the composio CLI already logged in on the gateway; the API key never reaches the browser. Removing a Composio connection does not revoke every permission at the provider. The bundled service logos include an Ngrok mark; the plugin does not open a tunnel."
 maintainer: luisced
 tier: community
 category: desktop

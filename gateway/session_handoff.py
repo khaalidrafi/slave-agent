@@ -55,7 +55,7 @@ _REFUSALS = {'unknown_platform': "unknown platform '{platform}'",
 
 
 _UNSETTLED = {'session_busy': 'wait for the current turn to finish, then retry the handoff',
-              'unknown_execution': 'a turn of this session did not finish when Hermes restarted; send /discard '
+              'unknown_execution': 'a turn of this session did not finish when slave-agent restarted; send /discard '
                                    'in it (or resume it) first, then retry the handoff'}
 
 

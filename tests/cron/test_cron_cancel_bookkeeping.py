@@ -1,6 +1,6 @@
 """A stopped cron run stays stopped in every reader of the ledger.
 
-Real store, real execution ledger, real cancel markers under the test HERMES_HOME: a cancel must not
+Real store, real execution ledger, real cancel markers under the test SLAVE_HOME: a cancel must not
 be replayed by receipt recovery, read as a crashed worker, counted as a failure, spend an extra
 repeat, or hide behind the due scan's ``missed`` rows.
 """
@@ -33,7 +33,7 @@ def _cancelled_run(job: dict) -> str:
 
 
 def test_receipt_recovery_does_not_replay_a_cancelled_agent_run(store, monkeypatch):
-    from hermes_cli import gateway_client
+    from slave_cli import gateway_client
 
     calls: list = []
 
@@ -150,7 +150,7 @@ def test_overlapping_cancel_requests_keep_the_first_reason(store, monkeypatch):
 
 def test_monitoring_reports_stops_and_misses_as_themselves(monkeypatch):
     from agent.monitoring.cron_health import project_execution_event
-    from hermes_cli.observability import shared_metrics_gateway as metrics
+    from slave_cli.observability import shared_metrics_gateway as metrics
 
     assert project_execution_event({"status": "cancelled", "job_id": "j"}).status == "cancelled"
     assert project_execution_event({"status": "missed", "job_id": "j"}).status == "missed"
@@ -163,7 +163,7 @@ def test_monitoring_reports_stops_and_misses_as_themselves(monkeypatch):
 
 
 def test_a_cancelled_agent_run_names_its_reason_in_history():
-    from hermes_cli.web_routers.cron import _reconcile_cron_runs
+    from slave_cli.web_routers.cron import _reconcile_cron_runs
 
     session = {"id": "s1", "title": "Morning brief", "cron_execution_id": "ex1",
                "started_at": 100.0}
@@ -178,7 +178,7 @@ def test_a_cancelled_agent_run_names_its_reason_in_history():
 def test_a_capped_count_says_so_after_a_catch_up(store):
     job = jobs.create_job(prompt="tick", schedule="every 1m", deliver="local", catch_up=True)
     stored = jobs.load_jobs()
-    stored[0]["next_run_at"] = (jobs._hermes_now() - timedelta(minutes=1100)).isoformat()
+    stored[0]["next_run_at"] = (jobs._slave_now() - timedelta(minutes=1100)).isoformat()
     jobs.save_jobs(stored)
 
     jobs.get_due_jobs()

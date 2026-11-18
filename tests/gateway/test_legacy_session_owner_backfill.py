@@ -22,9 +22,9 @@ def _owners(store):
         return dict(conn.execute('SELECT id, profile_name FROM sessions ORDER BY id').fetchall())
 
 
-def test_default_store_stamps_only_unowned_rows(_isolate_hermes_home):
-    from hermes_constants import get_default_hermes_root
-    store = storage_handle(get_default_hermes_root())
+def test_default_store_stamps_only_unowned_rows(_isolate_slave_home):
+    from slave_constants import get_default_slave_root
+    store = storage_handle(get_default_slave_root())
     _legacy(store, 'null-row')
     _legacy(store, 'blank-row', '  ')
     _legacy(store, 'owned-row', 'work')
@@ -34,9 +34,9 @@ def test_default_store_stamps_only_unowned_rows(_isolate_hermes_home):
     assert backfill_legacy_session_owners(store) == 0
 
 
-def test_named_profile_store_stamps_its_own_name(_isolate_hermes_home):
-    from hermes_constants import get_default_hermes_root
-    home = get_default_hermes_root() / 'profiles' / 'work'
+def test_named_profile_store_stamps_its_own_name(_isolate_slave_home):
+    from slave_constants import get_default_slave_root
+    home = get_default_slave_root() / 'profiles' / 'work'
     home.mkdir(parents=True)
     store = storage_handle(home)
     _legacy(store, 'null-row')
@@ -45,7 +45,7 @@ def test_named_profile_store_stamps_its_own_name(_isolate_hermes_home):
     assert _owners(store) == {'null-row': 'work'}
 
 
-def test_store_outside_the_profile_tree_keeps_null(tmp_path, _isolate_hermes_home):
+def test_store_outside_the_profile_tree_keeps_null(tmp_path, _isolate_slave_home):
     store = storage_handle(tmp_path / 'elsewhere')
     _legacy(store, 'null-row')
 
@@ -53,9 +53,9 @@ def test_store_outside_the_profile_tree_keeps_null(tmp_path, _isolate_hermes_hom
     assert _owners(store) == {'null-row': None}
 
 
-def test_the_stamp_is_logged_with_the_owner_profile(_isolate_hermes_home, caplog):
-    from hermes_constants import get_default_hermes_root
-    home = get_default_hermes_root() / 'profiles' / 'work'
+def test_the_stamp_is_logged_with_the_owner_profile(_isolate_slave_home, caplog):
+    from slave_constants import get_default_slave_root
+    home = get_default_slave_root() / 'profiles' / 'work'
     home.mkdir(parents=True)
     store = storage_handle(home)
     _legacy(store, 'null-row')

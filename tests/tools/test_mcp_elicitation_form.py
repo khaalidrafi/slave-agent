@@ -51,14 +51,14 @@ def test_form_answers_reach_the_server_typed_and_validated():
         asked.append(questions)
         if len(asked) == 1:  # name too short, seats not a number: both re-asked, the rest kept
             return {"outcome": "submitted", "answers": {"q0": "A", "q1": "rust", "q2": "Yes", "q3": "many"}}
-        return {"outcome": "submitted", "answers": {"q0": "hermes-demo", "q1": "3"}}
+        return {"outcome": "submitted", "answers": {"q0": "slave-demo", "q1": "3"}}
 
     ctx = _call_context(asker)
     handler = ElicitationHandler("formprobe", {"timeout": 5}, call_context=lambda: ctx)
     result = asyncio.run(handler(context=None, params=_params(SCHEMA)))
 
     assert result.action == "accept"
-    assert result.content == {"project_name": "hermes-demo", "language": "rust", "private": True, "seats": 3}
+    assert result.content == {"project_name": "slave-demo", "language": "rust", "private": True, "seats": 3}
     assert [q["choices"] for q in asked[0]] == [None, ["python", "rust", "go"], ["Yes", "No"], None]
     assert "Set up the new project" in asked[0][0]["question"]
     assert len(asked[1]) == 2 and "at least 2 characters" in asked[1][0]["question"]
@@ -78,7 +78,7 @@ def test_dismissed_or_skipped_form_never_accepts(reply, action):
 
 def test_headless_session_declines_without_asking(monkeypatch):
     asked = []
-    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.setenv("SLAVE_CRON_SESSION", "1")
     ctx = _call_context(lambda questions: asked.append(questions) or {"outcome": "submitted", "answers": {}})
     handler = ElicitationHandler("formprobe", {"timeout": 5}, call_context=lambda: ctx)
     result = asyncio.run(handler(context=None, params=_params(SCHEMA)))

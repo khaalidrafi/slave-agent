@@ -1,6 +1,6 @@
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
@@ -49,8 +49,8 @@ afterEach(() => { FakeWebSocket.instances = []; vi.useRealTimers(); resetUiState
 // lost to the snapshot's running:true, and frames the snapshot already contains are not applied twice.
 it('a completion that beats the resume reply is replayed after the snapshot, covered frames are dropped', async () => {
   vi.useFakeTimers()
-  delete process.env.HERMES_TUI_GATEWAY_URL
-  delete process.env.HERMES_TUI_SIDECAR_URL
+  delete process.env.SLAVE_TUI_GATEWAY_URL
+  delete process.env.SLAVE_TUI_SIDECAR_URL
   const gw = new GatewayClient(async () => ({ url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }))
   const events: any[] = []
   gw.on('event', event => events.push(event))

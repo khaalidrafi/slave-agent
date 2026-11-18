@@ -60,9 +60,9 @@ class TestModuleNotFound:
         assert "requests" in hint
 
     def test_dotted_module(self):
-        out = "ImportError: No module named 'hermes_cli.main'"
-        hint = annotate_failure("python3 -m hermes_cli.main", 1, out)
-        assert "hermes_cli" in hint
+        out = "ImportError: No module named 'slave_cli.main'"
+        hint = annotate_failure("python3 -m slave_cli.main", 1, out)
+        assert "slave_cli" in hint
 
 
 class TestGitShapes:
@@ -105,7 +105,7 @@ class TestWrapperCdFailure:
         script = _wrap_command_script(
             "pwd", quoted_cwd=shlex.quote(str(gone)), quoted_snap=shlex.quote(str(tmp_path / "no-snap")),
             snap_tmp_template=shlex.quote(str(tmp_path / "snap.XXXXXX")), passthrough_names=(),
-            snapshot_ready=False, cwd_marker="__HERMES_CWD_test__")
+            snapshot_ready=False, cwd_marker="__SLAVE_CWD_test__")
         proc = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=False)
         assert proc.returncode == 126
         hint = annotate_failure("pwd", 126, proc.stdout + proc.stderr) or ""

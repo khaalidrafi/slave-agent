@@ -28,7 +28,7 @@ def _run(coro):
 
 @pytest.fixture()
 def home(tmp_path: Path) -> Path:
-    d = tmp_path / "home" / ".hermes"
+    d = tmp_path / "home" / ".slave"
     d.mkdir(parents=True)
     return d
 
@@ -53,7 +53,7 @@ def test_short_home_binds_in_home(tmp_path: Path):
     except OSError:
         pytest.skip("/tmp not writable on this host")
     try:
-        short_home = short_root / ".hermes"
+        short_home = short_root / ".slave"
         short_home.mkdir()
         assert len(str(short_home / "gateway.sock").encode()) <= 100
         bind, pointer = resolve_server_socket_path(short_home)
@@ -66,7 +66,7 @@ def test_short_home_binds_in_home(tmp_path: Path):
 
 
 def test_long_home_uses_pointer_fallback(tmp_path: Path):
-    deep = tmp_path / ("x" * 120) / ".hermes"
+    deep = tmp_path / ("x" * 120) / ".slave"
     deep.mkdir(parents=True)
     bind, pointer = resolve_server_socket_path(deep)
     assert bind != deep / "gateway.sock"
@@ -90,7 +90,7 @@ def test_client_resolution_prefers_direct_then_pointer(home: Path, tmp_path: Pat
 def test_windows_pipe_name_is_stable_and_home_scoped(tmp_path: Path):
     a = windows_pipe_name(tmp_path / "a")
     b = windows_pipe_name(tmp_path / "b")
-    assert a.startswith(r"\\.\pipe\hermes-gateway-")
+    assert a.startswith(r"\\.\pipe\slave-gateway-")
     assert a != b
     assert a == windows_pipe_name(tmp_path / "a")
 
@@ -246,7 +246,7 @@ def short_home():
         root = Path(tempfile.mkdtemp(prefix="hgw-", dir="/tmp"))
     except OSError:
         pytest.skip("/tmp not writable on this host")
-    home = root / ".hermes"
+    home = root / ".slave"
     home.mkdir()
     if resolve_server_socket_path(home)[1] is not None:
         shutil.rmtree(root, ignore_errors=True)
@@ -280,7 +280,7 @@ def test_home_refusing_sockets_listens_on_private_fallback_both_clients_reach(sh
     import os
     import stat
 
-    from hermes_cli.gateway_runtime_discovery import query_identify
+    from slave_cli.gateway_runtime_discovery import query_identify
 
     home = short_home.resolve()  # the server resolves its home; macOS /tmp is a symlink to /private/tmp
     home.chmod(0o700)
@@ -331,7 +331,7 @@ def test_bind_refused_for_other_reasons_still_fails(short_home: Path, monkeypatc
 
 
 def test_long_home_end_to_end_via_pointer(tmp_path: Path):
-    deep = tmp_path / ("p" * 120) / ".hermes"
+    deep = tmp_path / ("p" * 120) / ".slave"
     deep.mkdir(parents=True)
 
     async def scenario():
@@ -357,7 +357,7 @@ def test_no_socket_returns_none_fast(home: Path):
 
 def test_default_identify_payload_shape(home: Path, monkeypatch):
     """The real identify handler carries the fleet-consumer contract fields."""
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
     async def scenario():
         server = GatewayControlServer(home)  # default handlers
@@ -373,7 +373,7 @@ def test_default_identify_payload_shape(home: Path, monkeypatch):
     assert ident["protocol"] == CONTROL_PROTOCOL_VERSION
     assert ident["pid"] == __import__("os").getpid()
     # contract keys exist even when values are None/absent-degradable
-    for key in ("hermes_home", "supervisor", "kind", "start_time"):
+    for key in ("slave_home", "supervisor", "kind", "start_time"):
         assert key in ident
     assert ident["supervisor"] in {
         "systemd",
@@ -395,7 +395,7 @@ def _fake_identity(pid: int, sha: str):
         "code_sha": sha,
         "code_version": "9.9.9",
         "supervisor": "systemd",
-        "kind": "hermes-gateway",
+        "kind": "slave-gateway",
     }
 
 

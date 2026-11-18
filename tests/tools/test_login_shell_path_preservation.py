@@ -1,4 +1,4 @@
-"""Behavioural regression: the login-shell env snapshot must keep Hermes-managed
+"""Behavioural regression: the login-shell env snapshot must keep Slave-managed
 PATH entries even when a login profile resets PATH.
 
 Debian's ``/etc/profile`` unconditionally resets PATH for non-root shells,
@@ -21,7 +21,7 @@ _PATH_LINE = re.compile(r'^(?:declare -x|export) PATH="(.*)"$', re.MULTILINE)
 
 
 def _managed_setup(tmp_path, monkeypatch, *, profile_body: str):
-    """A resetting (or no-op) profile plus one fake Hermes-managed bin dir."""
+    """A resetting (or no-op) profile plus one fake Slave-managed bin dir."""
     profile = tmp_path / "profile.sh"
     profile.write_text(profile_body, encoding="utf-8")
     managed = tmp_path / "managed-bin"
@@ -31,7 +31,7 @@ def _managed_setup(tmp_path, monkeypatch, *, profile_body: str):
         "tools.environments.local._resolve_shell_init_files", lambda: [str(profile)]
     )
     monkeypatch.setattr(
-        "tools.environments.local._resolve_hermes_bin_dir", lambda: str(managed)
+        "tools.environments.local._resolve_slave_bin_dir", lambda: str(managed)
     )
     monkeypatch.setattr(
         "tools.environments.local._managed_runtime_path_entries", list
@@ -111,7 +111,7 @@ def _exe(directory, name: str):
 
 @pytest.mark.platforms("posix")
 def test_dropped_spawn_path_dirs_return_after_the_login_path(tmp_path, monkeypatch):
-    """Any spawn-env dir a resetting profile dropped (not only Hermes' own: the gateway's
+    """Any spawn-env dir a resetting profile dropped (not only slave-agent’ own: the gateway's
     pm runtime, a ``docker run -e PATH=`` addition) comes back in parent order AFTER the
     login PATH, so a command the login PATH resolves keeps resolving to the same binary."""
     user_bin, extra_a, extra_b, rel_bin = (tmp_path / n for n in ("user-bin", "extra-a", "extra-b", "rel-bin"))

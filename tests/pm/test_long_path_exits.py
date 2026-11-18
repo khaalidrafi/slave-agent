@@ -16,13 +16,13 @@ from pm.runtime import _inputs
 from pm.store import Store
 
 VERBATIM = "\\\\?\\"
-ROOT = Path(VERBATIM + r"C:\Program Files\WindowsApps\Hermes\agent-payload\tools")
+ROOT = Path(VERBATIM + r"C:\Program Files\WindowsApps\Slave\agent-payload\tools")
 
 
 def test_identity_does_not_depend_on_the_root_spelling(tmp_path):
     for name in ("pyproject.toml", "uv.lock"):
         (tmp_path / name).write_text(name, encoding="utf-8")
-    plain = Path(r"C:\Program Files\WindowsApps\Hermes\agent-payload\tools\python-3.12\python.exe")
+    plain = Path(r"C:\Program Files\WindowsApps\Slave\agent-payload\tools\python-3.12\python.exe")
 
     assert _inputs(tmp_path, Path(VERBATIM + str(plain))) == _inputs(tmp_path, plain)
 

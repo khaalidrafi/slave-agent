@@ -13,7 +13,7 @@ description: >-
   ephemeral metadata only. No network, no telemetry, no disk cache, and no
   background watcher. It does not hash dotenv names, auth.json, or paths
   under vault, mcp-tokens, browser-profile, webapp, or pairing. Hits stay
-  off unless READ_ONCE_HITS=1. A repeat of the same read can be Hermes's
+  off unless READ_ONCE_HITS=1. A repeat of the same read can be slave-agent’s
   unchanged-stub rather than the file bytes.
 maintainer: batmnnn
 tier: community
@@ -22,8 +22,8 @@ requires_hermes: ">=0.23.0"
 readme: true
 platforms: []
 known_issues:
-  - "Tested on Hermes 0.23.0 only."
-  - "A terminal backend cached inside Hermes and not visible as TERMINAL_ENV or the hermes_terminal_scope context var can still be treated as local."
+  - "Tested on slave-agent 0.23.0 only."
+  - "A terminal backend cached inside slave-agent and not visible as TERMINAL_ENV or the slave_terminal_scope context var can still be treated as local."
 capabilities:
   provides_tools: []
   provides_hooks:

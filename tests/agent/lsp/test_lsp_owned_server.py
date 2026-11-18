@@ -1,10 +1,10 @@
-"""LSP servers die with the Hermes process that started them, however it dies.
+"""LSP servers die with the slave-agent process that started them, however it dies.
 
 ``LSPClient`` starts each language server in its own session/process group so a killpg aimed at
-the server can never reach Hermes. That also took the server's descendants out of Hermes's kill
-domain: the server itself exits on stdin EOF when Hermes dies, but a descendant that neither holds
+the server can never reach Slave. That also took the server's descendants out of slave-agent’s kill
+domain: the server itself exits on stdin EOF when slave-agent dies, but a descendant that neither holds
 nor watches that pipe (a wrapper's background child, a SIGTERM-ignoring worker) outlived a
-SIGKILLed / OOM-killed Hermes forever. ``_spawn`` now hands the group to the per-process
+SIGKILLed / OOM-killed slave-agent forever. ``_spawn`` now hands the group to the per-process
 owner-death supervisor; teardown hands it back once the group is empty.
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ import pytest
 
 from agent.lsp import client as lsp_client
 from agent.lsp.client import LSPClient
-from hermes_cli import process_identity
+from slave_cli import process_identity
 from tests.waiting import wait_until
 
 pytestmark = pytest.mark.platforms("posix")
@@ -58,7 +58,7 @@ def recorded(monkeypatch):
     monkeypatch.setattr(process_identity, "release_process_groups", lambda pgids: calls.append(("release", list(pgids))))
 
     def ledger(pid, purpose):
-        # The ledger write can wait up to 2 s on another Hermes's lock: never on the event loop.
+        # The ledger write can wait up to 2 s on another Slave's lock: never on the event loop.
         assert _no_running_loop(), "the spawn-ledger write ran on the event loop"
         calls.append(("ledger", pid, purpose))
 
@@ -72,7 +72,7 @@ async def test_the_server_group_is_owned_on_spawn_and_released_on_shutdown(tmp_p
     await client.start()
     pid = client._proc.pid
     try:
-        assert os.getpgid(pid) == pid  # its own group: a killpg of it can never reach Hermes
+        assert os.getpgid(pid) == pid  # its own group: a killpg of it can never reach Slave
         assert recorded == [("own", [pid]), ("ledger", pid, "lsp-server")]
     finally:
         await client.shutdown()
@@ -83,7 +83,7 @@ async def test_the_server_group_is_owned_on_spawn_and_released_on_shutdown(tmp_p
 @pytest.mark.live_system_guard_bypass  # the child reparents to init once its leader is killed
 async def test_a_surviving_group_member_stays_owned(tmp_path, recorded, monkeypatch):
     """Teardown that could not empty the group must not drop coverage: whatever survived still
-    has to die with Hermes."""
+    has to die with Slave."""
     monkeypatch.setattr("agent.deadline.kill_process_tree", lambda pid, **kw: True)  # kills nothing
     child_pid_file = tmp_path / "child.pid"
     client = _client(tmp_path, "slow_tree", MOCK_LSP_CHILD_PID=str(child_pid_file))
@@ -105,7 +105,7 @@ async def test_a_surviving_group_member_stays_owned(tmp_path, recorded, monkeypa
 
 
 def _owner(tmp_path: Path, script: str) -> tuple[subprocess.Popen, int, int]:
-    """A real Hermes-like owner: starts an LSPClient on the mock server's ``slow_tree`` script (a
+    """A real Slave-like owner: starts an LSPClient on the mock server's ``slow_tree`` script (a
     leader plus a SIGTERM-ignoring child that never touches the stdio pipes) and prints both pids."""
     child_pid_file = tmp_path / "child.pid"
     ws = tmp_path / "ws"
@@ -125,7 +125,7 @@ def _owner(tmp_path: Path, script: str) -> tuple[subprocess.Popen, int, int]:
     """)
     home = tmp_path / "home"
     home.mkdir()
-    env = dict(os.environ, HERMES_HOME=str(home), HOME=str(home), PYTHONPATH=REPO)
+    env = dict(os.environ, SLAVE_HOME=str(home), HOME=str(home), PYTHONPATH=REPO)
     owner = subprocess.Popen([sys.executable, "-c", src], env=env, cwd=REPO, stdin=subprocess.DEVNULL,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     line = owner.stdout.readline().split()
@@ -158,7 +158,7 @@ def test_a_sigkilled_owner_takes_its_whole_server_tree_with_it(tmp_path):
         owner.kill()
         owner.wait(timeout=10)
         wait_until(lambda: not _alive(leader) and not _alive(child), timeout=15,
-                   what="the LSP server and its descendant to die with the kill -9'd Hermes process")
+                   what="the LSP server and its descendant to die with the kill -9'd slave-agent process")
     finally:
         _cleanup(owner, leader, child)
 

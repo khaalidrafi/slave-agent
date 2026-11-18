@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Drive the Hermes-Setup dmg bootstrap through its first-run GUI.
+# Drive the Slave-Setup dmg bootstrap through its first-run GUI.
 #
 # The Setup app is Tauri (Rust + system webview), so Playwright/Electron
 # attach never works. Launch the binary bare in the background (it inherits
-# the redirect env), click "Install Hermes ->" with native input, then watch
+# the redirect env), click "Install slave-agent ->" with native input, then watch
 # the install land on disk: checkout + installed source launcher + app.
 #
 # Usage:
@@ -42,8 +42,8 @@ SETUP_PID=$!
 log "launched $APP_BIN (pid $SETUP_PID)"
 cleanup() {
   kill "$SETUP_PID" 2>/dev/null || true
-  if [ -d "$HOME/.hermes/logs" ]; then
-    cp -R "$HOME/.hermes/logs" "$PROOF_DIR/bootstrap-logs"
+  if [ -d "$HOME/.slave/logs" ]; then
+    cp -R "$HOME/.slave/logs" "$PROOF_DIR/bootstrap-logs"
   fi
 }
 trap cleanup EXIT
@@ -60,7 +60,7 @@ command -v cliclick >/dev/null 2>&1 || brew install --quiet cliclick
 window_geometry() {
   osascript <<'OSA' 2>/dev/null
 tell application "System Events"
-  set procs to (every process whose name contains "Hermes")
+  set procs to (every process whose name contains "slave-agent")
   if (count of procs) = 0 then return "no-process"
   set p to item 1 of procs
   if (count of windows of p) = 0 then return "no-window"
@@ -98,7 +98,7 @@ click_install() {
 }
 
 # Use the same source-launcher selection as the later read-only checkpoint:
-# PM installs publish .hermes/bin/hermes; older releases use venv/bin/hermes.
+# PM installs publish .slave/bin/hermes; older releases use venv/bin/hermes.
 # The first packaged app can land before the products stage finishes (and can
 # be rebuilt again). Wait for native bootstrap completion, not install.sh's
 # marker (historical releases predate it, and it precedes the native handoff).
@@ -115,7 +115,7 @@ installed_app() {
   done
   return 1
 }
-BOOTSTRAP_LOG="$HOME/.hermes/logs/bootstrap-installer.log"
+BOOTSTRAP_LOG="$HOME/.slave/logs/bootstrap-installer.log"
 bootstrap_completed() {
   [ -f "$BOOTSTRAP_LOG" ] || return 1
   local line
@@ -154,7 +154,7 @@ FIRST_SHOT=0
 CLICKS=0
 while :; do
   if install_complete; then
-    log "install landed: checkout + source launcher + Hermes.app present"
+    log "install landed: checkout + source launcher + Slave.app present"
     shot "02-install-landed"
     break
   fi
@@ -164,7 +164,7 @@ while :; do
     sleep 5
     install_complete && continue
     shot "ERROR-setup-exited"
-    log "Hermes-Setup exited (pid $SETUP_PID) before the install landed"
+    log "Slave-Setup exited (pid $SETUP_PID) before the install landed"
     exit 1
   fi
   err="$(bootstrap_error)"

@@ -85,7 +85,7 @@ def check_sms_requirements() -> bool:
 
 
 class SmsAdapter(BasePlatformAdapter):
-    """Twilio SMS <-> Hermes: one session per inbound number; replies always from TWILIO_PHONE_NUMBER."""
+    """Twilio SMS <-> slave-agent: one session per inbound number; replies always from TWILIO_PHONE_NUMBER."""
     # Answers /p/<profile>/... on the default listener for a served secondary (shared_ingress).
     serves_profile_prefix: bool = True
 
@@ -294,7 +294,7 @@ _SMS_MARKDOWN_SUBS = (
 # #3823) Added when the SMS (Twilio) adapter moved from gateway/platforms/sms.py into this bundled plugin.
 # register() exposes the platform via the registry, replacing the Platform.SMS elif in gateway/run.py, the
 # _PLATFORM_CONNECTED_CHECKERS entry in gateway/config.py, the _PLATFORMS["sms"] static dict in
-# hermes_cli/gateway.py, and the _send_sms dispatch in gateway/outbound/send.py. TWILIO_*
+# slave_cli/gateway.py, and the _send_sms dispatch in gateway/outbound/send.py. TWILIO_*
 # env→PlatformConfig seeding lives in this plugin's gateway_env.py.
 # ──────────────────────────────────────────────────────────────────────────
 def _strip_markdown_for_sms(message: str) -> str:
@@ -341,7 +341,7 @@ _PLATFORM_HINT = (
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the slave-agent plugin system."""
     from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
         standalone_send=StandaloneSendPolicy(text_direct=True),

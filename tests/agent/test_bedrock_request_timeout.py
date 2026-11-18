@@ -49,7 +49,7 @@ def aws_env(monkeypatch):
 def config(monkeypatch):
     """Install ``cfg`` as the loaded config (the operator report's offline technique)."""
     def install(cfg):
-        monkeypatch.setattr("hermes_cli.config.load_config_readonly", lambda: cfg)
+        monkeypatch.setattr("slave_cli.config.load_config_readonly", lambda: cfg)
     install({})
     return install
 
@@ -127,7 +127,7 @@ def test_models_with_different_overrides_never_share_a_client_in_one_region(conf
 def test_profile_scoped_clients_carry_their_own_profile_timeouts(tmp_path, monkeypatch):
     """A routed profile's clients come from its own config.yaml and own cache slot, per timeout."""
     from agent import secret_scope
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     home = tmp_path / "profile-home"
     home.mkdir()
@@ -138,13 +138,13 @@ def test_profile_scoped_clients_carry_their_own_profile_timeouts(tmp_path, monke
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", True)
 
     def in_profile(fn):
-        h_tok = set_hermes_home_override(str(home))
+        h_tok = set_slave_home_override(str(home))
         s_tok = secret_scope.set_secret_scope(secret_scope.build_profile_secret_scope(home))
         try:
             return fn()
         finally:
             secret_scope.reset_secret_scope(s_tok)
-            reset_hermes_home_override(h_tok)
+            reset_slave_home_override(h_tok)
 
     claude, nova, claude_again = in_profile(lambda: (
         _get_bedrock_runtime_client(REGION, CLAUDE), _get_bedrock_runtime_client(REGION, NOVA),

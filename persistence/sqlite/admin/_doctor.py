@@ -56,7 +56,7 @@ def _install_integrity_check_lease(conn: sqlite3.Connection, *, deadline_at: Opt
     caller can bound the scan. Synchronous by design: no checker worker thread can outlive
     the check.
     """
-    from hermes_startup_watchdog import report_startup_progress
+    from slave_startup_watchdog import report_startup_progress
 
     report_startup_progress(_INTEGRITY_CHECK_LEASE_S, phase=_INTEGRITY_CHECK_LEASE_PHASE)
     last_renew = time.monotonic()
@@ -86,7 +86,7 @@ def _header_mode(db_path: Path) -> str:
 def _refusal(target: str, current: str, *, on_cross_vm_fs: bool) -> Optional[str]:
     """Admission checks independent of holder discovery, which is enforced for every platform."""
     if current == "not-a-database" or current.startswith("unknown("):
-        return (f"its file header reads {current}, so it is not a Hermes SQLite store this command can convert "
+        return (f"its file header reads {current}, so it is not a slave-agent SQLite store this command can convert "
                 "(pass --db PATH to point at one).")
     if target == "wal" and on_cross_vm_fs:
         return ("WAL shared memory silently corrupts on cross-VM filesystems (virtiofs/9p — Docker Desktop, "
@@ -167,7 +167,7 @@ class DoctorAdmin(AdminFile):
     def session_row_count(self) -> int:
         """``COUNT(*)`` of every session row, read on one ``mode=ro`` connection; a failed read raises the store
         error carrying SQLite's message."""
-        from hermes_cli.sqlite_safe_read import connect_tracked
+        from slave_cli.sqlite_safe_read import connect_tracked
         with translated(), closing(connect_tracked(read_only_db_uri(self.db_path), uri=True,
                                                    tracking_path=self.db_path)) as conn:
             return conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
@@ -185,7 +185,7 @@ class DoctorAdmin(AdminFile):
         import tempfile
         with tempfile.TemporaryDirectory() as tmp, translated():
             snapshot = Path(tmp) / "state.db"
-            from hermes_cli.sqlite_safe_read import connect_tracked
+            from slave_cli.sqlite_safe_read import connect_tracked
             src = connect_tracked(read_only_db_uri(state_db_path), uri=True, timeout=1.0, tracking_path=state_db_path)
             try:
                 dest = sqlite3.connect(str(snapshot))  # health: allow HX015 -- temp snapshot this function owns
@@ -218,7 +218,7 @@ class DoctorAdmin(AdminFile):
             except (TypeError, ValueError):
                 deadline_at = None
         try:
-            from hermes_cli.sqlite_safe_read import connect_tracked  # tracked: raw byte probes must see this reader
+            from slave_cli.sqlite_safe_read import connect_tracked  # tracked: raw byte probes must see this reader
 
             with closing(connect_tracked(str(path), tracking_path=path)) as conn:
                 _install_integrity_check_lease(conn, deadline_at=deadline_at)
@@ -235,7 +235,7 @@ class DoctorAdmin(AdminFile):
         """On-disk journal mode via one ``PRAGMA journal_mode`` read on a short-lived
         connection (no lock outlives it); ``None`` when undeterminable. Never raises."""
         try:
-            from hermes_cli.sqlite_safe_read import connect_tracked
+            from slave_cli.sqlite_safe_read import connect_tracked
 
             with closing(connect_tracked(str(self.db_path), timeout=1.0, tracking_path=self.db_path)) as conn:
                 return _on_disk_journal_mode(conn) or None
@@ -285,7 +285,7 @@ class DoctorAdmin(AdminFile):
         # timeout=0: any opener that appeared between the scan and the flip makes the pragma fail with
         # 'database is locked' instead of sneaking the switch between a writer's transactions.
         try:
-            from hermes_cli.sqlite_safe_read import connect_tracked
+            from slave_cli.sqlite_safe_read import connect_tracked
             conn = connect_tracked(str(db_path), timeout=0.0, isolation_level=None, tracking_path=db_path)
         except (OSError, sqlite3.Error) as exc:
             raise PermanentStoreError(f"Cannot open {db_path}: {exc}") from exc

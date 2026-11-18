@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from persistence.core.admin import PHYSICAL_ADMIN, AdminUnsupported
 
-_SALVAGE = ("; refusing in-place restore. Use `hermes sessions recover --source <snapshot> --output <separate-path>` "
+_SALVAGE = ("; refusing in-place restore. Use `slave sessions recover --source <snapshot> --output <separate-path>` "
             "to salvage transcripts into a separate output.")
 
 

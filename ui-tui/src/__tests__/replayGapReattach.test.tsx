@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -27,7 +27,7 @@ const overflowFrames = [
 
 function mount() {
   const home = mkdtempSync(join(tmpdir(), 'ink-replay-gap-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'owner', busy: true, status: 'running…',
     info: { model: 'test', skills: {}, tools: {}, stored_session_id: 'stored-owner', execution_epoch: '1', execution_generation: 1 } })

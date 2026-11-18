@@ -311,9 +311,9 @@ marker_ancestor() { # pid -> 0 iff it is one of our ancestors
 # it spawned (be3fd671d70 checkout.ts) instead of itself. It is adopted iff it
 # does not name the Desktop and
 #   the named pid is alive: it is our parent AND (its parent is the Desktop OR
-#                           line 2 == HERMES_UPDATE_STARTED_AT -- a Desktop
+#                           line 2 == SLAVE_UPDATE_STARTED_AT -- a Desktop
 #                           that already quit leaves its launcher re-parented);
-#   the named pid is gone:  line 2 == HERMES_UPDATE_STARTED_AT (the old Desktop
+#   the named pid is gone:  line 2 == SLAVE_UPDATE_STARTED_AT (the old Desktop
 #                           hands the launcher the same value it writes).
 # 1/0 facts: v1 names_desktop named_alive named_is_our_parent
 # named_parent_is_desktop env_started_matches -> 0 adopt
@@ -326,9 +326,9 @@ marker_launcher_rule() {
   fi
 }
 
-marker_env_started_matches() { # line-2 digits -> 0 iff HERMES_UPDATE_STARTED_AT is plain ASCII
+marker_env_started_matches() { # line-2 digits -> 0 iff SLAVE_UPDATE_STARTED_AT is plain ASCII
   # digits (no sign, no spaces) of the same value
-  local env="${HERMES_UPDATE_STARTED_AT:-}" want="${1#"${1%%[!0]*}"}"
+  local env="${SLAVE_UPDATE_STARTED_AT:-}" want="${1#"${1%%[!0]*}"}"
   case "$env" in ''|*[!0-9]*) return 1 ;; esac
   env="${env#"${env%%[!0]*}"}"
   [ "${env:-0}" = "${want:-0}" ]
@@ -471,7 +471,7 @@ marker_custody() { # posix.sh's refresher (CUSTODIAN_PID/CT), once the hand-off 
   # An old packaged Desktop judges line 1 alone, and a SIGKILLed hand-off runs
   # no trap. So line 1 names this custodian, not the hand-off, from before the
   # update work starts (posix.sh hands it over): when the hand-off dies, the
-  # `hermes update` it started (line 4) or a completion survivor may still
+  # `slave update` it started (line 4) or a completion survivor may still
   # mutate the checkout, and the marker already names a live owner. Keep line
   # 2 young until both are gone (bounded like the R6 wait), then release. Had
   # the handover failed, take the claim over now. Only the hand-off ever wrote
@@ -500,7 +500,7 @@ marker_release_locked() { # A7 rule 5 / corpus "release"
   if [ "$M_PID" = "$MY_PID" ] && [ "$J_OWNER_STATE" -eq 0 ]; then
     if [ -n "$M_DPID" ] && [ "$M_DPID" != "$MY_PID" ] && [ "$J_DELEGATE_STATE" -eq 2 ]; then
       marker_replace "$(marker_canonical "$M_DPID" "$M_STARTED_DIGITS" "$M_DCT")"$'\n'
-      log "handed the update marker to its live delegate pid $M_DPID (hermes update)"
+      log "handed the update marker to its live delegate pid $M_DPID (slave update)"
     else
       rm -f "$MARKER" 2>/dev/null
     fi
@@ -517,7 +517,7 @@ marker_release_locked() { # A7 rule 5 / corpus "release"
   log "leaving update marker: no longer ours"
 }
 
-# ── the checkout lock (hermes_cli/update_lock.py::checkout_lock_path) ────────
+# ── the checkout lock (slave_cli/update_lock.py::checkout_lock_path) ────────
 checkout_lock_path() {
   local root="$INSTALL_ROOT" dot="$INSTALL_ROOT/.git" gitdir line common
   if [ -d "$dot" ]; then
@@ -540,14 +540,14 @@ checkout_lock_path() {
 }
 
 checkout_lock_held() { # 0 iff some process holds the checkout kernel lock right now
-  # The probe takes the REAL lock, so it must never make a concurrent `hermes
+  # The probe takes the REAL lock, so it must never make a concurrent `slave
   # update` see it busy: one non-blocking try, given straight back. With perl
   # (macOS, nearly every Linux) or python3 (the daemon already needs it) the
   # take and the drop are two consecutive syscalls in one process that opened
   # the file itself -- no process exit, wait or shell work in between. flock(1)
   # can only take it on a shell fd, so there the hold spans flock(1)'s exit and
   # our close. No tool, or a lock file that exists but cannot be opened (root-
-  # owned after `sudo hermes update`): held -- fail closed like the Desktop's
+  # owned after `sudo slave update`): held -- fail closed like the Desktop's
   # own probe (checkout_held): reclaim needs a provably free checkout.
   local path rc tool="$MARKER_LOCK_TOOL_FORCED"
   path="$(checkout_lock_path)"

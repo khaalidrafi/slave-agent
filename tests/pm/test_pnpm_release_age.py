@@ -1,7 +1,7 @@
-"""`hermes pm update --pnpm` drops the release-age excludes a refreshed lock no longer holds."""
+"""`slave pm update --pnpm` drops the release-age excludes a refreshed lock no longer holds."""
 import pytest
 
-import hermes_yaml
+import slave_yaml
 from pm.pnpm_release_age import exclude_hint, prune_excludes
 
 LOCK = """lockfileVersion: '9.0'
@@ -61,7 +61,7 @@ def test_prune_keeps_a_narrowed_scoped_entry_in_its_quotes(tmp_path, quote):
     assert prune_excludes(workspace, lock) == ['@scope/kept@1.0.0 || 2.0.0']
     text = workspace.read_text(encoding='utf-8')
     assert text == f"minimumReleaseAgeExclude:\n  - {quote}@scope/kept@2.0.0{quote}  # why\n"
-    assert hermes_yaml.safe_load(text) == {'minimumReleaseAgeExclude': ['@scope/kept@2.0.0']}
+    assert slave_yaml.safe_load(text) == {'minimumReleaseAgeExclude': ['@scope/kept@2.0.0']}
 
 
 def test_hint_lines_paste_as_the_exclude_list_they_name():
@@ -69,4 +69,4 @@ def test_hint_lines_paste_as_the_exclude_list_they_name():
     hint = exclude_hint(picks)
     assert '    - young@1.0.0  # ' in hint  # a safe name stays plain
     pasted = [line for line in hint.splitlines() if line.lstrip().startswith('- ')]
-    assert hermes_yaml.safe_load('minimumReleaseAgeExclude:\n' + '\n'.join(pasted)) == {'minimumReleaseAgeExclude': picks}
+    assert slave_yaml.safe_load('minimumReleaseAgeExclude:\n' + '\n'.join(pasted)) == {'minimumReleaseAgeExclude': picks}

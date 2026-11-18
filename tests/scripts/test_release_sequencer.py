@@ -677,7 +677,7 @@ def test_store_reconciliation_finds_the_newest_matching_published_submission(mon
     from scripts.releases import channel_releases, docker, sequencer, store
     from tests.scripts.test_release_store import STORE_FILE, _Api
 
-    newest_file = "Store-HermesBundled-2026.7000.1.0-win.msixbundle"
+    newest_file = "Store-SlaveBundled-2026.7000.1.0-win.msixbundle"
     manifests = {
         f"releases/tag/rc.1-v{version}/release-candidates.json":
             json.dumps({"files": [{"path": filename}]}).encode()

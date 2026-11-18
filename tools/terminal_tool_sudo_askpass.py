@@ -21,17 +21,17 @@ logger = logging.getLogger("tools.terminal_tool")
 
 # Placeholder for the watchdog's ``read -t`` seconds. ``_prepare_command`` cannot know the
 # command's timeout, so ``BaseEnvironment.execute`` fills it via ``fill_timeout_token``.
-SUDO_ASKPASS_TIMEOUT_TOKEN = "__HERMES_SUDO_ASKPASS_T__"
+SUDO_ASKPASS_TIMEOUT_TOKEN = "__SLAVE_SUDO_ASKPASS_T__"
 
 # Extra seconds the watchdog waits past the command's own timeout.
 _TIMEOUT_SLACK_S = 30
 # Used when the effective timeout is not a number (the execute backstop uses 120 s then).
 _FALLBACK_TIMEOUT_S = 120
 
-SUDO_ASKPASS_PREFIX = 'SUDO_ASKPASS="$__hermes_sudo_dir/a" '
+SUDO_ASKPASS_PREFIX = 'SUDO_ASKPASS="$__slave_sudo_dir/a" '
 # Expands to ``-A`` once the helper is set up, and to ``-S -p ''`` when setup failed at run time
 # (the command then reads its password lines from stdin exactly as the stdin form does).
-SUDO_ASKPASS_SUFFIX = ' "${__hermes_sudo_o[@]}"'
+SUDO_ASKPASS_SUFFIX = ' "${__slave_sudo_o[@]}"'
 
 # bash 3.2 syntax only. ``\command`` / ``\builtin`` keep aliases and functions from the session
 # snapshot from shadowing the commands the prologue relies on; ``exec`` is written ``\exec``
@@ -39,88 +39,88 @@ SUDO_ASKPASS_SUFFIX = ' "${__hermes_sudo_o[@]}"'
 # open, so the detached watchdog would hold the command's output pipe. A temp path holding a
 # character that is special inside double quotes (the helper embeds it in one) counts as a
 # setup failure.
-_PROLOGUE_HEAD = "__hermes_sudo_pw=; __hermes_sudo_o=(-S -p '')\n"
+_PROLOGUE_HEAD = "__slave_sudo_pw=; __slave_sudo_o=(-S -p '')\n"
 _PROLOGUE_TEMPLATE = (
     _PROLOGUE_HEAD
-    + '__hermes_sudo_dir=$(\\builtin umask 077 && \\command mktemp -d "${TMPDIR:-/tmp}/hermes-sudo.XXXXXXXXXX"'
-    " 2>/dev/null) || __hermes_sudo_dir=\n"
-    'case $__hermes_sudo_dir in *[\\"\\\\\\$\\`]*) \\command rm -rf -- "$__hermes_sudo_dir" 2>/dev/null;'
-    " __hermes_sudo_dir= ;; esac\n"
+    + '__slave_sudo_dir=$(\\builtin umask 077 && \\command mktemp -d "${TMPDIR:-/tmp}/hermes-sudo.XXXXXXXXXX"'
+    " 2>/dev/null) || __slave_sudo_dir=\n"
+    'case $__slave_sudo_dir in *[\\"\\\\\\$\\`]*) \\command rm -rf -- "$__slave_sudo_dir" 2>/dev/null;'
+    " __slave_sudo_dir= ;; esac\n"
     # Setup comes before any read of stdin: when a step fails the password lines stay on stdin
     # and every counted sudo keeps ``-S -p ''``, which is the stdin form. The first steps repeat
     # the sudo and tool checks of ``CAPABILITY_PROBE``, so a backend that runs no probe gets the
     # same answer here: each sudo word the command runs accepts ``-A`` (``-V`` authenticates
     # nothing and reads no stdin; @SUDO_CHECKS@ is one such check per word, see
     # ``build_prologue``) and the helper's programs are executable.
-    'if \\builtin test -n "$__hermes_sudo_dir" &&\n'
+    'if \\builtin test -n "$__slave_sudo_dir" &&\n'
     "@SUDO_CHECKS@"
     "  \\builtin test -x /bin/cat && \\builtin test -x /bin/rm && \\builtin test -x /bin/sleep &&\n"
-    '  \\command mkfifo "$__hermes_sudo_dir/p" "$__hermes_sudo_dir/l" 2>/dev/null &&\n'
+    '  \\command mkfifo "$__slave_sudo_dir/p" "$__slave_sudo_dir/l" 2>/dev/null &&\n'
     # A harmless helper at the same path must run before the real one is written: a writable
     # but noexec temp directory passes every step above, yet sudo could not run the helper.
     # The real helper is never run as this check, since it waits on the FIFO for its writer.
-    "  \\builtin printf '#!/bin/sh\\nexit 0\\n' > \"$__hermes_sudo_dir/a\" 2>/dev/null &&\n"
-    '  \\command chmod 700 "$__hermes_sudo_dir/a" 2>/dev/null &&\n'
-    '  "$__hermes_sudo_dir/a" </dev/null >/dev/null 2>&1 &&\n'
+    "  \\builtin printf '#!/bin/sh\\nexit 0\\n' > \"$__slave_sudo_dir/a\" 2>/dev/null &&\n"
+    '  \\command chmod 700 "$__slave_sudo_dir/a" 2>/dev/null &&\n'
+    '  "$__slave_sudo_dir/a" </dev/null >/dev/null 2>&1 &&\n'
     # The helper takes a lock file for its whole exchange, so helpers of sudos that ask at the same
     # time are served one after another instead of sharing one line. The lock is an O_EXCL create
     # (``set -C``), not ``mkdir``: uutils' mkdir (Ubuntu 25.10+) lets two racing callers both
     # succeed, so two helpers read one serving and a sudo gets an empty password.
     "  \\builtin printf '#!/bin/sh\\nd=\"%s\"\\n"
     'until (set -C; : > "$d/k") 2>/dev/null; do [ -d "$d" ] || exit 1; /bin/sleep 0.1 2>/dev/null || /bin/sleep 1; done\\n'
-    '/bin/cat -- "$d/p" 2>/dev/null; r=$?\\n/bin/rm -f "$d/k"\\nexit $r\\n\' "$__hermes_sudo_dir"'
+    '/bin/cat -- "$d/p" 2>/dev/null; r=$?\\n/bin/rm -f "$d/k"\\nexit $r\\n\' "$__slave_sudo_dir"'
     # ``>|`` replaces the harmless helper even when the session has ``noclobber`` (``set -C``) on.
-    ' >| "$__hermes_sudo_dir/a" 2>/dev/null && \\command chmod 700 "$__hermes_sudo_dir/a" 2>/dev/null &&\n'
-    '  \\exec 19<>"$__hermes_sudo_dir/l"; then\n'
+    ' >| "$__slave_sudo_dir/a" 2>/dev/null && \\command chmod 700 "$__slave_sudo_dir/a" 2>/dev/null &&\n'
+    '  \\exec 19<>"$__slave_sudo_dir/l"; then\n'
     # One password line per counted sudo is on stdin; the helper form needs the first only.
-    "  IFS= \\builtin read -r __hermes_sudo_pw || \\builtin :\n"
-    "  __hermes_sudo_i=1\n"
-    "  while \\builtin test \"$__hermes_sudo_i\" -lt @COUNT@; do\n"
-    "    IFS= \\builtin read -r __hermes_sudo_x || \\builtin break; __hermes_sudo_i=$((__hermes_sudo_i + 1))\n"
+    "  IFS= \\builtin read -r __slave_sudo_pw || \\builtin :\n"
+    "  __slave_sudo_i=1\n"
+    "  while \\builtin test \"$__slave_sudo_i\" -lt @COUNT@; do\n"
+    "    IFS= \\builtin read -r __slave_sudo_x || \\builtin break; __slave_sudo_i=$((__slave_sudo_i + 1))\n"
     "  done\n"
-    "  \\builtin unset __hermes_sudo_x __hermes_sudo_i\n"
-    "  __hermes_sudo_o=(-A)\n"
-    '( ( \\exec 8<"$__hermes_sudo_dir/l" 19>&- </dev/null >/dev/null 2>&1\n'
+    "  \\builtin unset __slave_sudo_x __slave_sudo_i\n"
+    "  __slave_sudo_o=(-A)\n"
+    '( ( \\exec 8<"$__slave_sudo_dir/l" 19>&- </dev/null >/dev/null 2>&1\n'
     "    \\builtin trap '' HUP PIPE; \\builtin trap '\\builtin :' TERM\n"
-    "    __hermes_sudo_n=@COUNT@\n"
-    "    { __hermes_sudo_i=0\n"
-    '  while \\builtin test "$__hermes_sudo_i" -lt "$__hermes_sudo_n"; do\n'
-    "    __hermes_sudo_i=$((__hermes_sudo_i + 1))\n"
+    "    __slave_sudo_n=@COUNT@\n"
+    "    { __slave_sudo_i=0\n"
+    '  while \\builtin test "$__slave_sudo_i" -lt "$__slave_sudo_n"; do\n'
+    "    __slave_sudo_i=$((__slave_sudo_i + 1))\n"
     # Each external command of this background group runs in its own subshell: Apple's bash 3.2
     # replaces a background ``{ ...; } &`` group with the first ``command <program>`` it meets
     # (no fork), so nothing after it would run.
-    '    { if \\builtin test "$__hermes_sudo_i" -lt "$__hermes_sudo_n"; then\n'
-    '        ( \\command mkfifo "$__hermes_sudo_dir/q" ) && ( \\command mv -f "$__hermes_sudo_dir/q" "$__hermes_sudo_dir/p" )\n'
-    '      else ( \\command rm -f "$__hermes_sudo_dir/p" ); fi >/dev/null 2>&1\n'
-    "      \\builtin printf '%s\\n' \"$__hermes_sudo_pw\"; } > \"$__hermes_sudo_dir/p\" || \\builtin break\n"
+    '    { if \\builtin test "$__slave_sudo_i" -lt "$__slave_sudo_n"; then\n'
+    '        ( \\command mkfifo "$__slave_sudo_dir/q" ) && ( \\command mv -f "$__slave_sudo_dir/q" "$__slave_sudo_dir/p" )\n'
+    '      else ( \\command rm -f "$__slave_sudo_dir/p" ); fi >/dev/null 2>&1\n'
+    "      \\builtin printf '%s\\n' \"$__slave_sudo_pw\"; } > \"$__slave_sudo_dir/p\" || \\builtin break\n"
     "  done; } 8<&- &\n"
-    "    __hermes_sudo_w=$!\n"
-    "    \\builtin unset __hermes_sudo_pw\n"
+    "    __slave_sudo_w=$!\n"
+    "    \\builtin unset __slave_sudo_pw\n"
     # The wait ends at EOF on fd 19 (the shell and every child holding it are gone). It is
     # checked every two seconds: while the command's shell ($$) runs, as after a yield to the
     # background, serving continues; once the shell is gone it stops at once, unless a counted
     # sudo was put in the background (@BG@ = 1), which is then served for up to @TIMEOUT@ more
     # seconds. A timed-out read is status > 128 on bash 4+ and status 1 after the wait on bash
     # 3.2, where EOF returns 1 at once (SECONDS counts whole seconds, hence ``-lt 1``).
-    "    __hermes_sudo_t=@TIMEOUT@; __hermes_sudo_g=0\n"
+    "    __slave_sudo_t=@TIMEOUT@; __slave_sudo_g=0\n"
     "    while \\builtin :; do\n"
-    "      SECONDS=0; \\builtin read -r -t 2 __hermes_sudo_x <&8; __hermes_sudo_r=$?\n"
-    '      if \\builtin test "$__hermes_sudo_r" -le 128 && \\builtin test "$SECONDS" -lt 1; then \\builtin break; fi\n'
+    "      SECONDS=0; \\builtin read -r -t 2 __slave_sudo_x <&8; __slave_sudo_r=$?\n"
+    '      if \\builtin test "$__slave_sudo_r" -le 128 && \\builtin test "$SECONDS" -lt 1; then \\builtin break; fi\n'
     "      if \\builtin kill -0 $$ 2>/dev/null; then \\builtin continue; fi\n"
     "      if \\builtin test @BG@ -eq 0; then \\builtin break; fi\n"
-    "      __hermes_sudo_g=$((__hermes_sudo_g + 2))\n"
-    '      if \\builtin test "$__hermes_sudo_g" -ge "$__hermes_sudo_t"; then \\builtin break; fi\n'
+    "      __slave_sudo_g=$((__slave_sudo_g + 2))\n"
+    '      if \\builtin test "$__slave_sudo_g" -ge "$__slave_sudo_t"; then \\builtin break; fi\n'
     "    done\n"
-    '\\builtin kill "$__hermes_sudo_w" 2>/dev/null\n'
-    '\\exec 7<>"$__hermes_sudo_dir/p" 2>/dev/null\n'
-    '\\command rm -rf "$__hermes_sudo_dir"\n'
+    '\\builtin kill "$__slave_sudo_w" 2>/dev/null\n'
+    '\\exec 7<>"$__slave_sudo_dir/p" 2>/dev/null\n'
+    '\\command rm -rf "$__slave_sudo_dir"\n'
     "\\exec 7>&-\n"
     "  ) & )\n"
     "else\n"
-    '  \\builtin test -z "$__hermes_sudo_dir" || \\command rm -rf -- "$__hermes_sudo_dir" 2>/dev/null\n'
-    "  __hermes_sudo_dir=\n"
+    '  \\builtin test -z "$__slave_sudo_dir" || \\command rm -rf -- "$__slave_sudo_dir" 2>/dev/null\n'
+    "  __slave_sudo_dir=\n"
     "fi\n"
-    "\\builtin unset __hermes_sudo_pw\n"
+    "\\builtin unset __slave_sudo_pw\n"
 )
 
 

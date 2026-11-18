@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 from agent import bedrock_adapter
-from tests.hermes_cli.anon_portal import as_local_desktop_backend
+from tests.slave_cli.anon_portal import as_local_desktop_backend
 
 _AWS_VARS = ("AWS_BEARER_TOKEN_BEDROCK", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_PROFILE",
              "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", "AWS_WEB_IDENTITY_TOKEN_FILE")
@@ -28,8 +28,8 @@ def test_no_credentials_walks_the_chain_once(chain):
 
 
 def test_the_desktop_backends_auto_detect_skips_instance_metadata(chain, monkeypatch):
-    from hermes_cli.auth import resolve_provider
-    from hermes_cli.auth_constants import AuthError
+    from slave_cli.auth import resolve_provider
+    from slave_cli.auth_constants import AuthError
 
     as_local_desktop_backend(monkeypatch)
     with pytest.raises(AuthError):

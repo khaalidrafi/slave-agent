@@ -578,7 +578,7 @@ class TestNoCredsPreflight:
     With the guard, ``connect()`` returns False immediately with a
     non-retryable fatal error so the reconnect watcher drops the platform
     and the gateway gets a single clear log line telling the user to run
-    ``hermes whatsapp``.
+    ``slave whatsapp``.
     """
 
 
@@ -628,7 +628,7 @@ class TestNamedConnectFailures:
     @pytest.mark.parametrize("aiohttp_module, lazy_allowed, cause, retryable", [
         (None, False, "lazy installs are disabled", False),
         # Installed but this process could not adopt it: final would exit the gateway 78 instead of restarting.
-        (None, True, "sms installed; restart Hermes to activate it", True),
+        (None, True, "sms installed; restart slave-agent to activate it", True),
         (types.ModuleType("aiohttp"), True, "incomplete install", False),  # a shadowing aiohttp.py has no __path__
     ])
     async def test_missing_aiohttp_is_named_and_final_only_when_pm_cannot_install(
@@ -684,4 +684,4 @@ async def test_passkey_required_stops_retries_at_startup_and_during_polling(pass
     assert adapter.fatal_error_retryable is retryable
     assert adapter.fatal_error_code == ("whatsapp_bridge_exited" if retryable else "whatsapp_passkey_required")
     if not retryable:
-        assert "hermes whatsapp --passkey-browser" in adapter.fatal_error_message
+        assert "slave whatsapp --passkey-browser" in adapter.fatal_error_message

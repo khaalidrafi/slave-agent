@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Run Python in this checkout's environment: `scripts/hermes-python ARGS...`.
+#
+# A GitHub Actions job runs the interpreter setup-pm exported as SLAVE_PYTHON,
+# so a recipe never re-runs setup on a runner. Anywhere else SLAVE_PYTHON may
+# be inherited from a wrapped `slave` (a release venv without the dev tools),
+# so scripts/run-in-slave-env applies (and if stale, syncs) the environment
+# `source ./activate` gives a shell.
+set -euo pipefail
+
+if [ "${GITHUB_ACTIONS:-}" = true ] && [ -z "${__SLAVE_ACTIVATED:-}" ] && [ -n "${SLAVE_PYTHON:-}" ] \
+    && [ -x "$SLAVE_PYTHON" ]; then
+    exec "$SLAVE_PYTHON" "$@"
+fi
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/run-in-slave-env" python "$@"

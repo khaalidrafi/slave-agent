@@ -2,10 +2,10 @@ name: lightningai
 repo: https://github.com/dinosauria123/hermes-lightningai-provider
 sha: e4350ca278f8994322fc3b79a55a52e83388b7da
 description: >-
-  Lightning AI as a Hermes model provider (--provider lightning, lightning-ai, lightningai):
+  Lightning AI as a slave-agent model provider (--provider lightning, lightning-ai, lightningai):
   OpenAI-compatible gateway at https://lightning.ai/api/v1, models fetched live from /models.
   Disclosure — registers one model provider at import and nothing else (no tools, hooks, commands
-  or threads); chat requests and the model list go to lightning.ai through Hermes' own client with
+  or threads); chat requests and the model list go to lightning.ai through slave-agent’ own client with
   LIGHTNING_API_KEY (or LIGHTNING_AI_API_KEY), optional LIGHTNING_BASE_URL overrides the endpoint;
   the plugin itself opens no connections, reads/writes no files and starts no processes.
 maintainer: dinosauria123

@@ -1,6 +1,6 @@
 """Per-admission turn inputs the classic CLI sends with ``prompt.submit`` (CALLMAP W2).
 
-Main's HermesCLI calls ``AIAgent.run_conversation`` with an API-only message (voice prefix,
+Main's SlaveCLI calls ``AIAgent.run_conversation`` with an API-only message (voice prefix,
 model-switch / skills-reload notes) while persisting the clean text, names the turn's author for
 memory attribution, and runs ``/model --once`` and ``/moa`` as a one-turn runtime swap. Over the
 session authority those are facts about ONE admitted turn, committed with the admission row as
@@ -39,7 +39,7 @@ def admit_cli_turn(params):
             committed['api_text'] = api_text
     override = params.get('model_override')
     if override is not None:
-        from hermes_constants import parse_reasoning_effort
+        from slave_constants import parse_reasoning_effort
         if (not isinstance(override, dict) or set(override) - {'model', 'provider', 'reasoning'}
                 or not isinstance(override.get('model'), str) or not override['model'].strip()
                 or not isinstance(override.get('provider', ''), str)
@@ -116,8 +116,8 @@ def one_turn_runtime(override, model, runtime_kwargs, config):
     written: the session's route, policy and cached agent are untouched, so the next turn runs its own
     route again (main's ``/model --once`` restore). Raises ``RuntimeError`` with the switch's own
     sentence when the target cannot be resolved; the caller fails the turn with it."""
-    from hermes_cli.config import get_compatible_custom_providers
-    from hermes_cli.model_switch import switch_model
+    from slave_cli.config import get_compatible_custom_providers
+    from slave_cli.model_switch import switch_model
     result = switch_model(
         raw_input=override['model'], current_provider=runtime_kwargs.get('provider') or '',
         current_model=model or '', current_base_url=runtime_kwargs.get('base_url') or '',
@@ -138,8 +138,8 @@ def one_turn_runtime(override, model, runtime_kwargs, config):
         # them. The wire follows the target only where the provider picks it per model (a profile's
         # ``api_mode_for_model``, Nous Portal, OpenCode; ``_rederive_per_model_route``); otherwise ``result.api_mode`` describes the
         # default host, not this session's endpoint, and the session's wire stays.
-        from hermes_cli.model_switch import model_derived_api_mode
-        from hermes_cli.models import normalize_opencode_base_url, opencode_provider_family
+        from slave_cli.model_switch import model_derived_api_mode
+        from slave_cli.models import normalize_opencode_base_url, opencode_provider_family
         if model_derived_api_mode(result.target_provider, result.new_model) is not None and result.api_mode:
             runtime['api_mode'] = result.api_mode
         api_mode = runtime.get('api_mode') or None
@@ -157,7 +157,7 @@ def one_turn_runtime(override, model, runtime_kwargs, config):
     return result.new_model, runtime
 
 
-# run_conversation keys main's HermesCLI reads that the gateway's own projection does not carry
+# run_conversation keys main's SlaveCLI reads that the gateway's own projection does not carry
 # (CALLMAP §3.3 step 4): the transform-preview original, the billing descriptor and the turn's
 # last reasoning / preview flags.
 _RESULT_PASSTHROUGH = ('pre_transform_response', 'billing_block', 'last_reasoning', 'response_previewed',
@@ -166,7 +166,7 @@ _RESULT_PASSTHROUGH = ('pre_transform_response', 'billing_block', 'last_reasonin
 
 def classic_cli_turn(turn):
     """A local-viewer turn on a classic-CLI surface session (``cli`` / ``oneshot`` / ``tool``): the
-    viewer is main's HermesCLI, which reads the run_conversation-shaped result itself."""
+    viewer is main's SlaveCLI, which reads the run_conversation-shaped result itself."""
     from gateway.run_turn_progress import local_viewer_turn
     if not local_viewer_turn(turn):
         return False
@@ -202,7 +202,7 @@ def take_cli_result_fields(result, *, aux_before=None, session_db=None, session_
     steer = result.pop('pending_steer', None)
     fields['pending_steer'] = steer or None
     if aux_before is not None:
-        from hermes_cli.oneshot import _attach_auxiliary_usage
+        from slave_cli.oneshot import _attach_auxiliary_usage
         holder = {'session_id': result.get('session_id') or session_id}
         _attach_auxiliary_usage(holder, session_db, aux_before, fallback_session_id=session_id, persistence=persistence)
         fields['auxiliary_usage'] = holder.get('auxiliary_usage') or {}
@@ -225,7 +225,7 @@ def one_turn_reasoning(turn, reasoning_config):
     override = cli_turn(turn._ctx.inbound_message_id).get('model_override') or {}
     if 'reasoning' not in override:
         return reasoning_config
-    from hermes_constants import parse_reasoning_effort
+    from slave_constants import parse_reasoning_effort
     return parse_reasoning_effort(override['reasoning']) or reasoning_config
 
 
@@ -238,7 +238,7 @@ def run_classic_cli_turn(turn, run):
     aux_before = cli_persistence = None
     if finite_turn_required() is True:
         # `chat -q --usage-file` / stream-json: this turn's auxiliary spend, as oneshot.py read it.
-        from hermes_cli.oneshot import _auxiliary_usage
+        from slave_cli.oneshot import _auxiliary_usage
         cli_persistence = getattr(turn._runner, "persistence", None)
         aux_before = _auxiliary_usage(cli_persistence, turn._ctx.session_id, persistence=cli_persistence)
     result = run()

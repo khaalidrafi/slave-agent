@@ -58,7 +58,7 @@ def bundles_env(tmp_path, monkeypatch):
     bundles_dir = tmp_path / "skill-bundles"
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
-    monkeypatch.setenv("HERMES_BUNDLES_DIR", str(bundles_dir))
+    monkeypatch.setenv("SLAVE_BUNDLES_DIR", str(bundles_dir))
     # Patch SKILLS_DIR so skill loading hits our temp tree.
     import tools.skills_tool as skills_tool_module
     monkeypatch.setattr(skills_tool_module, "SKILLS_DIR", skills_dir)
@@ -270,7 +270,7 @@ class TestListBundles:
 
 
 class TestBundleCacheRaces:
-    """The gateway's cache must see edits another process (`hermes bundles`) makes in the same mtime tick."""
+    """The gateway's cache must see edits another process (`slave bundles`) makes in the same mtime tick."""
 
     T = 1_800_000_000_000_000_000
 

@@ -1,6 +1,6 @@
 """Serve -> owner cutover for one typed prompt (RT-37, #140385).
 
-A legacy ``hermes serve`` backend (no session authority) refuses a turn while the gateway's durable
+A legacy ``slave serve`` backend (no session authority) refuses a turn while the gateway's durable
 ledger holds work for the same stored session (``session_lifecycle._canonical_ledger_refusal``): a
 legacy turn would run beside the canonical FIFO and write the transcript twice. A Bot Chat the
 gateway also owns hits that on every gateway turn, so the user's own Desktop prompt was refused
@@ -68,7 +68,7 @@ class OwnerUnconfirmed(OwnerUnavailable):
 
 def discover_owner(home: Path):
     """The ready gateway endpoint serving ``home``. Discovery only: never starts one."""
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
+    from slave_cli.gateway_runtime import discover_gateway_endpoint
     discovery = discover_gateway_endpoint(home, timeout=5)
     if discovery.state != "ready" or discovery.endpoint is None:
         raise OwnerNotRunning(f"the gateway that owns it is {discovery.state}")
@@ -80,7 +80,7 @@ async def connect_owner(home: Path, endpoint, *, scope=None, max_size: int = 2 *
     """A ``GatewayClient`` on ``endpoint``, the ready gateway serving ``home``; ``scope``: the
     ticket's profile scope (``"host"``: the one native Desktop holds); ``max_size``: the largest
     answer frame accepted (websockets' 1 MiB default)."""
-    from hermes_cli.gateway_client import GATEWAY_WS_PROTOCOL, GatewayClient, _session_ticket, gateway_ws_target
+    from slave_cli.gateway_client import GATEWAY_WS_PROTOCOL, GatewayClient, _session_ticket, gateway_ws_target
     from websockets.asyncio.client import connect
 
     ticket = await asyncio.to_thread(_session_ticket, home, endpoint, scope=scope)
@@ -159,7 +159,7 @@ class _Relay:
         queued: a lost connection, a missing answer or any other error may follow the owner's durable
         commit (a gateway restart mid-forward, a storage error publishing the pending list), so it is
         unconfirmed, never "nothing was sent" (a resend would run a second copy)."""
-        from hermes_cli.gateway_client import GatewayRPCError
+        from slave_cli.gateway_client import GatewayRPCError
         try:
             return await client.rpc("prompt.submit", session_id=target, text=self.text,
                                     submission_id=self.request_id)
@@ -242,7 +242,7 @@ def forward_prompt(sid: str, session: dict, text: str, *, emit=None, home: Path 
     key = str(session.get("session_key") or "")
     if not key:
         raise OwnerUnavailable("the chat has no stored session yet")
-    home = Path(home or session.get("profile_home") or server._hermes_home).resolve()
+    home = Path(home or session.get("profile_home") or server._slave_home).resolve()
     relay = _Relay(sid, session, key, home, discover_owner(home), text, emit or server._emit)
     from agent.memory_provider import spawn_context_thread
     spawn_context_thread(relay.run, name=f"owner-forward-{key[:24]}").start()

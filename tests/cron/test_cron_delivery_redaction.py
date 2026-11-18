@@ -105,14 +105,14 @@ def test_delivery_redaction_is_forced_and_fails_closed(mode, monkeypatch):
             stack.enter_context(patch("gateway.outbound.send._send_to_platform", new=send))
             stack.enter_context(patch("sys.is_finalizing", return_value=False))
             if mode == "redact_secrets_off":
-                monkeypatch.setenv("HERMES_REDACT_SECRETS", "false")
+                monkeypatch.setenv("SLAVE_REDACT_SECRETS", "false")
                 importlib.reload(agent.redact)
             else:
                 stack.enter_context(
                     patch("agent.redact.redact_sensitive_text", side_effect=RuntimeError("boom")))
             _deliver_result(_job(), f"Token was {FAKE_SECRET}")
     finally:
-        monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+        monkeypatch.delenv("SLAVE_REDACT_SECRETS", raising=False)
         importlib.reload(agent.redact)
 
     delivered = _flat(send.call_args)

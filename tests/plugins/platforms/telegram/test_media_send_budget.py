@@ -67,7 +67,7 @@ def test_gateway_send_document_scales_budgets_with_file_size(tmp_path):
 
 
 def test_standalone_media_upload_uses_media_budgets(tmp_path):
-    """The standalone upload (``hermes send``, cron, agent ``send_message``) used the Bot's general
+    """The standalone upload (``slave send``, cron, agent ``send_message``) used the Bot's general
     read timeout, which cuts off Telegram's post-upload processing of a delivered file."""
     bot = _Bot()
     path = _file(tmp_path, "book.pdf", 1024 * 1024)

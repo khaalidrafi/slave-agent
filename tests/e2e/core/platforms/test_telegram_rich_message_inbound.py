@@ -40,7 +40,7 @@ def test_rich_message_group_mention_reaches_the_agent(rig) -> None:
     token, aid = "richgrp", "A-richgrp"
     rig.director.script(token, C.answer(aid, "on it"))
     uid, gid = int(rig.drv.user_id), int(rig.drv.group_chat_id)
-    handle = "@hermes_standin_bot"
+    handle = "@slave_standin_bot"
     chat = {"id": gid, "type": "supergroup", "title": "Standin Group"}
     rig.drv.standin._inbound(chat, uid, rich_message={"blocks": [
         {"type": "paragraph", "text": [handle, f" please look [in:{token}]"]},

@@ -106,7 +106,7 @@ class TestGatewayConnectionErrorReply:
 
     def test_every_reply_names_a_slash_command_and_no_jargon(self):
         """Each shaped reply must give the chat user something they can run; 'provider' and
-        'gateway logs' are operator words (the log pointer is the `hermes logs` command)."""
+        'gateway logs' are operator words (the log pointer is the `slave logs` command)."""
         from agent.i18n import t
         from gateway.run import _PROVIDER_ERROR_REPLIES
         replies = [t(reply_key) for _, reply_key in _PROVIDER_ERROR_REPLIES] + [_gateway_provider_error_reply("zzz")]
@@ -198,8 +198,8 @@ class TestQuotaExhaustedIsNotAnAuthFailure:
         from gateway.run_turn_runner import TurnRunner
         from gateway.session import SessionSource
         from gateway.turn_context import TurnContext
-        from hermes_cli.auth import AuthError
-        from hermes_cli.auth_constants import CODEX_RATE_LIMITED_CODE
+        from slave_cli.auth import AuthError
+        from slave_cli.auth_constants import CODEX_RATE_LIMITED_CODE
 
         def _resolve(**_kwargs):
             try:
@@ -221,7 +221,7 @@ class TestQuotaExhaustedIsNotAnAuthFailure:
     def test_turn_runner_resolution_failure_is_a_failed_turn_with_local_detail(self, monkeypatch):
         """A pre-agent resolution failure is a FAILED result (one-shot exits non-zero, the turn
         is closed in the transcript), and a LOCAL session sees the resolver's own diagnosis —
-        ``hermes chat -q`` on a bare ``custom`` must print the no-credentials error and exit
+        ``slave chat -q`` on a bare ``custom`` must print the no-credentials error and exit
         non-zero, not ``rc 0`` with a /login hint (C11 bare_custom_without_base_url_fails_fast)."""
         from types import SimpleNamespace
         import gateway.run as gateway_run
@@ -260,7 +260,7 @@ def test_turn_runner_host_side_resolution_failure_does_not_send_user_to_login(mo
     from gateway.run_turn_runner import TurnRunner
     from gateway.session import SessionSource
     from gateway.turn_context import TurnContext
-    from hermes_cli.auth import AuthError
+    from slave_cli.auth import AuthError
 
     def _raising(cause):
         def _resolve(**_kwargs):
@@ -295,7 +295,7 @@ def test_turn_runner_host_side_resolution_failure_does_not_send_user_to_login(mo
         result = TurnRunner(runner, ctx).run_sync()
         assert result["failed"] is True and result["api_calls"] == 0
         replies[label] = (result["final_response"], result["failure_reason"], result["failure_retryable"])
-    assert "/login" not in replies["oserror"][0] and "hermes logs" in replies["oserror"][0]
+    assert "/login" not in replies["oserror"][0] and "slave logs" in replies["oserror"][0]
     assert replies["oserror"][1:] == ("host_error", False)
     from agent.error_surface import LAYER_GATEWAY, _REASON_TO_LAYER
     assert _REASON_TO_LAYER["host_error"] == LAYER_GATEWAY  # no "Switch provider" for a host fault

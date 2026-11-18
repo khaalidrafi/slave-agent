@@ -14,7 +14,7 @@ import pytest
 from cron.scheduler import _deliver_result
 from cron.scheduler_delivery_media import _send_media_via_adapter
 from gateway.config import Platform, PlatformConfig
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 class _Result:
@@ -57,7 +57,7 @@ def loop():
 
 
 def _media(name: str) -> str:
-    folder = get_hermes_home() / "cache" / "images"
+    folder = get_slave_home() / "cache" / "images"
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / name
     path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
@@ -97,7 +97,7 @@ def test_standalone_lane_passes_force_document(monkeypatch):
         return {"success": True, "platform": "telegram", "chat_id": chat_id, "message_id": 9}
 
     import gateway.platform_registry as reg_mod
-    import hermes_cli.plugins as hp
+    import slave_cli.plugins as hp
 
     if reg_mod.platform_registry.get("telegram") is None:
         hp.discover_plugins()

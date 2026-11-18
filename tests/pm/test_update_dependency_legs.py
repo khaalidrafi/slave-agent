@@ -45,8 +45,8 @@ def project(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, 'repo_root', lambda: repo)
     monkeypatch.setattr(paths, 'lockfile_path', lambda: lock.path)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path / 'home')
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path / 'home'))
-    monkeypatch.setenv('HERMES_RUNTIME_DIR', str(tmp_path / 'store'))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path / 'home'))
+    monkeypatch.setenv('SLAVE_RUNTIME_DIR', str(tmp_path / 'store'))
     monkeypatch.chdir(caller)
 
     run_live = cli._run_live
@@ -137,7 +137,7 @@ def test_uv_refresh_uses_real_installed_tool_and_only_the_owned_project(tmp_path
 def pnpm_project(monkeypatch):
     """A temporary project whose PM-installed pnpm is the real tool; yields what the tests check."""
     pnpm_tool = Path(shutil.which('pnpm') or pytest.fail('canonical test environment requires pnpm'))
-    # Keep the real tool's argv clear of the harness's hermes-update guard.
+    # Keep the real tool's argv clear of the harness's slave-update guard.
     temp_root = Path(os.environ['LOCALAPPDATA']) / 'Temp' if os.name == 'nt' else Path('/tmp')
     with tempfile.TemporaryDirectory(prefix='pm-deps-', dir=temp_root) as temporary, monkeypatch.context() as scoped:
         monkeypatch = scoped
@@ -166,7 +166,7 @@ def pnpm_project(monkeypatch):
         pnpm_entry = runtime / 'pnpm-fixture'
         pnpm_binary = pnpm.binary(pnpm_entry, target)
         pnpm_binary.parent.mkdir(parents=True)
-        # A developer run finds PM's own pnpm under the real Hermes home, which a test may not read
+        # A developer run finds PM's own pnpm under the real Slave home, which a test may not read
         # (copy) or resolve (symlink): on POSIX the fixture execs it, so only the child touches it.
         if os.name == 'nt':
             shutil.copy2(pnpm_tool.resolve(), pnpm_binary)
@@ -204,7 +204,7 @@ def test_pnpm_refresh_uses_its_installed_entry_and_owned_project(monkeypatch, ca
         assert not (caller / 'pnpm-lock.yaml').exists()
         assert dict(os.environ) == before
         assert lock.path.read_bytes() == before_lock
-        # pnpm's store is Hermes-owned under the Hermes root: neither the ambient setting nor the user's dirs.
+        # pnpm's store is Slave-owned under the Slave root: neither the ambient setting nor the user's dirs.
         assert (root / 'home' / 'cache' / 'pnpm' / 'store').is_dir()
         assert not (root / 'ambient-store').exists()
         # pnpm's per-user lock dirs follow the LocalAppData known folder on Windows, which

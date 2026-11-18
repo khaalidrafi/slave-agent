@@ -701,8 +701,8 @@ class ResumeTooLarge(PersistenceError, ValueError):
         super().__init__(
             f"This session is too long to reload safely ({message_count} messages; limit {limit}). "
             "Start a fresh chat and keep a copy with the dashboard Sessions page's Export action or "
-            "`hermes sessions export --format md --session-id <id>` (neither is capped), or raise the limit "
-            "with `hermes config set sessions.max_resume_messages 0`."
+            "`slave sessions export --format md --session-id <id>` (neither is capped), or raise the limit "
+            "with `slave config set sessions.max_resume_messages 0`."
         )
 
 

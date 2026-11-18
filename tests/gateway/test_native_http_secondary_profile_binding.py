@@ -33,8 +33,8 @@ def test_secondary_native_ticket_implicit_selectors_touch_only_the_secondary_hom
     launch_before = (home / 'config.yaml').read_bytes()
     root = Path(__file__).resolve().parents[2]
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
-               PYTHONUNBUFFERED='1', HERMES_DASHBOARD_SESSION_TOKEN='normal-http-owner')
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
+               PYTHONUNBUFFERED='1', SLAVE_DASHBOARD_SESSION_TOKEN='normal-http-owner')
     with (tmp_path / 'gateway.log').open('w+') as log:
         process = subprocess.Popen([sys.executable, '-m', 'gateway.run'], cwd=root, env=env,
                                    stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
@@ -61,14 +61,14 @@ def test_secondary_native_ticket_implicit_selectors_touch_only_the_secondary_hom
             with httpx.Client(base_url=descriptor['api_origin'], trust_env=False, timeout=30) as client:
                 for params in ({}, {'profile': ''}, {'profile': 'current'}):
                     response = client.get('/api/config', params=params,
-                                          headers={'X-Hermes-Gateway-Ticket': ticket()})
+                                          headers={'X-Slave-Gateway-Ticket': ticket()})
                     assert response.status_code == 200, (params, response.text)
                     assert 'beta-model' in response.text and 'launch-model' not in response.text, (params, response.text)
                 for body in ({}, {'profile': 'current'}):
                     updated = client.put('/api/config', json={**body, 'config': {'display': {'skin': 'ares'}}},
-                                         headers={'X-Hermes-Gateway-Ticket': ticket()})
+                                         headers={'X-Slave-Gateway-Ticket': ticket()})
                     assert updated.status_code == 200, (body, updated.text)
-            import hermes_yaml as yaml
+            import slave_yaml as yaml
             assert yaml.safe_load((beta / 'config.yaml').read_text())['display']['skin'] == 'ares'
             assert (home / 'config.yaml').read_bytes() == launch_before
         finally:

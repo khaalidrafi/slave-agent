@@ -1,6 +1,6 @@
-"""``hermes cron tick`` with no live gateway refuses agent jobs instead of spawning one.
+"""``slave cron tick`` with no live gateway refuses agent jobs instead of spawning one.
 
-The external-scheduler mode (system crontab calling ``hermes cron tick``) used to reach
+The external-scheduler mode (system crontab calling ``slave cron tick``) used to reach
 ``run_canonical_job`` -> ``connect_gateway`` -> ``ensure_gateway_runtime``, which spawns an
 unmanaged daemon when nothing owns the profile. Headless surfaces refuse rather than spawn:
 the agent job is skipped (not failed), keeps its due instant, and one warning names the fix.
@@ -20,12 +20,12 @@ def cron_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     (home / "cron").mkdir(parents=True)
     (home / "scripts").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(J, "HERMES_DIR", home)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(J, "SLAVE_DIR", home)
     monkeypatch.setattr(J, "CRON_DIR", home / "cron")
     monkeypatch.setattr(J, "JOBS_FILE", home / "cron" / "jobs.json")
     monkeypatch.setattr(J, "OUTPUT_DIR", home / "cron" / "output")
-    monkeypatch.setattr(S, "_hermes_home", home)
+    monkeypatch.setattr(S, "_slave_home", home)
     monkeypatch.setattr(S, "_sweep_mcp_orphans", lambda: None)
     S._running_job_ids.clear()
     return home
@@ -33,13 +33,13 @@ def cron_home(tmp_path, monkeypatch):
 
 def _make_due(job_id: str) -> None:
     stored = J.load_jobs()
-    slot = (J._hermes_now() - timedelta(minutes=1)).replace(microsecond=0).isoformat()
+    slot = (J._slave_now() - timedelta(minutes=1)).replace(microsecond=0).isoformat()
     next(r for r in stored if r["id"] == job_id)["next_run_at"] = slot
     J.save_jobs(stored)
 
 
 def test_tick_without_gateway_skips_agent_jobs_without_spawning_or_drift(cron_home, monkeypatch, caplog):
-    from hermes_cli import gateway_runtime, gateway_runtime_start
+    from slave_cli import gateway_runtime, gateway_runtime_start
 
     spawned = []
     monkeypatch.setattr(gateway_runtime_start, "spawn_unmanaged_gateway",
@@ -64,10 +64,10 @@ def test_tick_without_gateway_skips_agent_jobs_without_spawning_or_drift(cron_ho
         assert stored[job_id]["last_run_at"] is None
         assert stored[job_id]["next_run_at"] == due_before[job_id]
         assert "pending_slot" not in stored[job_id]
-        assert "hermes gateway start" in stored[job_id]["last_fire_error"]["detail"]
+        assert "slave gateway start" in stored[job_id]["last_fire_error"]["detail"]
     refusals = [r for r in caplog.records if "not running" in r.getMessage()]
     assert len(refusals) == 1, "one log line per tick, not one per job"
-    assert agent["id"] in refusals[0].getMessage() and "hermes gateway start" in refusals[0].getMessage()
+    assert agent["id"] in refusals[0].getMessage() and "slave gateway start" in refusals[0].getMessage()
 
 
 @pytest.mark.platforms("linux")
@@ -81,7 +81,7 @@ def test_tick_holds_agent_jobs_while_gateway_is_starting_or_silent(cron_home, mo
     import threading
     import time
 
-    from hermes_cli import gateway_runtime_start
+    from slave_cli import gateway_runtime_start
 
     os.chmod(cron_home, 0o700)
     spawned = []
@@ -129,13 +129,13 @@ def test_tick_holds_agent_jobs_while_gateway_is_starting_or_silent(cron_home, mo
     assert stored["last_run_at"] is None and stored["last_status"] is None
     assert stored["next_run_at"] == due_before, "the slot is held, not consumed"
     assert "pending_slot" not in stored
-    assert "hermes gateway status" in stored["last_fire_error"]["detail"]
+    assert "slave gateway status" in stored["last_fire_error"]["detail"]
     assert len([r for r in caplog.records if "skipped" in r.getMessage()]) == 1
 
 
 def test_headless_receipt_recovery_never_connects_or_spawns(cron_home, monkeypatch):
     import json
-    from hermes_cli import gateway_client
+    from slave_cli import gateway_client
 
     job = J.create_job(prompt="summarise inbox", schedule="every 1h", name="agent", deliver="local")
     request_id = "prepared-fire"

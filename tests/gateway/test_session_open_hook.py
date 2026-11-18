@@ -24,11 +24,11 @@ from pathlib import Path
 
 def register(ctx):
     def opened(**kw):
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
         log = Path(%r)
         gate = log.with_suffix(".gate")
         with open(log, "a") as out:
-            out.write(json.dumps(dict(kw, home=str(get_hermes_home()), phase="start")) + "\\n")
+            out.write(json.dumps(dict(kw, home=str(get_slave_home()), phase="start")) + "\\n")
         if gate.exists():
             from tests.waiting import wait_until
             try:
@@ -36,7 +36,7 @@ def register(ctx):
             except AssertionError:
                 pass
         with open(log, "a") as out:
-            out.write(json.dumps(dict(kw, home=str(get_hermes_home()), phase="done")) + "\\n")
+            out.write(json.dumps(dict(kw, home=str(get_slave_home()), phase="done")) + "\\n")
     ctx.register_hook("on_session_open", opened)
 '''
 
@@ -74,7 +74,7 @@ def test_each_open_fires_once_in_the_owning_profile(tmp_path, monkeypatch):
             _wait_done(beta_log, 1)
             wait_until(lambda: _message_count(home, root_sid), timeout=30, what='the first turn to be stored')
             root.close()
-            again = _Wire(home, desc)  # `hermes --resume`: a new client opens the stored session
+            again = _Wire(home, desc)  # `slave --resume`: a new client opens the stored session
             try:
                 again.call('session.resume', session_id=root_sid)
             finally:
@@ -264,18 +264,18 @@ async def test_a_profile_with_no_consumer_starts_no_delivery_thread(monkeypatch,
     from types import SimpleNamespace
     from gateway import session_commands, session_open
     from gateway.session_contract import SessionRef
-    from hermes_cli import plugins
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_cli import plugins
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     threads = []
 
     async def own_thread(fn):
         threads.append(fn)
     monkeypatch.setattr(session_commands, '_on_own_thread', own_thread)
-    token = set_hermes_home_override(str(tmp_path))
+    token = set_slave_home_override(str(tmp_path))
     try:
         manager = plugins.get_plugin_manager()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     manager._discovered = True
     for consumer in (False, True):
         if consumer:

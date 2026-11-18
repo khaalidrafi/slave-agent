@@ -1,4 +1,4 @@
-"""#94455: ``process(action='poll', acknowledge=true)`` on an exited process tells Hermes the agent
+"""#94455: ``process(action='poll', acknowledge=true)`` on an exited process tells slave-agent the agent
 handled the result inline, so the gateway watcher must not inject a stale completion turn. A plain
 poll stays read-only, so a status check still gets its autonomous turn (#10156)."""
 import asyncio
@@ -13,7 +13,7 @@ from tools.process_registry import ProcessRegistry
 
 @pytest.fixture()
 def registry(monkeypatch):
-    monkeypatch.setattr("hermes_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
+    monkeypatch.setattr("slave_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
     reg = ProcessRegistry()
     monkeypatch.setattr(pr_module, "process_registry", reg)
     return reg

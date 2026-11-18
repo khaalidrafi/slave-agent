@@ -17,26 +17,26 @@ def _hits(src: str) -> list[int]:
 
 
 @pytest.mark.parametrize("src, flagged", [
-    ("from hermes_constants import set_hermes_home_override\nset_hermes_home_override('/h')\n", True),
-    ("from hermes_constants import set_hermes_home_override as s\ns('/h')\n", True),
-    ("import hermes_constants\nhermes_constants.set_hermes_home_override('/h')\n", True),
+    ("from slave_constants import set_slave_home_override\nset_slave_home_override('/h')\n", True),
+    ("from slave_constants import set_slave_home_override as s\ns('/h')\n", True),
+    ("import slave_constants\nslave_constants.set_slave_home_override('/h')\n", True),
     ("import agent.secret_scope as ss\nss.set_secret_scope({})\n", True),
     ("def f():\n    from tools.terminal_scope import install_profile_terminal_scope\n"
      "    install_profile_terminal_scope('/h')\n", True),
     ("from tools.terminal_scope import set_terminal_scope\nset_terminal_scope({})\n", True),
     # the replacement, and unrelated names that merely share a spelling
     ("from agent.runtime_scope import bind_profile_scope\nwith bind_profile_scope('/h'):\n    pass\n", False),
-    ("def f(set_hermes_home_override):\n    set_hermes_home_override('/h')\n", False),
-    ("from hermes_constants import reset_hermes_home_override\nreset_hermes_home_override(t)\n", False),
+    ("def f(set_slave_home_override):\n    set_slave_home_override('/h')\n", False),
+    ("from slave_constants import reset_slave_home_override\nreset_slave_home_override(t)\n", False),
     # relative imports inside the package: the AST cannot know the package, so a whole-component tail
     ("from .secret_scope import set_secret_scope\nset_secret_scope({})\n", True),
     ("from . import terminal_scope\nterminal_scope.install_profile_terminal_scope('/h')\n", True),
-    ("from .. import hermes_constants\nhermes_constants.set_hermes_home_override('/h')\n", True),
+    ("from .. import slave_constants\nslave_constants.set_slave_home_override('/h')\n", True),
     ("from .other_secret_scope import set_secret_scope\nset_secret_scope({})\n", False),
     ("from . import set_secret_scope\nset_secret_scope({})\n", False),  # names no module
     # a local object that merely shares the module's name is not the module
-    ("hermes_constants = Fake()\nhermes_constants.set_hermes_home_override('/h')\n", False),
-    ("def f(hermes_constants):\n    hermes_constants.set_hermes_home_override('/h')\n", False),
+    ("slave_constants = Fake()\nslave_constants.set_slave_home_override('/h')\n", False),
+    ("def f(slave_constants):\n    slave_constants.set_slave_home_override('/h')\n", False),
 ])
 def test_detects_direct_setter_calls(src, flagged):
     assert bool(_hits(src)) is flagged
@@ -46,7 +46,7 @@ def test_detects_direct_setter_calls(src, flagged):
     ("gateway/run.py", True),
     ("tui_gateway/model_switch.py", True),
     ("agent/runtime_scope.py", False),  # the one module that turns a scope into profile state
-    ("hermes_constants.py", False),     # the setters' own definitions
+    ("slave_constants.py", False),     # the setters' own definitions
     ("agent/secret_scope.py", False),
     ("tools/terminal_scope.py", False),
 ])
@@ -54,9 +54,9 @@ def test_scope(path, applies):
     assert rule_applies(RULES_BY_ID["HX016"], path) is applies
 
 
-_OLD = ("from hermes_constants import set_hermes_home_override\n\n\n"
-        "def old(home):\n    return set_hermes_home_override(home)\n")
-_NEW_CALL = "\n\ndef new(home):\n    return set_hermes_home_override(home)\n"
+_OLD = ("from slave_constants import set_slave_home_override\n\n\n"
+        "def old(home):\n    return set_slave_home_override(home)\n")
+_NEW_CALL = "\n\ndef new(home):\n    return set_slave_home_override(home)\n"
 
 
 @pytest.mark.parametrize("head, blocks", [
@@ -65,8 +65,8 @@ _NEW_CALL = "\n\ndef new(home):\n    return set_hermes_home_override(home)\n"
     ({"gateway/a.py": _OLD + "\n\ndef unrelated():\n    return 1\n"}, False),  # old call untouched
     ({"gateway/a.py": "def old(home):\n    return home\n"}, False),  # migrating one away
     # editing the function around an existing call does not force its migration
-    ({"gateway/a.py": _OLD.replace("    return set_hermes_home_override(home)\n",
-                                   "    home = str(home)\n    return set_hermes_home_override(home)\n")}, False),
+    ({"gateway/a.py": _OLD.replace("    return set_slave_home_override(home)\n",
+                                   "    home = str(home)\n    return set_slave_home_override(home)\n")}, False),
 ])
 def test_ratchet(tmp_path, capsys, head, blocks):
     repo, _ = _repo(tmp_path)

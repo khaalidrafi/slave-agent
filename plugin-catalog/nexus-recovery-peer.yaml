@@ -7,7 +7,7 @@ description: >-
   delegated child. Disclosure — when an administrator explicitly configures a
   provider/model route and grants the required LLM override capabilities, the
   plugin sends a redacted excerpt of the task and failure to that provider via
-  Hermes ctx.llm. Redaction is best-effort, not a confidentiality guarantee;
+  slave-agent ctx.llm. Redaction is best-effort, not a confidentiality guarantee;
   host routing/fallback may change the actual recipient. Empty routes (the
   default) make no peer requests. The plugin does not replay tools, run shell
   commands, read files independently, store credentials, or send telemetry.

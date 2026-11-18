@@ -1,9 +1,9 @@
 """shop — the storefront toolset: an agent that can read a real shop.
 
-Four tools in a named ``shop`` toolset, a ``hermes shop`` CLI, and a ``/shop``
+Four tools in a named ``shop`` toolset, a ``slave shop`` CLI, and a ``/shop``
 slash command, all over one adapter contract. Registered from a plugin so the
 core stays narrow (the Footprint Ladder): no ``tools/`` module, no
-``_HERMES_CORE_TOOLS`` entry, nothing sent to the model on calls that have no
+``_SLAVE_CORE_TOOLS`` entry, nothing sent to the model on calls that have no
 shop configured.
 
 Enabling it for a chat is config, not code — ``platform_toolsets.telegram``
@@ -117,9 +117,9 @@ def _build_adapter(ctx) -> StorefrontAdapter:
     # is the store's answered filter probe (RestStorefrontAdapter.can_filter_-
     # status): without it, one /shop queue turn costs statuses + 2 reads instead
     # of 2, and a shop owner's API is not a free service.
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
 
-    cache_key = (hermes_home_key(), which, json.dumps(
+    cache_key = (slave_home_key(), which, json.dumps(
         {k: settings.get(k) for k in _SETTING_KEYS}, sort_keys=True, default=str), token)
     cached = _ADAPTERS.get(cache_key)
     if cached is not None:
@@ -296,7 +296,7 @@ _SCHEMAS = {
 }
 
 
-# Filled by register(); read by the ``hermes shop`` CLI handler.
+# Filled by register(); read by the ``slave shop`` CLI handler.
 _CLI_STATE: Dict[str, Any] = {}
 
 
@@ -336,7 +336,7 @@ def _cli_setup(ctx) -> Callable[[argparse.ArgumentParser], None]:
         # One shared --json for every verb: a script or a scheduled job wants the
         # store's rows, not a pretty table, and the fork's rule is that the
         # terminal and the agent read through ONE code path. So the daily call
-        # sheet can be `hermes -p <profile> shop orders --json` instead of a
+        # sheet can be `slave -p <profile> shop orders --json` instead of a
         # second HTTP reader with its own auth bugs.
         def _verb(name: str, help_text: str, *aliases: str) -> argparse.ArgumentParser:
             parser = subs.add_parser(name, aliases=aliases, help=help_text)
@@ -366,7 +366,7 @@ def _cli_setup(ctx) -> Callable[[argparse.ArgumentParser], None]:
 
 
 def _cli_handler(args: argparse.Namespace) -> int:
-    """``hermes shop ...`` — renders the same adapter calls as text.
+    """``slave shop ...`` — renders the same adapter calls as text.
 
     The plugin context is handed to the CLI path by the loader through a
     process-level slot: ``register(ctx)`` stores it here, so a human at a
@@ -375,11 +375,11 @@ def _cli_handler(args: argparse.Namespace) -> int:
     ctx = _CLI_STATE.get("ctx")
     if ctx is None:
         print("shop: the plugin is not loaded in this process; enable it with "
-              "'hermes plugins enable shop'.")
+              "'slave plugins enable shop'.")
         return 2
     action = getattr(args, "shop_action", None)
     if not action:
-        print("usage: hermes shop {queue|orders|order|catalog|health}")
+        print("usage: slave shop {queue|orders|order|catalog|health}")
         return 2
     payload = json.loads(_dispatch(ctx, action, vars(args)))
     if "error" in payload:

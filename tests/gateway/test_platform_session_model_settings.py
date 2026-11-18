@@ -26,8 +26,8 @@ class _Adapter(BasePlatformAdapter):
 def settings_env(tmp_path, monkeypatch):
     import gateway.run as gateway_run
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     runner = object.__new__(GatewayRunner)
     runner.config = GatewayConfig()
     adapter = object.__new__(_Adapter)
@@ -102,13 +102,13 @@ def test_partial_override_falls_back_to_defaults(settings_env):
 
 
 def test_persisted_override_is_shown_before_the_first_turn_after_restart(settings_env, monkeypatch):
-    import hermes_state
+    import slave_state
     from gateway.session import SessionStore
 
     def _no_sqlite():
         raise RuntimeError("SQLite disabled in test")
 
-    monkeypatch.setattr(hermes_state, "SessionDB", _no_sqlite)
+    monkeypatch.setattr(slave_state, "SessionDB", _no_sqlite)
     adapter, runner, source, home = settings_env
     (home / "config.yaml").write_text("model:\n  default: default-model\n  provider: default-provider\n")
     before_restart = SessionStore(sessions_dir=home / "sessions", config=GatewayConfig())

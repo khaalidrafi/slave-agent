@@ -7,7 +7,7 @@
 class TestToolProgressProvenance:
     def test_winning_source_controls_mode_and_intent(self):
         from gateway.display_config import resolve_tool_progress
-        from hermes_cli.plugins import discover_plugins
+        from slave_cli.plugins import discover_plugins
 
         discover_plugins()  # slack's "off" default ships on its PlatformEntry (display_overrides)
         cases = [
@@ -141,7 +141,7 @@ def assert_keeps_platform_display_defaults(cfg):
     platform tier, because the gateway loader merges no DEFAULT_CONFIG (#121230)."""
     from gateway.display_config import _PLATFORM_DEFAULTS, _platform_defaults, resolve_display_setting, resolve_tool_progress
     from gateway.platform_registry import platform_registry
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
 
     # Core-only rows plus every plugin platform that declares display defaults on its PlatformEntry.
     discover_plugins()
@@ -176,7 +176,7 @@ class TestInstallerSeededConfigThroughGatewayResolver:
         from gateway.config import Platform
         from gateway.run import _load_gateway_config, _resolve_gateway_display_bool
 
-        seeded = _load_gateway_config(self._seed_like_installer(tmp_path / "hermes-home"))
+        seeded = _load_gateway_config(self._seed_like_installer(tmp_path / "slave-home"))
         assert "display" in seeded  # the loader fails open to {}, which would pass vacuously
 
         assert_keeps_platform_display_defaults(seeded)
@@ -208,7 +208,7 @@ class TestConfigMigration:
 
     def test_migration_creates_platforms_entries(self, tmp_path, monkeypatch):
         """Old overrides are migrated into display.platforms.<plat>.tool_progress."""
-        import hermes_yaml as yaml
+        import slave_yaml as yaml
 
         config_path = tmp_path / "config.yaml"
         config = {
@@ -222,10 +222,10 @@ class TestConfigMigration:
         }
         config_path.write_text(yaml.safe_dump(config), encoding="utf-8")
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        # Re-import to pick up the new HERMES_HOME
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+        # Re-import to pick up the new SLAVE_HOME
         import importlib
-        import hermes_cli.config as cfg_mod
+        import slave_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg_mod.migrate_config(interactive=False, quiet=True)

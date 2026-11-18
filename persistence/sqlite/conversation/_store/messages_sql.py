@@ -15,7 +15,7 @@ from persistence.sqlite.conversation._store.rules import (
 )
 
 
-logger = logging.getLogger("hermes_state")  # caplog tests pin the origin module's name
+logger = logging.getLogger("slave_state")  # caplog tests pin the origin module's name
 
 
 _INSERT_MESSAGE_SQL = """INSERT INTO messages (session_id, role, content, tool_call_id,

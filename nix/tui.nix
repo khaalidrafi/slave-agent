@@ -1,6 +1,6 @@
-# Self-contained Hermes TUI, compiled by the same recipe as pnpm.
-{ hermesNpmLib, ... }:
-hermesNpmLib.buildPnpmPackage {
+# Self-contained slave-agent TUI, compiled by the same recipe as pnpm.
+{ slaveNpmLib, ... }:
+slaveNpmLib.buildPnpmPackage {
   dirs = [
     "ui-tui"
     "apps/shared"
@@ -19,8 +19,8 @@ hermesNpmLib.buildPnpmPackage {
 
   installPhase = ''
     runHook preInstall
-    mkdir -p $out/lib/hermes-tui
-    cp -r "$TMPDIR/tui-product/." $out/lib/hermes-tui/
+    mkdir -p $out/lib/slave-tui
+    cp -r "$TMPDIR/tui-product/." $out/lib/slave-tui/
     runHook postInstall
   '';
 }

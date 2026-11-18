@@ -11,19 +11,19 @@ import pytest
 
 
 @pytest.fixture
-def hermes_env(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME for each test so jobs don't leak between tests."""
-    home = tmp_path / ".hermes"
+def slave_env(tmp_path, monkeypatch):
+    """Isolate SLAVE_HOME for each test so jobs don't leak between tests."""
+    home = tmp_path / ".slave"
     home.mkdir()
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
 
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
     import importlib
 
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import slave_constants
+    importlib.reload(slave_constants)
     import cron.jobs
     importlib.reload(cron.jobs)
     import cron.scheduler
@@ -31,7 +31,7 @@ def hermes_env(tmp_path, monkeypatch):
     return home
 
 
-def test_create_persists_explicit_empty_allowlist_and_survives_reload(hermes_env):
+def test_create_persists_explicit_empty_allowlist_and_survives_reload(slave_env):
     import importlib
 
     from cron.jobs import create_job
@@ -47,7 +47,7 @@ def test_create_persists_explicit_empty_allowlist_and_survives_reload(hermes_env
     assert reloaded is not None and reloaded["enabled_toolsets"] == []
 
 
-def test_update_path_preserves_explicit_empty_allowlist(hermes_env):
+def test_update_path_preserves_explicit_empty_allowlist(slave_env):
     from cron.jobs import create_job, update_job
 
     job = create_job(prompt="daily digest", schedule="every 1h")
@@ -57,7 +57,7 @@ def test_update_path_preserves_explicit_empty_allowlist(hermes_env):
     assert updated is not None and updated["enabled_toolsets"] == []
 
 
-def test_scheduler_resolves_explicit_empty_as_zero_toolsets(hermes_env):
+def test_scheduler_resolves_explicit_empty_as_zero_toolsets(slave_env):
     from cron.scheduler import _resolve_cron_enabled_toolsets
 
     # [] = zero toolsets, fail closed — not a fall-through to the platform default.
@@ -66,7 +66,7 @@ def test_scheduler_resolves_explicit_empty_as_zero_toolsets(hermes_env):
     assert _resolve_cron_enabled_toolsets({}, {})
 
 
-def test_cronjob_tool_roundtrip_preserves_explicit_empty(hermes_env):
+def test_cronjob_tool_roundtrip_preserves_explicit_empty(slave_env):
     """The reporter's exact path: cronjob create with enabled_toolsets=[] from a session."""
     import json
 

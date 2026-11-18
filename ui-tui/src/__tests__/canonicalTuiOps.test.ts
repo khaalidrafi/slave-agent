@@ -52,12 +52,12 @@ beforeEach(() => {
 
 it('/save renders through session.export and Ink writes the file itself (T10)', async () => {
   const dir = mkdtempSync(join(process.env.TMPDIR || tmpdir(), 'ink-save-'))
-  const saved = process.env.HERMES_HOME
+  const saved = process.env.SLAVE_HOME
 
-  process.env.HERMES_HOME = dir
+  process.env.SLAVE_HOME = dir
 
   try {
-    const exported = { content: '{"messages": []}', filename: 'hermes_owner.json', format: 'json' }
+    const exported = { content: '{"messages": []}', filename: 'slave_owner.json', format: 'json' }
     const { request, slash, sys } = harness({ 'session.export': exported })
 
     slash('/save')
@@ -67,11 +67,11 @@ it('/save renders through session.export and Ink writes the file itself (T10)', 
     expect(request).toHaveBeenCalledWith('session.export', { format: 'json', redact: false, session_id: 'owner' })
     expect(request.mock.calls.some(([method]) => method === 'session.save')).toBe(false)
     const [file] = readdirSync(join(dir, 'sessions', 'saved'))
-    expect(file).toBe('hermes_owner.json') // the owner's name, so Ink and Desktop agree
+    expect(file).toBe('slave_owner.json') // the owner's name, so Ink and Desktop agree
     expect(readFileSync(join(dir, 'sessions', 'saved', file!), 'utf8')).toBe('{"messages": []}')
     expect(notices(sys)).toContain(`conversation saved to: ${join(dir, 'sessions', 'saved', file!)}`)
 
-    const md = { content: '# t', filename: 'hermes_owner.md', format: 'md' }
+    const md = { content: '# t', filename: 'slave_owner.md', format: 'md' }
     const second = harness({ 'session.export': md })
 
     second.slash(`/save md ${join(dir, 'out.md')} redact`)
@@ -80,7 +80,7 @@ it('/save renders through session.export and Ink writes the file itself (T10)', 
     expect(second.request).toHaveBeenCalledWith('session.export', { format: 'md', redact: true, session_id: 'owner' })
     expect(readFileSync(join(dir, 'out.md'), 'utf8')).toBe('# t')
   } finally {
-    process.env.HERMES_HOME = saved
+    process.env.SLAVE_HOME = saved
     rmSync(dir, { force: true, recursive: true })
   }
 })
@@ -225,7 +225,7 @@ it('/rollback restore names the hand-edits it kept, oversize skips and failed de
   slash('/rollback 1')
   await flush()
 
-  // The gateway-backed classic CLI's lines (hermes_cli/gateway_rollback.py), with its --all hint.
+  // The gateway-backed classic CLI's lines (slave_cli/gateway_rollback.py), with its --all hint.
   expect(notices(sys)).toEqual([
     'rollback restored workspace: before write_file',
     '↷ Kept your hand-edits: a.md, b.md, c.md, d.md, e.md (+2 more)\nUse /rollback <N> --all to restore those too.',

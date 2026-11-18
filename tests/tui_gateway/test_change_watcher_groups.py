@@ -71,9 +71,9 @@ def room_watch(tmp_path, monkeypatch):
     home.mkdir()
     (home / "config.yaml").write_text("display: {}\n")
     # The install's shared room store is the active home's ``shared-state.db``, written through its store handle.
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     shared = RoomStore(storage_handle(home), "shared", rooms.default_db_path())
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     monkeypatch.setattr(server, "_served_profile_homes", set())
     monkeypatch.setattr(server, "_cfg_cache", None)
     for name, value in (("_change_sigs", {}), ("_change_checked_at", {}), ("_change_broadcast_at", {}),

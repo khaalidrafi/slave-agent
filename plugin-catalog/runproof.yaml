@@ -3,7 +3,7 @@ title: RunProof
 repo: "https://github.com/Biznomad/runproof"
 sha: "c5a6b2486be3f075a46e9c1744291844fa254fb6"
 maintainer: "Biznomad"
-description: Verify a Hermes cron report and release its exact bytes to a local outbox once per workflow slot.
+description: Verify a slave-agent cron report and release its exact bytes to a local outbox once per workflow slot.
 tier: community
 category: automation
 requires_hermes: ">=0.23.0"

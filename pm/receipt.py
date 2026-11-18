@@ -1,8 +1,8 @@
 """pm sync receipts: the machine-readable surface for venv operations.
 
 Every pm venv sync — startup, plugin install, update rebuild — writes a
-receipt into ``<HERMES_HOME>/logs/update_receipts/`` (the historical dir
-name; ``hermes pm status`` and the desktop IPC read it from there). The
+receipt into ``<SLAVE_HOME>/logs/update_receipts/`` (the historical dir
+name; ``slave pm status`` and the desktop IPC read it from there). The
 updater that once wrote the sibling kind here was removed (FORK.org P0), so
 pm is the only producer; the ``kind`` field still separates records.
 
@@ -115,9 +115,9 @@ def _utc_now_iso() -> str:
 def _receipt_dir() -> Path:
     """The receipts dir — a pure path computation, NO mkdir side
     effect: readers (latest()) must not create state."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    return get_hermes_home() / "logs" / "update_receipts"
+    return get_slave_home() / "logs" / "update_receipts"
 
 
 def begin(kind: str) -> contextvars.Token:
@@ -127,7 +127,7 @@ def begin(kind: str) -> contextvars.Token:
     outer receipt survives the inner finalize.
 
     The receipt is stamped with the ambient update correlation id (the
-    ``hermes update`` this sync belongs to), or None for a standalone
+    ``slave update`` this sync belongs to), or None for a standalone
     sync — the id is what makes the updater's embed selective."""
     return _current.set(
         {
@@ -268,7 +268,7 @@ def last_for_update(update_id: Optional[str], *, consume: bool = False) -> Optio
 
 def latest() -> Optional[dict[str, Any]]:
     """The newest receipt (any kind) — the reader surface for
-    ``hermes pm status`` + the desktop. Pure read: never creates the
+    ``slave pm status`` + the desktop. Pure read: never creates the
     receipts dir."""
     try:
         point = _receipt_dir() / "latest.json"

@@ -8,12 +8,12 @@ import threading
 
 import pytest
 
-from hermes_cli.dashboard_auth import ws_tickets
+from slave_cli.dashboard_auth import ws_tickets
 from tests.bot_desktop_lease import reset_lease
 
 
 def test_install_worker_keeps_the_requested_profile_scope(tmp_path, monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.bot_desktop import install, runtime
     from tui_gateway import server
 
@@ -26,7 +26,7 @@ def test_install_worker_keeps_the_requested_profile_scope(tmp_path, monkeypatch)
     done = threading.Event()
 
     def fake_install(*, ask_password, on_line, timeout_seconds=900.0, claimed=False):
-        seen["home"] = str(get_hermes_home())
+        seen["home"] = str(get_slave_home())
         done.set()
         return 0
 
@@ -91,7 +91,7 @@ def test_a_viewer_opened_from_a_browser_tab_signs_out_with_that_tab(monkeypatch,
     so /api/display/ws closes the viewer when that browser signs out; a native client's carries none."""
     import asyncio
 
-    from hermes_cli import browser_credential, web_server, web_session_sockets
+    from slave_cli import browser_credential, web_server, web_session_sockets
     from tools.bot_desktop import runtime
     from tui_gateway import server
 
@@ -322,16 +322,16 @@ def test_switch_sandbox_image_decides_only_a_pending_switch(monkeypatch, tmp_pat
     otherwise the decision is made through the same module the CLI offer uses and the fresh
     status rides back."""
     from tui_gateway import server
-    from hermes_cli import sandbox_image_switch as sw
+    from slave_cli import sandbox_image_switch as sw
     from tools.bot_desktop import runtime
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(sw, "pending", lambda: None)
     resp = _call(server, "display.switchSandboxImage", {"approve": True})
     assert "error" in resp and "pending" in resp["error"]["message"]
 
     decided = []
-    switch = sw.PendingSwitch("old/base:1", "nousresearch/hermes-sandbox:desktop", ["hermes-a"])
+    switch = sw.PendingSwitch("old/base:1", "nousresearch/hermes-sandbox:desktop", ["slave-a"])
     monkeypatch.setattr(sw, "pending", lambda: switch)
     monkeypatch.setattr(sw, "decide", lambda s, approve: decided.append((s, approve)) or s.target_image)
     monkeypatch.setattr(runtime, "status", lambda profile=None: runtime.DesktopStatus(

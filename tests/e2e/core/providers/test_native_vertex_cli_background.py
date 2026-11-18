@@ -1,6 +1,6 @@
 """Vertex AI through the classic CLI's gateway path: ``/config`` and ``/bg`` (#134889 T6).
 
-A real ``hermes chat --cli`` runs in a private tmux server with ``provider: vertex`` and a synthetic
+A real ``slave chat --cli`` runs in a private tmux server with ``provider: vertex`` and a synthetic
 service-account JSON. The fake (``tests/fakes/providers/vertex.py``) stands in for both Google
 boundaries on loopback: the OAuth token endpoint (the real ``google-auth`` signs and exchanges a
 JWT) and the Vertex OpenAI-compatible endpoint (reached through ``HTTPS_PROXY`` with a test CA).
@@ -30,7 +30,7 @@ pytest.importorskip("google.auth", reason="Vertex minting needs google-auth (CI 
 
 from tests.e2e.core.cli_tmux._classic import kill_home_processes, require_tmux
 from tests.e2e.core.providers._native_helpers import make_home, messages
-from tests.fakes.providers.vertex import PROJECT, REGION, SA_EMBEDDED_PROJECT, FakeVertex, Say, hermes_setup
+from tests.fakes.providers.vertex import PROJECT, REGION, SA_EMBEDDED_PROJECT, FakeVertex, Say, slave_setup
 
 pytestmark = [
     pytest.mark.platforms("linux"),  # cleanup finds this home's processes through /proc
@@ -53,8 +53,8 @@ def _respond(record: dict[str, Any]) -> Say:
 
 
 def _drive(fake: FakeVertex, tmp_path: Path):
-    nh = make_home(tmp_path / "h", **hermes_setup(fake, extra_config={"display": {"interface": "cli"}}))
-    sock = f"hermes-e2e-vertex-{uuid.uuid4().hex[:8]}"
+    nh = make_home(tmp_path / "h", **slave_setup(fake, extra_config={"display": {"interface": "cli"}}))
+    sock = f"slave-e2e-vertex-{uuid.uuid4().hex[:8]}"
     env = nh.env({**fake.child_env(), "TERM": "xterm-256color"})
 
     def tmux(*args: str) -> str:
@@ -82,7 +82,7 @@ def _drive(fake: FakeVertex, tmp_path: Path):
 
     # `-t file` like the sibling Vertex suites: the default toolset trips #109115 (terminal.notify's
     # anyOf schema), tracked in test_native_vertex_tools.py, which is not what this test is about.
-    argv = [sys.executable, "-m", "hermes_cli.main", "chat", "--cli", "--yolo", "-t", "file"]
+    argv = [sys.executable, "-m", "slave_cli.main", "chat", "--cli", "--yolo", "-t", "file"]
     try:
         subprocess.run(["tmux", "-L", sock, "-f", os.devnull, "new-session", "-d", "-s", "p", "-x", "160", "-y", "48",
                         "-c", str(nh.project), *argv], env=env, check=True, timeout=30)
@@ -107,8 +107,8 @@ def _drive(fake: FakeVertex, tmp_path: Path):
         try:
             tmux("kill-server")
         finally:
-            kill_home_processes(nh.hermes_home, lambda: subprocess.run(
-                [sys.executable, "-m", "hermes_cli.main", "gateway", "stop"], cwd=nh.project, env=env,
+            kill_home_processes(nh.slave_home, lambda: subprocess.run(
+                [sys.executable, "-m", "slave_cli.main", "gateway", "stop"], cwd=nh.project, env=env,
                 capture_output=True, text=True, timeout=60, check=False))
     return nh
 

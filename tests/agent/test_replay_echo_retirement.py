@@ -14,7 +14,7 @@ NEW_PLACEHOLDER = "[interrupt: no assistant output for this turn]"
 
 
 def _agent(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     from run_agent import AIAgent
     from persistence_assembly import open_persistence, profile_scope
     return AIAgent(persistence=open_persistence(profile_scope(home=tmp_path)),

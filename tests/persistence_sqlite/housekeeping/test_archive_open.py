@@ -1,4 +1,4 @@
-"""`hermes sessions archive --include-open` on a SQLite backend store: ``session_retention.archive_sessions`` (reversible) may reach never-ended sessions, and the maintenance repository's prune refuses ``include_open`` (#139597)."""
+"""`slave sessions archive --include-open` on a SQLite backend store: ``session_retention.archive_sessions`` (reversible) may reach never-ended sessions, and the maintenance repository's prune refuses ``include_open`` (#139597)."""
 import pytest
 
 from persistence.housekeeping.maintenance import PruneCriteria

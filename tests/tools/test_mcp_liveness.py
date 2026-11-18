@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from hermes_platform import declaration
+from slave_platform import declaration
 from tools.mcp_liveness import parse_liveness
 
 def _decl(tmp_path, *, min_version=None):
@@ -67,7 +67,7 @@ def test_location_is_rooted_rejects_win32_unc_and_device_paths():
     # osf is a parameter, so the win32 branch is testable on any host: UNC and
     # device-prefix paths must never count as rooted (a remote share could serve the
     # runtime file -- and its token -- from off-box).
-    from hermes_platform.declaration import location_is_rooted
+    from slave_platform.declaration import location_is_rooted
     for path in ("\\\\fileserver\\share\\server.json", "\\\\?\\C:\\x\\server.json",
                  "\\\\.\\pipe\\x", "\\\\host\\share"):
         assert location_is_rooted(path, "win32") is False
@@ -93,14 +93,14 @@ def test_parse_liveness_rejects_non_identifier_field_names(tmp_path, field):
         parse_liveness({"kind": "server_json", "path": path, "fields": {field: 'a b"c'}})
 
 def test_invalid_registered_liveness_degrades_to_static(monkeypatch):
-    from hermes_cli import agent_plugins
+    from slave_cli import agent_plugins
     from tools.mcp_liveness import liveness_for
 
     monkeypatch.setattr(agent_plugins, "liveness_for", lambda name: {"kind": "server_json"}, raising=False)
     assert liveness_for("example-server").kind == "static"
 
 def test_live_endpoint_reloads_file_and_registers_token_before_use(tmp_path, monkeypatch, caplog):
-    from hermes_cli import agent_plugins
+    from slave_cli import agent_plugins
     from agent import redact
     from tools.mcp_tool_transport import _live_endpoint
 
@@ -129,7 +129,7 @@ def test_live_endpoint_reloads_file_and_registers_token_before_use(tmp_path, mon
     assert all(secret not in record.getMessage() for record in caplog.records for secret in calls)
 
 def test_runtime_file_without_token_connects_without_authorization(tmp_path, monkeypatch):
-    from hermes_cli import agent_plugins
+    from slave_cli import agent_plugins
     from agent import redact
     from tools.mcp_tool_transport import _live_endpoint
 
@@ -157,10 +157,10 @@ def test_live_endpoint_never_dials_a_hostile_endpoint_path(tmp_path, monkeypatch
     """E2E through the real transport seam: a registered declaration carrying an
     authority-rewriting endpoint_path must make _live_endpoint fail closed, so the
     bearer token is never handed to a socket."""
-    from hermes_cli import agent_plugins
-    from hermes_platform.host import facts
-    from hermes_platform.declaration import AppSpec, Declaration, RequiresSpec
-    from hermes_platform.resolver.app import AppDef, AppLocation
+    from slave_cli import agent_plugins
+    from slave_platform.host import facts
+    from slave_platform.declaration import AppSpec, Declaration, RequiresSpec
+    from slave_platform.resolver.app import AppDef, AppLocation
     from tools.mcp_tool_transport import LiveEndpointUnavailable, _live_endpoint
 
     runtime = tmp_path / "server.json"
@@ -187,7 +187,7 @@ def test_live_endpoint_never_dials_a_hostile_endpoint_path(tmp_path, monkeypatch
 
 
 def test_missing_runtime_file_never_falls_back(tmp_path, monkeypatch):
-    from hermes_cli import agent_plugins
+    from slave_cli import agent_plugins
     from tools.mcp_tool_transport import LiveEndpointUnavailable, _live_endpoint
 
     decl = _decl(tmp_path)
@@ -204,7 +204,7 @@ def test_missing_runtime_file_never_falls_back(tmp_path, monkeypatch):
         declaration.unregister("example-server")
 
 def test_hydrated_error_shape_for_registered_declaration(tmp_path, monkeypatch):
-    from hermes_cli import agent_plugins
+    from slave_cli import agent_plugins
     from tools import mcp_tool, mcp_tool_discovery, mcp_tool_handlers
 
     decl = _decl(tmp_path)
@@ -221,14 +221,14 @@ def test_hydrated_error_shape_for_registered_declaration(tmp_path, monkeypatch):
     assert payload["server"] == "example-server"
     # Static liveness cannot observe the app, so it must not claim the app is not
     # running: the honest state is the missing MCP connection (#119975).
-    assert payload["state"] == "hermes_not_connected"
+    assert payload["state"] == "slave_not_connected"
     assert payload["app"]["name"] == "Example App"
     assert payload["user_action"]
     assert payload["retry"] == "after_user_action"
 
 def test_connected_interactive_session_server_is_offerable_from_a_service_session(tmp_path, monkeypatch):
-    from hermes_cli import agent_plugins
-    from hermes_platform.host import facts
+    from slave_cli import agent_plugins
+    from slave_platform.host import facts
     from tools import mcp_tool_handlers
 
     declaration.register("example-server", _decl(tmp_path))
@@ -240,11 +240,11 @@ def test_connected_interactive_session_server_is_offerable_from_a_service_sessio
         declaration.unregister("example-server")
 
 def test_running_app_with_live_endpoint_reports_the_missing_connection(tmp_path, monkeypatch):
-    """The #119975 report: the app runs and its endpoint answers, only Hermes' MCP connection
+    """The #119975 report: the app runs and its endpoint answers, only slave-agent’ MCP connection
     is missing. That must read as a missing connection with a reconnect action — not as
     \"<slug> is not running. Start <slug>\" for an app that IS running."""
-    from hermes_cli import agent_plugins
-    from hermes_platform.resolver.core import CheckState
+    from slave_cli import agent_plugins
+    from slave_platform.resolver.core import CheckState
     from tools import mcp_liveness
 
     class _RunningApp:
@@ -272,7 +272,7 @@ def test_running_app_with_live_endpoint_reports_the_missing_connection(tmp_path,
         declaration.unregister("example-server")
 
     assert current is not None
-    assert current.state == "hermes_not_connected"
+    assert current.state == "slave_not_connected"
     sentence = mcp_liveness.describe(decl, current.availability, current.state)
     assert "MCP connection is missing" in sentence
     assert "is not running" not in sentence
@@ -281,7 +281,7 @@ def test_running_app_with_live_endpoint_reports_the_missing_connection(tmp_path,
 def test_static_liveness_cannot_claim_the_app_is_not_running(tmp_path, monkeypatch):
     """Static/unknown liveness kinds have no app probe, so their honest state is the missing
     connection — not a verdict that an app they cannot see is stopped (#119975)."""
-    from hermes_cli import agent_plugins
+    from slave_cli import agent_plugins
     from tools import mcp_liveness
 
     monkeypatch.setattr(agent_plugins, "liveness_for", lambda name: {"kind": "static"}, raising=False)
@@ -293,7 +293,7 @@ def test_static_liveness_cannot_claim_the_app_is_not_running(tmp_path, monkeypat
         declaration.unregister("example-server")
 
     assert current is not None
-    assert current.state == "hermes_not_connected"
+    assert current.state == "slave_not_connected"
     sentence = mcp_liveness.describe(decl, current.availability, current.state)
     assert "MCP connection is missing" in sentence
     assert "is not running" not in sentence
@@ -301,8 +301,8 @@ def test_static_liveness_cannot_claim_the_app_is_not_running(tmp_path, monkeypat
 def test_gpu_requirement_hides_a_connected_server_and_says_which_gpu(monkeypatch):
     """A connected server whose `requires.gpu` the host misses is not offered, and its status is a
     state the Plugins tab can carry, with a sentence that names the GPU instead of "Install <app>"."""
-    from hermes_cli import agent_plugins
-    from hermes_platform.host import facts
+    from slave_cli import agent_plugins
+    from slave_platform.host import facts
     from tools import mcp_liveness, mcp_tool_handlers
     from tui_gateway.contracts.tools_mcp_plugins import PluginServerState
 
@@ -329,7 +329,7 @@ def test_describe_prefers_the_plugin_title_over_the_server_slug(tmp_path):
     from tools import mcp_liveness
 
     decl = _decl(tmp_path)
-    sentence = mcp_liveness.describe(decl, None, "hermes_not_connected", display_name="Example Tools")
+    sentence = mcp_liveness.describe(decl, None, "slave_not_connected", display_name="Example Tools")
     assert sentence.startswith("Example Tools")
     assert "Example App" not in sentence
     assert "MCP connection is missing" in sentence

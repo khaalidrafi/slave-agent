@@ -47,7 +47,7 @@ async def test_pending_retry_pins_named_conversation_target(api, owner):
             assert all(response.status == 200 for response in responses)
             assert calls.count('slow') == 1, 'retry executed the same request on the newly mapped session'
             assert await responses[0].json() == await responses[1].json()
-            assert responses[0].headers['X-Hermes-Session-Id'] == responses[1].headers['X-Hermes-Session-Id']
+            assert responses[0].headers['X-Slave-Session-Id'] == responses[1].headers['X-Slave-Session-Id']
         finally:
             release.set()
             await asyncio.gather(*requests, return_exceptions=True)

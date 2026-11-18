@@ -18,9 +18,9 @@ def _build_runtime(tmp_path, monkeypatch):
     from gateway.session import SessionStore
     from gateway.session_authorities import SessionAuthorities
     from gateway import run
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.slave'
     root.mkdir(mode=0o700, exist_ok=True)
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     secondary = root / 'profiles' / 'secondary'
     secondary.mkdir(parents=True, mode=0o700, exist_ok=True)
     if not (secondary / 'config.yaml').exists():

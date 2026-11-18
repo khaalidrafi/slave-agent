@@ -31,11 +31,11 @@ _LATER_FIELDS = ('kanban_json', 'safe_mode', 'ignore_user_config', 'skills_promp
 
 def _home(monkeypatch):
     from gateway import run
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / 'config.yaml').write_text(CONFIG)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     return home
 
 
@@ -98,7 +98,7 @@ async def test_a_reference_stamped_by_an_older_gateway_still_runs_its_session(tm
 
 @pytest.mark.asyncio
 async def test_model_re_stamps_a_reference_an_older_gateway_wrote(tmp_path, monkeypatch):
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     from gateway.session_policy_credentials import PREFIX, policy_identity
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model='m2', target_provider='custom', base_url='http://127.0.0.1:9/v1'))
@@ -127,7 +127,7 @@ async def test_model_re_stamps_a_reference_an_older_gateway_wrote(tmp_path, monk
 async def test_a_non_secret_profile_edit_keeps_the_session_and_its_model_switch(tmp_path, monkeypatch, edit):
     """The profile edit the issue names, then a restart, a resume (its settings refresh re-stamps the
     reference) and the session's next turn read and ``/model``."""
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model='m2', target_provider='custom', base_url='http://127.0.0.1:9/v1'))
     home = _home(monkeypatch)
@@ -159,7 +159,7 @@ def _bound_policy(tmp_path, monkeypatch):
     from gateway.session_policy import bind_launch_key, build_policy
     home = tmp_path / 'profile'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     cfg = {'model': {'provider': 'custom', 'api_key': 'route-token', 'base_url': 'http://127.0.0.1:1234/v1'},
            'mcp_servers': {'docs': {'command': 'docs-mcp', 'env': {'DOCS_TOKEN': 'mcp-token'}}}}
     (home / 'config.yaml').write_text(json.dumps(cfg))
@@ -229,7 +229,7 @@ def _bind(tmp_path, monkeypatch, cfg):
     from gateway.session_policy import bind_launch_key, build_policy
     home = tmp_path / 'profile'
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     (home / 'config.yaml').write_text(json.dumps(cfg))
 
     def owner():
@@ -470,7 +470,7 @@ def test_a_moved_route_never_sends_its_frozen_key_to_the_new_endpoint(tmp_path, 
             else:
                 from agent import auxiliary_client
                 from agent.auxiliary_task_config import session_auxiliary_scope
-                from hermes_cli import runtime_provider
+                from slave_cli import runtime_provider
                 config = frozen.config(authority)
                 with runtime_provider.frozen_runtime_config(config), session_auxiliary_scope(config['auxiliary']):
                     client, model = auxiliary_client.get_text_auxiliary_client('compression')

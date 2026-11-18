@@ -1,6 +1,6 @@
 """A requested graceful restart waits for the gateway to go idle, serving normally meanwhile.
 
-SIGUSR1, ``/restart``, ``hermes gateway restart`` and the updater's ``pause-for-update`` used to put
+SIGUSR1, ``/restart``, ``slave gateway restart`` and the updater's ``pause-for-update`` used to put
 the gateway in ``draining`` at once: every new turn, continuation, process/watch notice and
 background-delegation completion was refused ``runtime_draining`` for up to
 ``agent.restart_after_turn_timeout``, and at that cap ``stop()`` interrupted whatever was still live

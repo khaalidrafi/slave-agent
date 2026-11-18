@@ -1,6 +1,6 @@
 """Seeding and comparison helpers for the hosted-room attachment backend tests.
 
-``make_hosted`` builds a SQLite backend over a real profile home under the test's HERMES_HOME (the contract scopes live under a fake root, so their ``'shared'`` file is not writable here), with that profile's ``state.db`` as the ``'profile'`` file and the install root's ``shared-state.db`` as the ``'shared'`` file. A parity case seeds the placement's file through the room verbs (``seed_room``), copies it (with its attachment directory) to a twin path in another folder, runs main's function on the twin and the backend verb on the original, and compares the outcomes and what each side left in its tables.
+``make_hosted`` builds a SQLite backend over a real profile home under the test's SLAVE_HOME (the contract scopes live under a fake root, so their ``'shared'`` file is not writable here), with that profile's ``state.db`` as the ``'profile'`` file and the install root's ``shared-state.db`` as the ``'shared'`` file. A parity case seeds the placement's file through the room verbs (``seed_room``), copies it (with its attachment directory) to a twin path in another folder, runs main's function on the twin and the backend verb on the original, and compares the outcomes and what each side left in its tables.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence import ProfileScope
 from persistence.sqlite import SQLiteBackend
 from persistence.sqlite._backend import SQLiteStore
@@ -45,12 +45,12 @@ class Hosted:
 
 
 def make_hosted(profile: str | None = "profile-a") -> Hosted:
-    """A backend over ``<HERMES_HOME>/profiles/<profile>``, or over the install root itself (the default profile,
+    """A backend over ``<SLAVE_HOME>/profiles/<profile>``, or over the install root itself (the default profile,
     whose ``state.db`` sits beside ``shared-state.db``) when ``profile`` is None."""
-    home = get_hermes_home() if profile is None else get_hermes_home() / "profiles" / profile
+    home = get_slave_home() if profile is None else get_slave_home() / "profiles" / profile
     home.mkdir(parents=True, exist_ok=True)
     scope = ProfileScope(profile_dir=home, name=profile or "default")
-    backend = SQLiteBackend({scope.hermes_home_key: home / "state.db"})
+    backend = SQLiteBackend({scope.slave_home_key: home / "state.db"})
     store = backend.open(scope)
     store.ready()
     return Hosted(backend=backend, scope=scope, store=store, files=HostedFiles(store))

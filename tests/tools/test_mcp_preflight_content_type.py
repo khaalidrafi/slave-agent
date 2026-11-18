@@ -133,7 +133,7 @@ def test_non_mcp_content_type_raises(content_type):
 
 
 def test_non_mcp_content_type_error_masks_url_query_credentials():
-    """The error text reaches the model and ``hermes mcp test``: a ``?token=`` key must not ride along (#133713)."""
+    """The error text reaches the model and ``slave mcp test``: a ``?token=`` key must not ride along (#133713)."""
     secret = "s3cr3t" + "Value" + "0123456789"
     with _serve(_handler(status=200, content_type="text/html")) as base:
         with pytest.raises(NonMcpEndpointError) as exc_info:
@@ -191,7 +191,7 @@ def test_oauth_server_html_response_raises_without_skip():
     Real-world example: Hospitable's MCP server
     (``https://mcp.hospitable.com/mcp``) returns ``200 text/html`` to an
     unauthenticated httpx HEAD request.  With the guard removed, connecting
-    via ``hermes mcp add/login`` raises ``NonMcpEndpointError`` before the
+    via ``slave mcp add/login`` raises ``NonMcpEndpointError`` before the
     OAuth browser flow can begin.  With the guard in place, 63 tools are
     discovered and the server connects successfully.
     """

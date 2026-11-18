@@ -44,7 +44,7 @@ from typing import Any, Callable, Iterable
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(REPO_ROOT))
-from hermes_agent.compat.paths import current_path, original_path
+from slave_agent.compat.paths import current_path, original_path
 
 SUPPRESS_MARKER = re.compile(r"#\s*windows-footgun\s*:\s*ok\b", re.IGNORECASE)
 
@@ -221,7 +221,7 @@ FOOTGUNS: list[Footgun] = [
         ),
         fix=(
             "Use psutil.pid_exists(pid) (psutil is a core dependency). "
-            "Or gateway.status._pid_exists(pid) for the hermes wrapper "
+            "Or gateway.status._pid_exists(pid) for the slave wrapper "
             "with a stdlib fallback."
         ),
     ),
@@ -867,7 +867,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument(
         "--all",
         action="store_true",
-        help="Scan the full repository (hermes_cli/, gateway/, tools/, cron/, etc.).",
+        help="Scan the full repository (slave_cli/, gateway/, tools/, cron/, etc.).",
     )
     p.add_argument(
         "--diff",
@@ -910,7 +910,7 @@ def main(argv: list[str]) -> int:
         # Scan main Python packages + scripts
         roots = [
             REPO_ROOT / current_path(top)
-            for top in ("hermes_cli", "gateway", "tools", "cron", "agent", "plugins", "scripts", "acp_adapter")
+            for top in ("slave_cli", "gateway", "tools", "cron", "agent", "plugins", "scripts", "acp_adapter")
         ]
         roots = [r for r in roots if r.exists()]
     elif args.diff:

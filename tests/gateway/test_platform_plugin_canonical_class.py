@@ -1,6 +1,6 @@
 """Plugins whose own code imports siblings by absolute path must register by that same path.
 
-The loader executes a bundled platform package under a synthetic ``hermes_plugins.platforms__<name>``
+The loader executes a bundled platform package under a synthetic ``slave_plugins.platforms__<name>``
 name. A package whose adapter (or standalone sender / tools) imports ``plugins.platforms.<name>.*``
 would then hold two adapter classes: the registry's and the one the rest of the code sees
 (``get_active()`` singletons, isinstance checks, monkeypatches).
@@ -14,7 +14,7 @@ import pytest
 @pytest.mark.parametrize("platform, cls", [("signal", "SignalAdapter")])
 def test_registry_factory_is_the_canonical_adapter_class(platform, cls):
     from gateway.platform_registry import platform_registry
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
 
     discover_plugins()
     entry = platform_registry.get(platform)

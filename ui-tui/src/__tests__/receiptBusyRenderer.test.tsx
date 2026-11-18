@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import { useStore } from '@nanostores/react'
 import React, { useEffect } from 'react'
 import { expect, it, vi } from 'vitest'
@@ -24,9 +24,9 @@ function deferred() {
 
 function mount() {
   // macOS: tmpdir() is /var/..., a symlink to /private/var; captureDestination() realpaths
-  // HERMES_HOME, so receipts must carry the canonical home or target_profile_home never matches.
+  // SLAVE_HOME, so receipts must carry the canonical home or target_profile_home never matches.
   const home = realpathSync(mkdtempSync(join(tmpdir(), 'ink-receipt-busy-')))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
 
   const info = { model: 'test', skills: {}, tools: {}, profile_name: 'default',

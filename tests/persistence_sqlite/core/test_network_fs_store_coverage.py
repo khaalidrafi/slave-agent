@@ -1,4 +1,4 @@
-"""Every Hermes SQLite store shares the network-filesystem journal policy (one helper, not per-store copies).
+"""Every slave-agent SQLite store shares the network-filesystem journal policy (one helper, not per-store copies).
 
 Converting state.db alone left ``cron/executions.db``, ``cron/deliveries.db``, ``response_store.db`` and
 ``projects.db`` in WAL. Each store opens through ``sqlite_support.apply_wal_with_fallback`` (directly or via
@@ -18,7 +18,7 @@ from persistence.sqlite.conversation._store.sessions import create_session
 def network_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     (home / "cron").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: False)
     monkeypatch.setattr(sqlite_support, "path_on_cross_vm_fs", lambda p: False)
     monkeypatch.setattr(sqlite_support, "_detect_network_fs", lambda directory, *a, **k: True, raising=False)

@@ -3,7 +3,7 @@ title: Barehand
 repo: https://github.com/mrv777/barehand
 sha: 20b74e03a085a67d59f4287d0e61b5fed6bbb217
 subdir: barehand
-description: "Lets an agent operate a machine with no OS, network or agent on it (firmware menus, boot loaders, installers, rescue shells such as grub>) through the screen and keyboard alone. It provides a computer_use provider for QEMU virtual machines over QMP (or a VNC console), a barehand_machine tool, a hermes barehand CLI, a skill and a flight recorder. In recorded runs a model installed Debian 13 from the network installer (it repaired a grub> prompt on first boot from the installer's rescue mode) and Ubuntu Server 26.04 (it finished the stalled installer by hand) on blank aarch64 machines. `hermes barehand demo` replays a bundled recording. Evidence is in the README and docs/results. Disclosure — `hermes barehand up` starts local qemu-system/qemu-img processes that keep running after Hermes exits until `hermes barehand down`. The guest has QEMU user-mode (NAT) networking and can reach whatever the host can. QMP is unauthenticated on a 0700 unix socket (or a loopback TCP port fallback). The optional VNC transport is unencrypted. The flight recorder is on by default and stores screenshots and key chords (typed text as length only) under the plugin data dir. `barehand_machine` runs status, snapshot_list, snapshot_save under a new name, calibrate_text (types a fixed ASCII test line) and wait_for_text without an approval prompt."
+description: "Lets an agent operate a machine with no OS, network or agent on it (firmware menus, boot loaders, installers, rescue shells such as grub>) through the screen and keyboard alone. It provides a computer_use provider for QEMU virtual machines over QMP (or a VNC console), a barehand_machine tool, a slave barehand CLI, a skill and a flight recorder. In recorded runs a model installed Debian 13 from the network installer (it repaired a grub> prompt on first boot from the installer's rescue mode) and Ubuntu Server 26.04 (it finished the stalled installer by hand) on blank aarch64 machines. `slave barehand demo` replays a bundled recording. Evidence is in the README and docs/results. Disclosure — `slave barehand up` starts local qemu-system/qemu-img processes that keep running after slave-agent exits until `slave barehand down`. The guest has QEMU user-mode (NAT) networking and can reach whatever the host can. QMP is unauthenticated on a 0700 unix socket (or a loopback TCP port fallback). The optional VNC transport is unencrypted. The flight recorder is on by default and stores screenshots and key chords (typed text as length only) under the plugin data dir. `barehand_machine` runs status, snapshot_list, snapshot_save under a new name, calibrate_text (types a fixed ASCII test line) and wait_for_text without an approval prompt."
 maintainer: mrv777
 tier: community
 category: tools
@@ -23,7 +23,7 @@ screenshots:
 - https://raw.githubusercontent.com/mrv777/barehand/20b74e03a085a67d59f4287d0e61b5fed6bbb217/barehand/docs/img/flight-recorder.png
 - https://raw.githubusercontent.com/mrv777/barehand/20b74e03a085a67d59f4287d0e61b5fed6bbb217/barehand/docs/img/debian-installed-login.png
 known_issues:
-- 'With `plugins.isolation: host`, Hermes skips register_cli_command, so the `hermes barehand ...` commands are
+- 'With `plugins.isolation: host`, slave-agent skips register_cli_command, so the `slave barehand ...` commands are
   unavailable. The default mode (`in_process`) registers them. The plugin was not run in host mode, so whether the
   barehand_machine tool and the computer_use provider load there is unverified. Use the default.'
 - Only QEMU guests on an Apple Silicon Mac were run. The Linux KVM and Intel Mac paths are covered by unit tests
@@ -40,18 +40,18 @@ known_issues:
 - A slowly changing screen (period near 0.8 s) can be reported as a confirmed change.
 - You supply QEMU, UEFI firmware (edk2/OVMF) and the ISO; Barehand installs and downloads nothing. The model must
   receive tool-result images.
-- Every key, type and click is a Hermes approval prompt; grant a session scope for long runs. Unattended (cron or
+- Every key, type and click is a slave-agent approval prompt; grant a session scope for long runs. Unattended (cron or
   gateway) use needs approvals granted beforehand.
-- 'QEMU receives an environment allowlist (PATH, HOME, TMPDIR, LANG, LC_* and similar), never Hermes'' environment.
+- 'QEMU receives an environment allowlist (PATH, HOME, TMPDIR, LANG, LC_* and similar), never slave-agent’' environment.
   The guest has QEMU user-mode networking. QMP is unauthenticated: a unix socket in a 0700 directory by default,
   loopback TCP as a fallback, non-loopback only with allow_remote. The optional VNC transport is unencrypted (weak
   DES password, keystrokes in clear), contacts only the configured host, and needs allow_remote for a non-loopback
   host.'
 - 'The flight recorder is on by default: screenshots and key chords under the plugin data dir (mode 0600). Typed
-  text is off by default (length only). `record: false` disables the recorder and `hermes barehand recordings purge
+  text is off by default (length only). `record: false` disables the recorder and `slave barehand recordings purge
   --yes` deletes recordings.'
 - One pre_tool_call hook only escalates reset, power_off, eject_media, send_ctrl_alt_del, snapshot_load, snapshot_delete
-  and a snapshot_save that overwrites an existing snapshot to Hermes' approval prompt. status, snapshot_list, snapshot_save
+  and a snapshot_save that overwrites an existing snapshot to slave-agent’ approval prompt. status, snapshot_list, snapshot_save
   under a new name, calibrate_text (types the 94 printable ASCII characters at a Linux prompt) and wait_for_text do not ask.
 capabilities:
   provides_tools:

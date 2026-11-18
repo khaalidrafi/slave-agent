@@ -2,7 +2,7 @@ name: mission-control
 title: Mission Control
 repo: https://github.com/rohitdanda/hermes-mission-control
 sha: 3f0b984d653732c7b607db1be99f24cd090b4e79
-description: Live mission-control dashboard for Hermes Desktop — tool waterfall, parallel subagent cards, token and estimated-cost meters with a prompt-cache badge, plus budget and possible-loop alerts, streamed in real time. Read-only; nothing leaves the machine.
+description: Live mission-control dashboard for slave-agent Desktop — tool waterfall, parallel subagent cards, token and estimated-cost meters with a prompt-cache badge, plus budget and possible-loop alerts, streamed in real time. Read-only; nothing leaves the machine.
 maintainer: rohitdanda
 tier: community
 category: desktop

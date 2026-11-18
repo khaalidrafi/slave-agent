@@ -1578,7 +1578,7 @@ def _rows_to_conversation(holder: StoreHolder, rows, *, session_id: str, include
     reactions); reasoning restored on assistant rows only; ``api_content`` VERBATIM (no sanitize/strip)
     so replay keeps the provider prompt cache byte-stable."""
     from persistence.sqlite.conversation._store.core import _strip_background_review_harness, _strip_stale_tool_call_markers
-    # Runtime import avoids the transcript_repair -> hermes_state_messages module cycle.
+    # Runtime import avoids the transcript_repair -> slave_state_messages module cycle.
     from persistence.sqlite.conversation._store.transcript_repair import transcript_row_snapshot
     # Only the unaddressed live replay gets the digest: row-addressed loaders (include_row_ids) keep the
     # legacy resumed-dict path, whose rewrite never re-writes columns the projection does not decode

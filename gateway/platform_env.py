@@ -119,7 +119,7 @@ def env_reply_mode(config: GatewayConfig, platform: Platform, env: str) -> None:
         config.platforms.setdefault(platform, PlatformConfig()).reply_to_mode = mode
 
 
-# ``partial`` (not a closure) so ``hermes_cli.profile_channels`` can read the env names a step owns
+# ``partial`` (not a closure) so ``slave_cli.profile_channels`` can read the env names a step owns
 # from ``step.keywords`` (``env`` / ``env_base``).
 def home_step(platform: Platform, env_base: str, *, strip: bool = False):
     return partial(env_home_channel, platform=platform, env_base=env_base, strip=strip)
@@ -192,11 +192,11 @@ def bundled_sibling(directory: str, stem: str = "gateway_env") -> Any:
     from gateway.config import Platform
     if directory not in Platform._scan_bundled_plugin_platforms()[0]:
         return None
-    from hermes_cli.plugins import get_bundled_plugins_dir
+    from slave_cli.plugins import get_bundled_plugins_dir
     path = get_bundled_plugins_dir() / "platforms" / directory / f"{stem}.py"
     if not path.is_file():
         return None
-    spec = importlib.util.spec_from_file_location(f"_hermes_bundled_{stem}_{directory}", path)
+    spec = importlib.util.spec_from_file_location(f"_slave_bundled_{stem}_{directory}", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -205,7 +205,7 @@ def bundled_sibling(directory: str, stem: str = "gateway_env") -> Any:
 def bundled_env_rows(name: str) -> Optional[tuple]:
     """``(env_overrides, env_enable_credentials)`` a BUNDLED platform plugin declares, read without
     the plugin. For when its registry entry is absent: discovery suppressed (a parked profile's
-    config read, ``HERMES_SAFE_MODE``) or the plugin disabled. These rows were core's own table, and
+    config read, ``SLAVE_SAFE_MODE``) or the plugin disabled. These rows were core's own table, and
     the duplicate-credential guard and the explicit-disable warning still need them then."""
     directory, prefix = _BUNDLED_ENV_SIBLINGS.get(name, (name, ""))
     module = bundled_sibling(directory)

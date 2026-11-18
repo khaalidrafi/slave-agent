@@ -34,7 +34,7 @@ def _adapter(channel_id: str) -> SlackAdapter:
             {"id": channel_id, "is_im": True, "user": "U_ALICE"} if channel_id.startswith("D")
             else {"id": channel_id, "name": "ops"})})
     a._bot_user_id = "U_BOT"
-    a._bot_display_name = "HermesBot"
+    a._bot_display_name = "SlaveBot"
     a._running = True
     a.handle_message = AsyncMock()
     return a
@@ -154,10 +154,10 @@ async def test_concurrent_slashes_reach_the_gateway_in_arrival_order():
 
     adapter._app.client.users_info = AsyncMock(side_effect=users_info)
     base = {"command": "/hermes", "user_id": "U_ALICE", "channel_id": "C_OPS", "team_id": "T1"}
-    first = asyncio.create_task(adapter._handle_hermes_command(AsyncMock(), {**base, "text": "queue first"}))
+    first = asyncio.create_task(adapter._handle_slave_command(AsyncMock(), {**base, "text": "queue first"}))
     await asyncio.wait_for(entered.wait(), 5)
-    second = asyncio.create_task(adapter._handle_hermes_command(AsyncMock(), {**base, "text": "queue second"}))
-    await asyncio.wait_for(adapter._handle_hermes_command(AsyncMock(), {**base, "text": "stop"}), 5)
+    second = asyncio.create_task(adapter._handle_slave_command(AsyncMock(), {**base, "text": "queue second"}))
+    await asyncio.wait_for(adapter._handle_slave_command(AsyncMock(), {**base, "text": "stop"}), 5)
     handed = lambda: [c.args[0].text for c in adapter.handle_message.await_args_list]
     assert handed() == ["/stop"]
     release.set()

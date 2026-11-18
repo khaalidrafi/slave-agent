@@ -37,10 +37,10 @@ def test_the_delegation_ledger_records_and_reads_without_a_store_file(no_store_f
 
 
 def test_a_worktree_lock_names_the_profile_home_of_a_store_without_a_file(no_store_file):
-    from hermes_cli.worktree_ops import _retained_store, _retention_store
-    from hermes_constants import get_hermes_home
+    from slave_cli.worktree_ops import _retained_store, _retention_store
+    from slave_constants import get_slave_home
     from persistence_assembly import open_persistence, profile_scope
-    scope = profile_scope(home=get_hermes_home())
+    scope = profile_scope(home=get_slave_home())
     assert _retention_store() == scope.profile_dir
     assert _retained_store(str(scope.profile_dir)) is None
     with open_persistence(scope, eager=True):
@@ -50,7 +50,7 @@ def test_a_worktree_lock_names_the_profile_home_of_a_store_without_a_file(no_sto
 
 def test_setting_the_journal_mode_refuses_a_store_without_a_file(no_store_file, capsys):
     from types import SimpleNamespace
-    from hermes_cli.sessions_cmd_journal_mode import cmd_set_journal_mode
+    from slave_cli.sessions_cmd_journal_mode import cmd_set_journal_mode
     assert cmd_set_journal_mode(SimpleNamespace(mode="wal", db=None, force=False)) == 1
     assert "needs a file-backed session store" in capsys.readouterr().out
 
@@ -59,8 +59,8 @@ def test_the_runner_keeps_one_handle_per_profile_without_a_store_file(tmp_path, 
     import threading
     from gateway.run import GatewayRunner, _SESSION_DB_UNPINNED
     from gateway.session_db_recovery import RecoverableHandleCache
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "root"))
+    from slave_constants import reset_slave_home_override, set_slave_home_override
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "root"))
     runner = object.__new__(GatewayRunner)
     runner._session_db_pinned = _SESSION_DB_UNPINNED
     runner._session_db_handles = {}
@@ -71,11 +71,11 @@ def test_the_runner_keeps_one_handle_per_profile_without_a_store_file(tmp_path, 
     handles = {}
     try:
         for name in ("alpha", "beta"):
-            token = set_hermes_home_override(tmp_path / name)
+            token = set_slave_home_override(tmp_path / name)
             try:
                 handles[name] = runner._open_session_db_for_active_scope()
             finally:
-                reset_hermes_home_override(token)
+                reset_slave_home_override(token)
         assert handles["alpha"] is not handles["beta"]
         assert handles["alpha"].scope.profile_dir != handles["beta"].scope.profile_dir
     finally:

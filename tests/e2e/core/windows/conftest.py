@@ -18,5 +18,5 @@ def _stop_auto_started_gateways():
         if not H.owned_processes(home, since=since):
             continue
         with contextlib.suppress(Exception):
-            H.hermes(home, "gateway", "stop", timeout=60)
+            H.slave(home, "gateway", "stop", timeout=60)
         H.kill_owned(home, since=since)

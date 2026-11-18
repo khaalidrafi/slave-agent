@@ -1,7 +1,7 @@
 """A managed worker's activity heartbeat must not reach the synchronous persistence RPC on
 Relay's event loop (#139029).
 
-Relay drives Hermes' provider and tool callbacks synchronously on its private ``asyncio.run``
+Relay drives slave-agent’ provider and tool callbacks synchronously on its private ``asyncio.run``
 loop, so ``_touch_activity`` inside them runs with a loop on the thread. In a managed worker
 ``_session_db`` is a ``RuntimeSessionStore`` whose ``WorkerRPC`` refuses on-loop calls
 (``synchronous_rpc_on_event_loop``) and the refusal is sticky: every later write of the turn
@@ -51,8 +51,8 @@ class _OwnerReplies:
 
 @pytest.fixture()
 def relay_turn(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile"))
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "profile"))
+    monkeypatch.delenv("SLAVE_KANBAN_TASK", raising=False)
     relay_runtime._reset_for_tests()
     lease = relay_runtime.SESSION_COORDINATOR.acquire_conversation(
         profile_key=relay_runtime.current_profile_key(), session_id=SESSION, platform="cli",

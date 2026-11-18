@@ -24,11 +24,11 @@ def test_is_zeroed_state_db_and_quarantine(tmp_path):
 
 
 def test_the_backend_and_the_backup_share_one_zeroed_file_detector():
-    import hermes_cli.backup
+    import slave_cli.backup
     import sqlite_support
 
-    assert dbfile_module.is_zeroed_sqlite_file is hermes_cli.backup.is_zeroed_sqlite_file
-    assert hermes_cli.backup.is_zeroed_sqlite_file is sqlite_support.is_zeroed_sqlite_file
+    assert dbfile_module.is_zeroed_sqlite_file is slave_cli.backup.is_zeroed_sqlite_file
+    assert slave_cli.backup.is_zeroed_sqlite_file is sqlite_support.is_zeroed_sqlite_file
 
 
 @pytest.mark.skipif(not hasattr(__import__("os"), "mkfifo"), reason="POSIX only")
@@ -40,7 +40,7 @@ def test_is_zeroed_never_probes_special_files(tmp_path):
     """
     import os
 
-    from hermes_cli.backup import is_zeroed_sqlite_file
+    from slave_cli.backup import is_zeroed_sqlite_file
 
     fifo = tmp_path / "state.db"
     os.mkfifo(fifo)
@@ -51,7 +51,7 @@ def test_is_zeroed_never_probes_special_files(tmp_path):
 
 
 def test_holder_opens_fresh_after_zeroed_quarantine(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     db.write_bytes(bytes(4096))
 
@@ -72,7 +72,7 @@ def test_holder_quarantines_page_zero_clobber_before_open(tmp_path, monkeypatch)
     """#102198: preserve a non-SQLite page 0 instead of opening degraded."""
     import sqlite3
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     clobbered = (b"bg_032237_0e4ce7A" * 256)[:4096]
     db.write_bytes(clobbered)
@@ -103,7 +103,7 @@ def test_holder_quarantines_page_zero_clobber_before_open(tmp_path, monkeypatch)
 
 def test_is_zeroed_state_db_zero_byte_quarantine(tmp_path, monkeypatch):
     """#97568: a 0-byte file must be detected as zeroed and quarantined."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     db.write_bytes(b"")  # 0-byte truncated file
     assert dbfile_module.is_zeroed_state_db(db) is True
@@ -268,7 +268,7 @@ def test_concurrent_openers_zero_byte_startup_serialization(tmp_path, monkeypatc
     """
     import threading
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
 
     errors = [None, None]
@@ -310,9 +310,9 @@ def test_live_connection_0_byte_not_quarantined_in_process(tmp_path, monkeypatch
     """#97580: A live 0-byte connection tracked in this process must not be
     quarantined by is_zeroed_state_db / a store holder open.
     """
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
 
     # Create a live tracked 0-byte connection

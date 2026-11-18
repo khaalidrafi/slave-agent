@@ -1,4 +1,4 @@
-"""Which delegation backend Hermes uses: the public API behind a ``/delegation`` command.
+"""Which delegation backend slave-agent uses: the public API behind a ``/delegation`` command.
 
 ``delegation.backend`` in config.yaml is the saved choice. A session routes on the backend its ``delegate_task``
 schema was built from (``agent._delegation_backend``, captured with its tools and pinned with them to the session
@@ -95,7 +95,7 @@ def set_global_backend(name: str, *, session_key: str = "", apply_now: bool = Fa
     from there (an opt-in prompt-cache break); otherwise sessions pick the switch up from ``/new``. Raises ``PermissionError`` on a package-manager-managed
     install (its config.yaml is not ours to write) and ``ValueError`` (with the reason) for a backend that cannot
     run or an ``apply_now`` without a session, before anything is written."""
-    from hermes_cli.config import (
+    from slave_cli.config import (
         atomic_config_write, format_managed_message, get_config_path, is_managed, read_user_config_raw,
     )
     if is_managed():
@@ -120,7 +120,7 @@ def set_global_backend(name: str, *, session_key: str = "", apply_now: bool = Fa
 
 def _current_session_key(agent: Any) -> str:
     from gateway.session_context import get_session_env
-    return get_session_env("HERMES_SESSION_KEY", "") or str(getattr(agent, "session_id", "") or "")
+    return get_session_env("SLAVE_SESSION_KEY", "") or str(getattr(agent, "session_id", "") or "")
 
 
 def apply_requested_tool_rebuild(agent: Any) -> bool:
@@ -135,7 +135,7 @@ def apply_requested_tool_rebuild(agent: Any) -> bool:
         if key not in _rebuild_requests:
             return False
         _rebuild_requests.discard(key)
-    from hermes_cli.observability.shared_metrics_efficiency import record_cache_break
+    from slave_cli.observability.shared_metrics_efficiency import record_cache_break
     from tools.mcp_tool_agent import refresh_agent_mcp_tools
     before = getattr(agent, "tools", None)
     refresh_agent_mcp_tools(agent, quiet_mode=True, content_aware=True)  # adopts the saved backend, re-pins a change

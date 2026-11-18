@@ -22,7 +22,7 @@ def test_two_members_in_one_batch_window_stay_separate_turns_with_their_own_acto
 
     async def _run():
         for update_id, (uid, name, body) in enumerate(((111, "Alice", "save my notes"), (222, "Bob", "save mine too"))):
-            text = f"@hermes_bot {body}"
+            text = f"@slave_bot {body}"
             message = _group_message(text, from_user_id=uid, from_user_name=name, entities=[_mention_entity(text)])
             await adapter._handle_text_message(SimpleNamespace(update_id=update_id, message=message, effective_message=None), None)
         for _ in range(50):
@@ -50,9 +50,9 @@ def test_two_members_long_commands_never_coalesce_into_the_first_sender():
 
     async def _run():
         for uid, name in ((111, "Alice"), (222, "Bob")):
-            text = ("/queue@hermes_bot " + name * 1500)[:4096]
+            text = ("/queue@slave_bot " + name * 1500)[:4096]
             message = _group_message(text, from_user_id=uid, from_user_name=name,
-                                     entities=[_bot_command_entity(text, "/queue@hermes_bot")])
+                                     entities=[_bot_command_entity(text, "/queue@slave_bot")])
             await adapter._handle_command(SimpleNamespace(update_id=uid, message=message, effective_message=None), None)
         for _ in range(50):
             if not adapter._pending_text_batch_tasks and len(flushed) >= 2:

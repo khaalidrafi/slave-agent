@@ -1,4 +1,4 @@
-"""Backend-neutral persistence contracts for Hermes.
+"""Backend-neutral persistence contracts for Slave.
 
 This package defines what the application is allowed to ask persistence to do: identity primitives, the profile scope, an error taxonomy, capability declarations, and (in sibling capability modules) the 22 repository protocols a store handle carries as named attributes, among 34 ``Protocol`` classes, with their typed domain records. It never imports a database driver, SQL type, or backend package; backends implement these contracts elsewhere.
 

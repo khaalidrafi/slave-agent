@@ -178,7 +178,7 @@ def _bypass_policy(params, *, private_secrets, client_local=False):
     block or shape the session; there is no default model to inherit, so one must be explicit."""
     import copy
     from gateway.session_policy import build_policy
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from slave_cli.config_defaults import DEFAULT_CONFIG
     if not params.get('model'):
         raise AuthorityRefusal('invalid_params', field='model',
                                detail='a bypass launch has no profile to inherit a model from')
@@ -220,21 +220,21 @@ def profile_env_scope(home=None):
 
 def project_plugins_warning(policy):
     """The plain notice for a session whose client opted into project plugins (its forwarded
-    ``HERMES_ENABLE_PROJECT_PLUGINS``) in a folder that has some: the gateway never loads them."""
+    ``SLAVE_ENABLE_PROJECT_PLUGINS``) in a folder that has some: the gateway never loads them."""
     from pathlib import Path
     from utils import is_truthy_value
     # The client's folder is a path on this host only for a client the gateway proved local.
     env = policy.client_env() if policy is not None and not policy.client_env_remote else None
-    folder = Path(policy.cwd) / '.hermes' / 'plugins' if env else None
-    if not env or not is_truthy_value(env.get('HERMES_ENABLE_PROJECT_PLUGINS')) or not folder.is_dir():
+    folder = Path(policy.cwd) / '.slave' / 'plugins' if env else None
+    if not env or not is_truthy_value(env.get('SLAVE_ENABLE_PROJECT_PLUGINS')) or not folder.is_dir():
         return None
     try:
         if not any(folder.iterdir()):
             return None
     except OSError:  # an unlistable folder skips the optional notice, never the session
         return None
-    return (f'project plugins in {folder} are not loaded: the gateway that runs Hermes sessions does not '
-            'load ./.hermes/plugins, so HERMES_ENABLE_PROJECT_PLUGINS has no effect here.')
+    return (f'project plugins in {folder} are not loaded: the gateway that runs slave-agent sessions does not '
+            'load ./.slave/plugins, so SLAVE_ENABLE_PROJECT_PLUGINS has no effect here.')
 
 
 def create_local_session(authority, actor, params, *, trusted_policy=None, trusted_secrets=None, skills_prompt=None,
@@ -344,7 +344,7 @@ def stage_local_session(authority, actor, params, *, trusted_policy=None, truste
                 sort_keys=True))
         marks = {LOCAL_DESKTOP_CHAT: True} if desktop_local and policy.source == 'gui' else {}
         if policy.model is None:
-            from hermes_cli.anon_auth import GUEST_MODEL
+            from slave_cli.anon_auth import GUEST_MODEL
             policy = replace(policy, model=_resolve_gateway_model(policy.config()) or None)
             if policy.model == GUEST_MODEL:
                 # Follows its profile, so the provider the user connects later replaces the trial model.
@@ -434,7 +434,7 @@ def _lazy_model(authority, policy):
             or str(policy.provider or '').strip().lower() not in {'', 'auto'}):
         return model
     from gateway.session_authorities import owner_scope
-    from hermes_cli.anon_auth import GUEST_MODEL, free_tier_route
+    from slave_cli.anon_auth import GUEST_MODEL, free_tier_route
     with owner_scope(authority):
         return GUEST_MODEL if free_tier_route() else model
 
@@ -449,7 +449,7 @@ def _reasoning_fields(agent, policy, model, authority=None, override=None):
         return {}
     view = session_runtime_view(agent) if agent is not None else None
     if view is None:
-        from hermes_constants import resolve_reasoning_config
+        from slave_constants import resolve_reasoning_config
         effective, next_model = policy.effective(authority, secrets=False)
         route = effective.get('model') or {}
     config = (getattr(view, 'reasoning_config', None) if view is not None
@@ -465,7 +465,7 @@ def effort_fields(config, tier, model, provider, base_url, api_mode=None):
     """Session-info ``reasoning_effort`` / ``_wire`` / ``service_tier`` / ``fast`` for one resolved route."""
     from agent.fast_mode import STATIC_TIERS
     from agent.reasoning_effort import clamp_effort, route_supported_efforts
-    from hermes_cli.models import resolve_fast_mode_overrides
+    from slave_cli.models import resolve_fast_mode_overrides
     tier = tier or ''
     effort = ''
     if isinstance(config, dict):
@@ -529,7 +529,7 @@ def local_session_info(authority, ref):
 
 
 def _classic_cli_fields(authority, ref, live, agent, policy):
-    """What main's HermesCLI read off itself for /status, the status bar and the exit summary: the
+    """What main's SlaveCLI read off itself for /status, the status bar and the exit summary: the
     stored title, archived flag, and times, the session's yolo, api_mode, the loaded tool count and a
     masked credential hint (never the key). Lazy sessions report what is known without building an
     agent. ``archived`` is a JSON boolean (``bool(row.get("archived"))``), never SQLite ``1``:

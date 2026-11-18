@@ -26,7 +26,7 @@ from gateway.session import (
 from gateway.session_transcript import TranscriptReadError
 from gateway.turn_context import TurnContext
 from gateway.turn_lease import DEFAULT_LEASE_WAIT, TurnLeaseTimeoutError
-from hermes_constants import get_hermes_home_override
+from slave_constants import get_slave_home_override
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from utils import base_url_hostname
@@ -121,7 +121,7 @@ class GatewayTurnHygieneMixin:
 
             if hs.config_context_length is not None:
                 try:
-                    from hermes_cli.route_identity import should_clear_context_pin_async
+                    from slave_cli.route_identity import should_clear_context_pin_async
 
                     if await should_clear_context_pin_async(
                         configured_model, hs.model, configured_base_url, hs.base_url,
@@ -135,7 +135,7 @@ class GatewayTurnHygieneMixin:
             if hs.config_context_length is None and hs.base_url:
                 with suppress(TypeError, ValueError):
                     try:
-                        from hermes_cli.config import (
+                        from slave_cli.config import (
                             get_compatible_custom_providers as _gw_gcp,
                             get_custom_provider_context_length as _gw_gccl,
                         )
@@ -677,7 +677,7 @@ class GatewayTurnHygieneMixin:
         _hyg_session_db = getattr(self, "persistence", None)
         # With compression.checkpoint_required on, load the memory provider so the checkpoint exists
         # before any mutation; otherwise keep the fast path (no provider init).
-        from hermes_cli.config import load_config as _load_cfg
+        from slave_cli.config import load_config as _load_cfg
         from utils import is_truthy_value as _is_truthy
 
         _hyg_checkpoint_required = _is_truthy(
@@ -729,7 +729,7 @@ class GatewayTurnHygieneMixin:
             attempt.future = loop.run_in_executor(
                 None,
                 # But it MUST run inside the caller's contextvars: under multiplex_profiles the profile
-                # secret scope / HERMES_HOME override live in ContextVars, and a bare run_in_executor worker
+                # secret scope / SLAVE_HOME override live in ContextVars, and a bare run_in_executor worker
                 # starts with an empty Context — the summary model's get_secret(<PROVIDER>_API_KEY) then
                 # fails closed (UnscopedSecretError) and every hygiene compaction silently degrades to a
                 # lossy truncation (#100849 bundle).

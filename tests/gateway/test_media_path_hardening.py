@@ -10,12 +10,12 @@ from gateway.platforms.base import MEDIA_TAG_CLEANUP_RE, BasePlatformAdapter
 BS = chr(92)
 
 
-def _isolate_hermes_root(tmp_path, monkeypatch):
+def _isolate_slave_root(tmp_path, monkeypatch):
     """The credential roots are module constants resolved at import; point them at a temp home
-    so the denylist build never scans the machine's real Hermes profiles."""
-    hermes_home = tmp_path / "hermes-home"
-    monkeypatch.setattr(base, "_HERMES_HOME", hermes_home)
-    monkeypatch.setattr(base, "_HERMES_ROOT", hermes_home)
+    so the denylist build never scans the machine's real slave-agent profiles."""
+    slave_home = tmp_path / "slave-home"
+    monkeypatch.setattr(base, "_SLAVE_HOME", slave_home)
+    monkeypatch.setattr(base, "_SLAVE_ROOT", slave_home)
 
 
 @pytest.mark.platforms("windows")  # POSIX expanduser already reads $HOME; only Windows follows USERPROFILE
@@ -23,7 +23,7 @@ def test_denylist_home_follows_home_env(tmp_path, monkeypatch):
     home = tmp_path / "operator-home"
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(tmp_path / "profile-home"))
-    _isolate_hermes_root(tmp_path, monkeypatch)
+    _isolate_slave_root(tmp_path, monkeypatch)
     denied = base._media_delivery_denied_paths()
     assert home / ".ssh" in denied
 
@@ -51,15 +51,15 @@ def test_plain_path_still_delivered():
 
 def test_denylist_keeps_the_native_home_when_home_differs(tmp_path, monkeypatch):
     """Adding the operator ``$HOME`` must not drop the platform-native home's credential dirs.
-    ``HERMES_REAL_HOME`` names a third home, so ``get_real_home()`` cannot stand in for ``$HOME``."""
+    ``SLAVE_REAL_HOME`` names a third home, so ``get_real_home()`` cannot stand in for ``$HOME``."""
     native, configured = tmp_path / "native-home", tmp_path / "operator-home"
     account = tmp_path / "account-home"
     real_expand = base.os.path.expanduser
     monkeypatch.setattr(base.os.path, "expanduser",
                         lambda p: str(native) + p[1:] if p.startswith("~") else real_expand(p))
     monkeypatch.setenv("HOME", str(configured))
-    monkeypatch.setenv("HERMES_REAL_HOME", str(account))
-    _isolate_hermes_root(tmp_path, monkeypatch)
+    monkeypatch.setenv("SLAVE_REAL_HOME", str(account))
+    _isolate_slave_root(tmp_path, monkeypatch)
     denied = base._media_delivery_denied_paths()
     assert native / ".ssh" in denied
     assert configured / ".ssh" in denied
@@ -91,17 +91,17 @@ def test_escaped_newline_before_the_next_tag_still_splits_the_two_paths():
 
 
 def _rehomed_profile(tmp_path, monkeypatch, *, strict: bool):
-    """A profile-mode child: HOME (and USERPROFILE) point at ``{HERMES_HOME}/home`` while
-    ``HERMES_REAL_HOME`` keeps the OS account's home. Returns ``(real_home, profile_home)``."""
-    hermes_home = tmp_path / "hermes-home"
-    profile_home, real_home = hermes_home / "home", tmp_path / "real-home"
+    """A profile-mode child: HOME (and USERPROFILE) point at ``{SLAVE_HOME}/home`` while
+    ``SLAVE_REAL_HOME`` keeps the OS account's home. Returns ``(real_home, profile_home)``."""
+    slave_home = tmp_path / "slave-home"
+    profile_home, real_home = slave_home / "home", tmp_path / "real-home"
     profile_home.mkdir(parents=True)
     real_home.mkdir()
     for var in ("HOME", "USERPROFILE"):
         monkeypatch.setenv(var, str(profile_home))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("HERMES_REAL_HOME", str(real_home))
-    _isolate_hermes_root(tmp_path, monkeypatch)
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
+    monkeypatch.setenv("SLAVE_REAL_HOME", str(real_home))
+    _isolate_slave_root(tmp_path, monkeypatch)
     monkeypatch.setattr(base, "_media_delivery_allowed_roots", list)
     monkeypatch.setattr(base, "_translate_docker_container_media_path", lambda *a, **k: None)
     monkeypatch.setattr("gateway.media_policy.media_delivery_strict", lambda: strict)
@@ -117,7 +117,7 @@ def _fixture(path: Path) -> str:
 
 
 def test_real_home_credentials_stay_denied_when_home_is_the_profile_home(tmp_path, monkeypatch):
-    """Re-homed children keep the account home only in ``HERMES_REAL_HOME``; its credential
+    """Re-homed children keep the account home only in ``SLAVE_REAL_HOME``; its credential
     dirs must stay denied in default mode and, when fresh, in strict/recency mode."""
     for strict in (False, True):
         real_home, profile_home = _rehomed_profile(tmp_path / str(strict), monkeypatch, strict=strict)
@@ -156,12 +156,12 @@ def test_closing_wrapper_after_a_plain_boundary_leaves_with_the_tag():
 
 
 def test_profile_home_credentials_denied_when_gateway_runs_on_the_real_home(tmp_path, monkeypatch):
-    """``terminal.home_mode: profile`` puts tool logins under ``{HERMES_HOME}/home`` (and each
+    """``terminal.home_mode: profile`` puts tool logins under ``{SLAVE_HOME}/home`` (and each
     ``profiles/<name>/home``) while the gateway itself keeps ``HOME`` = the account home."""
     real_home, profile_home = _rehomed_profile(tmp_path, monkeypatch, strict=False)
-    for var in ("HOME", "USERPROFILE", "HERMES_REAL_HOME"):
+    for var in ("HOME", "USERPROFILE", "SLAVE_REAL_HOME"):
         monkeypatch.setenv(var, str(real_home))
-    other_home = tmp_path / "hermes-home" / "profiles" / "work" / "home"
+    other_home = tmp_path / "slave-home" / "profiles" / "work" / "home"
     for home in (profile_home, other_home):
         for rel in (".ssh/id_ed25519", ".config/gh/hosts.yml"):
             assert base.validate_media_delivery_path(_fixture(home / rel)) is None, home / rel

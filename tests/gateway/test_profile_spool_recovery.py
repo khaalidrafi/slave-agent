@@ -1,6 +1,6 @@
 """Boot recovery must replay a routed profile's spooled transcript backlog (#123584).
 
-``_get_flush_dir`` follows the active HERMES_HOME, and a routed turn on a multiplexed gateway runs
+``_get_flush_dir`` follows the active SLAVE_HOME, and a routed turn on a multiplexed gateway runs
 inside its profile's scope, so a transcript backlog spooled while that profile's store is unwritable
 lands in ``profiles/<name>/pending_messages/``. Boot recovery only scanned the launch home, and the
 runtime drain keys on an in-memory set that a restart empties: after a restart nothing read those
@@ -18,7 +18,7 @@ from gateway.config import GatewayConfig
 from gateway.platforms.base import Platform, SessionSource
 from gateway.session import SessionEntry, SessionStore
 from gateway.shutdown_flush import recover_gateway_pending, spool_dropped_transcript_message
-from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
 from tests.fixtures.storage_read import transcript_rows
 from tests.fixtures.storage_seed import seed_session
 
@@ -26,11 +26,11 @@ from tests.fixtures.storage_seed import seed_session
 @pytest.fixture
 def multiplex_homes(tmp_path, monkeypatch):
     """A launch home plus a named ``work`` profile, as in test_multiplex_session_db_profile_scope."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     profile = root / "profiles" / "work"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     ss.set_multiplex_active(True)
     yield root, profile
     ss.set_multiplex_active(False)
@@ -49,11 +49,11 @@ def _session(store: SessionStore, key: str, sid: str):
 
 
 def _spool_under(home, sid: str, text: str) -> None:
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         assert spool_dropped_transcript_message(sid, {"role": "user", "content": text})
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert list((home / "pending_messages").glob("*.json"))
 
 
@@ -76,4 +76,4 @@ def test_boot_recovery_replays_a_routed_profiles_spooled_backlog(multiplex_homes
     assert [m["content"] for m in transcript_rows(default_db, default_sid)] == ["default while locked"]
     assert [m["content"] for m in transcript_rows(work_db, work_sid)] == ["work while locked"]
     assert not list(root.glob("**/pending_messages/*.json"))
-    assert get_hermes_home() == root  # A→B→A: the launch scope is restored after the routed pass
+    assert get_slave_home() == root  # A→B→A: the launch scope is restored after the routed pass

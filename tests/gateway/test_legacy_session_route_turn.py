@@ -65,8 +65,8 @@ def _write_profile(home, profile_url, extra=''):
 def test_adopted_legacy_session_turn_goes_to_its_route_with_its_own_key(monkeypatch, shape):
     from run_agent import AIAgent
     with FakeLLMServer([Text('profile')]) as profile, FakeLLMServer([Text('legacy ok')]) as legacy:
-        home = Path(os.environ['HERMES_HOME'])  # the per-test home conftest isolates
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])  # the per-test home conftest isolates
+        monkeypatch.setattr('gateway.run._slave_home', home)
         _write_profile(home, profile.base_url, extra=(
             f'custom_providers:\n  - name: legacy-box\n    base_url: {legacy.base_url}\n    api_key: sk-legacy-own\n'))
         if shape == 'tui-provider-only':
@@ -101,8 +101,8 @@ def test_adopted_cli_custom_session_keeps_custom_route_when_profile_moved_to_ano
     on Anthropic, adoption must not pair ``anthropic`` (its wire mode and key) with the legacy endpoint."""
     from run_agent import AIAgent
     with FakeLLMServer([Text('legacy ok')]) as legacy:
-        home = Path(os.environ['HERMES_HOME'])
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])
+        monkeypatch.setattr('gateway.run._slave_home', home)
         monkeypatch.setenv('ANTHROPIC_API_KEY', 'sk-ant-profile-only')
         home.mkdir(parents=True, exist_ok=True)
         (home / 'config.yaml').write_text(
@@ -123,8 +123,8 @@ def test_adopted_cli_custom_session_keeps_custom_route_when_profile_moved_to_ano
 
 def test_adopted_legacy_session_whose_provider_lost_credentials_is_refused_by_name(monkeypatch):
     with FakeLLMServer([Text('profile')]) as profile:
-        home = Path(os.environ['HERMES_HOME'])
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])
+        monkeypatch.setattr('gateway.run._slave_home', home)
         _write_profile(home, profile.base_url)  # the ``legacy-box`` entry is gone from config.yaml
         with pytest.raises(Exception) as caught:
             _adopt_and_resolve(home, {'provider': 'custom:legacy-box', 'base_url': 'http://127.0.0.1:9/v1'})
@@ -145,8 +145,8 @@ def test_named_provider_moved_never_sends_its_new_key_to_the_saved_endpoint(monk
     """The session saved ``custom:legacy-box`` at B; ``legacy-box`` now serves A with A's key. A's key
     belongs to A: B gets the credential of the entry that still serves B, or adoption is refused."""
     with FakeLLMServer([Text('new')]) as new, FakeLLMServer([Text('legacy ok')], api_key='sk-legacy-own') as legacy:
-        home = Path(os.environ['HERMES_HOME'])
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])
+        monkeypatch.setattr('gateway.run._slave_home', home)
         _write_profile(home, new.base_url, extra=(
             f'providers:\n  legacy-box:\n    base_url: {new.base_url}\n    api_key: sk-new-endpoint-only\n'
             + (f'custom_providers:\n  - name: old-box\n    base_url: {legacy.base_url}\n    api_key: sk-legacy-own\n'
@@ -173,8 +173,8 @@ def test_unchanged_route_keeps_the_profile_credential_for_that_endpoint(monkeypa
     adopted session keeps using it (literal key, ``${ENV}`` key, CLI billing row, or an ``ollama``
     profile whose saved provider is its resolved ``custom``)."""
     with FakeLLMServer([Text('legacy ok')], api_key='sk-profile-only') as legacy:
-        home = Path(os.environ['HERMES_HOME'])
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])
+        monkeypatch.setattr('gateway.run._slave_home', home)
         monkeypatch.setenv('PROFILE_PROBE_KEY', 'sk-profile-only')
         credential = {'inline': 'api_key: sk-profile-only', 'cli-billing': 'api_key: sk-profile-only',
                       'env-ref': 'api_key: ${PROFILE_PROBE_KEY}', 'ollama-key-env': 'key_env: PROFILE_PROBE_KEY'}[shape]
@@ -204,8 +204,8 @@ def test_billing_only_custom_endpoint_the_profile_moved_off_resumes_on_the_profi
     policy, where every turn retries until it gives up."""
     with FakeLLMServer([Text('profile')], api_key='sk-profile-only') as profile, \
             FakeLLMServer([Text('stale')]) as old:
-        home = Path(os.environ['HERMES_HOME'])
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])
+        monkeypatch.setattr('gateway.run._slave_home', home)
         _write_profile(home, profile.base_url)  # no entry serves the old endpoint
         policy, (model, runtime) = _adopt_and_resolve(home, {}, source=source, billing={
             'billing_provider': 'custom', 'billing_base_url': old.base_url})
@@ -227,8 +227,8 @@ def test_v0_21_19_row_shapes_go_to_their_own_endpoint_with_its_own_key(monkeypat
     stored row key is never sent anywhere."""
     with FakeLLMServer([Text('profile')], api_key='sk-profile-only') as profile, \
             FakeLLMServer([Text('legacy ok')], api_key='sk-legacy-own') as legacy:
-        home = Path(os.environ['HERMES_HOME'])
-        monkeypatch.setattr('gateway.run._hermes_home', home)
+        home = Path(os.environ['SLAVE_HOME'])
+        monkeypatch.setattr('gateway.run._slave_home', home)
         _write_profile(home, profile.base_url, extra=(
             f'custom_providers:\n  - name: legacy-box\n    base_url: {legacy.base_url}\n    api_key: sk-legacy-own\n'))
         if shape == 'cli-billing-auto':

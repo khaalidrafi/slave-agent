@@ -26,8 +26,8 @@ ONLINE = "Gateway online"
 
 @pytest.fixture
 def rig(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_startup_restore_drain_timeout_secs", lambda: 0)
     monkeypatch.setattr(recovery, "_SWEEP_SETTLE_SECONDS", 0)
     runner = object.__new__(gateway_run.GatewayRunner)

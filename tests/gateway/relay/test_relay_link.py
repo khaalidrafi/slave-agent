@@ -65,7 +65,7 @@ def connector(monkeypatch):
     _Connector.managed_by = None
     monkeypatch.setenv("GATEWAY_RELAY_URL", f"ws://127.0.0.1:{server.server_port}/relay")
     monkeypatch.setenv("GATEWAY_RELAY_PLATFORMS", "telegram")
-    monkeypatch.setenv("GATEWAY_RELAY_BOT_IDS", json.dumps({"telegram": {"botId": "42", "username": "@NousHermesBot"}}))
+    monkeypatch.setenv("GATEWAY_RELAY_BOT_IDS", json.dumps({"telegram": {"botId": "42", "username": "@NousSlaveBot"}}))
     monkeypatch.setenv("GATEWAY_RELAY_ID", _GATEWAY_ID)
     yield _Connector
     server.shutdown()
@@ -84,7 +84,7 @@ def test_link_code_is_minted_with_the_gateway_bearer_and_points_at_the_shared_bo
 
     assert result["ok"] is True
     assert result["command"] == "/link AB12CD"
-    assert result["bot_url"] == "https://t.me/NousHermesBot"
+    assert result["bot_url"] == "https://t.me/NousSlaveBot"
     assert connector.seen == [("/manage/link", _GATEWAY_ID, {"platform": "telegram"})]
     # A platform the shared bot does not carry never reaches the connector.
     assert relay_link_verb({"action": "request", "platform": "slack"})["error"] == "platform_not_fronted"

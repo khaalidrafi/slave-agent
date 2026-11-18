@@ -12,9 +12,9 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ _warned: set[Path] = set()
 def defer(key: str, job: dict, content: str, home: Path, *, for_failure: bool) -> None:
     """Park one never-admitted output under its delivery id; a later tick hands it to the owner."""
     import time
-    root = get_hermes_home().resolve() / "cron" / "bot_chat_pending"
+    root = get_slave_home().resolve() / "cron" / "bot_chat_pending"
     make_user_dir(root, parents=True, exist_ok=True, mode=0o700)
     path = root / f"{key}.json"
     if not path.exists():  # an existing record (queued or already transferred) keeps its status
@@ -65,7 +65,7 @@ def _dispose(path: Path, record: dict) -> bool:
     """Decide one queued record in place; False leaves it queued for a later tick."""
     from cron.scheduler_delivery import BOT_CHAT_POLICY_PLATFORM, bot_chat_message
     from gateway.warning_notifications import warning_notifications_enabled
-    from hermes_cli.config_effective import load_user_config_effective
+    from slave_cli.config_effective import load_user_config_effective
     from tools.bot_live_delivery import deliver_to_live_owner, find_canonical_live_owner
 
     if reason := _malformed(record):
@@ -107,7 +107,7 @@ def drain_legacy_pending() -> None:
     Each record is isolated: a malformed one is kept as ``ambiguous`` evidence and an
     unexpected failure leaves only that record queued, so one bad file never stops cron.
     """
-    root = get_hermes_home().resolve() / "cron" / "bot_chat_pending"
+    root = get_slave_home().resolve() / "cron" / "bot_chat_pending"
     if not root.is_dir():
         return
     for path, record in _queued(root):

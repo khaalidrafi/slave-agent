@@ -1,5 +1,5 @@
 /*
- * Hermes Kanban — dashboard plugin styles.
+ * slave-agent Kanban — dashboard plugin styles.
  *
  * All colors reference theme CSS vars so the board reskins with the
  * active dashboard theme. No hardcoded palette.
@@ -40,7 +40,7 @@
 }
 /* The Markdown renderer intentionally paints a subtle code pill behind
  * inline ``<code>`` inside task-body prose — but NOT inside a fenced
- * block (those are a ``<pre class="hermes-kanban-md-code">`` with a
+ * block (those are a ``<pre class="slave-kanban-md-code">`` with a
  * bare ``<code>`` inside, and the pill would double up with the pre
  * background). ``:not()`` scopes this opt-back-in to inline code only.
  *
@@ -346,7 +346,7 @@
 }
 
 .hermes-kanban-drawer {
-  width: min(var(--hermes-kanban-drawer-width, 640px), 92vw);
+  width: min(var(--slave-kanban-drawer-width, 640px), 92vw);
   height: 100vh;
   /* Dynamic viewport unit excludes the mobile browser's collapsing chrome
      (URL/nav bars) so the drawer's bottom row stays reachable. Falls back to
@@ -358,10 +358,10 @@
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 18px rgba(0, 0, 0, 0.35);
-  animation: hermes-kanban-drawer-in 180ms ease-out;
+  animation: slave-kanban-drawer-in 180ms ease-out;
 }
 
-@keyframes hermes-kanban-drawer-in {
+@keyframes slave-kanban-drawer-in {
   from { transform: translateX(100%); opacity: 0.3; }
   to   { transform: translateX(0);    opacity: 1; }
 }
@@ -1362,15 +1362,15 @@
 .hermes-kanban-attention,
 .hermes-kanban-warning-badge,
 .hermes-kanban-attention-row {
-  --hermes-diag-warning:  var(--color-warning, #ff9e3b);
-  --hermes-diag-error:    var(--color-destructive, #ff6b3d);
-  --hermes-diag-critical: var(--color-destructive, #ff4d4d);
+  --slave-diag-warning:  var(--color-warning, #ff9e3b);
+  --slave-diag-error:    var(--color-destructive, #ff6b3d);
+  --slave-diag-critical: var(--color-destructive, #ff4d4d);
 }
 
 /* Warning-badge severity variants (overrides the base colour). */
-.hermes-kanban-warning-badge--warning { color: var(--hermes-diag-warning); }
-.hermes-kanban-warning-badge--error   { color: var(--hermes-diag-error); font-weight: 700; }
-.hermes-kanban-warning-badge--critical { color: var(--hermes-diag-critical); font-weight: 700; }
+.hermes-kanban-warning-badge--warning { color: var(--slave-diag-warning); }
+.hermes-kanban-warning-badge--error   { color: var(--slave-diag-error); font-weight: 700; }
+.hermes-kanban-warning-badge--critical { color: var(--slave-diag-critical); font-weight: 700; }
 
 /* Attention-strip severity variants. */
 .hermes-kanban-attention--warning {
@@ -1385,8 +1385,8 @@
   border-color: rgba(255, 77, 77, 0.55);
   background: rgba(255, 77, 77, 0.10);
 }
-.hermes-kanban-attention--error .hermes-kanban-attention-icon { color: var(--hermes-diag-error); }
-.hermes-kanban-attention--critical .hermes-kanban-attention-icon { color: var(--hermes-diag-critical); }
+.hermes-kanban-attention--error .hermes-kanban-attention-icon { color: var(--slave-diag-error); }
+.hermes-kanban-attention--critical .hermes-kanban-attention-icon { color: var(--slave-diag-critical); }
 
 /* Per-row severity marker in the expanded attention list. */
 .hermes-kanban-attention-row-sev {
@@ -1394,9 +1394,9 @@
   min-width: 1.5rem;
   font-weight: 600;
 }
-.hermes-kanban-attention-row--warning .hermes-kanban-attention-row-sev { color: var(--hermes-diag-warning); }
-.hermes-kanban-attention-row--error    .hermes-kanban-attention-row-sev { color: var(--hermes-diag-error); font-weight: 700; }
-.hermes-kanban-attention-row--critical .hermes-kanban-attention-row-sev { color: var(--hermes-diag-critical); font-weight: 700; }
+.hermes-kanban-attention-row--warning .hermes-kanban-attention-row-sev { color: var(--slave-diag-warning); }
+.hermes-kanban-attention-row--error    .hermes-kanban-attention-row-sev { color: var(--slave-diag-error); font-weight: 700; }
+.hermes-kanban-attention-row--critical .hermes-kanban-attention-row-sev { color: var(--slave-diag-critical); font-weight: 700; }
 
 /* Individual diagnostic card inside the drawer's Diagnostics section. */
 .hermes-kanban-diag-list {
@@ -1405,7 +1405,7 @@
   gap: 0.6rem;
 }
 .hermes-kanban-diag {
-  border-left: 3px solid var(--hermes-diag-warning);
+  border-left: 3px solid var(--slave-diag-warning);
   background: rgba(255, 158, 59, 0.05);
   border-radius: 0.35rem;
   padding: 0.6rem 0.75rem;
@@ -1414,11 +1414,11 @@
   gap: 0.4rem;
 }
 .hermes-kanban-diag--error {
-  border-left-color: var(--hermes-diag-error);
+  border-left-color: var(--slave-diag-error);
   background: rgba(255, 107, 61, 0.06);
 }
 .hermes-kanban-diag--critical {
-  border-left-color: var(--hermes-diag-critical);
+  border-left-color: var(--slave-diag-critical);
   background: rgba(255, 77, 77, 0.07);
 }
 .hermes-kanban-diag-header {
@@ -1430,9 +1430,9 @@
   font-weight: 700;
   min-width: 1.5rem;
 }
-.hermes-kanban-diag--warning .hermes-kanban-diag-sev { color: var(--hermes-diag-warning); }
-.hermes-kanban-diag--error    .hermes-kanban-diag-sev { color: var(--hermes-diag-error); }
-.hermes-kanban-diag--critical .hermes-kanban-diag-sev { color: var(--hermes-diag-critical); }
+.hermes-kanban-diag--warning .hermes-kanban-diag-sev { color: var(--slave-diag-warning); }
+.hermes-kanban-diag--error    .hermes-kanban-diag-sev { color: var(--slave-diag-error); }
+.hermes-kanban-diag--critical .hermes-kanban-diag-sev { color: var(--slave-diag-critical); }
 .hermes-kanban-diag-title {
   font-weight: 600;
   font-size: 0.875rem;

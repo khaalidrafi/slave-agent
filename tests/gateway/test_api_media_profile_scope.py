@@ -37,12 +37,12 @@ async def test_restart_recovery_keeps_every_profiles_held_images_and_collects_ea
     from gateway.session_authorities import SessionAuthorities
     from gateway.session_authority import SessionAuthority
 
-    launch = tmp_path / '.hermes'
+    launch = tmp_path / '.slave'
     beta = launch / 'profiles' / 'beta'
     beta.mkdir(parents=True)
     for home in (launch, beta):
         (home / 'config.yaml').write_text('{}')
-    monkeypatch.setenv('HERMES_HOME', str(launch))
+    monkeypatch.setenv('SLAVE_HOME', str(launch))
     store = SessionStore(config=GatewayConfig(), sessions_dir=launch / 'sessions')
     registry = SessionAuthorities(launch, multiplexed=True)
     runner = SimpleNamespace(_draining=False, session_store=store, session_authorities=registry,

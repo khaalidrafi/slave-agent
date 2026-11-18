@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 def test_alias_credential_reader_accepts_a_scalar_model_entry(tmp_path):
     from gateway.session_mutation_model import _alias_credential
-    from hermes_cli.model_switch import ModelSwitchResult
+    from slave_cli.model_switch import ModelSwitchResult
 
     (tmp_path / 'config.yaml').write_text('model: far-model\nmodel_aliases: {}\n')
     from persistence_assembly import profile_scope

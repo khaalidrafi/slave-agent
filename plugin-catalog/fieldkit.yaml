@@ -3,11 +3,11 @@ title: FieldKit
 repo: https://github.com/Snehal707/fieldkit
 sha: de630e5a4162f02cdb21eca1262a957545da2e71
 description: >-
-  Offline observation forms for Hermes. Describe your work in a Hermes chat and Hermes drafts the
+  Offline observation forms for Slave. Describe your work in a slave-agent chat and slave-agent drafts the
   forms, then publishes them as a workspace after you approve. Fill them in on a phone with no
-  signal (installable PWA served by the Hermes dashboard: answers, photos, voice notes, GPS and
-  signatures), and sync entries and files back to Hermes when online, with duplicate protection
-  and conflict review. Hermes reads the synced entries and files through 12 tools and analyses
+  signal (installable PWA served by the slave-agent dashboard: answers, photos, voice notes, GPS and
+  signatures), and sync entries and files back to slave-agent when online, with duplicate protection
+  and conflict review. slave-agent reads the synced entries and files through 12 tools and analyses
   them with its own tools when asked. FieldKit never calls a model. Disclosure: the plugin
   backend makes no third-party calls; the phone app downloads optional translation and OCR packs
   from huggingface.co and cdn.jsdelivr.net only when the user installs one.

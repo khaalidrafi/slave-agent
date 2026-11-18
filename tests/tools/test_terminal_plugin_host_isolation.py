@@ -1,16 +1,16 @@
 """A user terminal backend under ``plugins.isolation: host``: the plugin's environment object cannot cross
-the host boundary (its methods would run outside the Hermes process's interrupt, activity and terminal-scope
+the host boundary (its methods would run outside the slave-agent process's interrupt, activity and terminal-scope
 state), so creating it refuses with the setting to change before the host starts a sandbox nobody can use
-or clean up. Real plugin, real host process, real loader against a temp HERMES_HOME.
+or clean up. Real plugin, real host process, real loader against a temp SLAVE_HOME.
 """
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
-from hermes_cli import plugins as plugins_mod
-from hermes_cli.plugins import PluginManager
+from slave_cli import plugins as plugins_mod
+from slave_cli.plugins import PluginManager
 
 BACKEND_PLUGIN = '''
 from pathlib import Path
@@ -40,7 +40,7 @@ def register(ctx):
 
 
 def _load(tmp_path, monkeypatch, isolation):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     plugin_dir = home / "plugins" / "hostbox"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "hostbox", "version": "1.0"}), encoding="utf-8")
@@ -51,7 +51,7 @@ def _load(tmp_path, monkeypatch, isolation):
     empty_bundled = tmp_path / "bundled"
     empty_bundled.mkdir()
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     manager = PluginManager()
     manager.discover_and_load()

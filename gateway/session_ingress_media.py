@@ -18,7 +18,7 @@ import sqlite3
 import stat
 import tempfile
 import threading
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
 from persistence.authority.vocabulary import ADMITTED_REQUEST_CONFLICT
 from persistence.core.errors import AuthorityRefusal
@@ -112,7 +112,7 @@ async def release_abandoned_capture(scope):
 
 def native_inputs_store():
     """The store's path as the profile names it, unresolved. The one value ``make_user_dir`` gets:
-    ``resolve()`` erases a link planted below the Hermes home (``cache/documents`` -> elsewhere),
+    ``resolve()`` erases a link planted below the slave-agent home (``cache/documents`` -> elsewhere),
     and an elevated grant on the resolved path would land outside the home with no home fence."""
     from gateway.platforms.base import get_document_cache_dir
     return get_document_cache_dir() / 'native-inputs'
@@ -496,7 +496,7 @@ def sweep_settled_media(store, *, now=None):
     import time
     from agent.provider_media import MEDIA_CACHE_MAX_AGE_HOURS
     now = time.time() if now is None else now
-    key = store.scope.hermes_home_key
+    key = store.scope.slave_home_key
     if now - _last_sweep.get(key, 0) < _SWEEP_INTERVAL_S:
         return 0
     _last_sweep[key] = now
@@ -521,10 +521,10 @@ def collect_unheld_api_images(store):
     Candidates are enumerated from the ACTIVE home's media root while ownership is decided by
     *store*, a storage interface handle: a sweep whose store belongs to another profile would see
     every image here as unowned, so it collects nothing."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from persistence.core.errors import STORE_FAILURES
     from persistence_assembly import store_location
-    if store.scope.profile_dir != get_hermes_home().resolve():
+    if store.scope.profile_dir != get_slave_home().resolve():
         logger.warning(
             'Skipped retained API image collection: %s is not the active profile store', store_location(store.scope))
         return 0

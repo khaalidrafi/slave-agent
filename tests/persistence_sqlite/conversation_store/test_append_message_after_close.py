@@ -40,7 +40,7 @@ class TestAppendAfterClose:
         db.close()
         assert db._conn is None
 
-        with caplog.at_level(logging.WARNING, logger="hermes_state"):
+        with caplog.at_level(logging.WARNING, logger="slave_state"):
             msg_id = append_message(
                 db, "s1", "assistant", content="flushed after teardown"
             )

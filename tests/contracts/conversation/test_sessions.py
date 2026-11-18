@@ -218,7 +218,7 @@ def test_system_prompt_is_byte_stable_and_none_clears(backend, scope_a):
     store_a = backend.open(scope_a)
     store_a.sessions.create(_new("sf-pr1"))
     assert _prompt(backend, scope_a, "sf-pr1") == (None, None)
-    prompt = "You are Hermes.  \r\n\tRome: Ro\u0301me vs R\u00f3me \u200b\n\n   "
+    prompt = "You are Slave.  \r\n\tRome: Ro\u0301me vs R\u00f3me \u200b\n\n   "
     store_a.sessions.update_system_prompt(SessionId("sf-pr1"), prompt)
     seen, _ = _prompt(backend, scope_a, "sf-pr1")
     # CONTRACT: exactly the bytes passed (trailing whitespace, CRLF, NFD vs NFC, zero-width all survive).

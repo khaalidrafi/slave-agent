@@ -46,7 +46,7 @@ class _PrefixEnv(LongLivedProcessMixin):
 def _pidfile_words(tmp_path, timeout: float = 10.0) -> tuple:
     deadline = time.monotonic() + timeout
     while True:
-        files = list(tmp_path.glob("hermes_llp_*.pid"))
+        files = list(tmp_path.glob("slave_llp_*.pid"))
         if files and files[0].read_text().strip():
             return files[0], files[0].read_text().split()
         assert time.monotonic() < deadline, "the service never recorded its pid inside the sandbox"
@@ -54,7 +54,7 @@ def _pidfile_words(tmp_path, timeout: float = 10.0) -> tuple:
 
 
 _REPORT = ("import json,os,sys; print(json.dumps({'argv': sys.argv[1:], 'pid': os.getpid(), "
-           "'probe': os.environ.get('HERMES_LLP_PROBE')}), flush=True); print('echo:' + sys.stdin.readline().strip(), "
+           "'probe': os.environ.get('SLAVE_LLP_PROBE')}), flush=True); print('echo:' + sys.stdin.readline().strip(), "
            "flush=True)")
 
 
@@ -62,7 +62,7 @@ _REPORT = ("import json,os,sys; print(json.dumps({'argv': sys.argv[1:], 'pid': o
 def test_the_service_gets_its_argv_environment_stdio_and_its_own_pid_recorded(tmp_path):
     env = _PrefixEnv(tmp_path)
     stream = env.start_process("svc", [sys.executable, "-c", _REPORT, "two words", "it's"],
-                               child_env={"HERMES_LLP_PROBE": "a b'c"})
+                               child_env={"SLAVE_LLP_PROBE": "a b'c"})
     try:
         seen = json.loads(stream.stdout.readline())
         assert seen["argv"] == ["two words", "it's"], "an argv word was re-split or re-quoted on the way in"
@@ -253,7 +253,7 @@ def test_the_stop_command_turns_errexit_off_before_anything_can_fail(tmp_path):
     try:
         _exited_service_pidfile(env, tmp_path)
         env.stop_process("svc")
-        stops = [command for command in env.executed if "hermes_llp_" in command]
+        stops = [command for command in env.executed if "slave_llp_" in command]
         assert stops, "the stop never reached the sandbox"
         assert all(command.startswith("(set +e;") for command in stops), stops
     finally:

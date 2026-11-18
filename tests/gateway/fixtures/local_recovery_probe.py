@@ -67,11 +67,11 @@ async def rpc(ws, method, **params):
 def websocket(home, desc, **kw):
     grant = control(home, 'session-ticket', {'profile_id': str(home), 'instance_id': desc['instance_id'], 'purpose': 'interactive'})
     return connect(desc['api_origin'].replace('http:', 'ws:') + '/api/ws',
-                   subprotocols=['hermes-gateway-v1', 'hermes-gateway-ticket.' + grant['ticket']], **kw)
+                   subprotocols=['slave-gateway-v1', 'slave-gateway-ticket.' + grant['ticket']], **kw)
 
 
 def seed_offline_models_dev(home):
-    """A fresh HERMES_HOME has no models.dev cache, so the daemon's first session.create (tool
+    """A fresh SLAVE_HOME has no models.dev cache, so the daemon's first session.create (tool
     availability -> vision check -> provider lookup) downloads the public registry in the foreground,
     and a slow network outlasts rpc()'s deadline. A fresh on-disk cache is served without a request.
     One unknown provider keeps lookups as empty as an unreachable registry; a test's own seed wins.
@@ -79,12 +79,12 @@ def seed_offline_models_dev(home):
     home = Path(home)
     for cache in [home / 'models_dev_cache.json', *(p / 'models_dev_cache.json' for p in home.glob('profiles/*') if p.is_dir())]:
         if not cache.exists():
-            cache.write_text(json.dumps({'hermes-test-offline': {'id': 'hermes-test-offline', 'env': [], 'models': {}}}))
+            cache.write_text(json.dumps({'slave-test-offline': {'id': 'slave-test-offline', 'env': [], 'models': {}}}))
 
 
 @contextmanager
 def daemon(root, home, env, *, barrier, fixture='local_recovery_daemon.py'):
-    seed_offline_models_dev(env.get('HERMES_HOME', home))
+    seed_offline_models_dev(env.get('SLAVE_HOME', home))
     command = [sys.executable, str(root / 'tests/gateway/fixtures' / fixture)] if barrier else [sys.executable, '-m', 'gateway.run']
     with (home / ('first.log' if barrier else 'restart.log')).open('w+') as log:
         proc = subprocess.Popen(command, cwd=root, env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
@@ -124,7 +124,7 @@ def probe(tmp_path):
            'auxiliary': {'title_generation': {'enabled': False}}, 'platform_toolsets': {'cli': []}}
     (home / 'config.yaml').write_text(json.dumps(cfg))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     sessions, params, pids, epochs = {}, {}, [], []
     def rows():

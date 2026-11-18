@@ -14,9 +14,9 @@ import os
 from pathlib import Path
 import time
 from typing import Optional
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 logger = logging.getLogger("tools.process_registry")
 
@@ -26,7 +26,7 @@ _FINAL_DRAIN_MAX_BYTES = 1 << 20
 
 
 def output_dir() -> Path:
-    return get_hermes_home() / "logs" / "process-output"
+    return get_slave_home() / "logs" / "process-output"
 
 
 def worker_output_log(session_id: str) -> Optional[Path]:
@@ -67,7 +67,7 @@ def record_exit_command(log: Path, command: str) -> str:
     that adopts the process after the spawner exited has no Popen to wait on."""
     import shlex
     target = shlex.quote(_exit_path(log).as_posix())
-    return f"__hermes_exit_file={target}; trap 'printf \"%s\\n\" \"$?\" > \"$__hermes_exit_file\"' EXIT\n{command}"
+    return f"__slave_exit_file={target}; trap 'printf \"%s\\n\" \"$?\" > \"$__slave_exit_file\"' EXIT\n{command}"
 
 
 def recorded_exit_code(log) -> Optional[int]:

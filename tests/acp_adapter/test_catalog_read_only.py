@@ -7,7 +7,7 @@ from tests.fixtures.storage_seed import seed_messages, seed_session
 
 
 def test_empty_catalog_does_not_initialize_storage(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     manager = SessionManager()
     assert manager.list_sessions() == []
     assert not (tmp_path / "state.db").exists()
@@ -15,7 +15,7 @@ def test_empty_catalog_does_not_initialize_storage(tmp_path, monkeypatch):
 
 
 def test_catalog_reads_committed_history_without_schema_writes(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     path = tmp_path / "state.db"
     with open_persistence(profile_scope(home=tmp_path)) as store:
         seed_session(store, "catalog", "acp", model="fixture", model_config={"cwd": str(tmp_path)})

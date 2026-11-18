@@ -14,7 +14,7 @@ def test_refusal_never_offers_a_handle_another_peer_owns(tmp_path, monkeypatch):
     """With peers 'ops' and 'aaa', local 'aaa' answers to a peer name too: only @bbb is a
     route that reaches a local bot."""
     calls = _capture_spawn(monkeypatch)
-    monkeypatch.setattr(bot_relay, "_hermes_cli", lambda: "hermes")
+    monkeypatch.setattr(bot_relay, "_slave_cli", lambda: "slave")
     home = _managed_home(tmp_path, teammates=("aaa", "bbb"), peers=("ops", "aaa"))
     _rename(home, "aaa", title="Ops")
     _rename(home, "bbb", title="Ops")
@@ -30,7 +30,7 @@ def test_refusal_never_offers_a_handle_another_peer_owns(tmp_path, monkeypatch):
 def test_bare_peer_send_reads_local_aliases_once(tmp_path, monkeypatch):
     """A peer with no local twin is the common case; its collision check reads the alias map once."""
     _capture_spawn(monkeypatch)
-    monkeypatch.setattr(bot_relay, "_hermes_cli", lambda: "hermes")
+    monkeypatch.setattr(bot_relay, "_slave_cli", lambda: "slave")
     monkeypatch.setattr("socket.gethostname", lambda: "eri-mac.local")
     home = _managed_home(tmp_path, teammates=("researcher",), peers=("ops",))
     reads = []

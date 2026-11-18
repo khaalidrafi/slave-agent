@@ -15,7 +15,7 @@ async def _pick(tmp_path, monkeypatch, before, after, provider):
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import build_policy, bind_launch_key, restore_policy
     from gateway.run_turn_prepare import _resolve_policy_agent_runtime
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     (tmp_path / 'config.yaml').write_text(json.dumps(before))
     private = {}
     policy = build_policy({'cwd': str(tmp_path), 'model': 'original'}, deepcopy(before), private_secrets=private)

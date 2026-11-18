@@ -57,7 +57,7 @@ MISSING_AND_EMPTY_CHANNEL = FAKE_HOST + r"""
 function Get-WinEvent { [CmdletBinding()] param([hashtable]$FilterHashtable)
     $filter = $FilterHashtable.Clone()
     switch ($filter.LogName) {
-        'Microsoft-Windows-AppXDeploymentServer/Operational' { $filter.LogName = 'Microsoft-Windows-HermesEvidenceTest-Missing/Operational' }
+        'Microsoft-Windows-AppXDeploymentServer/Operational' { $filter.LogName = 'Microsoft-Windows-SlaveEvidenceTest-Missing/Operational' }
         'Microsoft-Windows-AppXDeployment/Operational' { $filter.StartTime = (Get-Date).AddDays(1) }
         default { return $fixtureEvents[$filter.LogName] }
     }

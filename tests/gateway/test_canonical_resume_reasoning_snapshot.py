@@ -22,8 +22,8 @@ async def test_lazy_session_info_reports_frozen_reasoning_and_tier(tmp_path, mon
     (home / 'config.yaml').write_text(
         'model: {default: gpt-5.4, provider: custom, base_url: "http://127.0.0.1:9/v1"}\n'
         'agent: {reasoning_effort: high, service_tier: fast}\nplatform_toolsets: {cli: []}\n')
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,
                              _cached_agent_for=lambda route: None)

@@ -40,16 +40,16 @@ def _parse_env_var(name: str, default: str, converter: Any = int, type_label: st
     except (ValueError, json.JSONDecodeError):
         raise ValueError(
             f"Invalid value for {name}: {raw!r} (expected {type_label}). "
-            f"Check ~/.hermes/.env or environment variables."
+            f"Check ~/.slave/.env or environment variables."
         )
 
 
-# (current home, Hermes root) -> profile name; only homes that exist are stored (see home_profile_name).
+# (current home, Slave root) -> profile name; only homes that exist are stored (see home_profile_name).
 _HOME_PROFILE_NAMES: dict[tuple[str, str], str] = {}
 
 
 def home_profile_name() -> str:
-    """Profile name of the current Hermes home (the process home, or a routed turn's bound home);
+    """Profile name of the current slave-agent home (the process home, or a routed turn's bound home);
     ``"default"`` when it cannot be resolved. One lookup for every reader that must agree: the
     persistent-Docker container key, the container's profile label, the name the TUI stamps on its
     sessions (``get_active_profile_name``, so ``custom`` for a home inside the root that is not a
@@ -58,11 +58,11 @@ def home_profile_name() -> str:
     Memoized per (home, root) path pair: the lookup resolves three paths and runs on every
     container-key resolution, several times per tool call."""
     try:
-        from hermes_cli.profiles import get_active_profile_name
-        from hermes_constants import get_default_hermes_root, get_hermes_home
+        from slave_cli.profiles import get_active_profile_name
+        from slave_constants import get_default_slave_root, get_slave_home
 
-        home = get_hermes_home()
-        key = (str(home), str(get_default_hermes_root()))
+        home = get_slave_home()
+        key = (str(home), str(get_default_slave_root()))
         if (cached := _HOME_PROFILE_NAMES.get(key)) is not None:
             return cached
         name = get_active_profile_name() or "default"
@@ -189,7 +189,7 @@ def _get_plugin_env_provider(env_type: str):
 def plugin_sandbox_home(env: Any) -> str | None:
     """The home a plugin environment started in (``_build_plugin_env`` stamps it per environment, so two
     sandboxes of one backend never share it), or None."""
-    home = getattr(env, "_hermes_sandbox_home", None)
+    home = getattr(env, "_slave_sandbox_home", None)
     return home if isinstance(home, str) and posixpath.isabs(home) and home != "/" else None
 
 
@@ -205,28 +205,28 @@ def _in_sandbox_home(cwd: Any, env: Any) -> bool:
 
 @functools.lru_cache(maxsize=32)
 def _launch_dirs(home: str, native_home: str) -> frozenset[str]:
-    """The lexical launch set for one Hermes home. The root depends on that home and the platform default home
+    """The lexical launch set for one slave-agent home. The root depends on that home and the platform default home
     (``native_home``, which keys the cache too); the install root is fixed per process. Cached: the shared root
     memo holds a single entry and thrashed when called once per command."""
-    from hermes_cli._startup_fast import project_root_str
-    from hermes_constants import get_default_hermes_root
+    from slave_cli._startup_fast import project_root_str
+    from slave_constants import get_default_slave_root
 
-    root = posixpath.normpath(str(get_default_hermes_root(home=home)))
+    root = posixpath.normpath(str(get_default_slave_root(home=home)))
     return frozenset({home, root, posixpath.join(home, "home"), posixpath.join(root, "home"), project_root_str()})
 
 
 def _is_container_launch_dir(path: str) -> bool:
-    """True when *path* (absolute) IS a directory Hermes starts in inside a container: the Hermes home, the
-    Hermes root (``/opt/data`` in the official image, which is also the image user's HOME), ``home/`` under
+    """True when *path* (absolute) IS a directory slave-agent starts in inside a container: the slave-agent home, the
+    slave-agent root (``/opt/data`` in the official image, which is also the image user's HOME), ``home/`` under
     each, or the install root (``/opt/hermes``, as its real path). Those exist only in the container, never on
     an SSH target. The candidate is compared lexically: a symlink on this machine says nothing about the target.
-    On a host they are left alone, since an SSH target may share the layout (``~/.hermes`` on an NFS home)."""
-    from hermes_constants import _get_platform_default_hermes_home, get_hermes_home, is_container
+    On a host they are left alone, since an SSH target may share the layout (``~/.slave`` on an NFS home)."""
+    from slave_constants import _get_platform_default_slave_home, get_slave_home, is_container
 
     if not is_container():
         return False
-    home = posixpath.normpath(str(get_hermes_home()))
-    return posixpath.normpath(path) in _launch_dirs(home, str(_get_platform_default_hermes_home()))
+    home = posixpath.normpath(str(get_slave_home()))
+    return posixpath.normpath(path) in _launch_dirs(home, str(_get_platform_default_slave_home()))
 
 
 @overload
@@ -237,11 +237,11 @@ def coerce_ssh_remote_cwd(cwd: str | None, env_type: str | None) -> str | None:
     """Cwd to send to an SSH backend.
 
     ``~``-prefixed paths stay literal so the remote shell expands them to the
-    SSH user's home. The Hermes process's subprocess home (``/opt/data/home``
+    SSH user's home. The slave-agent process's subprocess home (``/opt/data/home``
     in the official Docker image) is a directory on the machine running
-    Hermes: it and anything under it are rewritten onto the remote ``~``, since
+    slave-agent: it and anything under it are rewritten onto the remote ``~``, since
     ``cd`` into the host path exits 126 on the target. In a container, the
-    directories Hermes starts in (the Hermes home, its root ``/opt/data``,
+    directories slave-agent starts in (the slave-agent home, its root ``/opt/data``,
     which is also the image user's HOME, ``home/`` under each, the install
     root) map to ``~`` too; folders below them are kept, except under the
     subprocess home (above), since a remote may use the same path. A
@@ -257,7 +257,7 @@ def coerce_ssh_remote_cwd(cwd: str | None, env_type: str | None) -> str | None:
         return text
     if _is_container_launch_dir(text):
         return "~"
-    from hermes_constants import get_real_home, get_subprocess_home
+    from slave_constants import get_real_home, get_subprocess_home
 
     home = get_subprocess_home()
     if not home or posixpath.normpath(home) == posixpath.normpath(get_real_home()):

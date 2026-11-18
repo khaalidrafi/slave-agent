@@ -72,12 +72,12 @@ class _Runner:
 @pytest.fixture
 def owner(monkeypatch):
     mic, sink = _Mic(), _Sink()
-    monkeypatch.setitem(sys.modules, "hermes_cli.voice", mic)
+    monkeypatch.setitem(sys.modules, "slave_cli.voice", mic)
     monkeypatch.setattr(server, "_load_cfg", dict)
     monkeypatch.setattr(server, "_tts_lease_async", lambda *a: None)
     monkeypatch.setattr(server, "_stdio_transport", sink)
     monkeypatch.setattr(server, "_voice_event_sid", "")
-    monkeypatch.setenv("HERMES_VOICE", "0")
+    monkeypatch.setenv("SLAVE_VOICE", "0")
     sources = {sid: SimpleNamespace(chat_id=sid, platform=Platform.LOCAL) for sid in ("owner", "other")}
     runner = _Runner({sid: SimpleNamespace(source=src) for sid, src in sources.items()})
     monkeypatch.setattr(run_api, "_ACTIVE_RUNNER", runner)
@@ -175,7 +175,7 @@ def stop_phrase(monkeypatch):
 def test_typed_stop_turns_the_owner_mode_off_not_the_sidecar_flag(owner, stop_phrase, monkeypatch):
     owner.slash("owner", "on")
     owner.rpc("voice.record", action="start", session_id="owner")
-    monkeypatch.setenv("HERMES_VOICE", "1")  # a sidecar session's own voice chat
+    monkeypatch.setenv("SLAVE_VOICE", "1")  # a sidecar session's own voice chat
     reply = owner.rpc("prompt.submit", session_id="owner", text="stop")
     assert reply["result"] == {"voice_stopped": True}
     assert owner.runner._voice_mode["owner"] == "off" and owner.mic.active is False
@@ -183,7 +183,7 @@ def test_typed_stop_turns_the_owner_mode_off_not_the_sidecar_flag(owner, stop_ph
 
 
 def test_typed_stop_reads_the_owner_mode(owner, stop_phrase):
-    owner.slash("owner", "on")  # HERMES_VOICE stays "0": the owner mode is the gate
+    owner.slash("owner", "on")  # SLAVE_VOICE stays "0": the owner mode is the gate
     assert owner.rpc("prompt.submit", session_id="owner", text="stop")["result"] == {"voice_stopped": True}
     assert owner.runner._voice_mode["owner"] == "off"
 
@@ -191,7 +191,7 @@ def test_typed_stop_reads_the_owner_mode(owner, stop_phrase):
 def test_full_duplex_stop_turns_the_owner_mode_off_not_the_sidecar_flag(owner, stop_phrase, monkeypatch):
     owner.slash("owner", "on")
     owner.rpc("voice.record", action="start", session_id="owner")
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("SLAVE_VOICE", "1")
     server._deliver_fd_transcript("stop")
     assert owner.runner._voice_mode["owner"] == "off"
     assert server._voice_mode_enabled() is True

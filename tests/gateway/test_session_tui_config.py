@@ -4,7 +4,7 @@ per-TUI sidecar ``config.set`` — never refused, never inference."""
 import asyncio
 import json
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from tests.gateway.test_session_busy_controls import owner, admissions, settled
@@ -155,7 +155,7 @@ def test_personality_persists_to_the_profile_and_drives_the_next_turn(tmp_path):
                 await settled(home)
                 systems = [' '.join(str(m.get('content')) for m in body['messages'] if m['role'] == 'system')
                            for body in peer.requests]
-                assert 'Captain Hermes' not in systems[0] and 'Captain Hermes' in systems[-1], systems
+                assert 'Captain slave-agent' not in systems[0] and 'Captain slave-agent' in systems[-1], systems
                 assert (await rpc(ws, 'config.set', key='personality', value='nobody', session_id=sid)
                         ).get('error', {}).get('message') == 'unknown_personality'
                 result = await rpc(ws, 'config.set', key='personality', value='none', session_id=sid)

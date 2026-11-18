@@ -30,7 +30,7 @@ class TestSenderIdentityParsing(unittest.TestCase):
         # ``@example.com`` re-parses as itself, so only the empty-local-part check keeps it out of chat_id and RCPT TO.
         self.assertEqual(_extract_email_address("@example.com"), "")
 
-    @patch.dict(os.environ, {"EMAIL_ADDRESS": "hermes@example.com", "EMAIL_PASSWORD": "pw",
+    @patch.dict(os.environ, {"EMAIL_ADDRESS": "slave@example.com", "EMAIL_PASSWORD": "pw",
                              "EMAIL_IMAP_HOST": "imap.example.com", "EMAIL_SMTP_HOST": "smtp.example.com",
                              "EMAIL_ALLOWED_USERS": "kevin@example.com"}, clear=False)
     def test_non_ascii_local_part_does_not_fold_onto_an_allowlisted_address(self):
@@ -46,7 +46,7 @@ class TestSenderIdentityParsing(unittest.TestCase):
         self.assertTrue(adapter._sender_accepted(sender, authenticated))
 
 
-_OPEN_ACCESS_ENV = {"EMAIL_ADDRESS": "hermes@bot.test", "EMAIL_PASSWORD": "pw", "EMAIL_IMAP_HOST": "imap.bot.test",
+_OPEN_ACCESS_ENV = {"EMAIL_ADDRESS": "slave@bot.test", "EMAIL_PASSWORD": "pw", "EMAIL_IMAP_HOST": "imap.bot.test",
                     "EMAIL_SMTP_HOST": "smtp.bot.test", "EMAIL_AUTHSERV_ID": "mx.bot.test",
                     "EMAIL_ALLOW_ALL_USERS": "true", "EMAIL_ALLOWED_USERS": "", "GATEWAY_ALLOWED_USERS": ""}
 

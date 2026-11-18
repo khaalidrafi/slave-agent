@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 _DISK_DEGRADED_PERCENT = 90.0
@@ -31,7 +31,7 @@ def _probe_state_db(home: Path) -> dict[str, Any]:
 
 
 def _probe_config(home: Path) -> dict[str, Any]:
-    from hermes_cli.config_backend import ConfigBackendUnavailable, config_exists, read_config_doc_readonly
+    from slave_cli.config_backend import ConfigBackendUnavailable, config_exists, read_config_doc_readonly
     path = home / "config.yaml"
     try:
         if not config_exists(path):
@@ -85,7 +85,7 @@ def collect_runtime_readiness(
 ) -> dict[str, Any]:
     """Bounded readiness diagnostics, no runtime mutation.  Even authenticated, probes
     expose status and counts only: never config values, credentials, paths, payloads."""
-    home = get_hermes_home()
+    home = get_slave_home()
     runtime = runtime_status if isinstance(runtime_status, dict) else {}
     state_db_probe = _probe_state_db(home)
     checks = {

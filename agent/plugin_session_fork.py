@@ -33,7 +33,7 @@ MAX_ITERATIONS = 16  # the background review's own cap
 MAX_PROMPT_CHARS = 8192
 MAX_TIMEOUT_SECONDS = 1800.0
 
-_TURN_ORIGIN: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("hermes_turn_origin", default=None)
+_TURN_ORIGIN: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("slave_turn_origin", default=None)
 
 # The one place a core tool is marked fork-safe. A plugin fork holds only the requesting plugin's
 # own tools plus these; every other tool (another plugin's, any MCP tool, any unmarked core tool)
@@ -490,7 +490,7 @@ def _run_job(job: _ForkJob) -> None:
     from agent.side_question import trim_snapshot_for_fork
     from agent.side_question_request import _agent_provider_refusal, runtime_key
     from agent.thread_scoped_output import thread_scoped_silence
-    from hermes_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
+    from slave_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
 
     capture, started = job.capture, time.monotonic()
     parent = capture.parent_ref()

@@ -1,7 +1,7 @@
 """``_AnthropicCompletionsAdapter`` forwards the caller's request timeout to the Messages call.
 
 Without it every auxiliary request on an anthropic_messages route ran on the client's 900 s read
-default instead of its task budget (compression, titles, ``hermes fallback check --live``).
+default instead of its task budget (compression, titles, ``slave fallback check --live``).
 """
 import types
 

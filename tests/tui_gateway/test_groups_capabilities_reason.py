@@ -13,9 +13,9 @@ def home(tmp_path, monkeypatch):
     class DurableRunStore:
         durable = True
 
-    path = tmp_path / ".hermes"
+    path = tmp_path / ".slave"
     path.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(path))
+    monkeypatch.setenv("SLAVE_HOME", str(path))
     monkeypatch.setenv("API_SERVER_KEY", "gateway-api-key-1234567890")
     monkeypatch.setattr(srv, "_run_idempotency_store", DurableRunStore(), raising=False)
     methods_groups.stop_hosted_room_service(timeout=1.0)

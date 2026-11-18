@@ -14,10 +14,10 @@ from collections import deque
 from pathlib import Path
 from typing import IO, Callable, Protocol
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tools.environments.fd_wait import open_fd_waiter
 from tools.tool_output_truncate import head_tail_split, truncation_notice
-from hermes_cli._subprocess_compat import windows_hide_flags
+from slave_cli._subprocess_compat import windows_hide_flags
 
 # Sentinel capacity for full-fidelity capture: large enough that the collector
 # never evicts, so bounded and unbounded modes share one code path.
@@ -205,7 +205,7 @@ class _BoundedOutputCollector:
 def _new_output_collector(proc, bounded_capture: bool, control_marker: str = "") -> _BoundedOutputCollector:
     """Build the collector for one ``_wait_for_process`` call. ``bounded_capture`` (foreground
     terminal path only) caps retention at ``tool_output.max_bytes`` and tees overflow to a
-    spill file under ``$HERMES_HOME/cache/terminal-output`` (created only on actual overflow;
+    spill file under ``$SLAVE_HOME/cache/terminal-output`` (created only on actual overflow;
     spills older than 7 days are pruned opportunistically). Otherwise the collector is
     effectively unbounded so internal consumers keep full-fidelity output."""
     if not bounded_capture:
@@ -220,7 +220,7 @@ def _new_output_collector(proc, bounded_capture: bool, control_marker: str = "")
     if not host_feature_enabled("tool_host_artifacts"):  # a hosted agent's output is never teed here
         return _BoundedOutputCollector(capture_limit, control_marker=control_marker)
     try:
-        spill_dir = get_hermes_home() / "cache" / "terminal-output"
+        spill_dir = get_slave_home() / "cache" / "terminal-output"
         spill_path = spill_dir / f"out-{int(time.time())}-{os.getpid()}-{id(proc) & 0xffff:x}.log"
         if spill_dir.is_dir():
             cutoff = time.time() - _SPILL_MAX_AGE_S
@@ -252,11 +252,11 @@ def _pipe_stdin(proc: subprocess.Popen, data: str) -> None:
     text-mode stdin would translate ``\\n`` -> ``\\r\\n`` and corrupt every write_file/patch
     payload. Encoding uses ``surrogateescape`` (exact inverse of the read-side decode);
     surrogates outside U+DC80-U+DCFF raise, the error is recorded on
-    ``proc._hermes_stdin_errors`` (surfaced by ``_wait_for_process`` as ``stdin_error``) and
+    ``proc._slave_stdin_errors`` (surfaced by ``_wait_for_process`` as ``stdin_error``) and
     stdin is still closed in ``finally`` so the child sees EOF instead of hanging.
     """
     errors: list[BaseException] = []
-    proc._hermes_stdin_errors = errors
+    proc._slave_stdin_errors = errors
 
     def _write():
         if proc.stdin is None:
@@ -283,7 +283,7 @@ def _pipe_stdin(proc: subprocess.Popen, data: str) -> None:
                 pass
 
     thread = threading.Thread(target=_write, daemon=True)
-    proc._hermes_stdin_thread = thread
+    proc._slave_stdin_thread = thread
     thread.start()
 
 

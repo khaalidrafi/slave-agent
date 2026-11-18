@@ -8,7 +8,7 @@ describe("web/vite.config.ts dev server", () => {
   it("proxies the dev page's sockets with their own Host and Origin", () => {
     // The backend admits an upgrade whose Origin names the Host it was sent
     // to. Vite keeps the browser's Host (localhost:5173) unless changeOrigin
-    // is set, so the dev page's own Origin matches it whether HERMES_DASHBOARD_URL
+    // is set, so the dev page's own Origin matches it whether SLAVE_DASHBOARD_URL
     // is the backend or a port forward to it. Rewriting Origin to the target
     // breaks the forward: the backend never sees the forward's port as its own.
     const api = server.proxy?.["/api"];

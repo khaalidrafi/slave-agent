@@ -1,5 +1,5 @@
 """Account-owned connector RPCs come only from the desktop Connectors page, so their gateway requests
-name the ``desktop`` surface even on a backend started without ``HERMES_DESKTOP`` (a URL, SSH-less or
+name the ``desktop`` surface even on a backend started without ``SLAVE_DESKTOP`` (a URL, SSH-less or
 cloud backend the app attached to)."""
 
 import pytest
@@ -11,7 +11,7 @@ from tui_gateway import server
 
 @pytest.fixture
 def remote_backend(monkeypatch):
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
+    monkeypatch.delenv("SLAVE_DESKTOP", raising=False)
     monkeypatch.setattr("tools.connectors.connectors_available", lambda: True)
     monkeypatch.setattr("tools.connectors.ensure_guest_identity", lambda: None)
     monkeypatch.setattr("tools.connectors.managed.ensure_guest_identity", lambda: None)

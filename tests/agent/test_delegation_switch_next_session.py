@@ -2,7 +2,7 @@
 
 A session routes on the backend its ``delegate_task`` schema was built from, so routing and schema switch
 together. Real AIAgent turns against a recording fake provider, a real delegation backend plugin discovered from
-a temp HERMES_HOME and the real session DB: each test reads the schema Hermes actually sent and the backend a
+a temp SLAVE_HOME and the real session DB: each test reads the schema slave-agent actually sent and the backend a
 task with no choice routes on.
 """
 
@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from tests.e2e.core.history._helpers import NO_BACKGROUND_REVIEW, OFFLINE_CONFIG
-from tests.fakes.fake_llm_provider import FakeLLMServer, write_hermes_home
+from tests.fakes.fake_llm_provider import FakeLLMServer, write_slave_home
 from tests.fixtures.storage_seed import seed_session
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
 from tests.tools.test_delegation_backends import OPTIONS, PROBE_PLUGIN, REPO_PLUGINS
@@ -23,11 +23,11 @@ from tests.tools.test_delegation_backends import OPTIONS, PROBE_PLUGIN, REPO_PLU
 @pytest.fixture
 def options_backend(monkeypatch):
     """``delegation.backend: probe-options`` (adds a per-task ``option``) on a fake provider."""
-    import hermes_yaml as yaml
-    from hermes_cli import plugins as plugins_mod
-    from hermes_cli.plugins import PluginManager
+    import slave_yaml as yaml
+    from slave_cli import plugins as plugins_mod
+    from slave_cli.plugins import PluginManager
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     plugin_dir = home / "plugins" / "probe-options"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "probe-options", "version": "1.0"}))
@@ -39,7 +39,7 @@ def options_backend(monkeypatch):
     srv = FakeLLMServer([]).__enter__()
     extra = yaml.safe_dump({"plugins": {"enabled": ["probe-options"]}, "delegation": {
         "backend": "probe-options", "backends": {"probe-options": {"options": OPTIONS}}}})
-    write_hermes_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + extra)
+    write_slave_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + extra)
     manager = PluginManager()
     manager.discover_and_load()
     yield srv, home
@@ -100,7 +100,7 @@ def test_a_now_switch_rebuilds_this_sessions_delegate_task_and_routing_for_the_n
 
 
 def test_a_plain_switch_changes_nothing_in_this_session_and_new_sessions_take_the_saved_backend(options_backend):
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
     from agent.delegation_backends import set_global_backend
 
     srv, home = options_backend

@@ -12,8 +12,8 @@ description: >-
   written from untrusted content) is stripped of invisible characters, wrapped in an <untrusted>
   marker, and marks the session as tainted. While a session is tainted, side-effecting tool calls are
   checked against a policy: credential reads, and writes into files the agent reads as instructions
-  (AGENTS.md, SKILL.md, hook handlers, Hermes' own config), are refused; network egress and writes
-  outside the workspace go to Hermes's own approval gate, which is never auto-approved. A call is
+  (AGENTS.md, SKILL.md, hook handlers, slave-agent’ own config), are refused; network egress and writes
+  outside the workspace go to slave-agent’s own approval gate, which is never auto-approved. A call is
   evaluated as the call it really makes: tool_call, execute_code and process_manage are unwrapped to
   what they actually run, taint is copied into subagents, and an encoded payload is decoded and
   judged by what it decodes to.
@@ -22,7 +22,7 @@ description: >-
   best-effort pattern matching over tool arguments, so an obfuscated command, a payload assembled to
   avoid the patterns, and writes through the memory or cron tools can get past them. A seatbelt, not
   a sandbox; the README's Known limitations lists exactly what is out of scope.
-  Ten rules, each tunable to allow/monitor/escalate/block; a receipts ledger; a `hermes taint-sentry`
+  Ten rules, each tunable to allow/monitor/escalate/block; a receipts ledger; a `slave taint-sentry`
   CLI with a dry-run policy tester. Ships a Desktop half in the same package: a pane, a status-bar
   chip and ⌘K commands showing live taint state, the receipt feed and per-rule actions, backed by
   `/api/plugins/taint-sentry/`. The pane changes a rule on the user's click; a tool call that tries

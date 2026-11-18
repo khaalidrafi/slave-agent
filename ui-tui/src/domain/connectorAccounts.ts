@@ -1,4 +1,4 @@
-import type { ConnectorAccountRow } from '@hermes/shared/gateway-events'
+import type { ConnectorAccountRow } from '@slave-agent/shared/gateway-events'
 
 /** The account-name format the gateway enforces (`connector_alias`). */
 export const ACCOUNT_NAME_RE = /^[a-z0-9][a-z0-9-]{0,31}$/

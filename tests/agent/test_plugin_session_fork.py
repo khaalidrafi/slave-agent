@@ -1,6 +1,6 @@
 """Plugin session forks (``ctx.fork_session``, ``agent/plugin_session_fork.py``).
 
-Plugins load through real discovery from a temp ``HERMES_HOME``. The lease, gating and
+Plugins load through real discovery from a temp ``SLAVE_HOME``. The lease, gating and
 lifecycle rules run against a scripted stand-in fork (``build_cache_parity_fork`` patched);
 the end-to-end tests run a real turn whose plugin forks the real session agent from
 ``post_llm_call`` and lets the fork call the plugin's own tool.
@@ -16,20 +16,20 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
-import hermes_cli.plugins as plugins_mod
+import slave_cli.plugins as plugins_mod
 from agent import background_review, plugin_session_fork, review_idle_queue, side_question_lease
 from agent.side_question_lease import issue_side_question_token
-from hermes_cli.plugins import PluginContext
+from slave_cli.plugins import PluginContext
 
 CAP = "llm.session_fork"
 PLUGIN = "wisdom"
 
 
 def _install_plugin(name: str, *, declares: bool, body: str = "def register(ctx):\n    pass\n") -> None:
-    plugin_dir = Path(os.environ["HERMES_HOME"]) / "plugins" / name
+    plugin_dir = Path(os.environ["SLAVE_HOME"]) / "plugins" / name
     plugin_dir.mkdir(parents=True)
     manifest = {"name": name, **({"capabilities": [CAP]} if declares else {})}
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump(manifest), encoding="utf-8")
@@ -38,7 +38,7 @@ def _install_plugin(name: str, *, declares: bool, body: str = "def register(ctx)
 
 def _load(enabled: list[str], granted: list[str]) -> plugins_mod.PluginManager:
     entries = {name: {"granted_capabilities": [CAP]} for name in granted}
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["SLAVE_HOME"]) / "config.yaml").write_text(
         yaml.safe_dump({"plugins": {"enabled": enabled, "entries": entries}}), encoding="utf-8")
     plugins_mod._plugin_manager = plugins_mod.PluginManager()
     plugins_mod.discover_plugins(force=True)
@@ -301,7 +301,7 @@ _HELD = ("cw_offer", "delegate_task", "a2a_call", "meet_join", "mcp_srv_lookup",
 def test_the_fork_dispatch_guard_holds_only_the_allowlist_however_the_job_was_built(forks, consented, mcp_tool):
     """Second fence: a job naming tools outside the allowlist still cannot dispatch them from the
     fork thread; its plugin's own tool still can."""
-    from hermes_cli.plugins import get_pre_tool_call_directive
+    from slave_cli.plugins import get_pre_tool_call_directive
 
     parent = _agent(tools=[_tool(name) for name in _HELD])
     forks.script = lambda fork: {"final_response": json.dumps({
@@ -316,7 +316,7 @@ def test_the_fork_dispatch_guard_holds_only_the_allowlist_however_the_job_was_bu
 def test_the_fork_dispatch_guard_reads_the_allowlist_again_when_the_fork_starts(forks, consented):
     """A tool that stopped being the plugin's own between the request and the fork's start (the
     plugin was unloaded, or another plugin took the name) is refused at dispatch."""
-    from hermes_cli.plugins import get_pre_tool_call_directive
+    from slave_cli.plugins import get_pre_tool_call_directive
 
     parent = _agent()
     reads: list = []
@@ -339,7 +339,7 @@ def test_own_task_inheriting_background_review_routes_the_fork_only_with_the_gra
         "                                inherit_from='background_review')\n"))
     manager = _load([PLUGIN], granted=[PLUGIN])
     assert manager._aux_tasks["wisdom_suggest"]["inherit_from"] == "background_review"
-    cfg_path = Path(os.environ["HERMES_HOME"]) / "config.yaml"
+    cfg_path = Path(os.environ["SLAVE_HOME"]) / "config.yaml"
     cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
     cfg["auxiliary"] = {"background_review": {"provider": "openrouter", "model": "vendor/review"}}
     if granted:
@@ -725,7 +725,7 @@ def test_real_fork_never_reaches_a_delegate_worker(monkeypatch):
     delegate worker's copied context holds neither the whitelist nor the auto-deny)."""
     import contextvars
 
-    from hermes_cli.plugins import get_pre_tool_call_directive
+    from slave_cli.plugins import get_pre_tool_call_directive
     from run_agent import AIAgent
     from tools.terminal_tool import _get_approval_callback, set_approval_callback
 

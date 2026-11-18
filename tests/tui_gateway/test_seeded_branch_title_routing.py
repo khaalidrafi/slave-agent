@@ -11,7 +11,7 @@ from tests.fixtures.storage_seed import seed_session
 
 
 def test_seeded_desktop_branch_title_is_derived_until_the_user_renames(monkeypatch, tmp_path):
-    monkeypatch.setattr("hermes_cli.banner.prefetch_update_check", lambda: None)
+    monkeypatch.setattr("slave_cli.banner.prefetch_update_check", lambda: None)
     from tui_gateway import server
 
     project = tmp_path / "example-project"

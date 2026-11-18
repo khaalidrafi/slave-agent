@@ -1,8 +1,8 @@
 """Placeholder-first creation on a SQLite backend store must not hide real CLI sessions (#138831)."""
 import pytest
 
-from hermes_cli.gateway_session_store import SurfaceLabelReader
-from hermes_cli.session_listing import query_session_listing
+from slave_cli.gateway_session_store import SurfaceLabelReader
+from slave_cli.session_listing import query_session_listing
 from persistence.sqlite.conversation._store.sessions import create_session, get_session
 from persistence.sqlite.conversation._store.titles import set_session_title
 from persistence.sqlite.conversation._store.usage import update_token_counts

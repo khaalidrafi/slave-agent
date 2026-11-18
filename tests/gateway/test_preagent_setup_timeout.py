@@ -44,7 +44,7 @@ def _bare_runner() -> GatewayRunner:
 
 @pytest.mark.asyncio
 async def test_hung_preagent_resolve_is_cancelled_and_notified(monkeypatch, caplog):
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", "0.05")
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", "0.05")
     runner = _bare_runner()
 
     async def _hang(*_args, **_kwargs):
@@ -70,7 +70,7 @@ async def test_hung_preagent_resolve_is_cancelled_and_notified(monkeypatch, capl
 
 @pytest.mark.asyncio
 async def test_preagent_timeout_zero_does_not_bound_setup(monkeypatch):
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", "0")
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", "0")
     runner = _bare_runner()
     seen = asyncio.Event()
 
@@ -87,8 +87,8 @@ async def test_preagent_timeout_zero_does_not_bound_setup(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_pending_followup_acks_after_stall_timeout(monkeypatch):
-    monkeypatch.setenv("HERMES_SESSION_STALL_TIMEOUT", "60")
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "true")
+    monkeypatch.setenv("SLAVE_SESSION_STALL_TIMEOUT", "60")
+    monkeypatch.setenv("SLAVE_GATEWAY_BUSY_ACK_ENABLED", "true")
     runner = _bare_runner()
     runner._draining = False
     runner._hm_busy_slash_or_photo = AsyncMock(return_value=(False, None))
@@ -117,7 +117,7 @@ async def test_pending_followup_acks_after_stall_timeout(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fresh_pending_followup_stays_silent(monkeypatch):
-    monkeypatch.setenv("HERMES_SESSION_STALL_TIMEOUT", "300")
+    monkeypatch.setenv("SLAVE_SESSION_STALL_TIMEOUT", "300")
     runner = _bare_runner()
     runner._draining = False
     runner._hm_busy_slash_or_photo = AsyncMock(return_value=(False, None))
@@ -144,7 +144,7 @@ async def test_fresh_pending_followup_stays_silent(monkeypatch):
 @pytest.mark.asyncio
 async def test_setup_timeout_sends_no_notice_to_a_bot_peer(monkeypatch):
     """A known bot would read the notice as a new request and restart the exchange."""
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", "0.05")
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", "0.05")
     runner = _bare_runner()
 
     async def _hang(*_args, **_kwargs):

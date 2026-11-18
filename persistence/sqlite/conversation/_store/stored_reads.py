@@ -302,7 +302,7 @@ def transcript_tool_calls_before(holder: StoreHolder, segment_ids: list[str], be
 
 def sessions_in_workspace(holder: StoreHolder, session_ids: Iterable[str], workspace: str) -> set[str]:
     """The ids among *session_ids* whose row is in *workspace*: the clause the listing filters by
-    (``hermes -c``'s rule: the same repo root, or at/under the folder)."""
+    (``slave -c``'s rule: the same repo root, or at/under the folder)."""
     clause, params = _workspace_key_clause(workspace)
     with holder._read_ctx() as conn:
         rows = conn.execute(f"SELECT s.id FROM sessions s WHERE s.id IN (SELECT value FROM json_each(?)) AND {clause}",

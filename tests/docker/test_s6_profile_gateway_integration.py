@@ -1,6 +1,6 @@
 """Harness: in-container integration tests for S6ServiceManager.
 
-The unit tests in tests/hermes_cli/test_service_manager.py exercise the
+The unit tests in tests/slave_cli/test_service_manager.py exercise the
 class against a tmp-path scandir with a stubbed ``subprocess.run``.
 These tests run the real class inside a real container against the
 real s6-svc / s6-svscanctl binaries, validating end-to-end.
@@ -11,11 +11,11 @@ valid profile config). The full register → start → supervised-restart
 → unregister cycle is covered by Phase 4 once profile create/delete
 hooks land.
 
-Every ``docker exec`` here runs as the unprivileged ``hermes`` user
+Every ``docker exec`` here runs as the unprivileged ``slave`` user
 (via :func:`docker_exec` in conftest); see the conftest module
 docstring. The gateway scandir ``/run/hermes-service`` is created
-hermes-owned by the ``02-reconcile-profiles`` cont-init.d script and
-watched by a hermes s6-svscan, so register/unregister operations work
+slave-owned by the ``02-reconcile-profiles`` cont-init.d script and
+watched by a slave s6-svscan, so register/unregister operations work
 under UID 10000 while the root ``/run/service`` stays root-owned.
 """
 from __future__ import annotations
@@ -26,7 +26,7 @@ from tests.docker.conftest import docker_exec, start_container
 _REGISTER_SCRIPT = """
 import sys
 sys.path.insert(0, "/opt/hermes")
-from hermes_cli.service_manager import S6ServiceManager
+from slave_cli.service_manager import S6ServiceManager
 S6ServiceManager().register_profile_gateway("phase3test")
 # Don't worry about whether the gateway actually starts — we only care
 # that the supervision slot was created. The gateway run script will
@@ -69,7 +69,7 @@ def test_s6_register_creates_service_dir_in_live_container(
 
     # list_profile_gateways picks it up.
     r = docker_exec(container_name, "python3", "-c", (
-        "from hermes_cli.service_manager import S6ServiceManager;"
+        "from slave_cli.service_manager import S6ServiceManager;"
         "print(S6ServiceManager().list_profile_gateways())"
     ))
     assert "phase3test" in r.stdout, f"list output: {r.stdout!r}"

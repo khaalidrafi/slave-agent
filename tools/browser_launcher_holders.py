@@ -1,14 +1,14 @@
 """Cross-process holders of a shared-profile Chromium (``tools/browser_launcher.py``).
 
 A persistent profile (``browser.user_data_dir``, the Bot Desktop profile, the real-profile copy) has ONE
-Chromium, launched by whichever Hermes process got there first; every other process attaches to it. Each
+Chromium, launched by whichever slave-agent process got there first; every other process attaches to it. Each
 attacher leaves a lease beside the launch record in the profile's private state dir (per OS user, so every
-Hermes home pinning the dir sees the same leases: ``browser_launcher._shared_profiles_root``). The process holding
+slave-agent home pinning the dir sees the same leases: ``browser_launcher._shared_profiles_root``). The process holding
 the record (the launcher, or whoever it was handed to) stops the browser on exit only when no other live
-Hermes process holds a lease; otherwise it hands the record to one of them, so the LAST holder stops it. A
+slave-agent process holds a lease; otherwise it hands the record to one of them, so the LAST holder stops it. A
 holder that crashed is dropped once its pid and start time no longer match, never on the pid alone.
 
-A pid means something only inside the PID namespace and boot that wrote it (a ``HERMES_HOME`` shared by a
+A pid means something only inside the PID namespace and boot that wrote it (a ``SLAVE_HOME`` shared by a
 container gateway and a host CLI): every record, lease and throwaway-dir name carries the writer's
 :func:`ns_identity`, and one from another namespace or boot, or one lacking it, is never judged dead. A lease is
 keyed by the record of the browser it holds, whichever namespace wrote that record; only its holder part carries
@@ -207,5 +207,5 @@ def hand_over(record: Path, data: dict, holder: dict) -> None:
     from utils import atomic_json_write
     atomic_json_write(record, {**data, "owner_pid": holder["holder_pid"],
                                "owner_start_time": holder.get("holder_start_time")}, indent=None)
-    logger.info("browser: Chromium pid %s is still used by Hermes pid %s; handed it over instead of stopping it",
+    logger.info("browser: Chromium pid %s is still used by slave-agent pid %s; handed it over instead of stopping it",
                 data.get("pid"), holder["holder_pid"])

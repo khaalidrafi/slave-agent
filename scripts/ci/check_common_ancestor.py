@@ -8,7 +8,7 @@ parent-less root commit. ``git merge-base`` exits non-zero AND prints nothing wh
 commits share no ancestor; both are checked so the message is clear whichever signal fires.
 Writes the ``history-check`` review status (scripts/ci/review_status.py).
 
-The PR head is ``$_HERMES_PR_HEAD_SHA`` (``github.event.pull_request.head.sha``), never ``HEAD``:
+The PR head is ``$_SLAVE_PR_HEAD_SHA`` (``github.event.pull_request.head.sha``), never ``HEAD``:
 a pull_request checkout is the synthetic ``refs/pull/N/merge`` commit, whose first parent is
 main's tip, so ``merge-base origin/main HEAD`` always succeeds there (#128930). A head that merged
 an unrelated branch still shares an ancestor with main, so every root commit of the head must
@@ -69,7 +69,7 @@ def _has_commit(sha: str) -> bool:
 
 def pr_head() -> str:
     """The PR head commit, fetched when the checkout lacks it; "" when it cannot be resolved."""
-    sha = os.environ.get("_HERMES_PR_HEAD_SHA")
+    sha = os.environ.get("_SLAVE_PR_HEAD_SHA")
     if sha is None:
         sha = "HEAD"
     sha = sha.strip()
@@ -114,7 +114,7 @@ def _fail(title: str, summary: str, detail: str = "") -> int:
 def main() -> int:
     head = pr_head()
     if not head:
-        sha = os.environ.get("_HERMES_PR_HEAD_SHA", "HEAD")
+        sha = os.environ.get("_SLAVE_PR_HEAD_SHA", "HEAD")
         publish(action_required("unrelated histories", "PR head unavailable",
                                 f"The history check could not resolve the PR head {sha!r}.",
                                 "Re-run the job; the check cannot pass without the PR head.", ""),

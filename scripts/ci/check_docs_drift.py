@@ -39,7 +39,7 @@ def _docs_text() -> str:
 def config_leaves() -> list[str]:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from slave_cli.config_defaults import DEFAULT_CONFIG
 
     out: list[str] = []
 
@@ -60,7 +60,7 @@ def config_leaves() -> list[str]:
 def slash_commands() -> list[str]:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from hermes_cli.commands import COMMAND_REGISTRY
+    from slave_cli.commands import COMMAND_REGISTRY
 
     return sorted(c.name for c in COMMAND_REGISTRY)
 
@@ -68,7 +68,7 @@ def slash_commands() -> list[str]:
 def _yaml_paths(text: str) -> set[str]:
     import warnings
 
-    from hermes_yaml import safe_load
+    from slave_yaml import safe_load
     from ruamel.yaml.error import YAMLError
 
     paths: set[str] = set()

@@ -15,7 +15,7 @@ and a malformed-schema row is healed by the web open path, so neither is reporte
 The latch never clears on its own. A corrupt image does not heal, and a store that
 flickers between "ok" and "corrupt" is the silent failure this replaces. It resets when
 the process restarts, which is the recovery boundary ``StateDbCorruptError`` already
-documents (stop Hermes, recover or restore, start again). No marker is written to disk:
+documents (stop slave-agent, recover or restore, start again). No marker is written to disk:
 the file it would describe is the one that is damaged.
 """
 
@@ -33,7 +33,7 @@ from persistence.sqlite._state.errors import (
 )
 from storage_errors import is_fts_scoped_corruption_error
 
-logger = logging.getLogger("hermes_state_health")
+logger = logging.getLogger("slave_state_health")
 
 STORAGE_OK = "ok"
 STORAGE_CORRUPT = "corrupt"
@@ -66,8 +66,8 @@ def mark_storage_corrupt(db_path, reason: object) -> None:
         _corrupt[key] = str(reason)
     logger.error(
         "state.db at %s is structurally corrupt (%s); session storage is reported as corrupt "
-        "until Hermes restarts on a recovered or restored file. Stop Hermes, then run "
-        "`hermes sessions recover --source %s --inspect-only` or restore a snapshot.",
+        "until slave-agent restarts on a recovered or restored file. Stop slave-agent, then run "
+        "`slave sessions recover --source %s --inspect-only` or restore a snapshot.",
         db_path, reason, db_path,
     )
 

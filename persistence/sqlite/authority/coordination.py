@@ -41,7 +41,7 @@ from .subagents import KEEP_WAITING_UNITS_SQL, SubagentLedgerVerbs, recover_suba
 __all__ = ["SQLiteCoordinationRepository"]
 
 # The log records keep main's logger names: the store's and the delegation tool's.
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 _delegation_logger = logging.getLogger("tools.async_delegation")
 
 # What the compression-lock writes log and answer as their empty value: a store failure (translated) or a torn-down

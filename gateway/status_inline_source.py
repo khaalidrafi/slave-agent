@@ -1,7 +1,7 @@
 """Inline-source (``python -c <src> …``) command-line parsing for gateway process identity.
 
 Everything after ``-c`` is data for the inline program, not the process's own identity -- except
-Hermes' own bootstraps, which run an entry point in-process and are mapped back to the equivalent
+slave-agent’ own bootstraps, which run an entry point in-process and are mapped back to the equivalent
 ``python -m <module> <argv…>`` (see #107002).
 """
 
@@ -15,12 +15,12 @@ def inline_source_flag_index(tokens: list[str]) -> int | None:
 
     Everything after ``-c`` is data the inline program receives, not this process's own identity.
     The detached gateway restart watcher (``gateway._spawn_gateway_restart_watcher``) is spawned as
-    ``python -c <watcher source> <old_pid> <python> -m hermes_cli.main gateway run``: its trailing
+    ``python -c <watcher source> <old_pid> <python> -m slave_cli.main gateway run``: its trailing
     argv is the command the watcher will LATER spawn, so every argv matcher used to read it as a
     live gateway. See #107002 and the "never infer process identity from argv substrings" rule.
 
     Only interpreter options may precede ``-c``; the first non-option token ends the option block
-    (``python -m hermes_cli.main …`` therefore never matches).
+    (``python -m slave_cli.main …`` therefore never matches).
 
     The walk is VALUE-AWARE: ``-X``/``-W``/``-Q`` and ``--check-hash-based-pycs``/``--jit`` take a
     SEPARATE operand, so a naive "first non-option token ends the block" walk mistakes that operand
@@ -69,7 +69,7 @@ def command_line_runs_inline_source(tokens: list[str]) -> bool:
     return inline_source_flag_index(tokens) is not None
 
 
-# Hermes' own inline bootstraps hand control to a Hermes entry point IN this process, so the argv
+# Slave' own inline bootstraps hand control to a Slave entry point IN this process, so the argv
 # they run with is this process's own identity; every other ``-c`` program keeps its trailing argv
 # as data (#107002). Each pattern is one emitted source shape, anchored at both ends so a program
 # merely CARRYING a bootstrap command line (the restart watcher's respawn argv) never matches.
@@ -77,26 +77,26 @@ _Q = r"""['"]?"""
 _MAIN = rf"{_Q}__main__{_Q}"
 _RUN_MODULE = rf"runpy\.run_module\(\s*{_Q}(?P<target>[\w.]+){_Q}\s*,\s*run_name\s*=\s*{_MAIN}\s*,\s*alter_sys\s*=\s*True\s*\)"
 _BOOTSTRAPS = (
-    # hermes_cli._launchers.runtime_command (store launcher, the Windows updater's relaunch)
+    # slave_cli._launchers.runtime_command (store launcher, the Windows updater's relaunch)
     ("module", re.compile(rf"import os, sys, runpy;.*\b{_RUN_MODULE}", re.DOTALL)),
-    # hermes_cli.venv_sync.relaunch_command: argv is assigned inside the source
+    # slave_cli.venv_sync.relaunch_command: argv is assigned inside the source
     ("module", re.compile(rf"import sys, runpy; sys\.path\.insert\(.*\b{_RUN_MODULE}", re.DOTALL)),
     ("path", re.compile(
         rf"import sys, runpy; sys\.path\.insert\(.*\brunpy\.run_path\(\s*{_Q}(?P<target>[^'\"]+?){_Q}\s*,\s*run_name\s*=\s*{_MAIN}\s*\)",
         re.DOTALL)),
-    # hermes_cli.venv_sync.relaunch_command re-entering a ``-c`` launcher: the launcher's source is
+    # slave_cli.venv_sync.relaunch_command re-entering a ``-c`` launcher: the launcher's source is
     # exec'd as a string literal, its argv assigned before it; resolved through the rows above/below
     ("exec", re.compile(r"import sys, runpy; sys\.path\.insert\(.*?;\s*exec\((?P<target>.+)\)", re.DOTALL)),
-    # hermes_cli._launchers._launcher_script (the published POSIX shell / Windows .cmd launcher)
+    # slave_cli._launchers._launcher_script (the published POSIX shell / Windows .cmd launcher)
     ("entry", re.compile(r"import os, re, sys\s.*\bfrom\s+(?P<target>[\w.]+)\s+import\s+(?P<func>\w+)\b.*\bsys\.exit\(\s*(?P=func)\(\)\s*\)", re.DOTALL)),
     # scripts/build/launchers.py::posix_launcher (the bundled/Docker payload's bin/hermes). Spelled out
     # statement by statement: a ``.*`` would span a carrier's source plus the launcher argv it carries.
-    # Only the ``hermes`` entry: the same shape importing any other module is someone else's program.
+    # Only the ``slave`` entry: the same shape importing any other module is someone else's program.
     ("module", re.compile(
         rf"import os, site, sys;\s*sys\.argv\[0\]\s*=\s*{_Q}[\w.-]+{_Q};\s*"
-        rf"site\.addsitedir\(os\.environ\[{_Q}HERMES_SITE{_Q}\]\);"
-        r"\s*from\s+(?P<target>hermes_cli\.main)\s+import\s+main\s*;\s*sys\.exit\(\s*main\(\)\s*\)")),
-    # hermes_cli._launchers._write_cmd_launcher: the launcher script, base64-encoded
+        rf"site\.addsitedir\(os\.environ\[{_Q}SLAVE_SITE{_Q}\]\);"
+        r"\s*from\s+(?P<target>slave_cli\.main)\s+import\s+main\s*;\s*sys\.exit\(\s*main\(\)\s*\)")),
+    # slave_cli._launchers._write_cmd_launcher: the launcher script, base64-encoded
     ("base64", re.compile(rf"import base64; exec\(base64\.b64decode\({_Q}(?P<target>[A-Za-z0-9+/=]+){_Q}\)\)")),
 )
 _ASSIGNED_ARGV = re.compile(r"\bsys\.argv\s*=\s*\[(.*?)\]\s*;")
@@ -145,7 +145,7 @@ def _bootstrap_entry(source: str, argv: list[str]) -> list[str] | None:
 
 def inline_bootstrap_argv(tokens: list[str]) -> list[str] | None:
     """*tokens* as the equivalent ``python -m <module> <argv…>`` when this interpreter's ``-c`` source
-    is a Hermes bootstrap running an entry point in-process; None for any other inline source.
+    is a slave-agent bootstrap running an entry point in-process; None for any other inline source.
 
     Command lines usually arrive space-joined (``/proc``, psutil, ``ps``), which splits the source
     across tokens; the shortest token run that ends in a recognised tail is the source, whatever

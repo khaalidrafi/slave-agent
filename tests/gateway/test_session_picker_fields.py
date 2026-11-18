@@ -1,4 +1,4 @@
-"""``session.list`` carries what a session picker shows, and filters by folder with ``hermes -c``'s rule (#150091)."""
+"""``session.list`` carries what a session picker shows, and filters by folder with ``slave -c``'s rule (#150091)."""
 from types import SimpleNamespace
 
 import pytest
@@ -53,7 +53,7 @@ async def test_stored_rows_carry_picker_fields_and_filter_by_repo_root(tmp_path,
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     db = store.persistence

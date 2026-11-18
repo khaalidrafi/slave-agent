@@ -15,7 +15,7 @@ import logging
 import time
 from pathlib import Path
 
-from hermes_constants import get_process_hermes_home
+from slave_constants import get_process_slave_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ PLANNED_RESTART_MARKER_FILENAME = ".restart_pending.json"
 
 
 def planned_restart_marker_path(home: Path | None = None) -> Path:
-    return (home or get_process_hermes_home()) / PLANNED_RESTART_MARKER_FILENAME
+    return (home or get_process_slave_home()) / PLANNED_RESTART_MARKER_FILENAME
 
 
 def write_planned_restart_marker(*, via_service: bool = False, detached: bool = False) -> None:

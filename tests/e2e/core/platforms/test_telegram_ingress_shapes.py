@@ -33,7 +33,7 @@ def test_contact_card_reaches_model_and_stop_drops_buffered_photo(tmp_path) -> N
     llm = FakeLLMServer(director)
     llm.start()
     # A burst window far wider than any runner stall: /stop provably lands while the photo is buffered.
-    env = {**drv.gateway_env(), "HERMES_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS": str(_BURST_WINDOW)}
+    env = {**drv.gateway_env(), "SLAVE_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS": str(_BURST_WINDOW)}
     gw = GatewayUnderTest(tmp_path / "rig", llm_base_url=llm.base_url, config=drv.gateway_config(),
                           env=env, ready=drv.connected)
     uid = int(drv.user_id)

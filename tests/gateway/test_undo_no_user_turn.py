@@ -13,7 +13,7 @@ from tests.fixtures.storage_seed import seed_messages, seed_session
 
 
 def test_undo_with_no_user_turn_returns_none_and_changes_nothing(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     store = SessionStore(sessions_dir=tmp_path / "sessions", config=GatewayConfig())
     every_row = TranscriptRead(view=TranscriptView.ALL)

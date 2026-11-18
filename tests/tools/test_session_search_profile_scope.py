@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from gateway.session_policy import _ACTIVE_POLICY, SURFACES, LocalSessionPolicy
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_seed import seed_messages, seed_session
 from tools.session_search_tool import session_search
@@ -26,9 +26,9 @@ def _seed(home: Path, sid: str, text: str) -> None:
 
 @pytest.fixture
 def two_profiles(tmp_path, monkeypatch):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(root))  # the multiplexer's launch home
+    monkeypatch.setenv("SLAVE_HOME", str(root))  # the multiplexer's launch home
     eva = root / "profiles" / "eva"
     _seed(root, "s_owner", "owner secret marker")
     _seed(eva, "s_eva", "eva own marker")
@@ -39,7 +39,7 @@ def two_profiles(tmp_path, monkeypatch):
 
 def _as(home: Path, launched_from: str | None = None, **kwargs) -> dict:
     """``launched_from``: the frozen launch policy's source of a canonical local session's turn."""
-    token = set_hermes_home_override(home)
+    token = set_slave_home_override(home)
     policy = _ACTIVE_POLICY.set(launched_from and LocalSessionPolicy(
         source=launched_from, platform=SURFACES.get(launched_from, launched_from), cwd=str(home), model="m", toolsets=(),
         config_json="{}", request_json="{}", terminal_json="{}"))
@@ -47,7 +47,7 @@ def _as(home: Path, launched_from: str | None = None, **kwargs) -> dict:
         return json.loads(session_search(**kwargs))
     finally:
         _ACTIVE_POLICY.reset(policy)
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_secondary_profile_cannot_read_another_profile(two_profiles):
@@ -101,6 +101,6 @@ def test_standalone_secondary_profile_is_unchanged(two_profiles, monkeypatch):
     _root, eva = two_profiles
     from agent import secret_scope
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", False)
-    monkeypatch.setenv("HERMES_HOME", str(eva))
+    monkeypatch.setenv("SLAVE_HOME", str(eva))
     result = json.loads(session_search(session_id="s_owner", profile="default"))
     assert result["success"] is True and result["messages"][0]["content"] == "owner secret marker"

@@ -113,37 +113,37 @@ def _clean_route(provider_name: str, route: Any) -> dict[str, Any]:
 
 
 def _profile_home(name: Any) -> Path:
-    from hermes_cli.profiles import get_profile_dir, profile_exists
+    from slave_cli.profiles import get_profile_dir, profile_exists
     if not isinstance(name, str) or not name.strip() or not profile_exists(name):
-        raise DelegationRouteError(f"Profile {name!r} does not exist (see `hermes profile list`).")
+        raise DelegationRouteError(f"Profile {name!r} does not exist (see `slave profile list`).")
     return Path(get_profile_dir(name))
 
 
 @contextlib.contextmanager
 def delegated_profile_scope(home: Any) -> Iterator[None]:
-    """Run the block as profile ``home``: HERMES_HOME override, that profile's secret scope,
+    """Run the block as profile ``home``: SLAVE_HOME override, that profile's secret scope,
     multiplex semantics when it is not this process's own profile, and its terminal policy - the
     binding a multiplexed gateway applies to a routed turn (gateway/AGENTS.md § Profile scope).
     A no-op for anything but a path (``None``: no profile route) and for the home already in effect."""
-    from hermes_constants import get_hermes_home, get_routing_process_hermes_home, hermes_home_key
-    if not isinstance(home, (str, Path)) or hermes_home_key(home) == hermes_home_key(get_hermes_home()):
+    from slave_constants import get_slave_home, get_routing_process_slave_home, slave_home_key
+    if not isinstance(home, (str, Path)) or slave_home_key(home) == slave_home_key(get_slave_home()):
         yield
         return
     from agent.secret_scope import (
         reset_multiplex_context, reset_secret_scope, set_multiplex_context, set_secret_scope,
     )
     from gateway.hosted_room_execution_policy import bind_profile_routed, reset_profile_routed
-    from hermes_cli.env_loader import hydrate_profile_secret_sources
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_cli.env_loader import hydrate_profile_secret_sources
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     from tools.terminal_scope import install_profile_terminal_scope, reset_terminal_scope
     from tui_gateway.launch_profile_policy import owner_secret_scope
 
-    routed = hermes_home_key(home) != hermes_home_key(get_routing_process_hermes_home())
+    routed = slave_home_key(home) != slave_home_key(get_routing_process_slave_home())
     hydrate_profile_secret_sources(home)
     # Each step is entered inside the stack, so one that raises unwinds the ones already bound and the
     # parent never stays in the child's profile (same discipline as the gateway's routed-turn scope).
     with contextlib.ExitStack() as stack:
-        stack.callback(reset_hermes_home_override, set_hermes_home_override(str(home)))
+        stack.callback(reset_slave_home_override, set_slave_home_override(str(home)))
         stack.callback(reset_secret_scope, set_secret_scope(owner_secret_scope(home), profile_home=str(home)))
         # This route's own scope marks the child: a hosted room's execution
         # policy was signed for the delegating member's profile and must not
@@ -166,7 +166,7 @@ def child_profile_scope(child: Any) -> contextlib.AbstractContextManager:
 def _profile_model_request(cfg: Mapping[str, Any]) -> dict[str, Any]:
     """``resolve_runtime_provider`` kwargs for a profile's primary model, decoded by the same owner CLI startup
     uses (``resolve_startup_model_route``): a ``model.default`` alias takes the alias's model, endpoint and key."""
-    from hermes_cli.model_switch import resolve_startup_model_route
+    from slave_cli.model_switch import resolve_startup_model_route
     model_cfg = cfg.get("model")
     if isinstance(model_cfg, dict):
         model = model_cfg.get("default") or model_cfg.get("model")
@@ -190,8 +190,8 @@ def _refuse_under_worker_snapshot(home: Path) -> None:
     every config reader returns that snapshot and the process never opens profile files, so another profile's
     config.yaml is unreachable here. Refuse rather than pair the launch profile's model with the target's keys."""
     from agent.safe_worker_policy import worker_config_snapshot
-    from hermes_constants import get_hermes_home, hermes_home_key
-    if worker_config_snapshot() is not None and hermes_home_key(home) != hermes_home_key(get_hermes_home()):
+    from slave_constants import get_slave_home, slave_home_key
+    if worker_config_snapshot() is not None and slave_home_key(home) != slave_home_key(get_slave_home()):
         raise DelegationRouteError(
             f"Profile routes are unavailable in a managed worker session (its config is frozen at creation): "
             f"cannot run as the profile at {home}. Delegate without a profile.")
@@ -200,9 +200,9 @@ def _refuse_under_worker_snapshot(home: Path) -> None:
 def _profile_route(home: Path) -> TaskRoute:
     """The profile's own primary route, resolved inside its scope (its config.yaml + secrets). The
     child never borrows the launching profile's key, pool, fallback chain or reasoning level."""
-    from hermes_cli.config import load_config_readonly
-    from hermes_cli.runtime_provider import resolve_runtime_provider
-    from hermes_constants import resolve_reasoning_config
+    from slave_cli.config import load_config_readonly
+    from slave_cli.runtime_provider import resolve_runtime_provider
+    from slave_constants import resolve_reasoning_config
     from tools.delegate_tool_config import ResolvedReasoning, _credential_bundle, _require_pinned_command
     _refuse_under_worker_snapshot(home)
     with delegated_profile_scope(home):
@@ -267,7 +267,7 @@ def _check_backend_effort(index: int, route: Mapping[str, Any], config: Mapping[
     effort = route.get("reasoning_effort")
     if route.get("profile") or effort in (None, "") or effort == config.get("reasoning_effort"):
         return
-    from hermes_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
+    from slave_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
     if parse_reasoning_effort(effort) is None:
         raise DelegationRouteError(
             f"Task {index}: unknown reasoning_effort {effort!r} on this route. "

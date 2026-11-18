@@ -76,7 +76,7 @@ def test_manual_compress_uses_configured_plugin_engine(tmp_path, resident):
         name: {'id': name, 'name': name, 'limit': {'context': 1000000, 'output': 4000}}
         for name in ('original', 'summary')}}}))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1', ENGINE_LOG=str(log))
 
     async def call(ws, method, **params):

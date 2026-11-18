@@ -18,7 +18,7 @@ class InstallError(RuntimeError):
     def __init__(self, package: str, cause: str, remedy: str = ""):
         self.package = package
         self.cause = cause
-        self.remedy = remedy or "retry, or run `hermes pm doctor`"
+        self.remedy = remedy or "retry, or run `slave pm doctor`"
         super().__init__(f"{package}: {cause} — {self.remedy}")
 
 
@@ -57,7 +57,7 @@ class Package:
     deps: packages installed before this one.
     optional: not part of the root closure; installed on demand.
     default: an optional package the default install also carries (installers,
-        bare `pm install`, `hermes update`) unless the user declined it
+        bare `pm install`, `slave update`) unless the user declined it
         (pm/defaults.py). It stays optional: a failed download warns instead of
         failing the install, and its absence never blocks PATH activation.
     internal: tooling PM uses inside install/build steps — never on PATH
@@ -101,9 +101,9 @@ class Package:
 
     def latest_versions(self, target: str, locked: Optional[str] = None) -> list[str]:
         """Newest-first candidate versions for `target` — the "how do I find
-        latest" hook for `hermes pm update`. Empty list = this package has
+        latest" hook for `slave pm update`. Empty list = this package has
         no auto-update source (chromium is bumped by hand with
-        `hermes pm lock --bump`; venv is a state).
+        `slave pm lock --bump`; venv is a state).
 
         Subclasses resolve their upstream's real release index here; the
         update driver intersects across targets (per version_style) and
@@ -165,7 +165,7 @@ class Package:
         """Install-time remediation for a failed staged verification.
 
         verify() is also used by read-only inspection paths such as
-        hermes pm doctor and must stay side-effect free. The installer
+        slave pm doctor and must stay side-effect free. The installer
         calls this hook only after a freshly staged entry fails verification.
         Return (remaining reason, remedy): an empty reason when remediation
         made the staged entry usable; an empty remedy keeps InstallError's.

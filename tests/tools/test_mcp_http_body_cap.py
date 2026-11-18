@@ -43,7 +43,7 @@ async def test_oversized_body_rejected_via_content_length():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("declare_length", [True, False])
 async def test_cap_error_masks_url_query_credentials(declare_length):
-    """The ReadError text reaches the model and ``hermes mcp test`` (#133713)."""
+    """The ReadError text reaches the model and ``slave mcp test`` (#133713)."""
     secret = "s1g" + "Value" + "0123456789"
 
     class _Stream(httpx.AsyncByteStream):

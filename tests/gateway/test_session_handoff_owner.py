@@ -9,7 +9,7 @@ from tests.gateway.test_owner_loop_writes_class import _local, _owner
 
 
 def _telegram_home(tmp_path, monkeypatch, home_channel=True):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.chdir(tmp_path)  # the fixture authority's symbolic profile id is a relative home
     for key in ('TELEGRAM_BOT_TOKEN', 'TELEGRAM_HOME_CHANNEL', 'TELEGRAM_HOME_CHANNEL_NAME'):
         monkeypatch.delenv(key, raising=False)
@@ -86,7 +86,7 @@ async def test_handoff_is_refused_to_a_viewer_without_control(tmp_path, monkeypa
 async def test_handoff_to_a_relay_fronted_platform_is_queued(tmp_path, monkeypatch):
     """A relay-fronted gateway has only a RELAY block; the watcher still delivers Discord through it
     (``resolve_delivery_transport``), so the owner queues it as the classic CLI always did."""
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv('GATEWAY_RELAY_PLATFORMS', 'discord')
     monkeypatch.delenv('DISCORD_HOME_CHANNEL', raising=False)

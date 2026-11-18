@@ -72,7 +72,7 @@ def _gateway(tmp_path, name, model, root, *, api_port=None, link_port=None):
     user.mkdir()
     base = f'http://127.0.0.1:{model.server_port}/v1'
     gateway = {'multiplex_profiles': False}
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                              PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base,
                              PYTHONUNBUFFERED='1')
     if api_port is not None:
@@ -141,7 +141,7 @@ async def _register(home_ws, catalog, grant):
 
 def _grant_status(url, grant):
     request = urllib.request.Request(url + '/v1/room-members/capabilities',
-                                     headers={'Authorization': 'HermesRoom ' + grant})
+                                     headers={'Authorization': 'SlaveRoom ' + grant})
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             return response.status, json.loads(response.read())

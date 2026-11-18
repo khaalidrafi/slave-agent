@@ -2,7 +2,7 @@
 
 Do not infer support from an OpenAI family name or a Converse enum. AWS documents
 Sol Ultrafast on Mantle in us-east-1; runtime inference profiles still use Converse
-in Hermes and must not be silently rerouted (different auth/guardrail contracts).
+in slave-agent and must not be silently rerouted (different auth/guardrail contracts).
 https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-1-sol.html#model-card-openai-gpt-6-1-sol-tiers
 """
 

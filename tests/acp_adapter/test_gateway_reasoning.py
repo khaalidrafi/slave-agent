@@ -3,7 +3,7 @@
 The in-process server (``acp_adapter/server.py``) gave every editor turn a reasoning sink and streamed it as
 ``agent_thought_chunk``. On the gateway path the owner publishes ``reasoning.delta`` only for a live session
 whose ``show_reasoning`` flag a viewer set (``gateway/local_viewer_events.py``), so the editor asks for it on
-every attach. The end-to-end test runs an actual ``hermes acp`` stdio process against an ordinary isolated
+every attach. The end-to-end test runs an actual ``slave acp`` stdio process against an ordinary isolated
 gateway and a provider that reasons before it answers.
 """
 import asyncio
@@ -16,7 +16,7 @@ from acp.schema import AllowedOutcome
 from websockets.exceptions import ConnectionClosed
 
 from acp_adapter.gateway_server import GatewayACPAgent
-from hermes_cli.gateway_client import GatewayClientError, GatewayRPCError
+from slave_cli.gateway_client import GatewayClientError, GatewayRPCError
 from tests.acp_adapter.test_gateway_sessions import editor, viewer
 from tests.fakes.fake_llm_provider import FakeLLMServer, Text
 

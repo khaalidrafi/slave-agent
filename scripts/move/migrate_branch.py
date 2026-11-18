@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Carry the current branch across the module moves that landed on its target.
 
-A move chunk on the target is a set of commits carrying the trailer ``Hermes-Move: NN-<name> <role>``:
-commit A (role ``move``) renames files with ``git mv`` and updates ``hermes_agent/compat/moves.py``, commit B
+A move chunk on the target is a set of commits carrying the trailer ``Slave-Move: NN-<name> <role>``:
+commit A (role ``move``) renames files with ``git mv`` and updates ``slave_agent/compat/moves.py``, commit B
 (role ``codemod``) is the import rewrite, and hand fixes (role ``fix``, or no trailer) follow. Trailers without a
 role are read as: the first commit is A, only its direct child carrying the trailer is B, and any later trailer
 commit is a hand fix. For every chunk the branch has not merged yet, in landing order, this script
@@ -44,14 +44,14 @@ import tarfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-TRAILER = "Hermes-Move"
+TRAILER = "Slave-Move"
 ROLES = ("move", "codemod", "fix")
 CODEMOD = "scripts/move/rewrite_imports.py"
 GIT_TIMEOUT_S = 600
 CODEMOD_TIMEOUT_S = 1800
 _TOKEN = re.compile(r"[\w.]+")
 _SHEBANG_PYTHON = re.compile(rb"#!.*\bpython")
-_DATA_DIRS = ("scripts/move/", "hermes_agent/compat/")
+_DATA_DIRS = ("scripts/move/", "slave_agent/compat/")
 
 
 class Stop(Exception):
@@ -151,9 +151,9 @@ def _present(rename: str, onto: str) -> bool:
     status = [line.split("\t") for line in out("diff", "-M", "--name-status", f"{rename}^", rename).splitlines()]
     renames = [paths for kind, *paths in status if kind.startswith("R")]
     edits = [paths for kind, *paths in status if kind.startswith("M")]
-    if not renames or any(paths != ["hermes_agent/compat/moves.py"] for paths in edits):
+    if not renames or any(paths != ["slave_agent/compat/moves.py"] for paths in edits):
         raise Stop(f"Commit {rename[:12]} is commit A of a move chunk but is not a rename; commit A must be "
-                   "`git mv` only, plus the update of hermes_agent/compat/moves.py.")
+                   "`git mv` only, plus the update of slave_agent/compat/moves.py.")
     old_paths, new_paths = zip(*renames)
     def held(paths: tuple[str, ...]) -> int:
         return len(out("ls-tree", "-r", "--name-only", onto, "--", *paths).splitlines())

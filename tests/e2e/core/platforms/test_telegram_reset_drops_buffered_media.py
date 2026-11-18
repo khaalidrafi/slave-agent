@@ -30,7 +30,7 @@ def rig(tmp_path):
     director = Director()
     llm = FakeLLMServer(director)
     llm.start()
-    env = {**drv.gateway_env(), "HERMES_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS": str(_BURST_WINDOW)}
+    env = {**drv.gateway_env(), "SLAVE_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS": str(_BURST_WINDOW)}
     gw = GatewayUnderTest(tmp_path / "rig", llm_base_url=llm.base_url, config=drv.gateway_config(),
                           env=env, ready=drv.connected)
     try:

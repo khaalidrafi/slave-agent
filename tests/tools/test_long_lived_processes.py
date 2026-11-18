@@ -44,7 +44,7 @@ class _HostEnv(LongLivedProcessMixin):
     def _spawn_long_lived(self, argv, child_env):
         proc = subprocess.Popen(list(argv), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
-        proc._hermes_owned_pgid = proc.pid
+        proc._slave_owned_pgid = proc.pid
         return proc
 
     def _kill_process(self, proc):
@@ -139,7 +139,7 @@ def test_a_failed_respawn_keeps_the_stale_record():
     old.wait(timeout=10)  # the leader exits; its record is now a leftover, not a running process
     try:
         with pytest.raises(FileNotFoundError):
-            env.start_process("svc", ["/nonexistent-hermes-review-executable"])
+            env.start_process("svc", ["/nonexistent-slave-review-executable"])
         assert env._long_lived().get("svc") is old, \
             "a failed spawn lost the stale record without reaping it"
         assert not old.stdin.closed, "a failed spawn must not close the stale record's pipes behind its back"
@@ -157,10 +157,10 @@ def test_stopping_a_backend_process_stops_the_service_inside_the_sandbox(tmp_pat
     env = _SandboxLikeEnv(tmp_path)
     env.start_process("svc", ["sleep", "60"])
     deadline = time.monotonic() + 10
-    while not list(tmp_path.glob("hermes_llp_*.pid")):
+    while not list(tmp_path.glob("slave_llp_*.pid")):
         assert time.monotonic() < deadline, "the service never recorded its pid inside the sandbox"
         time.sleep(0.05)
-    pidfile = next(tmp_path.glob("hermes_llp_*.pid"))
+    pidfile = next(tmp_path.glob("slave_llp_*.pid"))
     deadline = time.monotonic() + 10
     while not pidfile.read_text().strip():
         assert time.monotonic() < deadline, "the pid file stayed empty"

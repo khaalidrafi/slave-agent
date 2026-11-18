@@ -165,7 +165,7 @@ def module_renames(repo: Path, commit: str) -> dict[str, str]:
 def config_keys(root: Path) -> frozenset[str]:
     """Every dotted key path of ``DEFAULT_CONFIG`` (``agent``, ``agent.max_turns``, ...), read by AST."""
     keys: set[str] = set()
-    for path in git(root, "ls-files", "*hermes_cli/config_defaults.py").split():
+    for path in git(root, "ls-files", "*slave_cli/config_defaults.py").split():
         body = ast.parse((root / path).read_text(encoding="utf-8-sig")).body
         pending = [("", node.value) for node in body if isinstance(node, ast.Assign)
                    and any(getattr(target, "id", None) == "DEFAULT_CONFIG" for target in node.targets)]

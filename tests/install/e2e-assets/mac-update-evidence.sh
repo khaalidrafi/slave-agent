@@ -5,7 +5,7 @@
 # signature, the app's logs and the unified log. It only reads and copies.
 #
 #   mac-update-evidence.sh --out <dir> --since <file> --app <installed .app>
-#     [--home <dir>]... [--hermes-home <dir>] [--user-data <dir>]
+#     [--home <dir>]... [--slave-home <dir>] [--user-data <dir>]
 #
 # --since is a file touched before the update began; only crash reports newer
 # than it are copied. Each --home is searched for Library/Caches/*.ShipIt and
@@ -15,7 +15,7 @@
 # No -u: macOS /bin/bash 3.2 treats an empty "${HOMES[@]}" as unbound.
 set -o pipefail
 
-OUT="" SINCE="" APP="" HERMES_HOME_DIR="" USER_DATA=""
+OUT="" SINCE="" APP="" SLAVE_HOME_DIR="" USER_DATA=""
 HOMES=()
 while [ "$#" -gt 0 ]; do
   [ "$#" -ge 2 ] || { echo "mac-update-evidence: $1 needs a value" >&2; exit 2; }
@@ -24,7 +24,7 @@ while [ "$#" -gt 0 ]; do
     --since) SINCE="$2" ;;
     --app) APP="$2" ;;
     --home) HOMES+=("$2") ;;
-    --hermes-home) HERMES_HOME_DIR="$2" ;;
+    --slave-home) SLAVE_HOME_DIR="$2" ;;
     --user-data) USER_DATA="$2" ;;
     *) echo "mac-update-evidence: unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -64,9 +64,9 @@ for dir in "${report_dirs[@]}"; do
     -newer "$SINCE" -exec cp -p {} "$OUT/crash-reports/" \;
 done
 
-if [ -n "$HERMES_HOME_DIR" ] && [ -d "$HERMES_HOME_DIR/logs" ]; then
+if [ -n "$SLAVE_HOME_DIR" ] && [ -d "$SLAVE_HOME_DIR/logs" ]; then
   mkdir -p "$OUT/hermes-logs"
-  find "$HERMES_HOME_DIR/logs" -maxdepth 1 -type f -name '*.log*' -exec cp -p {} "$OUT/hermes-logs/" \;
+  find "$SLAVE_HOME_DIR/logs" -maxdepth 1 -type f -name '*.log*' -exec cp -p {} "$OUT/hermes-logs/" \;
 fi
 if [ -n "$USER_DATA" ] && [ -d "$USER_DATA/Crashpad" ]; then
   find "$USER_DATA/Crashpad" -exec ls -ld {} + > "$OUT/crashpad-listing.txt" 2>&1
@@ -96,7 +96,7 @@ if [ "$(uname -s)" = Darwin ] && command -v log >/dev/null 2>&1; then
   exe="$(plist_value CFBundleExecutable)"
   start="$(date -r "$SINCE" '+%Y-%m-%d %H:%M:%S')"
   log show --style compact --start "$start" --predicate \
-    "process == \"ShipIt\" OR process == \"$exe\" OR process == \"ReportCrash\" OR ((process == \"syspolicyd\" OR process == \"amfid\") AND eventMessage CONTAINS[c] \"hermes\")" \
+    "process == \"ShipIt\" OR process == \"$exe\" OR process == \"ReportCrash\" OR ((process == \"syspolicyd\" OR process == \"amfid\") AND eventMessage CONTAINS[c] \"slave\")" \
     2>&1 | tail -n 20000 > "$OUT/unified-log.txt"
 fi
 

@@ -3,7 +3,7 @@
 /**
  * In-app update mutual-exclusion marker (#50238).
  *
- * The Tauri updater writes HERMES_HOME/.hermes-update-in-progress for the whole
+ * The Tauri updater writes SLAVE_HOME/.hermes-update-in-progress for the whole
  * duration of an `--update` run (see apps/bootstrap-installer/src-tauri/src/
  * update.rs `UpdateMarkerGuard`). The marker body is two lines: the updater's
  * pid and the unix-seconds it started.
@@ -11,7 +11,7 @@
  * Why: if the user relaunches the desktop mid-update — the window vanished with
  * no progress and looks crashed — a fresh instance must NOT spawn its own local
  * backend. That backend re-locks the venv shim, the updater's straggler cleanup
- * (`force_kill_other_hermes`, taskkill /IM hermes.exe) kills it, the launch
+ * (`force_kill_other_hermes`, taskkill /IM slave.exe) kills it, the launch
  * fails with the 45s "backend didn't come up" timeout, and the user relaunches
  * into the same trap — an infinite respawn/kill loop. The desktop gates local
  * backend startup on this marker and parks until the update finishes.
@@ -32,8 +32,8 @@ import path from 'path'
 // recycled the pid onto an unrelated process), so the gate self-heals.
 export const UPDATE_MARKER_MAX_AGE_MS = 20 * 60 * 1000
 
-export function markerPath(hermesHome) {
-  return path.join(hermesHome, '.hermes-update-in-progress')
+export function markerPath(slaveHome) {
+  return path.join(slaveHome, '.hermes-update-in-progress')
 }
 
 // True only if a host process with this pid is currently alive. Signal 0 does
@@ -119,7 +119,7 @@ function isZombieState(state: string | null | undefined): boolean {
  * clock for tests.
  */
 export function readLiveUpdateMarker(
-  hermesHome,
+  slaveHome,
   {
     kill,
     now = Date.now,
@@ -133,7 +133,7 @@ export function readLiveUpdateMarker(
     processState?: (pid: number) => string | null
   } = {}
 ) {
-  const file = markerPath(hermesHome)
+  const file = markerPath(slaveHome)
   let raw
 
   try {

@@ -1,7 +1,7 @@
-# Nous Hermes plugin catalog entry — background-review-watch
+# Nous slave-agent plugin catalog entry — background-review-watch
 #
 # OWNER-SUBMITTED (rule 5): the PR author (vectorforge22) owns the repo.
-# Exact-SHA pin (40-hex) at a commit that passed `hermes plugins validate`
+# Exact-SHA pin (40-hex) at a commit that passed `slave plugins validate`
 # locally (manifest, loadable desktop/plugin.js, security scan SAFE, no core
 # override, desktop surface inside the SDK). No self-updating code: the plugin
 # is a single static ESM file that never fetches, downloads, or replaces

@@ -14,7 +14,7 @@ AUTOMATION = 'automation:agent:main:local:dm:owned'
 
 
 def _hello(process):
-    from hermes_cli.process_identity import worker_birth
+    from slave_cli.process_identity import worker_birth
     return {'type': 'hello', 'pid': process.pid, 'birth': worker_birth(psutil.Process(process.pid)),
             'ancestors': [os.getpid()]}
 

@@ -1,6 +1,6 @@
 """Plugin survival + upgrade contracts (mnemosyne-oss/mnemosyne#859).
 
-Hermes-side contracts an external memory-provider wrapper can hold us to,
+Slave-side contracts an external memory-provider wrapper can hold us to,
 exercised through PUBLIC paths (no source inspection, no network — uv
 resolves offline local path-source fixtures):
 
@@ -9,8 +9,8 @@ resolves offline local path-source fixtures):
    pyproject belonging to a nested or external sidecar dir must NOT
    join the pm workspace union, because pm scans only plugin roots.
 2. Conflict admission. Through the PUBLIC admission authority
-   (hermes_cli.plugins_admission.admit_plugin_set_change — the one path
-   `hermes plugins enable/install` use), a candidate union with no
+   (slave_cli.plugins_admission.admit_plugin_set_change — the one path
+   `slave plugins enable/install` use), a candidate union with no
    valid solution is REFUSED before anything is published: the
    candidate stays unenabled (so the loader never imports it), the
    plugin trees and every home's config.yaml survive untouched, the
@@ -19,7 +19,7 @@ resolves offline local path-source fixtures):
    The retry path — re-admitting only the resolvable candidate —
    commits through the same public function.
 3. Active-home propagation. The active CONTEXT home
-   (hermes_constants.set_hermes_home_override) is what wrapper/sidecar
+   (slave_constants.set_slave_home_override) is what wrapper/sidecar
    subprocess launches must inherit through build_subprocess_env.
 """
 
@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 import pm.workspace as ws
 from pm.plugin_inputs import Members
@@ -82,7 +82,7 @@ def test_sidecar_no_root_pyproject_excludes_nested_and_external(tmp_path, monkey
     )
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
     assert ws._is_member_candidate(wrapper) is False, (
         "a wrapper root without pyproject/dep keys must never be a member candidate"
@@ -134,7 +134,7 @@ def _local_conflict_members(home: Path) -> tuple[Path, Path, Path, Path]:
 
 @pytest.fixture
 def admission_env(tmp_path, monkeypatch):
-    """Fake core repo + temp HERMES_HOME so the REAL pm.install.sync_venv
+    """Fake core repo + temp SLAVE_HOME so the REAL pm.install.sync_venv
     transaction (lock, receipts, config publication) runs entirely under
     tmp — the production path, temp homes."""
     core = tmp_path / "core"
@@ -160,11 +160,11 @@ def admission_env(tmp_path, monkeypatch):
     import pm.paths
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(pm.paths, "repo_root", lambda: core)
     monkeypatch.setattr(ws.paths, "repo_root", lambda: core)
     monkeypatch.setattr(ensure, "lazy_installs_allowed", lambda: True)
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "tools"))
     # Exercise the real dependency transaction in-process so the local uv
     # fixture owns provisioning; worker transport is covered separately. The
     # facade's project_root selects a foreign checkout for the worker; this
@@ -191,7 +191,7 @@ def test_conflicting_candidate_refused_unenabled_and_unimported(admission_env):
     plugin identity + resolver reason; the candidate is NOT published to
     config (so the plugin loader never imports it); plugin trees and
     configs survive; the receipt records the failure."""
-    from hermes_cli import plugins_admission as admission
+    from slave_cli import plugins_admission as admission
 
     tmp_path, home = admission_env
     plug_a, plug_b, *_ = _local_conflict_members(home)
@@ -306,12 +306,12 @@ def test_malformed_secondary_cannot_evict_recorded_member(admission_env, monkeyp
 
     home_b = tmp_path / "home-b"
     _write_enabled(home_b, [])
-    monkeypatch.setenv("HERMES_HOME", str(home_b))
+    monkeypatch.setenv("SLAVE_HOME", str(home_b))
     sync_venv(explicit=True)
     assert selected_venv(core).is_dir()
     assert Facts(runtime_facts_path(core), strict=True).get("venv")["stamp"] != recorded["stamp"]
 
-    monkeypatch.setenv("HERMES_HOME", str(home_a))
+    monkeypatch.setenv("SLAVE_HOME", str(home_a))
     with pytest.raises(ValueError, match="config.yaml"):
         sync_venv(explicit=True)
     assert selected_venv(core) == selected
@@ -330,7 +330,7 @@ def test_plugin_whose_pyproject_installs_nothing_keeps_the_environment(admission
     of locking and syncing a new one. A plugin with a real dependency still joins the workspace."""
     import tomllib
 
-    from hermes_cli import plugins_admission as admission
+    from slave_cli import plugins_admission as admission
     from pm.environments import runtime_facts_path, selected_venv
     from pm.install import sync_venv, venv_is_current
     from pm.lock import Facts
@@ -404,7 +404,7 @@ def test_update_sync_disables_plugin_excluded_by_requires_python(admission_env):
     work = yaml.safe_load((profile / "config.yaml").read_text(encoding="utf-8"))
     assert work["memory"]["provider"] == "too-old" and work["plugins"]["disabled"] == ["too-old"]
     assert "too-old" in json.dumps(_latest_receipt(home).get("warnings"))
-    assert "hermes plugins enable too-old" in json.dumps(_latest_receipt(home).get("warnings"))
+    assert "slave plugins enable too-old" in json.dumps(_latest_receipt(home).get("warnings"))
     assert venv_is_current(project_root=core) is True
 
     for plugin in (home / "plugins" / "too-old", profile / "plugins" / "too-old"):
@@ -570,12 +570,12 @@ def test_plugin_our_version_rejects_sits_out_without_being_disabled(admission_en
     from pm.install import sync_venv, venv_is_current
     from pm.lock import Facts
 
-    from hermes_cli import plugins_manifest
+    from slave_cli import plugins_manifest
 
     tmp_path, home = admission_env
     core = tmp_path / "core"
     # A tagless checkout (CI's) has no parseable version, which makes requires_hermes permissive.
-    monkeypatch.setattr(plugins_manifest, "running_hermes_version", lambda: "1.0.0")
+    monkeypatch.setattr(plugins_manifest, "running_slave_version", lambda: "1.0.0")
     for name in ("fits", "needs-newer"):
         _fixtures.installing_member(home / "plugins" / name, name, tmp_path / "wheels")
     manifest = home / "plugins" / "needs-newer" / "plugin.yaml"
@@ -601,29 +601,29 @@ def test_plugin_our_version_rejects_sits_out_without_being_disabled(admission_en
 
 @pytest.mark.skipif(not _uv_available(), reason="uv not on PATH")
 @pytest.mark.parametrize("dependencies, chosen, extras", [
-    pytest.param('"member-dep==1.0", "hermes-agent>=2"', '"member-dep==1.0"', None, id="runtime-dependency"),
-    pytest.param('"member-dep==1.0"', '"hermes-agent>=2"', ["chosen"], id="selected-extra"),
+    pytest.param('"member-dep==1.0", "slave-agent>=2"', '"member-dep==1.0"', None, id="runtime-dependency"),
+    pytest.param('"member-dep==1.0"', '"slave-agent>=2"', ["chosen"], id="selected-extra"),
 ])
-def test_plugin_requiring_a_newer_hermes_sits_out_until_hermes_fits(admission_env, monkeypatch,
+def test_plugin_requiring_a_newer_slave_sits_out_until_slave_fits(admission_env, monkeypatch,
                                                                     dependencies, chosen, extras):
-    """PM supplies hermes-agent itself, so a plugin's requirement on it is judged the way
+    """PM supplies slave-agent itself, so a plugin's requirement on it is judged the way
     requires_hermes is: the misfit sits out of the build with config untouched (a plain sync
-    and an update both succeed), and it rejoins once the running Hermes fits, although no
+    and an update both succeed), and it rejoins once the running slave-agent fits, although no
     dependency input changed."""
     from pm.environments import runtime_facts_path
     from pm.install import sync_venv, venv_is_current
     from pm.lock import Facts
 
-    from hermes_cli import plugins_manifest
+    from slave_cli import plugins_manifest
 
     tmp_path, home = admission_env
     core = tmp_path / "core"
     manifest = core / "pyproject.toml"  # a selected extra naming core binds to the workspace root
-    manifest.write_text(manifest.read_text().replace('name = "fake-core"', 'name = "hermes-agent"')
+    manifest.write_text(manifest.read_text().replace('name = "fake-core"', 'name = "slave-agent"')
                         + "[project.optional-dependencies]\nchosen = []\n")  # core's extras are what a sync selects
     subprocess.run([shutil.which("uv"), "lock"], cwd=core, check=True, capture_output=True, timeout=120)
     running = {"version": "1.0.0"}
-    monkeypatch.setattr(plugins_manifest, "running_hermes_version", lambda: running["version"])
+    monkeypatch.setattr(plugins_manifest, "running_slave_version", lambda: running["version"])
     for name in ("fits", "needs-newer"):
         _fixtures.installing_member(home / "plugins" / name, name, tmp_path / "wheels")
     pyproject = home / "plugins" / "needs-newer" / "pyproject.toml"
@@ -653,18 +653,18 @@ def test_plugin_requiring_a_newer_hermes_sits_out_until_hermes_fits(admission_en
 
 @pytest.mark.skipif(not _uv_available(), reason="uv not on PATH")
 @pytest.mark.parametrize("enabled_before", [[], ["needs-newer"]], ids=["enabling-it", "enabled-before"])
-def test_only_enabling_a_plugin_that_requires_a_newer_hermes_is_refused(admission_env, monkeypatch,
+def test_only_enabling_a_plugin_that_requires_a_newer_slave_is_refused(admission_env, monkeypatch,
                                                                          enabled_before):
-    """Admission refuses enabling a plugin whose sole declared dependency is a Hermes it is not,
+    """Admission refuses enabling a plugin whose sole declared dependency is a slave-agent it is not,
     as it refuses a failing requires_hermes, although it installs nothing and is no workspace
     member. One enabled before sits out as the build leaves it out, so enabling another plugin
     beside it is admitted."""
-    from hermes_cli import plugins_admission as admission
-    from hermes_cli import plugins_manifest
+    from slave_cli import plugins_admission as admission
+    from slave_cli import plugins_manifest
 
     _tmp_path, home = admission_env
-    monkeypatch.setattr(plugins_manifest, "running_hermes_version", lambda: "1.0.0")
-    for name, declaration in (("needs-newer", "pip_dependencies: ['hermes-agent>=99']\n"), ("other", "")):
+    monkeypatch.setattr(plugins_manifest, "running_slave_version", lambda: "1.0.0")
+    for name, declaration in (("needs-newer", "pip_dependencies: ['slave-agent>=99']\n"), ("other", "")):
         (home / "plugins" / name).mkdir(parents=True)
         (home / "plugins" / name / "plugin.yaml").write_text(f"name: {name}\n{declaration}", encoding="utf-8")
     _write_enabled(home, enabled_before)
@@ -672,7 +672,7 @@ def test_only_enabling_a_plugin_that_requires_a_newer_hermes_is_refused(admissio
 
     if not enabled_before:
         with pytest.raises(admission.AdmissionRefused,
-                           match=r"needs-newer.*requires hermes-agent>=99, running 1\.0\.0"):
+                           match=r"needs-newer.*requires slave-agent>=99, running 1\.0\.0"):
             admission.admit_plugin_set_change({"needs-newer"}, set(), active_plugins_dir=home / "plugins")
         assert (home / "config.yaml").read_bytes() == before
     else:
@@ -731,19 +731,19 @@ def test_update_sync_retries_a_fetch_failure_once_before_disabling(admission_env
 
 
 def test_active_context_home_exported_to_wrapper_subprocess(monkeypatch, tmp_path):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     from tools.environments.local import build_subprocess_env
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "ambient"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "ambient"))
     active = tmp_path / "custom-root/profiles/worker"
     active.mkdir(parents=True)
-    token = set_hermes_home_override(active)
+    token = set_slave_home_override(active)
     try:
         child_env = build_subprocess_env()
         child = subprocess.run(
-            [sys.executable, "-c", "import os; print(os.environ['HERMES_HOME'], end='')"],
+            [sys.executable, "-c", "import os; print(os.environ['SLAVE_HOME'], end='')"],
             env=child_env, capture_output=True, text=True, check=True, timeout=60,
         )
         assert child.stdout == str(active)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)

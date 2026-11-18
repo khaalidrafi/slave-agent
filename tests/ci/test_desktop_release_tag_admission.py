@@ -34,7 +34,7 @@ _CONTROLLER = "c" * 40
 
 
 def _workflow() -> dict:
-    yaml = pytest.importorskip("hermes_yaml")
+    yaml = pytest.importorskip("slave_yaml")
     return yaml.safe_load(_WORKFLOW.read_text(encoding="utf-8"))
 
 
@@ -181,10 +181,10 @@ def _run_admission(clone: Path, tag: str, claim_tag: str) -> subprocess.Complete
         GITHUB_OUTPUT=str(gh_output),
         RELEASE_PHASE="candidate",
         # Stable runs from the default branch; GITHUB_SHA is not the claim commit.
-        GITHUB_REPOSITORY="example/hermes-agent",
+        GITHUB_REPOSITORY="example/slave-agent",
         GITHUB_EVENT_NAME="workflow_dispatch",
         GITHUB_REF="refs/heads/main",
-        GITHUB_WORKFLOW_REF="example/hermes-agent/.github/workflows/stable-release.yml@refs/heads/main",
+        GITHUB_WORKFLOW_REF="example/slave-agent/.github/workflows/stable-release.yml@refs/heads/main",
         GITHUB_SHA="e" * 40,
         PYTHONPATH=str(_REPO),
     )

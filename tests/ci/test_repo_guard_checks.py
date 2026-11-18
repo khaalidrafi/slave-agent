@@ -122,7 +122,7 @@ def test_orphan_pr_fails_even_when_the_checkout_is_the_merge_ref(repo, step):
     git(repo, "checkout", "-q", "--orphan", "orphan")
     commit(repo, {"b": "2"})
     head = _merge_ref_checkout(repo, "orphan")
-    failed = step.run(repo, "check_common_ancestor.py", _HERMES_PR_HEAD_SHA=head)
+    failed = step.run(repo, "check_common_ancestor.py", _SLAVE_PR_HEAD_SHA=head)
     assert failed.returncode == 1, failed.stdout
     assert "::error::This PR has no common ancestor with main." in failed.stdout
 
@@ -134,7 +134,7 @@ def test_pr_that_merged_an_unrelated_root_fails(repo, step):
     git(repo, "merge", "-q", "--no-ff", "--allow-unrelated-histories", "-m", "graft", "orphan")
     orphan_root = git(repo, "rev-parse", "orphan").strip()
     head = _merge_ref_checkout(repo, "graft")
-    failed = step.run(repo, "check_common_ancestor.py", _HERMES_PR_HEAD_SHA=head)
+    failed = step.run(repo, "check_common_ancestor.py", _SLAVE_PR_HEAD_SHA=head)
     assert failed.returncode == 1, failed.stdout
     [status] = step.artifact("history-check")
     assert status["results"][0]["title"] == "Unrelated history merged into this PR"
@@ -145,12 +145,12 @@ def test_related_pr_passes_and_an_unresolvable_head_fails_closed(repo, step):
     git(repo, "checkout", "-q", "-b", "feature")
     commit(repo, {"a": "1"})
     head = _merge_ref_checkout(repo, "feature")
-    passed = step.run(repo, "check_common_ancestor.py", _HERMES_PR_HEAD_SHA=head)
+    passed = step.run(repo, "check_common_ancestor.py", _SLAVE_PR_HEAD_SHA=head)
     assert passed.returncode == 0, passed.stdout
     assert step.artifact("history-check") == []
 
     for missing in ("", "0" * 40):
-        failed = step.run(repo, "check_common_ancestor.py", _HERMES_PR_HEAD_SHA=missing)
+        failed = step.run(repo, "check_common_ancestor.py", _SLAVE_PR_HEAD_SHA=missing)
         assert failed.returncode == 1, failed.stdout
         assert step.artifact("history-check")[0]["results"][0]["title"] == "PR head unavailable"
 
@@ -177,14 +177,14 @@ def test_supply_chain_scan_flags_payload_lines_but_not_lockfiles(repo, step):
     decode, run = "base64." + "b64decode", "subprocess." + "run("
     payload = f"exec({decode}(blob))\n"
     head = commit(repo, {"uv.lock": payload, "ok.py": "print(1)\n"})
-    shas = {"_HERMES_PR_BASE_SHA": base, "_HERMES_PR_HEAD_SHA": head}
+    shas = {"_SLAVE_PR_BASE_SHA": base, "_SLAVE_PR_HEAD_SHA": head}
     assert step.run(repo, "scan_supply_chain.py", "patterns", **shas).returncode == 0
     assert step.outputs()["found"] == "false"
 
     head = commit(repo, {"evil.py": payload + run + "['sh', '-c', " + "chr" + "(65)])\n"})
     step.output.unlink()
-    assert step.run(repo, "scan_supply_chain.py", "patterns", _HERMES_PR_BASE_SHA=base,
-                    _HERMES_PR_HEAD_SHA=head).returncode == 0
+    assert step.run(repo, "scan_supply_chain.py", "patterns", _SLAVE_PR_BASE_SHA=base,
+                    _SLAVE_PR_HEAD_SHA=head).returncode == 0
     assert step.outputs()["found"] == "true"
     report = (step.runner_temp / "supply-chain-findings.md").read_text(encoding="utf-8")
     assert "base64 decode + exec/eval combo" in report
@@ -196,8 +196,8 @@ def _scan_pr(repo: Path, step: Step, base: str, files: dict[str, str]) -> str:
     git(repo, "checkout", "-q", "--detach", base)
     head = commit(repo, files)
     step.output.unlink(missing_ok=True)
-    assert step.run(repo, "scan_supply_chain.py", "patterns", _HERMES_PR_BASE_SHA=base,
-                    _HERMES_PR_HEAD_SHA=head).returncode == 0
+    assert step.run(repo, "scan_supply_chain.py", "patterns", _SLAVE_PR_BASE_SHA=base,
+                    _SLAVE_PR_HEAD_SHA=head).returncode == 0
     return step.outputs()["found"]
 
 
@@ -252,8 +252,8 @@ def test_supply_chain_scan_flags_a_payload_line_taken_from_a_file_of_another_nam
 def test_dependency_bounds_report_lists_only_floor_only_specs(repo, step):
     base = commit(repo, {"pyproject.toml": 'deps = [\n  "old>=1",\n]\n'})
     head = commit(repo, {"pyproject.toml": 'deps = [\n  "old>=1",\n  "bounded>=2,<3", "loose>=2.1",\n]\n'})
-    assert step.run(repo, "scan_supply_chain.py", "dependency-bounds", _HERMES_PR_BASE_SHA=base,
-                    _HERMES_PR_HEAD_SHA=head).returncode == 0
+    assert step.run(repo, "scan_supply_chain.py", "dependency-bounds", _SLAVE_PR_BASE_SHA=base,
+                    _SLAVE_PR_HEAD_SHA=head).returncode == 0
     assert step.outputs()["found"] == "true"
     report = (step.runner_temp / "supply-chain-unbounded.txt").read_text(encoding="utf-8")
     assert report == '"loose>=2.1"\n'
@@ -357,6 +357,6 @@ def test_pr_head_counts_a_head_that_only_the_last_fetch_brings_in(repo, tmp_path
     monkeypatch.chdir(repo)
     monkeypatch.setattr(guard, "_git", flaky_git)
     monkeypatch.setattr(guard.time, "sleep", lambda _s: None)
-    monkeypatch.setenv("_HERMES_PR_HEAD_SHA", head)
+    monkeypatch.setenv("_SLAVE_PR_HEAD_SHA", head)
     assert guard.pr_head() == head
     assert len(fetches) == guard.FETCH_ATTEMPTS

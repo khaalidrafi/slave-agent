@@ -21,7 +21,7 @@ import pytest
 
 pytest.importorskip("croniter")
 
-import hermes_time
+import slave_time
 from cron import jobs
 
 LA = ZoneInfo("America/Los_Angeles")
@@ -34,17 +34,17 @@ DAILY_9AM = "0 9 * * *"
 
 @pytest.fixture
 def la_profile(monkeypatch):
-    """Configure the profile zone the way production does: ``HERMES_TIMEZONE`` + cache reset."""
-    monkeypatch.setenv("HERMES_TIMEZONE", "America/Los_Angeles")
-    hermes_time.reset_cache()
+    """Configure the profile zone the way production does: ``SLAVE_TIMEZONE`` + cache reset."""
+    monkeypatch.setenv("SLAVE_TIMEZONE", "America/Los_Angeles")
+    slave_time.reset_cache()
     yield LA
-    hermes_time.reset_cache()
+    slave_time.reset_cache()
 
 
 @pytest.fixture
 def cron_store(tmp_path, monkeypatch):
     """Isolated store + a frozen clock the test moves explicitly."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
     class Clock:
         instant = datetime(2026, 10, 22, 12, 0, tzinfo=NY)
@@ -53,11 +53,11 @@ def cron_store(tmp_path, monkeypatch):
             self.instant = value
 
         def now(self):
-            # Production shape: _hermes_now() is aware in the PROFILE zone.
-            return self.instant.astimezone(hermes_time.get_timezone() or LA)
+            # Production shape: _slave_now() is aware in the PROFILE zone.
+            return self.instant.astimezone(slave_time.get_timezone() or LA)
 
     clock = Clock()
-    monkeypatch.setattr(jobs, "_hermes_now", clock.now)
+    monkeypatch.setattr(jobs, "_slave_now", clock.now)
     with jobs.use_cron_store(tmp_path / "cron"):
         yield clock
 
@@ -235,7 +235,7 @@ class TestGraceMinutesOverride:
     def test_zero_grace_skips_outright_when_catch_up_is_disabled(
         self, la_profile, cron_store, tmp_path,
     ):
-        """``0`` = never catch up. Hermes still runs a beyond-window miss once by default
+        """``0`` = never catch up. slave-agent still runs a beyond-window miss once by default
         (``cron.catch_up_missed``); with catch-up disabled the zero window is what makes the
         skip, while a job with a wide override still fires."""
         (tmp_path / "config.yaml").write_text(

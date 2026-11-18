@@ -1,7 +1,7 @@
 """Hand root-written sandbox files back to the host user when a root Docker container is removed.
 
 The Docker backend runs the image's default user (root) unless ``docker_run_as_host_user`` is set,
-so everything the container writes into the Hermes-created bind mounts (``<sandbox>/home`` at
+so everything the container writes into the Slave-created bind mounts (``<sandbox>/home`` at
 ``/root``, ``<sandbox>/workspace`` at ``/workspace``) lands on the host owned by uid 0, and the user
 cannot delete it. Until the container is removed, a root container with its volumes can ``chown``
 those trees back; once it is gone only ``sudo`` can. The handback runs after it stopped, so files a
@@ -22,7 +22,7 @@ re-chowned to its own uid, which clears the bits and ``security.capability`` and
 A persistent container is never removed, so it gets this strip when a session detaches from it,
 before reattaching and before the stale-container sweep removes it. The strip reads the sandbox
 binds from the container itself (a container shared across profiles has its creator's dirs) but
-only keeps those under a sandbox root this host derives from its own Hermes root.
+only keeps those under a sandbox root this host derives from its own slave-agent root.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from hermes_constants import get_default_hermes_root
+from slave_constants import get_default_slave_root
 from tools.environments.base import get_sandbox_dir
 from tools.environments.remote_common import run_capture
 
@@ -53,7 +53,7 @@ HANDBACK_RECORD = ".hermes-owner-handback"
 _SAFE_ENV = ["-e", "PATH=/usr/sbin:/usr/bin:/sbin:/bin", "-e", "LD_PRELOAD=", "-e", "LD_LIBRARY_PATH=", "-w", "/"]
 # The throwaway gets only what find and chown need, so even a planted binary gains no host power.
 _THROWAWAY_CONFINEMENT = ["--cap-drop", "ALL", "--cap-add", "CHOWN", "--cap-add", "DAC_OVERRIDE", "--cap-add", "FOWNER",
-                          "--security-opt", "no-new-privileges", "--pids-limit", "64", "--label", "hermes-handback=1"]
+                          "--security-opt", "no-new-privileges", "--pids-limit", "64", "--label", "slave-handback=1"]
 
 _remapping_cache: dict[str, bool] = {}
 
@@ -75,7 +75,7 @@ def _daemon_remaps_users(docker_exe: str) -> bool:
 
 def _handback_ids(docker_exe: str) -> Optional[tuple[int, int]]:
     """Host ``(uid, gid)`` to hand sandbox files to, or ``None`` when no handback applies: the
-    host is not Linux (Docker Desktop bind mounts are not root-owned on the host), Hermes itself
+    host is not Linux (Docker Desktop bind mounts are not root-owned on the host), slave-agent itself
     runs as root, or the daemon remaps users."""
     if sys.platform != "linux" or os.geteuid() == 0:  # windows-footgun: ok — linux-gated
         return None
@@ -83,7 +83,7 @@ def _handback_ids(docker_exe: str) -> Optional[tuple[int, int]]:
 
 
 def _record_path(mounts: list[tuple[str, str]]) -> Optional[Path]:
-    """The record lives in the per-task sandbox dir, the parent of every Hermes bind source."""
+    """The record lives in the per-task sandbox dir, the parent of every slave-agent bind source."""
     return Path(mounts[0][0]).parent / HANDBACK_RECORD if mounts else None
 
 
@@ -114,12 +114,12 @@ def _may_set_file_caps(info: dict) -> bool:
 
 
 def _sandbox_binds(info: dict) -> list[tuple[str, str]]:
-    """The container's Hermes sandbox binds (``<root>/<task>/{home,workspace}`` at ``/root`` and
+    """The container's slave-agent sandbox binds (``<root>/<task>/{home,workspace}`` at ``/root`` and
     ``/workspace``) as ``(realpath, destination)``. *root* is derived on this host only, never from
     container metadata (labels and binds are settable via extra args or the image): this process's
-    ``<sandbox>/docker`` or the default one of any profile of this Hermes root (shared containers)."""
-    hermes_root = get_default_hermes_root()
-    roots = {os.path.realpath(d / "sandboxes" / "docker") for d in [hermes_root, *hermes_root.glob("profiles/*")]}
+    ``<sandbox>/docker`` or the default one of any profile of this slave-agent root (shared containers)."""
+    slave_root = get_default_slave_root()
+    roots = {os.path.realpath(d / "sandboxes" / "docker") for d in [slave_root, *slave_root.glob("profiles/*")]}
     roots.add(os.path.realpath(get_sandbox_dir() / "docker"))
     binds = [(os.path.realpath(m.get("Source") or "/nonexistent"), m.get("Destination")) for m in info.get("Mounts") or []
              if m.get("Type") == "bind" and m.get("Destination") in ("/root", "/workspace")]
@@ -177,7 +177,7 @@ def _chown(docker_exe: str, target: list[str], paths: list[bytes], owner: str, d
 
 def _throwaway(container_id: str, info: dict, volumes: list[str]) -> list[str]:
     return ["run", "--rm", "-i", "--pull", "never", "--network", "none", "--user", "0:0", *_THROWAWAY_CONFINEMENT,
-            *_SAFE_ENV, "--name", f"hermes-handback-{container_id[:12]}-{secrets.token_hex(4)}",
+            *_SAFE_ENV, "--name", f"slave-handback-{container_id[:12]}-{secrets.token_hex(4)}",
             *volumes, "--entrypoint", "", info["Image"]]
 
 
@@ -260,7 +260,7 @@ def hand_back_media_file(docker_exe: str, host_path: str) -> bool:
 
 def _hand_back_media_file(docker_exe: str, host_path: str) -> bool:
     ids = _handback_ids(docker_exe)
-    listing = run_capture([docker_exe, "ps", "-q", "--filter", "label=hermes-agent=1"], timeout=10) if ids else None
+    listing = run_capture([docker_exe, "ps", "-q", "--filter", "label=slave-agent=1"], timeout=10) if ids else None
     for container_id in (listing.stdout.split() if listing and listing.returncode == 0 else []):
         info = _inspect(docker_exe, container_id)
         if not ids or not info or not _runs_as_root(info):

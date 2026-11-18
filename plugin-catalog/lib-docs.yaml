@@ -5,8 +5,8 @@ description: >-
   Look up current library docs from public npm and PyPI (no API keys). Resolve a package, fetch
   README and metadata, keep recent lookups on Desktop. Disclosure — HTTPS to registry.npmjs.org,
   pypi.org and cdn.jsdelivr.net (npm READMEs) only; package name and version leave the machine;
-  recent lookups are stored under $HERMES_HOME/plugin-data/lib-docs; the Desktop pane inserts text
-  through Hermes Desktop's internal hermes:composer-insert event (not a public SDK API).
+  recent lookups are stored under $SLAVE_HOME/plugin-data/lib-docs; the Desktop pane inserts text
+  through slave-agent Desktop's internal slave:composer-insert event (not a public SDK API).
 maintainer: aydnOktay
 tier: community
 category: tools

@@ -77,7 +77,7 @@ def test_the_storage_layer_and_tests_may_import_the_backend(tmp_path, rel):
     "import persistence.sqlite_helpers\n",
 ])
 def test_mentions_and_neighbouring_names_pass(tmp_path, source):
-    _write(tmp_path, {"hermes_cli/thing.py": source})
+    _write(tmp_path, {"slave_cli/thing.py": source})
 
     assert _run(tmp_path).returncode == 0
 
@@ -96,11 +96,11 @@ def test_each_offending_line_is_named(tmp_path):
 
 
 @pytest.mark.parametrize("source", [
-    "from hermes_constants import get_hermes_home\n",
-    "import hermes_constants\n\ndef root():\n    return hermes_constants.get_default_hermes_root()\n",
-    "def config():\n    from hermes_cli.config import load_config_readonly\n    return load_config_readonly()\n",
-    "from hermes_state import SessionDB\n",
-    "import hermes_state\n",
+    "from slave_constants import get_slave_home\n",
+    "import slave_constants\n\ndef root():\n    return slave_constants.get_default_slave_root()\n",
+    "def config():\n    from slave_cli.config import load_config_readonly\n    return load_config_readonly()\n",
+    "from slave_state import SessionDB\n",
+    "import slave_state\n",
 ])
 def test_a_backend_module_reading_the_process_home_or_the_stand_in_fails(tmp_path, source):
     _write(tmp_path, {"persistence/sqlite/conversation/_store/turns.py": source})
@@ -113,26 +113,26 @@ def test_a_backend_module_reading_the_process_home_or_the_stand_in_fails(tmp_pat
 
 
 def test_a_listed_home_read_passes_only_in_its_file_and_for_its_name(tmp_path):
-    listed = "import hermes_constants\n\ndef root():\n    return hermes_constants.get_default_hermes_root()\n"
+    listed = "import slave_constants\n\ndef root():\n    return slave_constants.get_default_slave_root()\n"
     _write(tmp_path, {"persistence/sqlite/admin/_reconcile.py": listed})
     assert _run(tmp_path).returncode == 0
 
-    _write(tmp_path, {"persistence/sqlite/admin/_reconcile.py": listed + "HOME = hermes_constants.get_hermes_home()\n"})
+    _write(tmp_path, {"persistence/sqlite/admin/_reconcile.py": listed + "HOME = slave_constants.get_slave_home()\n"})
     result = _run(tmp_path)
     assert result.returncode == 1
-    assert "persistence/sqlite/admin/_reconcile.py:5 get_hermes_home" in result.stdout
+    assert "persistence/sqlite/admin/_reconcile.py:5 get_slave_home" in result.stdout
 
     _write(tmp_path, {"persistence/sqlite/admin/_reconcile.py": "\n", "persistence/sqlite/admin/_repair.py": listed})
     result = _run(tmp_path)
     assert result.returncode == 1
-    assert "persistence/sqlite/admin/_repair.py:4 get_default_hermes_root" in result.stdout
+    assert "persistence/sqlite/admin/_repair.py:4 get_default_slave_root" in result.stdout
 
 
 @pytest.mark.parametrize(("rel", "source"), [
-    ("persistence/sqlite/conversation/_store/turns.py", "from hermes_constants import named_profile_home\n"),
+    ("persistence/sqlite/conversation/_store/turns.py", "from slave_constants import named_profile_home\n"),
     ("persistence/sqlite/conversation/_store/turns.py", "from session_rules import turns\n"),
-    ("gateway/run_helpers.py", "from hermes_constants import get_hermes_home\n"),
-    ("persistence/conversation/messages.py", "from hermes_constants import get_hermes_home\n"),
+    ("gateway/run_helpers.py", "from slave_constants import get_slave_home\n"),
+    ("persistence/conversation/messages.py", "from slave_constants import get_slave_home\n"),
 ])
 def test_profile_scoped_reads_and_home_reads_outside_the_backend_pass(tmp_path, rel, source):
     _write(tmp_path, {rel: source})

@@ -10,7 +10,7 @@ import pytest
 def test_registration_uses_the_target_profiles_mount_policy(
     tmp_path, monkeypatch, mount
 ):
-    import hermes_constants as hc
+    import slave_constants as hc
     from tools import terminal_tool
     from tools.terminal_scope import (
         install_and_reset_profile_terminal_scope,
@@ -35,7 +35,7 @@ def test_registration_uses_the_target_profiles_mount_policy(
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE", str(not mount).lower())
     before = dict(os.environ)
@@ -48,7 +48,7 @@ def test_registration_uses_the_target_profiles_mount_policy(
     }
     vars(server)["_register_session_cwd"](session)
 
-    token = hc.set_hermes_home_override(str(profile))
+    token = hc.set_slave_home_override(str(profile))
     try:
         overrides = terminal_tool.resolve_task_overrides("profile-cwd")
         assert overrides == (
@@ -60,7 +60,7 @@ def test_registration_uses_the_target_profiles_mount_policy(
                 assert terminal_env("TERMINAL_CWD") == "/workspace"
     finally:
         terminal_tool.clear_task_env_overrides("profile-cwd")
-        hc.reset_hermes_home_override(token)
+        hc.reset_slave_home_override(token)
     assert session["cwd"] == str(workspace)
     assert os.environ == before
 
@@ -127,7 +127,7 @@ def test_a_bad_unrelated_terminal_setting_does_not_drop_the_registration(tmp_pat
 def test_an_unreadable_profile_keeps_the_desktop_cwd_record(tmp_path, monkeypatch):
     """The routed profile's refusal scope raises on every terminal read; the host-side record
     (project tools read it) must still be written."""
-    import hermes_constants as hc
+    import slave_constants as hc
     from tools import terminal_tool
     from tui_gateway import server
 
@@ -137,16 +137,16 @@ def test_an_unreadable_profile_keeps_the_desktop_cwd_record(tmp_path, monkeypatc
     (profile / "config.yaml").write_text("terminal: [unclosed", encoding="utf-8")
     workspace = tmp_path / "host-project"
     workspace.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("TERMINAL_ENV", "local")
     vars(server)["_register_session_cwd"]({
         "session_key": "bad-profile", "cwd": str(workspace), "explicit_cwd": True,
         "source": "desktop", "profile_home": str(profile),
     })
 
-    token = hc.set_hermes_home_override(str(profile))
+    token = hc.set_slave_home_override(str(profile))
     try:
         assert terminal_tool.resolve_task_overrides("bad-profile").get("cwd") == str(workspace)
     finally:
         terminal_tool.clear_task_env_overrides("bad-profile")
-        hc.reset_hermes_home_override(token)
+        hc.reset_slave_home_override(token)

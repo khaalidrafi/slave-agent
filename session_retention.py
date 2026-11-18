@@ -13,12 +13,12 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
-from hermes_startup_watchdog import report_startup_progress
+from slave_startup_watchdog import report_startup_progress
 from persistence.core.admin import AdminUnsupported, StoreAdmin
 from persistence.housekeeping.maintenance import AUTO_PRUNE_STALE_OPEN_SOURCES, PruneCriteria
 
-# caplog tests pin the "hermes_state" logger name.
-logger = logging.getLogger("hermes_state")
+# caplog tests pin the "slave_state" logger name.
+logger = logging.getLogger("slave_state")
 
 #: The automatic VACUUM runs only when more than this fraction of the store's pages is free.
 AUTO_VACUUM_MIN_FREELIST_RATIO = 0.25
@@ -33,9 +33,9 @@ def emit_session_deleted(store_home, deleted_ids, *, reason, primary=None, sessi
     if not ids:
         return
     try:
-        from hermes_cli.lifecycle import invoke_hook
-        from hermes_constants import (
-            get_hermes_home, profile_name_for_home, reset_hermes_home_override, set_hermes_home_override,
+        from slave_cli.lifecycle import invoke_hook
+        from slave_constants import (
+            get_slave_home, profile_name_for_home, reset_slave_home_override, set_slave_home_override,
         )
 
         home = os.path.abspath(os.fspath(store_home))
@@ -45,14 +45,14 @@ def emit_session_deleted(store_home, deleted_ids, *, reason, primary=None, sessi
             payload["deleted_ids"] = ids
         if sessions_dir is not None:
             payload["sessions_dir"] = str(sessions_dir)
-        rebind = profile is not None and os.path.realpath(home) != os.path.realpath(get_hermes_home())
+        rebind = profile is not None and os.path.realpath(home) != os.path.realpath(get_slave_home())
         # health: allow HX016 -- main's on_session_delete dispatch binds the store's whole profile, as it does at the pin
-        token = set_hermes_home_override(home) if rebind else None
+        token = set_slave_home_override(home) if rebind else None
         try:
             invoke_hook("on_session_delete", **payload)
         finally:
             if token is not None:
-                reset_hermes_home_override(token)
+                reset_slave_home_override(token)
     except Exception:
         logger.warning("on_session_delete dispatch failed", exc_info=True)
 

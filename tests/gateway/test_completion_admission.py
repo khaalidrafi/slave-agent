@@ -9,7 +9,7 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource, build_session_key
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence_assembly import open_persistence, profile_scope
 from plugins.platforms.discord.adapter import DiscordAdapter
 from tests.fixtures.storage_read import transcript_rows
@@ -116,7 +116,7 @@ async def test_unavailable_raw_route_is_quiet_without_hiding_invalid_routes(tmp_
     api = APIServerAdapter(PlatformConfig())
     db = open_persistence(profile_scope(home=tmp_path / "api"))
     seed_session(db, evt["session_key"], "api_server")
-    api._home_stores[str(get_hermes_home())] = db
+    api._home_stores[str(get_slave_home())] = db
     runner.adapters = {Platform.API_SERVER: api}
     try:
         caplog.clear()

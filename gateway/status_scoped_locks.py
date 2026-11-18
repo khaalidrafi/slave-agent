@@ -42,7 +42,7 @@ def _foreign_owner_is_live(existing: dict[str, Any]) -> bool:
     process-kind owner (setup worker, dashboard) that never takes that flock, stays live: unknown is
     not dead."""
     from gateway.runtime_ownership import runtime_lock_held_elsewhere
-    home, metadata = existing.get("hermes_home"), existing.get("metadata")
+    home, metadata = existing.get("slave_home"), existing.get("metadata")
     if not isinstance(home, str) or not home.strip():
         return True
     if isinstance(metadata, dict) and metadata.get("owner_kind") == "process":
@@ -65,7 +65,7 @@ def _scoped_lock_record_is_stale(existing: dict[str, Any], existing_pid: Optiona
         _status.logger.warning(
             "Scoped lock for %s is held by PID %s in another PID namespace (%s), whose gateway.lock "
             "in %s is held or cannot be checked; treating it as live.", existing.get("scope") or "?",
-            existing_pid, existing.get("pidns"), existing.get("hermes_home") or "an unrecorded home")
+            existing_pid, existing.get("pidns"), existing.get("slave_home") or "an unrecorded home")
         return False
     if existing_pid is None or not _status._pid_exists(existing_pid):
         return True

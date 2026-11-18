@@ -10,7 +10,7 @@ from gateway.config import GatewayConfig
 from gateway.session import SessionStore
 from gateway.session_authority import initialize_session_authority
 from gateway.session_controls import AuthorityConnection
-from hermes_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_client import GatewayClientError
 from tests.acp_adapter.test_gateway_submit_retry import Wire
 from tests.waiting import async_wait_until
 
@@ -22,7 +22,7 @@ class SlashWire(Wire):
 
 @pytest.mark.asyncio
 async def test_repeated_prompt_after_slash_command_is_new_work(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     executed = []
 

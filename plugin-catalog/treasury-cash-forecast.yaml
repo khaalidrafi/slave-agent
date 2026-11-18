@@ -12,7 +12,7 @@ docs_url: https://github.com/Prabhusekaran/hermes-treasury-cash-forecast/blob/bc
 image: https://raw.githubusercontent.com/Prabhusekaran/hermes-treasury-cash-forecast/bc36c28e6357095b435b678bae11e5acc089b7ca/docs/cover.png
 platforms: []
 known_issues:
-  - "Restart Hermes after installing (the gateway, and the Desktop backend if you use the Desktop app) so the running process sees the two new libraries."
+  - "Restart slave-agent after installing (the gateway, and the Desktop backend if you use the Desktop app) so the running process sees the two new libraries."
   - "Tested on Linux. ETS and SARIMA are fitted numerically, so figures can differ by cents between machines; the simple baselines are identical everywhere."
 capabilities:
   provides_tools:

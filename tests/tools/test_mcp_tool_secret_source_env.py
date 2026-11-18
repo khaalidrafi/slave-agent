@@ -1,4 +1,4 @@
-"""Stdio MCP child env: a secret source must not forward a credential Hermes itself consumes."""
+"""Stdio MCP child env: a secret source must not forward a credential slave-agent itself consumes."""
 
 import os
 from pathlib import Path
@@ -10,7 +10,7 @@ import pytest
 def test_secret_source_injected_vars_are_passed(monkeypatch):
     """Vars tagged by an external secret source (Bitwarden/1Password) are
     deliberately allowed for MCP stdio servers."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "ALPACA_API_KEY", "bitwarden")
@@ -20,7 +20,7 @@ def test_secret_source_injected_vars_are_passed(monkeypatch):
         "ALPACA_API_KEY": "from-bws-key",
         "NOTION_TOKEN": "from-op",
         "UNTRACKED_SECRET_KEY": "still-filtered",
-        "HERMES_HOME": os.environ["HERMES_HOME"],
+        "SLAVE_HOME": os.environ["SLAVE_HOME"],
     }
     with patch.dict("os.environ", fake_env, clear=True):
         result = _build_safe_env(None)
@@ -35,13 +35,13 @@ def test_secret_source_vars_resolve_through_active_profile_scope(monkeypatch):
     """Under multiplex the stdio child gets the ROUTED profile's value for a source-tagged name,
     never the launch profile's os.environ copy; a name the profile lacks is omitted."""
     from agent.secret_scope import set_multiplex_active, set_secret_scope, reset_secret_scope
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "ALPACA_API_KEY", "bitwarden")
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "NOTION_TOKEN", "onepassword")
     fake_env = {"PATH": "/usr/bin", "ALPACA_API_KEY": "default-profile", "NOTION_TOKEN": "default-notion",
-                "HERMES_HOME": os.environ["HERMES_HOME"]}
+                "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     set_multiplex_active(True)
     token = set_secret_scope({"ALPACA_API_KEY": "profile-b"})
     try:
@@ -56,24 +56,24 @@ def test_secret_source_vars_resolve_through_active_profile_scope(monkeypatch):
     assert "NOTION_TOKEN" not in result
 
 
-def test_secret_source_never_forwards_hermes_credentials(monkeypatch):
-    """Where a Hermes-managed credential is stored (``.env`` or a secret source) must not change
+def test_secret_source_never_forwards_slave_credentials(monkeypatch):
+    """Where a Slave-managed credential is stored (``.env`` or a secret source) must not change
     whether a stdio child receives it; a server that needs one declares it in its own ``env``."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
-    hermes_creds = {"OPENAI_API_KEY": "sk-MARKER-provider", "TELEGRAM_BOT_TOKEN": "MARKER-bot"}
-    fake_env = {"PATH": "/usr/bin", "ALPACA_API_KEY": "MARKER-third-party", **hermes_creds,
-                "HERMES_HOME": os.environ["HERMES_HOME"]}
+    slave_creds = {"OPENAI_API_KEY": "sk-MARKER-provider", "TELEGRAM_BOT_TOKEN": "MARKER-bot"}
+    fake_env = {"PATH": "/usr/bin", "ALPACA_API_KEY": "MARKER-third-party", **slave_creds,
+                "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         from_dotenv = _build_safe_env(None)
-        for name in [*hermes_creds, "ALPACA_API_KEY"]:
+        for name in [*slave_creds, "ALPACA_API_KEY"]:
             monkeypatch.setitem(env_loader._SECRET_SOURCES, name, "bitwarden")
         from_source = _build_safe_env(None)
         declared = _build_safe_env({"OPENAI_API_KEY": "sk-MARKER-provider"})
 
-    assert {k: from_source.get(k) for k in hermes_creds} == {k: from_dotenv.get(k) for k in hermes_creds}
-    assert not set(hermes_creds) & set(from_source)
+    assert {k: from_source.get(k) for k in slave_creds} == {k: from_dotenv.get(k) for k in slave_creds}
+    assert not set(slave_creds) & set(from_source)
     assert from_source["ALPACA_API_KEY"] == "MARKER-third-party"
     assert declared["OPENAI_API_KEY"] == "sk-MARKER-provider"
 
@@ -81,17 +81,17 @@ def test_secret_source_never_forwards_hermes_credentials(monkeypatch):
 def test_secret_source_never_forwards_profile_platform_plugin_secret(monkeypatch):
     """A secret the bound profile's user-installed platform plugin declares is that adapter's
     credential, so a secret-source copy of it is withheld like a bundled adapter's token."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
-    plugin = Path(os.environ["HERMES_HOME"]) / "plugins" / "platforms" / "chatx"
+    plugin = Path(os.environ["SLAVE_HOME"]) / "plugins" / "platforms" / "chatx"
     plugin.mkdir(parents=True)
     (plugin / "plugin.yaml").write_text(
         "name: chatx\nkind: platform\nrequires_env:\n  - name: CHATX_SIGNING_SECRET\n    password: true\n",
         encoding="utf-8")
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "CHATX_SIGNING_SECRET", "bitwarden")
     fake_env = {"PATH": "/usr/bin", "CHATX_SIGNING_SECRET": "MARKER-adapter",
-                "HERMES_HOME": os.environ["HERMES_HOME"]}
+                "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         result = _build_safe_env(None)
 
@@ -101,11 +101,11 @@ def test_secret_source_never_forwards_profile_platform_plugin_secret(monkeypatch
 def test_secret_source_never_forwards_config_declared_provider_keys(monkeypatch):
     """A name the profile's config.yaml points a provider credential at (``key_env`` /
     ``api_key_env`` on the main model, a custom/named provider, an auxiliary task, a fallback
-    route) is a Hermes credential under that name, so a vault copy of it is withheld too."""
-    from hermes_cli import env_loader
+    route) is a slave-agent credential under that name, so a vault copy of it is withheld too."""
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["SLAVE_HOME"]) / "config.yaml").write_text(
         "model:\n  provider: custom\n  base_url: http://127.0.0.1:9/v1\n  key_env: MY_LLM_KEY\n"
         "custom_providers:\n  - name: lab\n    base_url: http://127.0.0.1:9/v1\n    key_env: LAB_KEY\n"
         "providers:\n  edge:\n    base_url: http://127.0.0.1:9/v1\n    api_key_env: EDGE_KEY\n"
@@ -118,7 +118,7 @@ def test_secret_source_never_forwards_config_declared_provider_keys(monkeypatch)
     for name in [*declared, "ALPACA_API_KEY"]:
         monkeypatch.setitem(env_loader._SECRET_SOURCES, name, "bitwarden")
     fake_env = {"PATH": "/usr/bin", "ALPACA_API_KEY": "MARKER-third-party",
-                **{name: f"MARKER-{name}" for name in declared}, "HERMES_HOME": os.environ["HERMES_HOME"]}
+                **{name: f"MARKER-{name}" for name in declared}, "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         result = _build_safe_env(None)
 
@@ -128,13 +128,13 @@ def test_secret_source_never_forwards_config_declared_provider_keys(monkeypatch)
 
 def test_secret_source_never_forwards_config_env_ref_credentials(monkeypatch):
     """A credential field written as a whole-value ``${VAR}`` / ``${env:VAR}`` ref
-    (``delegation.api_key: ${DELEGATION_KEY}``) makes VAR a Hermes credential, so its vault copy
+    (``delegation.api_key: ${DELEGATION_KEY}``) makes VAR a slave-agent credential, so its vault copy
     is withheld even though the merged config already holds the expanded value. An
     ``mcp_servers.*.env`` ref is the server's declared env and is still forwarded."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["SLAVE_HOME"]) / "config.yaml").write_text(
         "delegation:\n  base_url: http://127.0.0.1:9/v1\n  api_key: ${DELEGATION_KEY}\n"
         "auxiliary:\n  vision:\n    base_url: http://127.0.0.1:9/v1\n    api_key: '${env:LAB_VISION}'\n"
         "custom_providers:\n  - name: lab\n    base_url: http://127.0.0.1:9/v1\n    api_key: ${LAB_LLM}\n"
@@ -145,7 +145,7 @@ def test_secret_source_never_forwards_config_env_ref_credentials(monkeypatch):
     for name in [*referenced, "SERVER_TOKEN"]:
         monkeypatch.setitem(env_loader._SECRET_SOURCES, name, "command")
     fake_env = {"PATH": "/usr/bin", "SERVER_TOKEN": "MARKER-server",
-                **{name: f"MARKER-{name}" for name in referenced}, "HERMES_HOME": os.environ["HERMES_HOME"]}
+                **{name: f"MARKER-{name}" for name in referenced}, "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         result = _build_safe_env(None)
 
@@ -155,14 +155,14 @@ def test_secret_source_never_forwards_config_env_ref_credentials(monkeypatch):
 
 def test_secret_source_never_forwards_model_api_alias_ref(monkeypatch):
     """``model.api`` is read as the main model's API key (an alias of ``model.api_key``), so a
-    ``${VAR}`` there makes VAR a Hermes credential whose vault copy is withheld."""
-    from hermes_cli import env_loader
+    ``${VAR}`` there makes VAR a slave-agent credential whose vault copy is withheld."""
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["SLAVE_HOME"]) / "config.yaml").write_text(
         "model:\n  provider: custom\n  base_url: http://127.0.0.1:9/v1\n  api: ${LAB_LLM}\n", encoding="utf-8")
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "LAB_LLM", "command")
-    fake_env = {"PATH": "/usr/bin", "LAB_LLM": "MARKER-llm", "HERMES_HOME": os.environ["HERMES_HOME"]}
+    fake_env = {"PATH": "/usr/bin", "LAB_LLM": "MARKER-llm", "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         result = _build_safe_env(None)
 
@@ -171,9 +171,9 @@ def test_secret_source_never_forwards_model_api_alias_ref(monkeypatch):
 
 def test_secret_source_never_forwards_managed_config_credential_refs(monkeypatch, tmp_path):
     """The managed-scope config.yaml is expanded and merged over the profile's, so a credential
-    ``${VAR}`` it declares is a Hermes credential exactly like one in the profile file; its own
+    ``${VAR}`` it declares is a slave-agent credential exactly like one in the profile file; its own
     ``mcp_servers.*.env`` refs stay the server's declared env."""
-    from hermes_cli import env_loader, managed_scope
+    from slave_cli import env_loader, managed_scope
     from tools.mcp_tool_config import _build_safe_env
 
     managed = tmp_path / "managed"
@@ -185,7 +185,7 @@ def test_secret_source_never_forwards_managed_config_credential_refs(monkeypatch
     for name in ("LAB_LLM", "SERVER_TOKEN"):
         monkeypatch.setitem(env_loader._SECRET_SOURCES, name, "command")
     fake_env = {"PATH": "/usr/bin", "LAB_LLM": "MARKER-llm", "SERVER_TOKEN": "MARKER-server",
-                "HERMES_MANAGED_DIR": str(managed), "HERMES_HOME": os.environ["HERMES_HOME"]}
+                "SLAVE_MANAGED_DIR": str(managed), "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     managed_scope.invalidate_managed_cache()
     try:
         with patch.dict("os.environ", fake_env, clear=True):
@@ -201,17 +201,17 @@ def test_secret_source_never_forwards_managed_config_credential_refs(monkeypatch
                                       "${env:LAB_FRAGMENT}${ALPACA_API_KEY}"])
 def test_secret_source_never_forwards_embedded_credential_ref(monkeypatch, template):
     """The loader expands every ``${VAR}`` inside a credential string, not only a whole-value one,
-    so a name embedded in one is a Hermes credential too; a third-party name stays forwarded."""
-    from hermes_cli import env_loader
+    so a name embedded in one is a slave-agent credential too; a third-party name stays forwarded."""
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["SLAVE_HOME"]) / "config.yaml").write_text(
         f'model:\n  provider: custom\n  base_url: http://127.0.0.1:9/v1\n  api_key: "{template}"\n',
         encoding="utf-8")
     for name in ("LAB_FRAGMENT", "ALPACA_API_KEY"):
         monkeypatch.setitem(env_loader._SECRET_SOURCES, name, "command")
     fake_env = {"PATH": "/usr/bin", "LAB_FRAGMENT": "MARKER-fragment", "ALPACA_API_KEY": "MARKER-third-party",
-                "HERMES_HOME": os.environ["HERMES_HOME"]}
+                "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         result = _build_safe_env(None)
 
@@ -223,17 +223,17 @@ def test_secret_source_never_forwards_embedded_credential_ref(monkeypatch, templ
 def test_secret_source_withholds_last_good_credential_while_config_is_broken(monkeypatch):
     """A config.yaml edited into broken YAML keeps its last-known-good credentials in use, so the
     names they were read from stay withheld instead of being released by the failed raw read."""
-    from hermes_cli import env_loader
-    from hermes_cli.config import load_config_readonly
+    from slave_cli import env_loader
+    from slave_cli.config import load_config_readonly
     from tools.mcp_tool_config import _build_safe_env
 
-    config = Path(os.environ["HERMES_HOME"]) / "config.yaml"
+    config = Path(os.environ["SLAVE_HOME"]) / "config.yaml"
     config.write_text("model:\n  provider: custom\n  base_url: http://127.0.0.1:9/v1\n"
                       "  api_key: ${LAB_FRAGMENT}\n", encoding="utf-8")
     for name in ("LAB_FRAGMENT", "ALPACA_API_KEY"):
         monkeypatch.setitem(env_loader._SECRET_SOURCES, name, "command")
     fake_env = {"PATH": "/usr/bin", "LAB_FRAGMENT": "MARKER-fragment", "ALPACA_API_KEY": "MARKER-third-party",
-                "HERMES_HOME": os.environ["HERMES_HOME"]}
+                "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         assert load_config_readonly()["model"]["api_key"] == "MARKER-fragment"
         config.write_text("model: [broken\n", encoding="utf-8")
@@ -249,16 +249,16 @@ def test_secret_source_withholds_last_good_credential_while_config_is_broken(mon
 def test_unreadable_backups_dir_does_not_stop_stdio_env_while_config_is_broken(monkeypatch):
     """Broken YAML plus an unreadable ``backups/config`` must not turn the last-good ref lookup into
     an exception: the stdio server still starts (the env is built), as it did before the lookup."""
-    from hermes_cli import config_backups, env_loader
-    from hermes_cli.config import load_config_readonly
+    from slave_cli import config_backups, env_loader
+    from slave_cli.config import load_config_readonly
     from tools.mcp_tool_config import _build_safe_env
 
-    config = Path(os.environ["HERMES_HOME"]) / "config.yaml"
+    config = Path(os.environ["SLAVE_HOME"]) / "config.yaml"
     config.write_text("model:\n  provider: custom\n  base_url: http://127.0.0.1:9/v1\n"
                       "  api_key: ${LAB_FRAGMENT}\n", encoding="utf-8")
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "ALPACA_API_KEY", "command")
     fake_env = {"PATH": "/usr/bin", "LAB_FRAGMENT": "MARKER-fragment", "ALPACA_API_KEY": "MARKER-third-party",
-                "HERMES_HOME": os.environ["HERMES_HOME"]}
+                "SLAVE_HOME": os.environ["SLAVE_HOME"]}
 
     def unreadable(*_args, **_kwargs):
         raise PermissionError("backups/config")
@@ -273,19 +273,19 @@ def test_unreadable_backups_dir_does_not_stop_stdio_env_while_config_is_broken(m
 
 
 def test_secret_source_mcp_server_env_pointer_does_not_block_vendor_token(monkeypatch):
-    """An MCP server env entry is not a Hermes credential declaration, even if its
+    """An MCP server env entry is not a slave-agent credential declaration, even if its
     arbitrary name matches the *_key_env pointer convention elsewhere in config."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     from tools.mcp_tool_config import _build_safe_env
 
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["SLAVE_HOME"]) / "config.yaml").write_text(
         "model:\n  provider: custom\n  base_url: http://127.0.0.1:9/v1\n  key_env: MY_LLM_KEY\n"
         "mcp_servers:\n  helper:\n    command: x\n    env:\n      api_key_env: VENDOR_TOKEN\n",
         encoding="utf-8")
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "MY_LLM_KEY", "command")
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "VENDOR_TOKEN", "command")
-    fake_env = {"PATH": "/usr/bin", "MY_LLM_KEY": "MARKER-hermes",
-                "VENDOR_TOKEN": "MARKER-vendor", "HERMES_HOME": os.environ["HERMES_HOME"]}
+    fake_env = {"PATH": "/usr/bin", "MY_LLM_KEY": "MARKER-slave",
+                "VENDOR_TOKEN": "MARKER-vendor", "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict("os.environ", fake_env, clear=True):
         result = _build_safe_env(None)
 

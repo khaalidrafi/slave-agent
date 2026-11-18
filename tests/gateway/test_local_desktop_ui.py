@@ -61,8 +61,8 @@ def window(monkeypatch):
     stream = SimpleNamespace(
         fanout=_Fanout(requests, silent),
         publish=lambda session_id, payload, *, event_type: streamed.append((session_id, event_type, payload)))
-    from hermes_constants import get_hermes_home
-    authority = SimpleNamespace(sessions={"canon": SimpleNamespace(event_stream=stream)}, profile_id=str(get_hermes_home()))
+    from slave_constants import get_slave_home
+    authority = SimpleNamespace(sessions={"canon": SimpleNamespace(event_stream=stream)}, profile_id=str(get_slave_home()))
     turn = SimpleNamespace(
         _ctx=SimpleNamespace(session_id="phys", session_key="agent:main:local:dm:1"),
         _approval_owner=(authority, "canon", 1),
@@ -106,9 +106,9 @@ def test_tour_fails_fast_once_no_window_answered(window, monkeypatch):
     monkeypatch.setattr(local_desktop_ui, "_TOUR_PROBE_TIMEOUT_S", 0.3)
     window.silent.add("tour")
     local_viewer_events.wire(window.turn, window.agent)
-    assert "No Hermes Desktop window answered the tour" in window.agent.tour_callback({"action": "start"})
+    assert "No slave-agent Desktop window answered the tour" in window.agent.tour_callback({"action": "start"})
     sent = len(window.requests)
-    assert "No Hermes Desktop window answered the tour" in window.agent.tour_callback({"action": "start"})
+    assert "No slave-agent Desktop window answered the tour" in window.agent.tour_callback({"action": "start"})
     assert len(window.requests) == sent
 
 

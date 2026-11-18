@@ -1,4 +1,4 @@
-"""Out-of-process Telegram send (``hermes send``, the ``send_message`` tool, standalone cron delivery):
+"""Out-of-process Telegram send (``slave send``, the ``send_message`` tool, standalone cron delivery):
 a one-shot Bot API client built like the gateway adapter's, with the adapter's formatting, chunking,
 notification mode, rich-message fast-path, albums and fallbacks. Wired as the plugin's
 ``standalone_sender_fn``; core reaches it only through the platform registry.
@@ -108,8 +108,8 @@ def _is_telegram_thread_not_found(error: Exception) -> bool:
 
 def _telegram_fallback_ips(extra):
     """The configured ``extra.fallback_ips`` or the seed IPs (no DoH discovery on a one-shot send);
-    ``[]`` when ``HERMES_TELEGRAM_DISABLE_FALLBACK_IPS`` opts out, as for the gateway."""
-    if os.getenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "").strip().lower() in {"1", "true", "yes", "on"}:
+    ``[]`` when ``SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS`` opts out, as for the gateway."""
+    if os.getenv("SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS", "").strip().lower() in {"1", "true", "yes", "on"}:
         return []
     from plugins.platforms.telegram.telegram_network import SEED_FALLBACK_IPS, parse_fallback_ip_env
     # TELEGRAM_FALLBACK_IPS reaches ``extra["fallback_ips"]`` through the gateway env bridge.

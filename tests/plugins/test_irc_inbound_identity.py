@@ -11,14 +11,14 @@ from gateway.platform_registry import PlatformEntry, PlatformRegistry
 from gateway.run import GatewayRunner
 from gateway.session_authority import SessionAuthority, initialize_session_authority
 from gateway.session_ingress_context import native_callback
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.gateway._plugin_adapter_loader import load_plugin_adapter
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("texts", [("first", "second"), ("same", "same")])
 async def test_same_millisecond_irc_lines_get_separate_admissions(monkeypatch, texts):
-    home = get_hermes_home()
+    home = get_slave_home()
     monkeypatch.setenv("IRC_ALLOWED_USERS", "sender")
     module = load_plugin_adapter("irc")
     registry = PlatformRegistry()

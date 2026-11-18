@@ -1,6 +1,6 @@
-"""A provider installed by ``hermes plugins install`` must actually be found.
+"""A provider installed by ``slave plugins install`` must actually be found.
 
-The installer clones into ``$HERMES_HOME/plugins/<name>/`` (flat), provider
+The installer clones into ``$SLAVE_HOME/plugins/<name>/`` (flat), provider
 discovery only scanned ``plugins/model-providers/<name>/``, and PluginManager
 skips ``kind: model-provider`` on purpose — so the documented install path
 reported success and registered nothing. These tests pin the join, and that
@@ -36,7 +36,7 @@ def _clear_provider_caches():
     _pkg._PROVIDER_LIST_CACHE = None
     _pkg._discovered = False
     for mod in list(sys.modules):
-        if mod.startswith(("plugins.model_providers", "_hermes_user_provider")):
+        if mod.startswith(("plugins.model_providers", "_slave_user_provider")):
             del sys.modules[mod]
 
 
@@ -49,17 +49,17 @@ def _write_plugin(directory: Path, *, name: str, manifest: str | None):
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+def slave_home(tmp_path, monkeypatch):
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     _clear_provider_caches()
     yield tmp_path
     _clear_provider_caches()
 
 
-def test_flat_installed_model_provider_plugins_are_discovered_alongside_nested_ones(hermes_home):
-    _write_plugin(hermes_home / "plugins" / "installed-acp", name="installed-acp",
+def test_flat_installed_model_provider_plugins_are_discovered_alongside_nested_ones(slave_home):
+    _write_plugin(slave_home / "plugins" / "installed-acp", name="installed-acp",
                   manifest='name: installed-acp\nkind: "model-provider"\n')
-    _write_plugin(hermes_home / "plugins" / "model-providers" / "nested-acp", name="nested-acp",
+    _write_plugin(slave_home / "plugins" / "model-providers" / "nested-acp", name="nested-acp",
                   manifest="name: nested-acp\nkind: model-provider\n")
     from providers import get_provider_profile
 
@@ -68,11 +68,11 @@ def test_flat_installed_model_provider_plugins_are_discovered_alongside_nested_o
     assert get_provider_profile("nested-acp") is not None
 
 
-def test_other_plugins_in_the_flat_directory_are_left_to_the_plugin_manager(hermes_home):
-    _write_plugin(hermes_home / "plugins" / "other-standalone", name="other-standalone",
+def test_other_plugins_in_the_flat_directory_are_left_to_the_plugin_manager(slave_home):
+    _write_plugin(slave_home / "plugins" / "other-standalone", name="other-standalone",
                   manifest="name: other-standalone\nkind: standalone\n")
-    _write_plugin(hermes_home / "plugins" / "manifestless", name="manifestless", manifest=None)
-    _write_plugin(hermes_home / "plugins" / "broken-manifest", name="broken-manifest",
+    _write_plugin(slave_home / "plugins" / "manifestless", name="manifestless", manifest=None)
+    _write_plugin(slave_home / "plugins" / "broken-manifest", name="broken-manifest",
                   manifest="kind: [this is: not valid\n")
     from providers import get_provider_profile, list_providers
 
@@ -80,15 +80,15 @@ def test_other_plugins_in_the_flat_directory_are_left_to_the_plugin_manager(herm
     assert get_provider_profile("openrouter") is not None  # bundled set still intact
 
 
-def test_disabled_plugins_are_never_imported_or_registered(hermes_home):
+def test_disabled_plugins_are_never_imported_or_registered(slave_home):
     # Flat install keys by manifest name; legacy layout keys as model-providers/<dir> (#137671).
-    (hermes_home / "config.yaml").write_text(
+    (slave_home / "config.yaml").write_text(
         "plugins:\n  disabled:\n    - installed-acp\n    - model-providers/nested-acp\n", encoding="utf-8")
-    _write_plugin(hermes_home / "plugins" / "installed-acp", name="installed-acp",
+    _write_plugin(slave_home / "plugins" / "installed-acp", name="installed-acp",
                   manifest='name: installed-acp\nkind: "model-provider"\n')
-    _write_plugin(hermes_home / "plugins" / "kept-acp", name="kept-acp",
+    _write_plugin(slave_home / "plugins" / "kept-acp", name="kept-acp",
                   manifest='name: kept-acp\nkind: "model-provider"\n')
-    _write_plugin(hermes_home / "plugins" / "model-providers" / "nested-acp", name="nested-acp",
+    _write_plugin(slave_home / "plugins" / "model-providers" / "nested-acp", name="nested-acp",
                   manifest="name: nested-acp\nkind: model-provider\n")
     from providers import get_provider_profile, list_providers
 
@@ -101,11 +101,11 @@ def test_disabled_plugins_are_never_imported_or_registered(hermes_home):
     assert get_provider_profile("kept-acp").base_url == "acp://kept-acp"
 
 
-def test_disabled_by_manifest_name_when_directory_name_differs(hermes_home):
+def test_disabled_by_manifest_name_when_directory_name_differs(slave_home):
     # A flat manifest keys the plugin by its manifest name, not its directory name.
-    (hermes_home / "config.yaml").write_text(
+    (slave_home / "config.yaml").write_text(
         "plugins:\n  disabled:\n    - claude-subscription-directsdk-experimental\n", encoding="utf-8")
-    _write_plugin(hermes_home / "plugins" / "directsdk-experimental",
+    _write_plugin(slave_home / "plugins" / "directsdk-experimental",
                   name="claude-subscription-directsdk-experimental",
                   manifest="name: claude-subscription-directsdk-experimental\nkind: model-provider\n")
     from providers import get_provider_profile
@@ -114,17 +114,17 @@ def test_disabled_by_manifest_name_when_directory_name_differs(hermes_home):
     assert not [m for m in sys.modules if "directsdk_experimental" in m]
 
 
-def test_enabling_a_disabled_plugin_finds_it_without_touching_the_plugin_dirs(hermes_home, monkeypatch):
+def test_enabling_a_disabled_plugin_finds_it_without_touching_the_plugin_dirs(slave_home, monkeypatch):
     # Desktop's Plugins page edits only config.yaml; the plugin dirs keep their settled mtimes.
     import providers
 
     monkeypatch.setattr(providers, "_PLUGIN_DIR_STAMP_TTL_SECONDS", 0.0)
-    config = hermes_home / "config.yaml"
+    config = slave_home / "config.yaml"
     config.write_text("plugins:\n  disabled:\n    - installed-acp\n", encoding="utf-8")
-    _write_plugin(hermes_home / "plugins" / "installed-acp", name="installed-acp",
+    _write_plugin(slave_home / "plugins" / "installed-acp", name="installed-acp",
                   manifest="name: installed-acp\nkind: model-provider\n")
     settled = time.time() - 60
-    os.utime(hermes_home / "plugins", (settled, settled))
+    os.utime(slave_home / "plugins", (settled, settled))
     assert providers.get_provider_profile("installed-acp") is None
 
     config.write_text("plugins:\n  disabled: []\n", encoding="utf-8")

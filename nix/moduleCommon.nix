@@ -1,6 +1,6 @@
 # nix/moduleCommon.nix — the code that the NixOS and Home Manager modules share
 #
-# `services.hermes-agent` is the same option set on both modules. Both modules
+# `services.slave-agent` is the same option set on both modules. Both modules
 # get their options, their renderers for config.yaml, .env and documents, and
 # their state setup from this file. A NixOS example works on Home Manager
 # without a change. An option added here appears on both modules at once.
@@ -10,7 +10,7 @@
 #   nixosModules.nix        the service user and group, stateDir,
 #                           addToSystemPackages, container mode, tmpfiles,
 #                           system.activationScripts, system systemd units
-#   homeManagerModules.nix  hermesHome, programs.hermes-agent (the CLI and
+#   homeManagerModules.nix  slaveHome, programs.slave-agent (the CLI and
 #                           the desktop application), home.activation,
 #                           systemd.user.services, launchd.agents
 #
@@ -29,8 +29,8 @@ let
   # More than one module can set `settings = { ... }`. recursiveUpdate joins
   # all of the definitions. Without it, only the last definition applies.
   deepConfigType = types.mkOptionType {
-    name = "hermes-config-attrs";
-    description = "Hermes YAML config (attrset), merged deeply via lib.recursiveUpdate.";
+    name = "slave-config-attrs";
+    description = "slave-agent YAML config (attrset), merged deeply via lib.recursiveUpdate.";
     check = builtins.isAttrs;
     merge = _loc: defs: lib.foldl' lib.recursiveUpdate { } (map (d: d.value) defs);
   };
@@ -73,7 +73,7 @@ let
         default = null;
         description = ''
           Authentication method. Set to "oauth" for OAuth 2.1 PKCE flow
-          (remote MCP servers). Tokens are stored in $HERMES_HOME/mcp-tokens/.
+          (remote MCP servers). Tokens are stored in $SLAVE_HOME/mcp-tokens/.
         '';
       };
 
@@ -234,14 +234,14 @@ let
       defaultWorkingDirectoryText,
     }:
     {
-      enable = lib.mkEnableOption "Hermes Agent";
+      enable = lib.mkEnableOption "slave-agent";
 
       # ── Package ────────────────────────────────────────────────────────
       package = mkOption {
         type = types.package;
         default = defaultPackage;
         defaultText = defaultPackageText;
-        description = "The hermes-agent package to use.";
+        description = "The slave-agent package to use.";
       };
 
       workingDirectory = mkOption {
@@ -271,12 +271,12 @@ let
         type = deepConfigType;
         default = { };
         description = ''
-          The Hermes configuration, as an attribute set. The module joins the
+          The slave-agent configuration, as an attribute set. The module joins the
           definitions from all modules and writes the result to config.yaml.
 
           The merge into the config.yaml on disk is also a deep merge. These
           keys replace the keys on disk. The module keeps all other keys,
-          which includes the keys that `hermes config set` and the settings
+          which includes the keys that `slave config set` and the settings
           panes of the TUI and the desktop app write at runtime.
         '';
         example = literalExpression ''
@@ -299,13 +299,13 @@ let
         description = ''
           The paths to environment files that contain secrets, for example
           API keys and tokens. Activation adds the contents of these files to
-          $HERMES_HOME/.env. Hermes reads that file at each start, with
-          load_hermes_dotenv().
+          $SLAVE_HOME/.env. slave-agent reads that file at each start, with
+          load_slave_dotenv().
 
           Each activation writes .env again from the start. Thus a secret
           file cannot go into .env two times.
         '';
-        example = literalExpression ''[ config.sops.secrets."hermes/env".path ]'';
+        example = literalExpression ''[ config.sops.secrets."slave/env".path ]'';
       };
 
       environment = mkOption {
@@ -313,7 +313,7 @@ let
         default = { };
         description = ''
           Environment variables that are not secret. Activation writes them
-          to $HERMES_HOME/.env.
+          to $SLAVE_HOME/.env.
 
           CAUTION: Do not put secrets in this option. All users can read the
           Nix store. Use environmentFiles for secrets.
@@ -326,7 +326,7 @@ let
         description = ''
           The path to a file that gives the first contents of auth.json, the
           OAuth credentials. The module copies the file only when auth.json
-          does not exist. Thus a token that Hermes refreshes at runtime stays
+          does not exist. Thus a token that slave-agent refreshes at runtime stays
           after an activation.
         '';
       };
@@ -348,8 +348,8 @@ let
 
           Use this option for the project context that the agent reads from
           its working directory, for example AGENTS.md, notes and checklists.
-          Hermes reads SOUL.md and memories/ from HERMES_HOME, so put those
-          files in `hermesHomeFiles`.
+          slave-agent reads SOUL.md and memories/ from SLAVE_HOME, so put those
+          files in `slaveHomeFiles`.
 
           If you set this option, you must also set `workingDirectory`. The
           default of that option is different on each module. Thus an unset
@@ -363,16 +363,16 @@ let
         '';
       };
 
-      hermesHomeFiles = mkOption {
+      slaveHomeFiles = mkOption {
         type = documentsType;
         default = { };
         description = ''
-          Files that the module installs into HERMES_HOME. Each key is a path
+          Files that the module installs into SLAVE_HOME. Each key is a path
           relative to that directory, and the module makes the necessary
           subdirectories. Each value is a string or a path.
 
-          Hermes reads SOUL.md and the memory files from HERMES_HOME and not
-          from the working directory. Declare those files here, or Hermes
+          slave-agent reads SOUL.md and the memory files from SLAVE_HOME and not
+          from the working directory. Declare those files here, or slave-agent
           does not load them.
         '';
         example = literalExpression ''
@@ -420,16 +420,16 @@ let
         type = types.listOf types.package;
         default = [ ];
         description = ''
-          Directory-based plugin packages to symlink into the hermes plugins
+          Directory-based plugin packages to symlink into the slave plugins
           directory. Each package must contain a plugin.yaml and __init__.py
-          at its root. Hermes discovers these automatically on startup.
+          at its root. slave-agent discovers these automatically on startup.
         '';
         example = literalExpression ''
           [
             (pkgs.fetchFromGitHub {
               owner = "stephenschoettler";
-              repo = "hermes-lcm";
-              name = "hermes-lcm";
+              repo = "slave-lcm";
+              name = "slave-lcm";
               rev = "v0.7.0";
               hash = "sha256-...";
             })
@@ -443,20 +443,20 @@ let
         description = ''
           Python packages to add to PYTHONPATH for entry-point plugin discovery.
           These are pip-packaged plugins that register via the
-          hermes_agent.plugins entry-point group. Each package must be built
-          with the same Python interpreter as hermes. The interpreter
+          slave_agent.plugins entry-point group. Each package must be built
+          with the same Python interpreter as slave. The interpreter
           major.minor is derived from pm/lock.json by nix/pythonLock.nix —
-          take packages from config.services.hermes-agent.package.python.pkgs so the set always
-          matches the interpreter hermes was built with.
+          take packages from config.services.slave-agent.package.python.pkgs so the set always
+          matches the interpreter slave was built with.
         '';
         example = literalExpression ''
           [
-            (config.services.hermes-agent.package.python.pkgs.buildPythonPackage {
-              pname = "rtk-hermes";
+            (config.services.slave-agent.package.python.pkgs.buildPythonPackage {
+              pname = "rtk-slave";
               version = "1.0.0";
               src = pkgs.fetchFromGitHub {
                 owner = "ogallotti";
-                repo = "rtk-hermes";
+                repo = "rtk-slave";
                 rev = "main";
                 hash = "sha256-...";
               };
@@ -478,7 +478,7 @@ let
           replace them. For a smaller venv pick a smaller `package`
           (`minimal`, `messaging`) or override its defaultDependencyGroups.
 
-          Use this for optional extras already declared in hermes-agent's
+          Use this for optional extras already declared in slave-agent's
           pyproject.toml (e.g. "google-meet").
           Use extraPythonPackages for external packages not in pyproject.toml.
         '';
@@ -489,7 +489,7 @@ let
       extraArgs = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "Extra command-line arguments for `hermes gateway`.";
+        description = "Extra command-line arguments for `slave gateway`.";
       };
 
       restart = mkOption {
@@ -504,16 +504,16 @@ let
         description = "The systemd RestartSec= value. Darwin does not use this option.";
       };
 
-      # ── The backend: `hermes serve` or `hermes dashboard` ──────────────
-      # `hermes serve` and `hermes dashboard` are the same entry point,
-      # hermes_cli.main:cmd_dashboard, with one flag of difference. serve runs
+      # ── The backend: `slave serve` or `slave dashboard` ──────────────
+      # `slave serve` and `slave dashboard` are the same entry point,
+      # slave_cli.main:cmd_dashboard, with one flag of difference. serve runs
       # without a user interface. dashboard also serves the web application.
-      # Both give the /api/ws and /api/pty sockets that Hermes Desktop
+      # Both give the /api/ws and /api/pty sockets that slave-agent Desktop
       # connects to. They are one process, and you can run only one of them.
       # Thus this option is an enum and not two booleans.
       #
       # The backend does not run the messaging gateway. web_server.py only
-      # controls an external gateway, with `hermes gateway restart`. It does
+      # controls an external gateway, with `slave gateway restart`. It does
       # not contain a gateway.
       backend = {
         mode = mkOption {
@@ -528,7 +528,7 @@ let
 
             - "none"      — no backend
             - "serve"     — the backend without a user interface. It gives
-                            the /api/ws and /api/pty sockets that Hermes
+                            the /api/ws and /api/pty sockets that slave-agent
                             Desktop connects to.
             - "dashboard" — all that "serve" gives, and the browser admin
                             panel on the same port
@@ -640,8 +640,8 @@ let
             on one line.
 
             The backend reads the file at each start and gives the value to
-            HERMES_DASHBOARD_SESSION_TOKEN. That token authorizes the /api
-            routes and the /api/ws socket. Hermes Desktop presents the same
+            SLAVE_DASHBOARD_SESSION_TOKEN. That token authorizes the /api
+            routes and the /api/ws socket. slave-agent Desktop presents the same
             value, so the application reaches this backend and starts no
             second one.
 
@@ -652,7 +652,7 @@ let
             it mode 0600. Do not use a Nix path literal, because that copies
             the secret into the Nix store.
           '';
-          example = literalExpression ''config.sops.secrets."hermes/desktop-token".path'';
+          example = literalExpression ''config.sops.secrets."slave/desktop-token".path'';
         };
       };
     };
@@ -660,7 +660,7 @@ let
   # ── The removal of installPackage ───────────────────────────────────────
   # The programs./services. split replaced this option. It defaulted to true,
   # so a person who never named it still got the command line, and a silent
-  # removal leaves them with no `hermes` on the PATH and no message. The
+  # removal leaves them with no `slave` on the PATH and no message. The
   # module refuses the configuration with this text.
   #
   # A function, and not a literal in the module, so a check can call the same
@@ -669,14 +669,14 @@ let
   installPackageRemovedMessage =
     value:
     ''
-      services.hermes-agent.installPackage was removed. Hermes now
+      services.slave-agent.installPackage was removed. slave-agent now
       separates the installation from the services, which is the
       Home Manager convention:
 
-        programs.hermes-agent.enable = ${lib.boolToString (value != false)};  # the hermes CLI, and HERMES_HOME for your shells
-        programs.hermes-agent.desktop.enable = true;  # the desktop application
+        programs.slave-agent.enable = ${lib.boolToString (value != false)};  # the slave CLI, and SLAVE_HOME for your shells
+        programs.slave-agent.desktop.enable = true;  # the desktop application
 
-      `services.hermes-agent` keeps the state, the configuration and
+      `services.slave-agent` keeps the state, the configuration and
       the daemons. Remove `installPackage` and add the line above.
     '';
 
@@ -703,7 +703,7 @@ let
   # replace the default value.
   #
   # The file also carries the `_config_version` of the package. In managed
-  # mode Hermes refuses to write config.yaml, so it cannot stamp the version
+  # mode slave-agent refuses to write config.yaml, so it cannot stamp the version
   # itself, and an unstamped file reads as version 0 at every boot. The build
   # reads the version from DEFAULT_CONFIG so it always matches the package.
   mkConfigFiles =
@@ -714,15 +714,15 @@ let
     }:
     let
       generated =
-        pkgs.runCommand "hermes-config.yaml"
+        pkgs.runCommand "slave-config.yaml"
           {
             settings = builtins.toJSON (lib.recursiveUpdate { terminal.cwd = workingDirectory; } cfg.settings);
             passAsFile = [ "settings" ];
           }
           ''
-            HOME=$TMPDIR ${(effectivePackage cfg).hermesVenv}/bin/python3 - "$settingsPath" > $out <<'PY'
+            HOME=$TMPDIR ${(effectivePackage cfg).slaveVenv}/bin/python3 - "$settingsPath" > $out <<'PY'
             import json, sys
-            from hermes_cli.config_defaults import DEFAULT_CONFIG
+            from slave_cli.config_defaults import DEFAULT_CONFIG
             with open(sys.argv[1]) as f:
                 settings = json.load(f)
             settings.setdefault("_config_version", DEFAULT_CONFIG["_config_version"])
@@ -741,7 +741,7 @@ let
   # install loop can copy each entry with `install -D`.
   mkDocumentTree =
     { pkgs, documents }:
-    pkgs.runCommand "hermes-documents" { } (
+    pkgs.runCommand "slave-documents" { } (
       ''
         mkdir -p $out
       ''
@@ -755,7 +755,7 @@ let
           if builtins.isPath value || lib.isStorePath value then
             "${mkdir}\ncp ${value} $out/${name}"
           else
-            "${mkdir}\ncat > $out/${name} <<'HERMES_DOC_EOF'\n${value}\nHERMES_DOC_EOF"
+            "${mkdir}\ncat > $out/${name} <<'SLAVE_DOC_EOF'\n${value}\nSLAVE_DOC_EOF"
         ) documents
       )
     );
@@ -768,12 +768,12 @@ let
   mkEnvScript =
     { pkgs, environment }:
     let
-      base = pkgs.writeText "hermes-env-base" (
+      base = pkgs.writeText "slave-env-base" (
         lib.concatStringsSep "\n" (lib.mapAttrsToList (k: v: "${k}=${v}") environment)
         + lib.optionalString (environment != { }) "\n"
       );
     in
-    pkgs.writeShellScript "hermes-env-merge" ''
+    pkgs.writeShellScript "slave-env-merge" ''
       set -eu
 
       dest="$1"
@@ -786,7 +786,7 @@ let
           printf '\n' >> "$dest"
           cat "$file" >> "$dest"
         else
-          echo "hermes-agent: WARNING cannot read environmentFile $file" >&2
+          echo "slave-agent: WARNING cannot read environmentFile $file" >&2
         fi
       done
     '';
@@ -807,7 +807,7 @@ let
     {
       pkgs,
       cfg,
-      hermesHome,
+      slaveHome,
       workingDirectory,
       # The value to write as terminal.cwd. It is different from
       # workingDirectory only in the container mode of NixOS. There the agent
@@ -820,7 +820,7 @@ let
       stateDirs ? [ ],
       # The module writes this value into the .managed marker. An
       # interactive shell reads the marker, because it does not see the
-      # HERMES_MANAGED variable of the service. The value tells the shell
+      # SLAVE_MANAGED variable of the service. The value tells the shell
       # which system owns the install and which rebuild command to name.
       managedSystem ? "nixos",
     }:
@@ -845,7 +845,7 @@ let
       };
       homeDocumentTree = mkDocumentTree {
         inherit pkgs;
-        documents = cfg.hermesHomeFiles;
+        documents = cfg.slaveHomeFiles;
       };
 
       inst = "${run}install ${installFlags}";
@@ -859,67 +859,67 @@ let
         );
     in
     ''
-      # Directories. The service units and Hermes make most of these
+      # Directories. The service units and slave-agent make most of these
       # directories when they first need them. Activation makes them here so
       # that the first activation sets the correct owner and mode, and does
       # not use the umask.
       ${run}mkdir -p ${
         lib.escapeShellArgs (
           [
-            hermesHome
+            slaveHome
             workingDirectory
           ]
-          ++ map (d: "${hermesHome}/${d}") stateDirs
+          ++ map (d: "${slaveHome}/${d}") stateDirs
         )
       }
 
-      # config.yaml: merge the Nix settings into the file on disk. Hermes
+      # config.yaml: merge the Nix settings into the file on disk. slave-agent
       # writes this file at runtime. A read-only symlink to the Nix store
       # breaks each save from the application. The Nix keys replace the keys
       # on disk, and the module keeps all other keys.
       ${
         if cfg.configFile != null then
-          "${inst} -m ${modes.config} -D ${configFiles.effective} ${hermesHome}/config.yaml"
+          "${inst} -m ${modes.config} -D ${configFiles.effective} ${slaveHome}/config.yaml"
         else
           ''
-            ${run}${configFiles.mergeScript} ${configFiles.generated} ${hermesHome}/config.yaml
-            ${run}chmod ${modes.config} ${hermesHome}/config.yaml
+            ${run}${configFiles.mergeScript} ${configFiles.generated} ${slaveHome}/config.yaml
+            ${run}chmod ${modes.config} ${slaveHome}/config.yaml
           ''
       }
 
       # The managed-mode marker. It makes an interactive shell also refuse to
       # change the configuration that Nix owns.
-      ${inst} -m ${modes.managed} ${pkgs.writeText "hermes-managed" managedSystem} ${hermesHome}/.managed
+      ${inst} -m ${modes.managed} ${pkgs.writeText "slave-managed" managedSystem} ${slaveHome}/.managed
 
       ${lib.optionalString (cfg.environment != { } || cfg.environmentFiles != [ ]) ''
-        ${run}${envScript} ${hermesHome}/.env ${modes.env} ${lib.escapeShellArgs cfg.environmentFiles}
-        ${lib.optionalString (owner != null) "${run}chown ${owner} ${hermesHome}/.env"}
+        ${run}${envScript} ${slaveHome}/.env ${modes.env} ${lib.escapeShellArgs cfg.environmentFiles}
+        ${lib.optionalString (owner != null) "${run}chown ${owner} ${slaveHome}/.env"}
       ''}
 
       ${lib.optionalString (cfg.authFile != null) (
         if cfg.authFileForceOverwrite then
-          "${inst} -m ${modes.auth} ${cfg.authFile} ${hermesHome}/auth.json"
+          "${inst} -m ${modes.auth} ${cfg.authFile} ${slaveHome}/auth.json"
         else
           ''
-            if [ ! -e ${hermesHome}/auth.json ]; then
-              ${inst} -m ${modes.auth} ${cfg.authFile} ${hermesHome}/auth.json
+            if [ ! -e ${slaveHome}/auth.json ]; then
+              ${inst} -m ${modes.auth} ${cfg.authFile} ${slaveHome}/auth.json
             fi
           ''
       )}
 
       ${installDocuments documentTree workingDirectory cfg.documents}
-      ${installDocuments homeDocumentTree hermesHome cfg.hermesHomeFiles}
+      ${installDocuments homeDocumentTree slaveHome cfg.slaveHomeFiles}
 
       # Declarative plugins. Activation first deletes the old managed
       # symlinks. Thus a plugin that you remove from the configuration also
       # goes away from the plugins directory.
-      ${run}find ${hermesHome}/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
+      ${run}find ${slaveHome}/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
       ${lib.concatMapStringsSep "\n" (plugin: ''
         if [ ! -f ${plugin}/plugin.yaml ]; then
-          echo "hermes-agent: ERROR extraPlugins entry '${plugin}' has no plugin.yaml" >&2
+          echo "slave-agent: ERROR extraPlugins entry '${plugin}' has no plugin.yaml" >&2
           exit 1
         fi
-        ${run}ln -sfn ${plugin} ${hermesHome}/plugins/nix-managed-${lib.getName plugin}
+        ${run}ln -sfn ${plugin} ${slaveHome}/plugins/nix-managed-${lib.getName plugin}
       '') cfg.extraPlugins}
     '';
 
@@ -951,15 +951,15 @@ let
   #
   # The token never rides through this script: it travels as a file path in
   # the unit environment (backendSessionEnvironment), which is not a secret,
-  # and hermes reads the file itself at startup
-  # as HERMES_DASHBOARD_SESSION_TOKEN=file:<path>, which hermes expands). A
+  # and slave reads the file itself at startup
+  # as SLAVE_DASHBOARD_SESSION_TOKEN=file:<path>, which slave expands). A
   # shell wrapper that read the file
   # had to escapeShellArg the path, which froze any "${XDG_RUNTIME_DIR}"
   # placeholder into a literal and crash-looped the unit (agenix's Home
   # Manager module default). Set an absolute path instead; see the option
   # description.
   #
-  # `exec` on the last line keeps hermes as the MainPID of the unit. No shell
+  # `exec` on the last line keeps slave as the MainPID of the unit. No shell
   # stays in the cgroup, and the restart logic of systemd sees the real
   # process.
   backendLauncher =
@@ -967,7 +967,7 @@ let
     # The bind address is known only at start time, but escapeShellArgs quotes
     # each argument. Thus the command line is built with a placeholder, and the
     # placeholder becomes the shell variable after the quoting.
-    pkgs.writeShellScript "hermes-backend-launch" (
+    pkgs.writeShellScript "slave-backend-launch" (
       builtins.replaceStrings [ "@HOST@" ] [ ''"$_target"'' ] ''
         set -euo pipefail
 
@@ -991,12 +991,12 @@ let
                 fi
 
                 if [ "$_waited" -ge "$_timeout" ]; then
-                  echo "hermes-backend: '$_target' did not resolve after ''${_timeout}s. The unit stops." >&2
+                  echo "slave-backend: '$_target' did not resolve after ''${_timeout}s. The unit stops." >&2
                   exit 1
                 fi
 
                 if [ "$_waited" = 0 ]; then
-                  echo "hermes-backend: waits for '$_target' to resolve..." >&2
+                  echo "slave-backend: waits for '$_target' to resolve..." >&2
                 fi
                 ${pkgs.coreutils}/bin/sleep 2
                 _waited=$(( _waited + 2 ))
@@ -1018,13 +1018,13 @@ let
                 fi
 
                 if [ "$_waited" -ge "$_timeout" ]; then
-                  echo "hermes-backend: interface '$_iface' had no IPv4 address after ''${_timeout}s. The unit stops." >&2
-                  echo "hermes-backend: a fallback address can expose the backend more widely than you intend." >&2
+                  echo "slave-backend: interface '$_iface' had no IPv4 address after ''${_timeout}s. The unit stops." >&2
+                  echo "slave-backend: a fallback address can expose the backend more widely than you intend." >&2
                   exit 1
                 fi
 
                 if [ "$_waited" = 0 ]; then
-                  echo "hermes-backend: waits for an IPv4 address on '$_iface'..." >&2
+                  echo "slave-backend: waits for an IPv4 address on '$_iface'..." >&2
                 fi
                 ${pkgs.coreutils}/bin/sleep 2
                 _waited=$(( _waited + 2 ))
@@ -1032,7 +1032,7 @@ let
             ''
         }
 
-        echo "hermes-backend: binds to $_target:${toString cfg.backend.port} (from $_how)" >&2
+        echo "slave-backend: binds to $_target:${toString cfg.backend.port} (from $_how)" >&2
 
         exec ${lib.escapeShellArgs (backendCommand cfg "@HOST@")}
       ''
@@ -1041,8 +1041,8 @@ let
   # The session token travels as a file path, never as the token itself. A
   # path is not a secret, so it can sit in a systemd Environment= or a
   # launchd EnvironmentVariables value without putting anything readable
-  # into the store. hermes expands the file: prefix of
-  # HERMES_DASHBOARD_SESSION_TOKEN and reads that file at startup, failing
+  # into the store. slave expands the file: prefix of
+  # SLAVE_DASHBOARD_SESSION_TOKEN and reads that file at startup, failing
   # loudly when it is missing or empty.
   #
   # The path must be absolute. A "$XDG_RUNTIME_DIR"-style placeholder that a
@@ -1053,7 +1053,7 @@ let
   backendSessionEnvironment =
     { cfg }:
     lib.optionalAttrs (cfg.backend.sessionTokenFile != null) {
-      HERMES_DASHBOARD_SESSION_TOKEN = "file:" + cfg.backend.sessionTokenFile;
+      SLAVE_DASHBOARD_SESSION_TOKEN = "file:" + cfg.backend.sessionTokenFile;
     };
 
   backendArgv =
@@ -1061,7 +1061,7 @@ let
     # A plain argv is enough only when nothing must run before the backend.
     # A wait needs the address at start time, so it needs the launcher. The
     # token does not: it travels as a file path in the unit environment and
-    # hermes reads the file itself.
+    # slave reads the file itself.
     if cfg.backend.waitFor == null then
       backendCommand cfg cfg.backend.host
     else
@@ -1070,24 +1070,24 @@ let
   backendDescription =
     cfg:
     if cfg.backend.mode == "dashboard" then
-      "Hermes Agent web dashboard and desktop backend"
+      "slave-agent web dashboard and desktop backend"
     else
-      "Hermes Agent backend for Hermes Desktop";
+      "slave-agent backend for slave-agent Desktop";
 
-  # The environment that each Hermes process needs, from either module.
+  # The environment that each slave-agent process needs, from either module.
   #
-  # managedSystem gives the value of HERMES_MANAGED. The CLI reads that
+  # managedSystem gives the value of SLAVE_MANAGED. The CLI reads that
   # variable to refuse a configuration change that it cannot keep, and to
   # name the correct rebuild command. The answer is different on each module,
   # so each module gives its own value.
   processEnvironment =
     {
-      hermesHome,
+      slaveHome,
       managedSystem ? "true",
     }:
     {
-      HERMES_HOME = hermesHome;
-      HERMES_MANAGED = managedSystem;
+      SLAVE_HOME = slaveHome;
+      SLAVE_MANAGED = managedSystem;
     };
 
   processPath =
@@ -1132,9 +1132,9 @@ let
 
             ${optionPath}.workingDirectory = "/path/you/want";
 
-          To give Hermes an identity and a memory, use
-          ${optionPath}.hermesHomeFiles instead. Those files go to
-          HERMES_HOME. Hermes reads SOUL.md and memories/ only from there.
+          To give slave-agent an identity and a memory, use
+          ${optionPath}.slaveHomeFiles instead. Those files go to
+          SLAVE_HOME. slave-agent reads SOUL.md and memories/ only from there.
         '';
       }
     ];
@@ -1168,7 +1168,7 @@ let
       }
     ];
 
-  # The subdirectories of HERMES_HOME that both modules make.
+  # The subdirectories of SLAVE_HOME that both modules make.
   stateSubdirs = [
     "cron"
     "sessions"

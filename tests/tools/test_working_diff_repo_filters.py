@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli._subprocess_compat import FILTER_DISCOVERY_FAILED
+from slave_cli._subprocess_compat import FILTER_DISCOVERY_FAILED
 from tools import working_diff
 from tools.working_diff import collect_working_diff
 

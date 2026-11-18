@@ -88,10 +88,10 @@ describe('GatewayClient kill latch (issue #114987)', () => {
   let originalSidecarUrl: string | undefined
 
   beforeEach(() => {
-    originalGatewayUrl = process.env.HERMES_TUI_GATEWAY_URL
-    originalSidecarUrl = process.env.HERMES_TUI_SIDECAR_URL
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    delete process.env.HERMES_TUI_SIDECAR_URL
+    originalGatewayUrl = process.env.SLAVE_TUI_GATEWAY_URL
+    originalSidecarUrl = process.env.SLAVE_TUI_SIDECAR_URL
+    delete process.env.SLAVE_TUI_GATEWAY_URL
+    delete process.env.SLAVE_TUI_SIDECAR_URL
     FakeWebSocket.reset()
     ;(globalThis as { WebSocket?: unknown }).WebSocket = FakeWebSocket as unknown as typeof WebSocket
     vi.useFakeTimers()
@@ -101,15 +101,15 @@ describe('GatewayClient kill latch (issue #114987)', () => {
     vi.useRealTimers()
 
     if (originalGatewayUrl === undefined) {
-      delete process.env.HERMES_TUI_GATEWAY_URL
+      delete process.env.SLAVE_TUI_GATEWAY_URL
     } else {
-      process.env.HERMES_TUI_GATEWAY_URL = originalGatewayUrl
+      process.env.SLAVE_TUI_GATEWAY_URL = originalGatewayUrl
     }
 
     if (originalSidecarUrl === undefined) {
-      delete process.env.HERMES_TUI_SIDECAR_URL
+      delete process.env.SLAVE_TUI_SIDECAR_URL
     } else {
-      process.env.HERMES_TUI_SIDECAR_URL = originalSidecarUrl
+      process.env.SLAVE_TUI_SIDECAR_URL = originalSidecarUrl
     }
 
     FakeWebSocket.reset()

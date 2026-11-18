@@ -63,7 +63,7 @@ def _bare_runner(adapter) -> gateway_run.GatewayRunner:
 def test_turn_approval_card_goes_through_the_replacement_adapter(tmp_path, monkeypatch):
     """Wire the turn the way ``_run_agent_inner`` does, rebuild the adapter, then raise an approval."""
     (tmp_path / "config.yaml").write_text("display: {}")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     monkeypatch.setattr("gateway.platforms.base_exec_approval.approval_timeout_seconds", lambda: 300)
     retired, live = _Adapter("old"), _Adapter("new")
     runner = _bare_runner(retired)
@@ -96,7 +96,7 @@ def test_update_prompt_after_reconnect_reaches_the_replacement(tmp_path):
         {"platform": "telegram", "chat_id": "111", "user_id": "111", "session_key": SESSION}))
 
     async def scenario():
-        with patch("gateway.run._hermes_home", tmp_path):
+        with patch("gateway.run._slave_home", tmp_path):
             target = runner._resolve_update_target(runner._update_paths())
             retired.connected = False
             runner.adapters[Platform.TELEGRAM] = live
@@ -111,7 +111,7 @@ def test_update_prompt_after_reconnect_reaches_the_replacement(tmp_path):
 def test_long_running_heartbeat_after_reconnect_reaches_the_replacement(monkeypatch):
     """The "still working" heartbeat loop outlives a reconnect: each tick sends through the adapter
     registered NOW, not the bot-less instance the turn started with."""
-    monkeypatch.setenv("HERMES_AGENT_NOTIFY_INTERVAL", "0.01")
+    monkeypatch.setenv("SLAVE_AGENT_NOTIFY_INTERVAL", "0.01")
     retired, live = _Adapter("old"), _Adapter("new")
     runner = _bare_runner(retired)
     runner._draining = runner._restart_requested = False

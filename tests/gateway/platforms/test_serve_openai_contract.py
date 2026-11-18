@@ -20,16 +20,16 @@ API_KEY = "fixture-api-key"
 
 
 @pytest.fixture(autouse=True)
-def _isolated_hermes_home(tmp_path, monkeypatch):
-    """Keep the adapter away from a developer's real HERMES_HOME."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
-    (tmp_path / "hermes-home").mkdir(exist_ok=True)
+def _isolated_slave_home(tmp_path, monkeypatch):
+    """Keep the adapter away from a developer's real SLAVE_HOME."""
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "slave-home"))
+    (tmp_path / "slave-home").mkdir(exist_ok=True)
 
 
 def _build_adapter(tmp_path, extra=None, calls=None):
     from gateway.config import PlatformConfig
     from gateway.platforms.api_server import APIServerAdapter
-    from hermes_state import SessionDB
+    from slave_state import SessionDB
 
     db = SessionDB(db_path=Path(tmp_path) / "state.db")
     adapter = APIServerAdapter(

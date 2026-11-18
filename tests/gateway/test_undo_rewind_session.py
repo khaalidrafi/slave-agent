@@ -21,7 +21,7 @@ from tests.fixtures.storage_seed import seed_messages, seed_session
 
 @pytest.fixture()
 def store(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     s = SessionStore(sessions_dir=tmp_path / "sessions", config=GatewayConfig())
     yield s

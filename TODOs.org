@@ -19,21 +19,21 @@
 ** DONE Steward refusal text spells our package from brand.py (#24)
    - Guix update/uninstall refusals via ~brand.SLUG~; Termux APT + Nix names
      stay upstream keeps; relationship test appended to
-     ~tests/hermes_cli/test_steward_detection.py~.
+     ~tests/slave_cli/test_steward_detection.py~.
    - Source: T1 (* Agent, task #24 turns); HANDOFF.org "Brand".
    - Cross-ref: specs/001.
 
 ** DONE brand.py HOME_ENV agrees with the generator (#23)
-   - The identity tier's mechanical ~HERMES_~ swap drops ~_AGENT~; brand.py
+   - The identity tier's mechanical ~SLAVE_~ swap drops ~_AGENT~; brand.py
      fixed so the env name matches; guarded by
      ~tests/scripts/test_rebrand_brand_agreement.py~.
    - Source: T1 (* Agent, task #23 references; the agreement-test stdout is
      quoted in T1). Cross-ref: specs/001 req. 4.
 
 ** DONE Banner nameplate from brand.PRODUCT/TAGLINE; block art dead (#26)
-   - ~_brand_wordmark()~ in ~hermes_cli/banner.py~; ~ui-tui/src/banner.ts~
+   - ~_brand_wordmark()~ in ~slave_cli/banner.py~; ~ui-tui/src/banner.ts~
      literal plate; skin comment updated; regression test in
-     ~tests/hermes_cli/test_banner.py~; CI guard on the deleted row-1
+     ~tests/slave_cli/test_banner.py~; CI guard on the deleted row-1
      signature.
    - Source: T1 (* Agent, task #26 turns); HANDOFF.org "Brand". Cross-ref:
      specs/002.
@@ -60,7 +60,7 @@
 
 ** IN-PROGRESS Decide the third-party KEEP list (#35) — blocks #28
    - Lowercase ~nousresearch/hermes-agent~ Docker path, Termux/Nix package
-     names, ~hermes-sandbox~, model IDs (~hermes-4-405b~,
+     names, ~slave-sandbox~, model IDs (~hermes-4-405b~,
      ~Hermes-3-Llama-3.1-70B~), 79 image refs; Owner blessing required
      ("needs your explicit blessing", gap 7).
    - Source: T1 (* Agent, discovery turns + final response); FORK.org "TODO
@@ -88,7 +88,7 @@
 
 ** DONE plugins/shop read-only storefront adapter + 4 tools (#19/#29)
    - ~StorefrontAdapter~ ABC + REST impl; ~shop_queue~, ~shop_orders~,
-     ~shop_order~, ~shop_catalog~; ~hermes shop~ + ~/shop~; all shape via
+     ~shop_order~, ~shop_catalog~; ~slave shop~ + ~/shop~; all shape via
      ~plugins.entries.shop.settings~; token via ~agent.secret_scope~ at call
      time; cache per (settings, token); 23/23 tests green; commit
      ~51e1d196c8~.
@@ -110,9 +110,9 @@
 * Light core / bloat removal (slave-agent) — see specs/006
 
 ** IN-PROGRESS P0 updater-removal tail committed, verification remainder open (#31)
-   - Commit ~0bbd3f41cd~ (~refactor(p0)~): ~hermes update~ →
-     package-manager pointer; ~hermes_cli/install_maint.py~ (+987);
-     ~hermes_cli/gateway_systemd.py~; ~main.py~ −317;
+   - Commit ~0bbd3f41cd~ (~refactor(p0)~): ~slave update~ →
+     package-manager pointer; ~slave_cli/install_maint.py~ (+987);
+     ~slave_cli/gateway_systemd.py~; ~main.py~ −317;
      ~scripts/ci/classify_changes.py~ desktop_updater lane. Committed at the
      Owner's order with full disclosure of the other session's authorship.
    - Island NOT on any reachable remote (agent-team board: UNREACHABLE on
@@ -122,8 +122,8 @@
      agent-team/TODOS.org. Cross-ref: specs/006, specs/007.
 
 ** TODO Fix the 5 known-red steward tests
-   - ~tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission~
-     still imports deleted ~hermes_cli.update_contract~; rewrite the
+   - ~tests/slave_cli/test_steward_detection.py::TestUpdateAdmission~
+     still imports deleted ~slave_cli.update_contract~; rewrite the
      assertions against the steward table. Executor: Software Engineer
      (deepseek-v4.1-flash@codebuddy).
    - Source: T1; HANDOFF.org "Known-red tests"; agent-team/TODOS.org.
@@ -177,7 +177,7 @@
 * slave-agent capability roadmap (boards + transcripts)
 
 ** TODO slave_compat as the canonical key + state migration
-   - ~slave_compat~ canonical while ~hermes_compat~ keeps working; state-dir
+   - ~slave_compat~ canonical while ~slave_compat~ keeps working; state-dir
      read-fallback; one-shot ~slave migrate-state~; launcher path default
      moves, old name still resolves. Executor: Software Engineer
      (deepseek-v4.1-flash@codebuddy).
@@ -266,7 +266,7 @@
 
 ** TODO HELD: first-client / Bangladesh-market proposal (Owner consult)
    - Held until the brand work is done and the Owner consults (his words:
-     complete the Hermes replacement before consulting on the client); no
+     complete the slave-agent replacement before consulting on the client); no
      client data or naming enters this tree (purity law).
    - Source: T1 (thinking turns + private-handoff outline). Cross-ref:
      specs/007 notes.

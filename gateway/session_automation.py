@@ -771,7 +771,7 @@ def _local_owner(authority, session_key):
 
 
 async def _reset_and_retarget_local(authority, runner, session_key, old_session_id, owner):
-    """A LOCAL route (the Bot Chat ``hermes peer dm`` lands in) keeps its FIFO owner across the
+    """A LOCAL route (the Bot Chat ``slave peer dm`` lands in) keeps its FIFO owner across the
     reset, so nothing moves between FIFOs. Its queued automation rows (a DM that arrived while the
     exhausted turn ran) still name the pre-reset transcript and are retargeted at the fresh one,
     in the same ordered worker step as the rotation; left stale, the drain refuses them

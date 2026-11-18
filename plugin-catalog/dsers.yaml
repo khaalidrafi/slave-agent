@@ -21,18 +21,18 @@ description: >-
   Square, Ecwid, Magento, SHOPLINE, Jumpseller, Big Cartel, Cartpanda, Genstore,
   and LPQV; available operations depend on account and channel access.
   Disclosure — portable Agent Plugin with eight bundled skills and remote MCP
-  configuration, with no native registered tools. Hermes v0.22.5 requires manual
+  configuration, with no native registered tools. slave-agent v0.22.5 requires manual
   native OAuth connection setup. A DSers Advanced, Pro, or Enterprise
   subscription is required. Tool arguments and results are exchanged with
-  ai.dsers.com; Hermes manages OAuth credentials. Remote tools include write
+  ai.dsers.com; slave-agent manages OAuth credentials. Remote tools include write
   operations, among them supplier-order placement that spends money through
   the user's DSers account, pricing changes and listing publication; the package
   and the documented native entry mark the server untrusted, so non-read-only
-  calls are subject to Hermes's tool approval settings. The remote tool set can
+  calls are subject to slave-agent’s tool approval settings. The remote tool set can
   change independently of the pinned package. Removing the plugin alone leaves
   the native MCP connection.
 known_issues:
-  - "On Hermes v0.22.5, configure the native OAuth connection as documented in the README; installation and enablement alone do not complete setup."
+  - "On slave-agent v0.22.5, configure the native OAuth connection as documented in the README; installation and enablement alone do not complete setup."
   - "Disabling or removing the plugin alone does not remove the native MCP connection or its cached credentials; the README documents full removal."
 capabilities:
   provides_tools: []

@@ -191,7 +191,7 @@ def test_wait_returns_the_final_tail_when_the_reader_drains_slowly(tmp_path, mon
 def test_kill_with_a_failed_scope_stop_keeps_the_session_running(monkeypatch):
     """Without a stopped scope, nothing proves the detached descendants are gone."""
     registry = ProcessRegistry()
-    session = _session("proc_scope_stuck", systemd_unit="hermes-worker-proc_scope_stuck.scope")
+    session = _session("proc_scope_stuck", systemd_unit="slave-worker-proc_scope_stuck.scope")
     registry._running[session.id] = session
     monkeypatch.setattr(registry, "_signal_kill", lambda *_args: None)
     monkeypatch.setattr(registry, "_post_kill_survivors", lambda _session: [])
@@ -202,14 +202,14 @@ def test_kill_with_a_failed_scope_stop_keeps_the_session_running(monkeypatch):
 
     assert result["status"] == "error"
     assert result["process_running"] is True
-    assert "hermes-worker-proc_scope_stuck.scope" in result["error"]
+    assert "slave-worker-proc_scope_stuck.scope" in result["error"]
     assert session.id in registry._running
     assert not session.exited
 
 
 def test_kill_of_an_exited_session_reports_a_failed_scope_stop(monkeypatch):
     registry = ProcessRegistry()
-    session = _session("proc_exited_scope_stuck", systemd_unit="hermes-worker-proc_exited_scope_stuck.scope")
+    session = _session("proc_exited_scope_stuck", systemd_unit="slave-worker-proc_exited_scope_stuck.scope")
     session.mark_exited(0)
     registry._finished[session.id] = session
     monkeypatch.setattr(module, "_stop_systemd_unit", lambda _unit: False)
@@ -217,13 +217,13 @@ def test_kill_of_an_exited_session_reports_a_failed_scope_stop(monkeypatch):
     result = registry.kill_process(session.id)
 
     assert result["status"] == "already_exited"
-    assert result["scope_stop_failed"] == "hermes-worker-proc_exited_scope_stuck.scope"
+    assert result["scope_stop_failed"] == "slave-worker-proc_exited_scope_stuck.scope"
 
 
 def test_a_reader_exit_during_a_failed_scope_stop_is_not_reported_as_killed(monkeypatch):
     """The root exiting proves nothing about the scope's detached descendants."""
     registry = ProcessRegistry()
-    session = _session("proc_scope_race", systemd_unit="hermes-worker-proc_scope_race.scope")
+    session = _session("proc_scope_race", systemd_unit="slave-worker-proc_scope_race.scope")
     registry._running[session.id] = session
     monkeypatch.setattr(registry, "_signal_kill", lambda *_args: None)
     monkeypatch.setattr(registry, "_write_checkpoint", lambda *_a, **_k: None)
@@ -236,7 +236,7 @@ def test_a_reader_exit_during_a_failed_scope_stop_is_not_reported_as_killed(monk
     result = registry.kill_process(session.id)
 
     assert result["status"] == "error"
-    assert result["scope_stop_failed"] == "hermes-worker-proc_scope_race.scope"
+    assert result["scope_stop_failed"] == "slave-worker-proc_scope_race.scope"
     assert result["process_running"] is False
     assert (session.completion_reason, session.exit_code) == ("exited", 0)
     assert session.id in registry._finished  # keeps its unit, so a later kill retries the stop
@@ -354,7 +354,7 @@ def test_a_log_rotation_seen_after_a_kill_does_not_clear_its_output(monkeypatch)
 
 def _scoped_session(registry, monkeypatch, sid, stops, **fields) -> ProcessSession:
     """A session with its own systemd scope; ``stops`` lists each stop's outcome in turn."""
-    session = _session(sid, systemd_unit=f"hermes-worker-{sid}.scope", **fields)
+    session = _session(sid, systemd_unit=f"slave-worker-{sid}.scope", **fields)
     registry._running[session.id] = session
     monkeypatch.setattr(registry, "_write_checkpoint", lambda *_a, **_k: None)
     monkeypatch.setattr(module, "_stop_systemd_unit", lambda _unit: stops.pop(0))

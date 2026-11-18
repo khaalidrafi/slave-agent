@@ -1,7 +1,7 @@
 name: serpapi
 repo: https://github.com/serpapi/serpapi-hermes-plugin
 sha: f61418cb72a2771aec7526d03bf675fefd993b14
-description: "SerpApi web, Maps, News, Shopping, Hotels, Flights, Travel Explore, and page extraction for Hermes Agent. Scrape pages, map URLs, or crawl sites."
+description: "SerpApi web, Maps, News, Shopping, Hotels, Flights, Travel Explore, and page extraction for slave-agent. Scrape pages, map URLs, or crawl sites."
 maintainer: serpapi
 tier: community
 category: web

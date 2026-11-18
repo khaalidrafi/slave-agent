@@ -78,9 +78,9 @@ def owner(tmp_path, config=None):
         **(config or {}),
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
         OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1',
-        HERMES_DASHBOARD_SESSION_TOKEN='other-controls-actor')
+        SLAVE_DASHBOARD_SESSION_TOKEN='other-controls-actor')
     try:
         with daemon(root, home, env, barrier=False) as (_, desc):
             yield home, peer, desc
@@ -204,7 +204,7 @@ def test_corrections_are_generation_fenced_and_consumed_by_same_provider_loop(tm
 def test_session_yolo_toggle_is_session_scoped_and_revokes_launch_yolo(tmp_path):
     """TUI `/yolo` / Shift+Tab and the Desktop toggle send `config.set key=yolo`; the canonical owner
     answered invalid_params, so `/yolo` could never revoke a `--yolo` launch. It is this session's
-    bypass only (never config.yaml / HERMES_YOLO_MODE) and a launch YOLO reads as on until revoked."""
+    bypass only (never config.yaml / SLAVE_YOLO_MODE) and a launch YOLO reads as on until revoked."""
     with owner(tmp_path) as (home, peer, desc):
         async def probe():
             async with websocket(home, desc) as ws:

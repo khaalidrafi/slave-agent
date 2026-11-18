@@ -16,8 +16,8 @@ from typing import Any
 
 import pytest
 
-# Imported at MODULE level on purpose: gateway.run's import side effects (hermes_bootstrap's
-# interrupted-update probe) stat the checkout's git dir, which sits inside the real Hermes home
+# Imported at MODULE level on purpose: gateway.run's import side effects (slave_bootstrap's
+# interrupted-update probe) stat the checkout's git dir, which sits inside the real Slave home
 # when the suite runs from a developer worktree — the home-I/O guard is fixture-scoped and only
 # active during a test, so the probe must happen here at collection time.
 import gateway.run as gateway_run
@@ -57,7 +57,7 @@ def test_timeout_settle_leaves_dispatch_and_settle_records(monkeypatch, caplog):
 def test_acknowledged_card_leaves_a_delivery_record(tmp_path, monkeypatch, caplog):
     """A platform-acked card must log its message_id — the acknowledgement entry #138133 lacked."""
     (tmp_path / "config.yaml").write_text("display: {}")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
 
     class _ButtonAdapter:
         typed_command_prefix = "/"
@@ -119,7 +119,7 @@ def test_handoff_failure_still_logs_the_wait_side_boundary(monkeypatch, caplog):
 def test_text_fallback_send_leaves_a_record(tmp_path, monkeypatch, caplog, text_ok, level):
     """A failed card falls back to text; that send's own outcome must be logged, success or not."""
     (tmp_path / "config.yaml").write_text("display: {}")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
 
     class _FailingCardAdapter:
         typed_command_prefix = "/"

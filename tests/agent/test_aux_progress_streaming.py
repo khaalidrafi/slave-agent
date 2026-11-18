@@ -383,8 +383,8 @@ class TestAggregateChatStream:
             return
         if case == "provider_stale_timeout_before_first_token":
             gates["release"].set()
-            monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "0.5")
-            monkeypatch.setattr("hermes_cli.config.load_config_readonly",
+            monkeypatch.setenv("SLAVE_STREAM_STALE_TIMEOUT", "0.5")
+            monkeypatch.setattr("slave_cli.config.load_config_readonly",
                                 lambda: {"providers": {"openrouter": {"stale_timeout_seconds": 900}}})
             result = call("slow", "compression", via_relay_seam=True, provider="openrouter")
             assert result.choices[0].message.content == "partial"
@@ -743,7 +743,7 @@ class TestProviderRequiresStream:
 
     def test_config_marker_matches_custom_endpoint(self):
         with patch(
-            "hermes_cli.config.load_config",
+            "slave_cli.config.load_config",
             return_value={"auxiliary": {"stream_only_base_urls": ["my-proxy.example.com"]}},
         ):
             assert _provider_requires_stream(

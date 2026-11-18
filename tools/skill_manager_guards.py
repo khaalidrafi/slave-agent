@@ -150,7 +150,7 @@ def _pinned_guard(name: str) -> Optional[str]:
         from agent.skill_utils import ESSENTIAL_SKILLS
         if name in ESSENTIAL_SKILLS:
             return (
-                f"Skill '{name}' is essential to Hermes (the agent's own "
+                f"Skill '{name}' is essential to slave-agent (the agent's own "
                 f"operating manual referenced by the system prompt) and "
                 f"cannot be deleted. Patches and edits are still allowed.")
     except Exception:
@@ -158,7 +158,7 @@ def _pinned_guard(name: str) -> Optional[str]:
     if _is_pinned(name, "pinned-guard"):
         return (
             f"Skill '{name}' is pinned and cannot be deleted by skill_manage. Ask the user to "
-            f"run `hermes curator unpin {name}` if they want to delete it. Patches and edits "
+            f"run `slave curator unpin {name}` if they want to delete it. Patches and edits "
             f"are allowed on pinned skills; only deletion is blocked.")
     return None
 
@@ -173,7 +173,7 @@ def _background_review_delete_guard(name: str, skill_dir: Path) -> Optional[dict
     if _is_pinned(name, "pinned skill guard"):
         return _refusal(
             f"{refuse} pinned skill '{name}': pinned skills "
-            f"are off-limits to autonomous maintenance. Ask the user to run `hermes curator "
+            f"are off-limits to autonomous maintenance. Ask the user to run `slave curator "
             f"unpin {name}` if they want it changed.")
     try:
         from agent.skill_utils import is_external_skill_path
@@ -201,7 +201,7 @@ def _background_review_delete_guard(name: str, skill_dir: Path) -> Optional[dict
             return _refusal(
                 f"{refuse} skill '{name}': the skill is not "
                 f"curator-managed ({_detail}). Only curator-managed skills may be archived "
-                f"autonomously. Run `hermes curator adopt {name}` to opt it in.")
+                f"autonomously. Run `slave curator adopt {name}` to opt it in.")
     except Exception:
         logger.warning("owned skill guard lookup failed for %s", name, exc_info=True)
         return _refusal(
@@ -224,7 +224,7 @@ def _background_review_read_before_write_guard(
 
 
 def _locked_guard(name: str, action: str) -> Optional[dict[str, Any]]:
-    """Refuse every mutating ``skill_manage`` action on a skill the user locked (``hermes curator
+    """Refuse every mutating ``skill_manage`` action on a skill the user locked (``slave curator
     lock`` / the Desktop lock switch), whoever asks: foreground turns, the background review and the
     curator pass alike. ``create`` is exempt (the collision check already refuses a name that resolves
     anywhere). An unreadable sidecar fails CLOSED for the autonomous passes (silently relaxing a

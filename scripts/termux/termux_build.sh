@@ -14,7 +14,7 @@
 # image (from pm/lock.json's termux-docker package). No opt-out flags.
 #
 # Inputs (host mode, all required):
-#   --repo <dir>   hermes-agent checkout to build from (must contain the tag)
+#   --repo <dir>   slave-agent checkout to build from (must contain the tag)
 #   --tag <tag>    immutable release tag (vX.Y.Z or vX.Y.Z+canary.<UTC timestamp>)
 #   --out <dir>    output dir (wheelhouse/ + index.json + SHA256SUMS land here)
 
@@ -81,7 +81,7 @@ if [ "${1:-}" = "--in-container" ]; then
     # pin table drifts from the pool, cmake cannot start and scikit-build-core compiles one from
     # PyPI source, which takes 30 minutes to fail. Say so now.
     cmake -E capabilities >/dev/null 2>&1 \
-        || fail "container cmake cannot start (payload libc++ older than apt's? run: hermes pm update --termux)"
+        || fail "container cmake cannot start (payload libc++ older than apt's? run: slave pm update --termux)"
     # BINARIES, not package names: the rust package provides rustc/cargo
     # (there is no `rust` binary).
     for tool in clang rustc cargo make git; do
@@ -122,8 +122,8 @@ if [ "${1:-}" = "--in-container" ]; then
     mkdir -p "$PREFIX/tmp"
     BUILD_ROOT="$(mktemp -d "$PREFIX/tmp/hermes-build-XXXXXX")"
     BUILD_VENV="$BUILD_ROOT/venv"
-    export HERMES_HOME="$BUILD_ROOT/home"
-    export HERMES_RUNTIME_DIR="$BUILD_ROOT/tools"
+    export SLAVE_HOME="$BUILD_ROOT/home"
+    export SLAVE_RUNTIME_DIR="$BUILD_ROOT/tools"
     PYTHONPATH="$(cd "$HERE/../.." && pwd)"
     export PYTHONPATH
     "$PY" "$HERE/build_environment.py" prepare-tools \

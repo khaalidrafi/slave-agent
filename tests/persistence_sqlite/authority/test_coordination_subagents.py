@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from hermes_constants import get_hermes_home, profile_tombstone_path
+from slave_constants import get_slave_home, profile_tombstone_path
 from persistence.authority.subagents import SubagentState, SubagentWrite
 from persistence.sqlite import SQLiteBackend
 from tests.contracts._scopes import profile_scope
@@ -50,11 +50,11 @@ def test_a_fresh_store_has_mains_resumable_subagents_table(store, scope_a):
 
 def test_a_removed_profiles_records_are_never_created_again():
     removed = profile_scope("removed")
-    home = get_hermes_home() / "profiles" / removed.name
+    home = get_slave_home() / "profiles" / removed.name
     tomb = profile_tombstone_path(home)
     tomb.parent.mkdir(parents=True, exist_ok=True)
     tomb.write_text("deleted")
-    backend = SQLiteBackend({removed.hermes_home_key: home / "state.db"})
+    backend = SQLiteBackend({removed.slave_home_key: home / "state.db"})
     try:
         coord = backend.open(removed).coordination
         record = SubagentWrite(state=SubagentState.RUNNING, pinned=True, stop_cause=None, owner_pid=1,
@@ -78,7 +78,7 @@ def test_a_store_without_the_table_gains_it_on_open(backend, scope_a):
     backend.close()
     with sqlite3.connect(path) as conn:
         conn.execute("DROP TABLE resumable_subagents")
-    reopened = SQLiteBackend({scope_a.hermes_home_key: path})
+    reopened = SQLiteBackend({scope_a.slave_home_key: path})
     try:
         reopened.open(scope_a).ready()
         with sqlite3.connect(path) as conn:

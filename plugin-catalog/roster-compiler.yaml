@@ -5,7 +5,7 @@ sha: 08704c949483475397e1efd4b61dab3d51d467d2
 description: >-
   Reads a hospital duty roster (CSV, plain text, Excel or a text-layer PDF), flags uncovered shifts,
   double bookings, runs longer than six days and night-then-day turns, and writes a clean schedule plus
-  an HTML exception report. Deterministic: no model calls, no network, staff names only. Honours Hermes's
+  an HTML exception report. Deterministic: no model calls, no network, staff names only. Honours slave-agent’s
   read and write denylists, never modifies its input, and treats a file it cannot read as an error rather
   than a clean bill of health.
 maintainer: COSMICnoob80

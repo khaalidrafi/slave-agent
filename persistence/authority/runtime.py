@@ -68,7 +68,7 @@ METADATA_FIELDS: Mapping[str, type] = {"title": str, "archived": bool, "hidden":
 #: The rewind refusal's ``detail`` for a target compaction summarized; clients match the ``compacted:`` prefix.
 COMPACTED_TARGET_DETAIL = "compacted: target user message was summarized when the session was compressed"
 
-# The values of ``hermes_constants.VALID_REASONING_EFFORTS``.
+# The values of ``slave_constants.VALID_REASONING_EFFORTS``.
 _REASONING_EFFORTS = ("minimal", "low", "medium", "high", "xhigh", "max", "ultra")
 _COMPRESS_FIELDS: Mapping[str, type] = {"focus": str, "preview": bool, "partial": bool, "keep_last": int}
 # Operations whose mutation requires ``expected_generation``.
@@ -82,7 +82,7 @@ def _text(value: Any) -> str:
 
 
 def _reasoning_level(value: str) -> bool:
-    """A string level ``hermes_constants.parse_reasoning_effort`` accepts."""
+    """A string level ``slave_constants.parse_reasoning_effort`` accepts."""
     effort = value.strip().lower()
     return effort in {"none", "false", "disabled"} or effort in _REASONING_EFFORTS
 

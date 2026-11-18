@@ -1,4 +1,4 @@
-import { Box, Text, useInput, wrapAnsi } from '@hermes/ink'
+import { Box, Text, useInput, wrapAnsi } from '@slave-agent/ink'
 import { useEffect, useState } from 'react'
 
 import { messages } from '../i18n/runtime.js'
@@ -52,7 +52,7 @@ export function approvalOptions(req: ApprovalReq): readonly ApprovalChoice[] {
   return req.allowPermanent === false ? APPROVAL_OPTS_NO_ALWAYS : APPROVAL_OPTS
 }
 
-/** The rows the prompt shows: the gateway's choices, plus "No, and tell Hermes…" wherever Deny is one. */
+/** The rows the prompt shows: the gateway's choices, plus "No, and tell slave-agent…" wherever Deny is one. */
 export function approvalRows(req: ApprovalReq): readonly ApprovalChoice[] {
   const opts = approvalOptions(req)
 

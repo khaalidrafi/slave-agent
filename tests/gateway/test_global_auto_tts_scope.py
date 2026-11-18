@@ -29,7 +29,7 @@ class _Adapter(BasePlatformAdapter):
 
 
 def _configured_runner(tmp_path, monkeypatch, mode="voice_only", *, enabled=True):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     mode_line = "" if mode is None else f"  auto_tts_mode: {mode}\n"
     (tmp_path / "config.yaml").write_text(
         f"voice:\n  auto_tts: {str(enabled).lower()}\n{mode_line}", encoding="utf-8"

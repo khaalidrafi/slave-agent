@@ -1,6 +1,6 @@
 """The gateway's ``reload-plugins`` verb connects an enabled plugin's MCP servers before it answers.
 
-``hermes plugins install`` (a "y" at Enable-now, or ``--enable``), ``plugins enable`` and the Desktop
+``slave plugins install`` (a "y" at Enable-now, or ``--enable``), ``plugins enable`` and the Desktop
 ask the running gateway to reload plugins, then tell the user the plugin's MCP servers apply "next
 session". The forced re-discovery only registered the server configs; the servers connected on the
 next housekeeping reconcile tick, up to a minute later, so a session started in between had none of
@@ -38,7 +38,7 @@ for line in sys.stdin:
 
 @pytest.fixture
 def gateway_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "slave-home"
     plugin = home / "plugins" / "rpprobe"
     plugin.mkdir(parents=True)
     (plugin / "plugin.json").write_text(json.dumps({
@@ -51,8 +51,8 @@ def gateway_home(tmp_path, monkeypatch):
         "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
         "mcpServers": {"rpprobe": {"type": "stdio", "command": "./server.py", "args": []}}}), encoding="utf-8")
     (home / "config.yaml").write_text("plugins:\n  enabled: [rpprobe]\n  disabled: []\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    from hermes_cli import plugins
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    from slave_cli import plugins
     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
     plugins._reset_plugin_managers_for_tests()
     loop = asyncio.new_event_loop()

@@ -2,8 +2,8 @@ name: ceo-pack
 repo: https://github.com/tradersurfer/ceo-pack
 sha: 28fe9ae947cbb777d9aa10a91c15dbb6d3454928
 description: >-
-  CEO Pack — a CEO orchestration layer for Hermes. Brief, route, plan, assign,
-  call, verify, log, with Hermes as COO. One owner and one due date per task,
+  CEO Pack — a CEO orchestration layer for Slave. Brief, route, plan, assign,
+  call, verify, log, with slave-agent as COO. One owner and one due date per task,
   Type 1 / Type 2 decision gating, credential-safe tool calls, and owner
   approval for external actions. v0.4.0 adds seat aliases, head-CEO config,
   capability checks, opt-in business-data reading, and generalized closeout

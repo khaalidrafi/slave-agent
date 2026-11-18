@@ -128,12 +128,12 @@ async def test_a_secondary_profiles_old_conversation_gets_its_result_after_the_s
     from gateway.session_authorities import SessionAuthorities
     from gateway.session_authority import LiveSession, initialize_session_authority
     from gateway.session_detached import detach
-    from hermes_constants import get_hermes_home
-    root = tmp_path / 'hermes'
+    from slave_constants import get_slave_home
+    root = tmp_path / 'slave'
     profile = root / 'profiles' / 'fitness'
     profile.mkdir(parents=True)
     (profile / 'config.yaml').write_text('{}\n', encoding='utf-8')
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     runner = GatewayRunner(GatewayConfig(multiplex_profiles=True))
     launch = await initialize_session_authority(runner, profile_id=str(root), instance_id='owner',
                                                 persistence=storage_handle(root))
@@ -158,7 +158,7 @@ async def test_a_secondary_profiles_old_conversation_gets_its_result_after_the_s
 
     assert runner._build_process_event_source(evt) is live.source
     async with runner._completion_event_scope(evt):
-        assert Path(get_hermes_home()) == profile
+        assert Path(get_slave_home()) == profile
         assert await runner._inject_watch_notification('[process proc_1 finished]', evt) is True
     await async_wait_until(lambda: _noted(fitness, a, '[process proc_1 finished]'), timeout=10,
                            what="the result in fitness's A")

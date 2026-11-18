@@ -1,10 +1,10 @@
 """Bind a runtime scope and the profile state derived from it.
 
-The value types and the state slot live in ``hermes_scope`` (stdlib-only). This module is the one
-place that turns a scope into profile state: the ``HERMES_HOME`` override, the secret scope and
+The value types and the state slot live in ``slave_scope`` (stdlib-only). This module is the one
+place that turns a scope into profile state: the ``SLAVE_HOME`` override, the secret scope and
 the terminal policy, installed as ONE change to the scope state so they cannot describe different
 profiles. Code that needs another profile's state uses :func:`bind_profile_scope`, not the legacy
-setters (``set_hermes_home_override``, ``set_secret_scope``, ``install_profile_terminal_scope``);
+setters (``set_slave_home_override``, ``set_secret_scope``, ``install_profile_terminal_scope``);
 code-health rule HX016 blocks new direct calls to them outside this module. With a scope bound
 those setters cannot split it: a call that names another profile rebinds the whole scope
 (:func:`legacy_switch`) on a local install and refuses in a hosted scope.
@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Optional
 
-from hermes_scope import (
+from slave_scope import (
     LOCAL_OWNER,
     LOCAL_TENANT,
     BoundSecrets,
@@ -37,8 +37,8 @@ __all__ = [
 
 
 def _same_home(a: str | Path, b: str | Path) -> bool:
-    from hermes_constants import hermes_home_key
-    return hermes_home_key(a) == hermes_home_key(b)
+    from slave_constants import slave_home_key
+    return slave_home_key(a) == slave_home_key(b)
 
 
 def _identity(scope: Scope) -> tuple[Any, ...]:
@@ -65,7 +65,7 @@ def scope_for_profile(home: str | Path) -> Scope:
     Re-entering the bound profile returns the bound scope, so a turn's session, turn id and fence
     survive the nested profile binds the gateway makes inside a turn. The actor is the bound
     scope's, else the local owner (a local install has one person), and owns the agent. Raises
-    :class:`~hermes_scope.ScopeSwitchRefused` inside a hosted scope."""
+    :class:`~slave_scope.ScopeSwitchRefused` inside a hosted scope."""
     _refuse_inside_hosted("a local profile bind")
     current = current_scope()
     if current is not None and _same_home(current.agent, home):
@@ -104,9 +104,9 @@ def bind_state(
     piece is computed before anything is installed, so a failure leaves nothing bound.
 
     Inside a hosted scope, only a bind of the same tenant, agent, actor, owner and administration
-    right is allowed; anything else raises :class:`~hermes_scope.ScopeSwitchRefused`. Inside a
+    right is allowed; anything else raises :class:`~slave_scope.ScopeSwitchRefused`. Inside a
     hosted turn such a bind keeps the bound turn, so its session, turn id and fence survive; a
-    newer turn (a :class:`~hermes_scope.TurnScope`) is bound as given."""
+    newer turn (a :class:`~slave_scope.TurnScope`) is bound as given."""
     _refuse_inside_hosted("a bind of another scope", unless=scope)
     current = current_scope()
     if isinstance(current, TurnScope) and not current.is_local and not isinstance(scope, TurnScope):
@@ -119,11 +119,11 @@ def bind_state(
 
     if secrets is None:
         # Built under the target's home, as main's per-turn loader did: hydration reads the
-        # profile's ``secrets:`` config through ``get_hermes_home()``, which would otherwise still
+        # profile's ``secrets:`` config through ``get_slave_home()``, which would otherwise still
         # name whichever profile is bound now. Only the home moves, for these reads alone.
         with push_state(home=home):
             if hydrate_secrets:
-                from hermes_cli.env_loader import hydrate_profile_secret_sources
+                from slave_cli.env_loader import hydrate_profile_secret_sources
                 hydrate_profile_secret_sources(Path(home))
             secrets = owner_secret_scope(Path(home))
     kept = current_state()
@@ -154,7 +154,7 @@ def _bind_whole_profile(
     unstamped), so systemd / ``op run`` injection still resolves; any other home gets its own
     ``.env`` and sources only, stamped as routed. A caller's *env_overlay* replaces the default."""
     from agent.secret_scope import _is_process_home
-    if _is_process_home(Path(scope.agent)):  # the pinned launch identity, not a mirrored HERMES_HOME
+    if _is_process_home(Path(scope.agent)):  # the pinned launch identity, not a mirrored SLAVE_HOME
         from tui_gateway.launch_profile_policy import launch_secret_scope, launch_terminal_env
         return bind_state(scope, secrets=launch_secret_scope(Path(scope.agent)) if secrets is None else secrets,
                           stamp_home=False, env_overlay=launch_terminal_env() if env_overlay is None else env_overlay,
@@ -183,7 +183,7 @@ def claim_fence(row: Mapping[str, Any]) -> Fence:
 @contextmanager
 def bind_turn(session_id: str, turn_id: str, fence: Fence) -> Iterator[Scope | None]:
     """Mark the body as one turn of the bound scope, claimed under *fence*: the scope becomes a
-    :class:`~hermes_scope.TurnScope` with the same tenant, agent, actor, owner and administration
+    :class:`~slave_scope.TurnScope` with the same tenant, agent, actor, owner and administration
     right; nothing else changes. With no scope bound (a single-profile gateway keeps its ambient
     scope) this binds nothing."""
     current = current_scope()
@@ -205,13 +205,13 @@ def legacy_switch(
     Otherwise, on a local install, binds the whole scope for *home* (keeping the actor) and
     returns its token; the caller's *secrets* win when it passed some, else the profile's own are
     built, not hydrated (a legacy caller that needs external sources hydrates them itself, as it
-    always did). In a hosted scope it raises :class:`~hermes_scope.ScopeSwitchRefused`."""
+    always did). In a hosted scope it raises :class:`~slave_scope.ScopeSwitchRefused`."""
     current = current_scope()
     if current is None:
         return None
     _refuse_inside_hosted("a legacy profile setter tried to switch profiles")
-    from hermes_constants import get_process_hermes_home
-    target = home if home is not None else get_process_hermes_home()
+    from slave_constants import get_process_slave_home
+    target = home if home is not None else get_process_slave_home()
     if _same_home(current.agent, target):
         return None
     # The policy is built on first read: most legacy callers only redirect file paths, and one that
@@ -230,7 +230,7 @@ def bind_terminal_policy(policy: Mapping[str, str], *, profile_home: str | Path 
     """Run under *policy*, a terminal policy owned by *profile_home* (a session's frozen policy, or one
     built from a profile's config); returns its token. With no scope bound it just installs the
     policy. Inside a bound scope the policy must belong to the bound agent: anything else raises
-    :class:`~hermes_scope.ScopeSwitchRefused`, since the scope's home and secrets would stay behind
+    :class:`~slave_scope.ScopeSwitchRefused`, since the scope's home and secrets would stay behind
     with another profile's backend. To run under another profile's policy, bind that profile."""
     from tools.terminal_scope import set_terminal_scope
     return set_terminal_scope(dict(policy), profile_home=profile_home)

@@ -13,7 +13,7 @@ from tools.connectors.operation import ConnectionOperation
 from tools.connectors.run import Callback, Kind, open_and_drive
 
 OFF_DESKTOP_NOTE = (
-    "The connector card shows only in the Hermes desktop app. Tell the user to connect apps from the "
+    "The connector card shows only in the slave-agent desktop app. Tell the user to connect apps from the "
     "desktop app or the portal."
 )
 

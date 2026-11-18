@@ -190,7 +190,7 @@ class TestSecondaryAdapterUnavailableRecovery:
 
     @pytest.mark.asyncio
     async def test_plugin_load_rearm_is_capped_and_off_loop(self, monkeypatch):
-        import hermes_cli.plugins as plugins_mod
+        import slave_cli.plugins as plugins_mod
 
         runner = _secondary_recovery_runner()
         _install_plugin_platform_context(
@@ -221,7 +221,7 @@ class TestSecondaryAdapterUnavailableRecovery:
         secondary's scope."""
         import contextvars
 
-        import hermes_cli.plugins as plugins_mod
+        import slave_cli.plugins as plugins_mod
         from gateway.platform_registry import platform_registry
 
         scope = contextvars.ContextVar("probe_scope", default="launch")
@@ -309,7 +309,7 @@ class TestSecondaryAdapterUnavailableRecovery:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("heals", [True, False])
     async def test_unbuilt_platform_status_names_the_cause(self, monkeypatch, heals):
-        """``hermes status`` shows an unbuilt secondary platform as adapter_unavailable: retrying when its plugin
+        """``slave status`` shows an unbuilt secondary platform as adapter_unavailable: retrying when its plugin
         can still load, fatal when only a config change helps."""
         runner = _secondary_recovery_runner()
         _install_plugin_platform_context(monkeypatch, runner, _PluginPlatformRecoveryAdapter())

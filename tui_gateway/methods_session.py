@@ -70,7 +70,7 @@ def _new_runtime_ids(params: dict) -> tuple[str, str]:
 
 
 def _profile_build_scope(profile_home):
-    """Bind HERMES_HOME + secret + terminal scope for an agent build: the same composition a turn
+    """Bind SLAVE_HOME + secret + terminal scope for an agent build: the same composition a turn
     binds (``_session_profile_runtime_scope``). Home alone leaves ``get_secret()`` on the LAUNCH
     ``.env``; home + secrets alone leaves ``_make_agent``'s terminal probing on the launch process's
     ambient ``TERMINAL_*`` (a ``terminal.backend: docker`` secondary built a ``local`` agent)."""
@@ -157,7 +157,7 @@ def _snapshot_sessions(rid):
 def _pet_display_cfg() -> dict:
     """``display.pet`` config block, ``{}`` when config is unreadable."""
     try:
-        from hermes_cli.config import load_config
+        from slave_cli.config import load_config
         cfg = load_config()
         display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
         return display.get("pet", {}) if isinstance(display.get("pet"), dict) else {}
@@ -205,7 +205,7 @@ def _active_pet():
 
 def _billing_call(rid, fn, extra: dict | None = None) -> dict:
     """Portal call → ok; BillingError → serialized envelope, else generic; ``extra`` rides both ERROR envelopes."""
-    from hermes_cli.nous_billing import BillingError
+    from slave_cli.nous_billing import BillingError
     try:
         return _ok(rid, fn())
     except BillingError as exc:
@@ -226,7 +226,7 @@ def _billing_pending_change(result: dict) -> dict:
 def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> dict:
     """``session.create``; ``copy_parent_history`` (``session.branch_stored``) reads the parent's
     transcript server-side and omits it from the reply."""
-    # ``profile`` (app-global remote mode): stored so the build and every turn re-bind HERMES_HOME.
+    # ``profile`` (app-global remote mode): stored so the build and every turn re-bind SLAVE_HOME.
     profile_home = _profile_home(profile := (params.get("profile") or "").strip() or None)
     # Reject an incoherent model×provider pair BEFORE any state exists: minting it only defers the
     # failure to the first turn's provider 404 (#96817). Custom/unknown providers stay permissive.
@@ -446,7 +446,7 @@ def _(rid, params: dict, persistence) -> dict:
         limit = int(params.get("limit", 200) or 200)
         # Over-fetch: per-source filtering + tip merging must not leave us short. ``include_hidden`` is for
         # surfaces that OWN hidden sessions (Bots pane, pickers).
-        from hermes_cli.session_listing import show_subagent_sessions
+        from slave_cli.session_listing import show_subagent_sessions
 
         # ``sessions.show_subagents`` (the store's own profile config) re-admits delegate runs (#97202).
         include_subagents = show_subagent_sessions(persistence.scope.profile_dir)
@@ -747,7 +747,7 @@ def _resume_guard(ctx: _Resume) -> dict | None:
     ownership env, invisible to the board while a re-dispatch can start a competing writer
     in the same workspace. One guard for every resume shape below (cold / eager / deferred /
     lazy / live-reuse) — no slash worker is ever built for a refused session."""
-    from hermes_cli.kanban_resume_guard import kanban_resume_refusal
+    from slave_cli.kanban_resume_guard import kanban_resume_refusal
     if (kanban_refusal := kanban_resume_refusal(ctx.db, ctx.target, persistence=ctx.persistence)) is not None:
         return _err(ctx.rid, 4132, kanban_refusal)
     from persistence.conversation.messages import ResumeTooLarge
@@ -924,7 +924,7 @@ def _resume_eager(ctx: _Resume) -> dict:
                     session["composer_override_profile"] = (
                         model_config.get("composer_override_profile")
                         if stored_runtime_overrides.get("model_override") else None)
-                # Each turn re-binds HERMES_HOME (mid-turn memory/skills reads); lease claimed lazily on turn 1.
+                # Each turn re-binds SLAVE_HOME (mid-turn memory/skills reads); lease claimed lazily on turn 1.
                 if ctx.profile_home is not None:
                     session["profile_home"] = str(ctx.profile_home)
                 session.update(display_history_prefix=display_history_prefix, active_session_lease=None)
@@ -1004,7 +1004,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4007, "session_key required")
     if not (raw := _str_param(params, "cwd")):
         return _err(rid, 4016, "cwd required")
-    from hermes_constants import translate_cwd_for_wsl_backend
+    from slave_constants import translate_cwd_for_wsl_backend
     # Snapshot under the lock — concurrent RPCs mutate _sessions.
     with _sessions_lock:
         live_sid, live = next(
@@ -1045,7 +1045,7 @@ def _(rid, params: dict) -> dict:
         return err
     current = str(params.get("current_session_id") or "")
     # ``_finalized`` sessions linger until the reaper pops them (they inflated the footer). Do NOT filter on
-    # the WS-detached sentinel: detached is attachable until grace-reap, and ``hermes --tui`` rides stdio.
+    # the WS-detached sentinel: detached is attachable until grace-reap, and ``slave --tui`` rides stdio.
     # Keep insertion order (focused must not jump).
     rows = [_session_live_item(sid, session, current) for sid, session in snapshot if not session.get("_finalized")]
     return _ok(rid, {"sessions": rows})
@@ -1085,7 +1085,7 @@ def _(rid, params: dict) -> dict:
         if db is None:
             return _db_unavailable_error(rid, code=5036)
         try:
-            home = Path(profile_home) if profile_home is not None else get_hermes_home()
+            home = Path(profile_home) if profile_home is not None else get_slave_home()
             deleted = delete_chat(db, target, lambda: _delete_unfinished_chat(
                 db, target, sessions_dir=home / "sessions", media_root=str(native_inputs_root()),
                 persistence=persistence), persistence=persistence)
@@ -1500,7 +1500,7 @@ def _(rid, params: dict, slug: str) -> dict:
     """Adopt a pet: install (if needed) + activate; writes ``display.pet.*`` to config."""
     from agent.pet import store
     from agent.pet.manifest import ManifestError
-    from hermes_cli.pets import _set_active
+    from slave_cli.pets import _set_active
     try:
         pet = store.install_pet(slug)
     except (store.PetStoreError, ManifestError) as exc:
@@ -1513,14 +1513,14 @@ def _(rid, params: dict, slug: str) -> dict:
 def _(rid, params: dict, slug: str) -> dict:
     """Uninstall a pet (delete its directory); if it was active, turn the display off."""
     from agent.pet import store
-    from hermes_cli.pets import _clear_active_if
+    from slave_cli.pets import _clear_active_if
     removed = store.remove_pet(slug)
     _pet_config_followup("pet.remove", _clear_active_if, slug)
     return _ok(rid, {"ok": removed, "slug": slug})
 
 
 def _pet_config_followup(what: str, fn, *args) -> None:
-    """Best-effort ``hermes_cli.pets`` active-slug update after a store op that already succeeded."""
+    """Best-effort ``slave_cli.pets`` active-slug update after a store op that already succeeded."""
     try:
         fn(*args)
     except Exception as exc:
@@ -1549,7 +1549,7 @@ def _(rid, params: dict, slug: str) -> dict:
     if not (new_slug := store.rename_pet(slug, name)):
         return _err(rid, 5031, "pet.rename failed")
     if new_slug != slug:
-        from hermes_cli.pets import _rename_active_if
+        from slave_cli.pets import _rename_active_if
         _pet_config_followup("pet.rename", _rename_active_if, slug, new_slug)
     return _ok(rid, {"ok": True, "slug": new_slug, "displayName": name})
 
@@ -1566,7 +1566,7 @@ def _(rid, params: dict, slug: str) -> dict:
 @_pet_method("pet.disable")
 def _(rid, params: dict) -> dict:
     """``display.pet.enabled=false`` from the desktop picker."""
-    from hermes_cli.pets import _set_enabled
+    from slave_cli.pets import _set_enabled
     _set_enabled(False)
     return _ok(rid, {"ok": True})
 
@@ -1574,7 +1574,7 @@ def _(rid, params: dict) -> dict:
 @_pet_method("pet.scale")
 def _(rid, params: dict) -> dict:
     """Persist ``display.pet.scale`` (clamped to engine bounds) from the desktop slider."""
-    from hermes_cli.pets import set_pet_scale
+    from slave_cli.pets import set_pet_scale
     scale, err = set_pet_scale(params.get("scale"))
     return _err(rid, 4004, err) if err else _ok(rid, {"ok": True, "scale": scale})
 
@@ -1736,7 +1736,7 @@ def _(rid, params: dict) -> dict:
     round-trip that could only fail."""
     try:
         from agent.billing_view import BillingState, build_billing_state
-        from hermes_cli.anon_auth import has_free_tier_account
+        from slave_cli.anon_auth import has_free_tier_account
         if has_free_tier_account():
             return _ok(rid, _serialize_billing_state(BillingState(logged_in=False), free_tier_account=True))
         return _ok(rid, _serialize_billing_state(build_billing_state()))
@@ -1756,7 +1756,7 @@ _billing_view("subscription.state", "agent.subscription_view", "build_subscripti
 def _(rid, params: dict) -> dict:
     """POST /api/billing/subscription/preview → chargeless effect quote. billing:manage."""
     from agent.subscription_view import subscription_change_preview_from_payload
-    from hermes_cli.nous_billing import post_subscription_preview
+    from slave_cli.nous_billing import post_subscription_preview
     if not (tier_id := params.get("subscription_type_id")):
         return _billing_invalid(rid, "subscription_type_id is required")
     return _billing_call(rid, lambda: _serialize_subscription_preview(
@@ -1765,13 +1765,13 @@ def _(rid, params: dict) -> dict:
 
 def _billing_route(name: str, call, *, invalid=None, message: str = "", error: str = "invalid_request",
                    idempotent: bool = False):
-    """Portal write route on ``hermes_cli.nous_billing`` (lazy; tests patch its functions): ``invalid(params)``
+    """Portal write route on ``slave_cli.nous_billing`` (lazy; tests patch its functions): ``invalid(params)``
     → ``_billing_invalid(message, error)``; ``call(nb, params, key)`` performs the request. ``idempotent``
     mints ``idempotency_key`` if absent and echoes it (also on error) so the TUI retries the SAME operation."""
     @method(name)
     @_profile_scoped
     def _(rid, params: dict) -> dict:
-        import hermes_cli.nous_billing as nb
+        import slave_cli.nous_billing as nb
         if invalid is not None and invalid(params):
             return _billing_invalid(rid, message, error=error)
         key = extra = None
@@ -1829,7 +1829,7 @@ def _(rid, params: dict) -> dict:
     sid = params.get("session_id") or ""
 
     def call():
-        from hermes_cli.auth import step_up_nous_billing_scope
+        from slave_cli.auth import step_up_nous_billing_scope
         granted = step_up_nous_billing_scope(
             open_browser=False,
             on_verification=lambda url, code: _emit(
@@ -1858,7 +1858,7 @@ def _try_get_session(db, key: str) -> dict:
 
 @_session_method("session.status")
 def _(rid, params: dict, session: dict) -> dict:
-    from hermes_cli.status_report import build_status_fields, status_lines
+    from slave_cli.status_report import build_status_fields, status_lines
     key = session.get("session_key") or params.get("session_id") or ""
     mirror = _metadata_mirror(session)
     # Under turn isolation the compute host owns the live route: a stale in-process agent object
@@ -1875,7 +1875,7 @@ def _(rid, params: dict, session: dict) -> dict:
     )
     project = _project_info_for_cwd(_display_session_cwd(session))
     lines = [
-        "Hermes TUI Status", "", *status_lines(fields, "session_id", "path"),
+        "slave-agent TUI Status", "", *status_lines(fields, "session_id", "path"),
         *([f"Project: {project['name']}"] if project else []),
         *status_lines(fields, "title", "model", "created", "last_activity", "tokens", "agent_running")]
     return _ok(rid, {"output": "\n".join(lines)})
@@ -2022,7 +2022,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict, session: dict) -> dict:
     if _session_uses_compute_host(session):
         return _save_via_compute_host(rid, params)
-    from hermes_cli.session_export import load_save_snapshot, render_session_for_save
+    from slave_cli.session_export import load_save_snapshot, render_session_for_save
     from persistence.core.errors import ExportTooLarge
     # As CLI/messaging /save json, under the SESSION's profile config + home (runs unscoped); a failed read falls back.
     try:
@@ -2033,7 +2033,7 @@ def _(rid, params: dict, session: dict) -> dict:
     except Exception:
         logger.warning("session.save: stored-session read failed; saving the in-memory history", exc_info=True)
         data = None
-    path = Path(session.get("profile_home") or get_hermes_home()) / "sessions/saved" / f"hermes_conversation_{datetime.now():%Y%m%d_%H%M%S}.json"
+    path = Path(session.get("profile_home") or get_slave_home()) / "sessions/saved" / f"slave_conversation_{datetime.now():%Y%m%d_%H%M%S}.json"
     if not data:  # No stored row: the in-memory history as an importable snapshot (CLI fallback shape).
         started = getattr(agent := session["agent"], "session_start", None)
         started = started.timestamp() if isinstance(started, datetime) else session.get("created_at")

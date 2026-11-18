@@ -1,4 +1,4 @@
-"""``hermes_cli.session_export``'s store-side helpers over the reference backend: ``export_timings``, ``to_legacy_export_dict`` and ``assert_exports_safe``.
+"""``slave_cli.session_export``'s store-side helpers over the reference backend: ``export_timings``, ``to_legacy_export_dict`` and ``assert_exports_safe``.
 
 Every expectation is what ``main`` gives in the same scenario (its export timings, the ``export_session`` / ``export_session_lineage`` dicts and ``SessionDB.assert_exports_safe``).
 """
@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from hermes_cli.session_export import assert_exports_safe, export_timings, to_legacy_export_dict
+from slave_cli.session_export import assert_exports_safe, export_timings, to_legacy_export_dict
 from persistence import ExportTooLarge, SessionId
 
 NOW = time.time()
@@ -133,10 +133,10 @@ def test_a_negative_limit_is_refused(store):
 
 
 def test_no_limit_reads_the_configured_one(store, monkeypatch):
-    import hermes_cli.config
+    import slave_cli.config
 
-    monkeypatch.setattr(hermes_cli.config, "load_config_readonly", dict)
+    monkeypatch.setattr(slave_cli.config, "load_config_readonly", dict)
     assert assert_exports_safe(store, ["s-e3"]) is None
-    monkeypatch.setattr(hermes_cli.config, "load_config_readonly", lambda: {"sessions": {"max_export_messages": 1}})
+    monkeypatch.setattr(slave_cli.config, "load_config_readonly", lambda: {"sessions": {"max_export_messages": 1}})
     with pytest.raises(ExportTooLarge):
         assert_exports_safe(store, ["s-e3"])

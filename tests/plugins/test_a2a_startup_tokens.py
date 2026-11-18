@@ -12,7 +12,7 @@ from plugins.platforms.a2a import security
 
 
 def test_token_in_the_profile_env_only_turns_auth_on(tmp_path, monkeypatch):
-    import hermes_constants
+    import slave_constants
     from gateway.platforms import _shared
 
     monkeypatch.delenv("A2A_PEER_TOKENS", raising=False)
@@ -21,7 +21,7 @@ def test_token_in_the_profile_env_only_turns_auth_on(tmp_path, monkeypatch):
     home = tmp_path / "gateway-home"
     home.mkdir()
     (home / ".env").write_text("A2A_PEER_TOKENS=alice:tok-a\n")
-    token = hermes_constants.set_hermes_home_override(str(home))
+    token = slave_constants.set_slave_home_override(str(home))
     try:
         ctx = security.A2ASecurityContext.capture()
         assert ctx.localhost_only() is False
@@ -29,7 +29,7 @@ def test_token_in_the_profile_env_only_turns_auth_on(tmp_path, monkeypatch):
         assert ctx.authenticate("Bearer wrong", "10.0.0.8") is None
         assert ctx.authenticate(None, "10.0.0.8") is None
     finally:
-        hermes_constants.reset_hermes_home_override(token)
+        slave_constants.reset_slave_home_override(token)
 
 
 def test_peer_tokens_without_a_name_fail_closed(monkeypatch):
@@ -90,7 +90,7 @@ def test_unusable_peer_tokens_preserve_shared_bearer_and_warn(monkeypatch, caplo
 
 def test_setup_refuses_to_save_peer_tokens_the_runtime_cannot_parse(monkeypatch):
     """The wizard must not persist a value that ``capture()`` turns into refuse-every-caller."""
-    import hermes_cli.setup as setup_mod
+    import slave_cli.setup as setup_mod
     from plugins.platforms import a2a
 
     for answer, expected in (("vibe_abc123", None), ("alice:tok-a", "alice:tok-a")):
@@ -110,7 +110,7 @@ def test_setup_refuses_to_save_peer_tokens_the_runtime_cannot_parse(monkeypatch)
 @pytest.mark.parametrize("stored", [{"A2A_PEER_TOKENS": "vibe_abc123"}, {"A2A_BEARER_TOKEN": "shared"}])
 def test_setup_rerun_does_not_claim_localhost_only_over_a_stored_token(monkeypatch, stored):
     """Enter at every prompt over a stored token: it stays in .env, so the wizard can't say localhost-only."""
-    import hermes_cli.setup as setup_mod
+    import slave_cli.setup as setup_mod
     from plugins.platforms import a2a
 
     warnings: list[str] = []

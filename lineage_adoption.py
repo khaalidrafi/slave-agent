@@ -9,8 +9,8 @@ from persistence.conversation.messages import TranscriptRead, TranscriptView
 from persistence.conversation.sessions import END_REASON_ADOPTED
 from persistence.housekeeping.maintenance import ImportResult, SessionExport
 
-# caplog tests pin the "hermes_state" logger name.
-logger = logging.getLogger("hermes_state")
+# caplog tests pin the "slave_state" logger name.
+logger = logging.getLogger("slave_state")
 
 _EVERY_ROW = TranscriptRead(view=TranscriptView.ALL)
 

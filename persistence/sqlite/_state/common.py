@@ -45,7 +45,7 @@ def _shape_preview(raw: Any) -> str:
 # ended that way.  Must stay identical to the recovery fence in find_latest_gateway_session_for_peer.
 _RESET_END_REASONS = ("session_reset", "session_switch", "idle", "daily", "suspended", "resume_pending_expired")
 # Deliberate conversation boundaries: the reset set plus CLI /new, which ends the predecessor as
-# 'new_session' (hermes_cli/cli_session_mixin.py) without a reset child row.  A compression rotation must
+# 'new_session' (slave_cli/cli_session_mixin.py) without a reset child row.  A compression rotation must
 # never heal one of these (#106459); tools/session_search_tool.py derives its fresh-reset set from it.
 _BOUNDARY_END_REASONS = frozenset(_RESET_END_REASONS) | {"new_session"}
 
@@ -119,8 +119,8 @@ FTS_REBUILD_DEFERRAL_KEY = "fts_rebuild_deferral"
 # only when provably dead, indeterminate liveness defers.  `<db>.fts_rebuild.lock` is distinct from
 # `<db>.repair.lock` (offline schema surgery, minutes in VACUUM).
 
-# ── Cross-process full-FTS-rebuild admission (single authority) ────────────── Several independent Hermes
-# processes routinely share one state.db (gateway service, the Desktop app's `hermes serve` backend,
+# ── Cross-process full-FTS-rebuild admission (single authority) ────────────── Several independent Slave
+# processes routinely share one state.db (gateway service, the Desktop app's `slave serve` backend,
 # interactive CLI sessions, the TUI slash worker). A full structural FTS rebuild — the FTS5 'rebuild'
 # command or the drop/recreate script in `_recover_stale_fts` — must only ever run in ONE of them at a time:
 # two concurrent rebuilds collide on write and have structurally corrupted state.db in production (PR
@@ -141,7 +141,7 @@ FTS_REBUILD_DEFERRAL_KEY = "fts_rebuild_deferral"
 # `<db>.repair.lock`: schema surgery runs on an EXCLUSIVE offline connection and can legitimately take
 # minutes in VACUUM, while runtime rebuilds run on live connections. The timeout is sized for a full
 # 'rebuild' of both indexes on a large DB.
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 _FTS_REBUILD_LOCK_TIMEOUT_SECONDS = 120.0
 _FTS_REBUILD_LOCK_POLL_SECONDS = 0.1
@@ -301,7 +301,7 @@ def _acquire_db_flock(lock_path, handle, timeout_seconds, poll_seconds, descript
 def _describe_lock_holder(record) -> str:
     """Human-readable holder identity for deferral warnings."""
     if not isinstance(record, dict) or "pid" not in record:
-        return "unknown (no holder record; pre-fix writer or non-Hermes)"
+        return "unknown (no holder record; pre-fix writer or non-Slave)"
     age = ""
     with contextlib.suppress(TypeError, ValueError):
         if record.get("acquired_at") is not None:

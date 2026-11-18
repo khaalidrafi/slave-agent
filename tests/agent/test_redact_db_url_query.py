@@ -7,7 +7,7 @@ from agent.redact import redact_sensitive_text
 
 @pytest.fixture(autouse=True)
 def _ensure_redaction_enabled(monkeypatch):
-    monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+    monkeypatch.delenv("SLAVE_REDACT_SECRETS", raising=False)
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
 

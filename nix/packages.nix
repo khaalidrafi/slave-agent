@@ -1,4 +1,4 @@
-# nix/packages.nix — Hermes Agent package built with uv2nix
+# nix/packages.nix — slave-agent package built with uv2nix
 { inputs, ... }:
 {
   perSystem =
@@ -34,7 +34,7 @@
       branch = if rawRef != null then builtins.replaceStrings [ "refs/heads/" ] [ "" ] rawRef else null;
       dirty = dirtyRevision != null;
       lastModified = inputs.self.lastModified or null;
-      minimal = pkgs.callPackage ./hermes-agent.nix {
+      minimal = pkgs.callPackage ./slave-agent.nix {
         inherit (inputs) uv2nix pyproject-nix pyproject-build-systems;
         # Passed explicitly so `override (prev: ...)` sees it: a function form that appends to
         # `prev.extraDependencyGroups` worked before the shipped groups moved to
@@ -94,15 +94,15 @@
           defaultDependencyGroups = [ "messaging" ];
         };
 
-        tui = full.hermesTui;
-        web = full.hermesWeb;
-        webapp = full.hermesWebapp;
-        desktop = full.hermesDesktop;
+        tui = full.slaveTui;
+        web = full.slaveWeb;
+        webapp = full.slaveWebapp;
+        desktop = full.slaveDesktop;
 
         # The fixed-output pnpm store every frontend installs from; its hash
         # lives in nix/pnpm-deps-hash (`nix run .#update-pnpm-lockfile`).
-        pnpm-deps = full.hermesNpmLib.pnpmDeps;
-        update-pnpm-lockfile = full.hermesNpmLib.updatePnpmLockfile;
+        pnpm-deps = full.slaveNpmLib.pnpmDeps;
+        update-pnpm-lockfile = full.slaveNpmLib.updatePnpmLockfile;
       }
       # Every pm lockfile tool as its own installable derivation:
       # `nix build .#pm-ripgrep`, `nix build .#pm-gh`, ...

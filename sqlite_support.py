@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from storage_errors import is_sqlite_lock_error
 
 try:  # Hard dependency, but tolerate scaffold-phase imports before pip install.
@@ -26,8 +26,8 @@ except ImportError:  # pragma: no cover - stripped/scaffold installs only
     psutil = None  # type: ignore[assignment]
 
 
-# caplog tests pin the "hermes_state" logger name.
-logger = logging.getLogger("hermes_state")
+# caplog tests pin the "slave_state" logger name.
+logger = logging.getLogger("slave_state")
 
 
 # WAL needs mmap shared memory + fcntl byte-range locks. Network filesystems (NFS, SMB/CIFS, some FUSE, WSL1) raise
@@ -166,7 +166,7 @@ def resolve_journal_mode() -> str:
     """The configured ``database.journal_mode`` (``wal`` default; ``delete`` for filesystems without WAL-safe
     durability: macOS virtiofs, NFS, SMB). Invalid values fail safe to ``wal``."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
         database = (load_config_readonly() or {}).get("database", {})
         raw = database.get("journal_mode", "wal") if isinstance(database, dict) else "wal"
     except Exception:  # health: allow BLE001 -- an unreadable config means the WAL default
@@ -179,16 +179,16 @@ def routed_sessions_setting(key: str, env_var: str) -> Any:
     """``sessions.<key>`` for the profile whose state.db this process is touching.
 
     ``gateway/run.py`` bridges the LAUNCH profile's ``sessions.*`` into ``env_var`` (the cross-process
-    carrier CLI/cron children read). Under a multiplexer a routed turn runs with a HERMES_HOME override
+    carrier CLI/cron children read). Under a multiplexer a routed turn runs with a SLAVE_HOME override
     and that env slot holds the default profile's value, so a served profile with different
     ``sessions.*`` settings must read its own config.yaml. Unscoped: the env bridge, as before.
     Returns ``None`` when neither source sets the key.
     """
-    from hermes_constants import get_hermes_home_override
+    from slave_constants import get_slave_home_override
 
-    if get_hermes_home_override():
+    if get_slave_home_override():
         try:
-            from hermes_cli.config import load_config_readonly
+            from slave_cli.config import load_config_readonly
             return (load_config_readonly().get("sessions") or {}).get(key)
         except Exception:
             return None
@@ -238,8 +238,8 @@ def _journal_mode_explicitly_configured() -> bool:
     the ``wal`` default, so it cannot tell "chose WAL" from "never chose"). An unreadable config counts as
     configured, so the caller keeps the long-standing WAL default rather than guessing."""
     try:
-        from hermes_cli.config import read_raw_config_readonly
-        from hermes_cli.config_read_errors import FailedConfigRead
+        from slave_cli.config import read_raw_config_readonly
+        from slave_cli.config_read_errors import FailedConfigRead
         raw = read_raw_config_readonly()
     except Exception:  # health: allow BLE001 -- import/read failure keeps the WAL default (same as resolve_journal_mode)
         return True
@@ -365,7 +365,7 @@ def apply_wal_with_fallback(conn: sqlite3.Connection, *, db_label: str = "state.
     still documents the WAL-reset bug as real through 3.51.2 with serious consequences. Until a fixed
     runtime is delivered, keep new databases out of WAL.
     """
-    config_module = sys.modules.get("hermes_cli.config")
+    config_module = sys.modules.get("slave_cli.config")
     if getattr(getattr(config_module, "__spec__", None), "_initializing", False):
         config_module = None
     config_lock = getattr(config_module, "_CONFIG_LOCK", None)
@@ -593,19 +593,19 @@ def _apply_delete_for_wal_reset_bug(conn: sqlite3.Connection, *, db_label: str, 
 
 
 def wal_reset_repair_hint() -> str:
-    """Repair hint matching what ``hermes update`` can actually do for this install type.
+    """Repair hint matching what ``slave update`` can actually do for this install type.
 
     See #75153.
     """
     try:
-        from hermes_cli.config import detect_install_method, get_project_root, recommended_update_command_for_method
+        from slave_cli.config import detect_install_method, get_project_root, recommended_update_command_for_method
         method = detect_install_method(get_project_root())
         cmd = recommended_update_command_for_method(method)
         if method in {"git", "unknown"}:
-            return f"Hermes-managed installs can repair the embedded runtime with `{cmd}`"
+            return f"Slave-managed installs can repair the embedded runtime with `{cmd}`"
         return f"update the container image with `{cmd}`" if method == "docker" else cmd  # else nix/nixos
     except Exception:  # health: allow BLE001 -- an unknown install method gets the generic hint
-        return "install a Python build bundled with SQLite 3.51.3+ (or backports 3.50.7 / 3.44.6) and restart Hermes"
+        return "install a Python build bundled with SQLite 3.51.3+ (or backports 3.50.7 / 3.44.6) and restart slave-agent"
 
 
 # Once-per-(process, db_label) log table. Levels are deliberate: falling back to DELETE and an ignored
@@ -622,7 +622,7 @@ _ONCE_LOGS = {
         # Install-type-aware so the warning never promises a repair path that doesn't exist for git/pip installs.
         "%s: linked SQLite %s (interpreter %s) is vulnerable to the WAL-reset corruption bug "
         "(https://sqlite.org/wal.html#walresetbug) — %s. Upgrade to SQLite 3.51.3+ (or backports 3.50.7 / 3.44.6); "
-        "%s. See `hermes doctor`. This warning fires once per process per database."),
+        "%s. See `slave doctor`. This warning fires once per process per database."),
     "journal_upgrade": (_journal_upgrade_warned_lock, "_journal_upgrade_warned_paths", logging.WARNING,
         # journal_mode is a property of the FILE: switching an existing DB to WAL rewrites its header and outlives
         # the process. Operators set DELETE on the file (the WAL-reset-bug mitigation) and nothing told them the
@@ -648,8 +648,8 @@ _ONCE_LOGS = {
     "delete_overridden": (_delete_overridden_warned_lock, "_delete_overridden_warned_paths", logging.ERROR,
         # Never-live-downgrade keeps WAL; without this the operator never learns their delete had no effect.
         "%s: database.journal_mode=delete is configured but the on-disk database is already WAL; keeping WAL (a live "
-        "downgrade under open connections can corrupt the DB). To apply journal_mode=DELETE, stop every Hermes "
-        "process using this database and run `hermes sessions set-journal-mode delete` (add `--db PATH` for a "
+        "downgrade under open connections can corrupt the DB). To apply journal_mode=DELETE, stop every slave-agent "
+        "process using this database and run `slave sessions set-journal-mode delete` (add `--db PATH` for a "
         "store other than state.db). This message fires once per process per database."),
     "wal_probe_unknown": (_wal_probe_unknown_lock, "_wal_probe_unknown_paths", logging.WARNING,
         # WARNING, not ERROR: the connection inherits the header's mode, so an already-WAL file (the common case)
@@ -669,8 +669,8 @@ _ONCE_LOGS = {
         # operator can fix it (a live downgrade under other openers would destroy their uncheckpointed commits).
         "%s: existing WAL-mode database is on a cross-VM filesystem (virtiofs/9p — typical for Docker Desktop / "
         "OrbStack / Podman host bind mounts). SQLite WAL shared-memory is not coherent across the VM boundary and "
-        "concurrent writers can silently corrupt the database. Hermes does not live-downgrade an on-disk WAL database. "
-        "Fix one of two ways: stop every Hermes process using this database and run `hermes sessions "
+        "concurrent writers can silently corrupt the database. slave-agent does not live-downgrade an on-disk WAL database. "
+        "Fix one of two ways: stop every slave-agent process using this database and run `slave sessions "
         "set-journal-mode delete` (set `database.journal_mode: delete` in config.yaml to keep it), "
         "or move the database onto a native volume (e.g. a named Docker volume). This message fires once per process "
         "per database."),
@@ -679,8 +679,8 @@ _ONCE_LOGS = {
         # alarm. Never live-downgrade here either; the remedy is offline, by the operator.
         "%s: existing WAL-mode database is on a network filesystem (nfs/cifs/smb/sshfs). Every WAL shared-memory "
         "(-shm) lock is a network round trip there, so concurrent connections can stall for tens of seconds, and "
-        "concurrent writers risk silent corruption. Hermes does not live-downgrade an on-disk WAL database. To "
-        "switch it: stop every Hermes process using it, run `hermes sessions set-journal-mode delete` (add `--db "
+        "concurrent writers risk silent corruption. slave-agent does not live-downgrade an on-disk WAL database. To "
+        "switch it: stop every slave-agent process using it, run `slave sessions set-journal-mode delete` (add `--db "
         "PATH` for a store other than state.db), and set `database.journal_mode: delete` in config.yaml; or move "
         "the database onto local disk. This message fires once per process per database."),
     "network_fs_new_store": (_network_fs_new_store_warned_lock, "_network_fs_new_store_warned_paths", logging.WARNING,
@@ -773,7 +773,7 @@ def apply_database_pragmas(conn: sqlite3.Connection, *, db_label: str = "state.d
     between bundled/distro/Homebrew builds). Best-effort: failures are ignored so DB init never breaks on a
     malformed section. Applied to ALL connection types: writer, read_only, WAL readers."""
     try:
-        from hermes_cli.config import cfg_get, load_config_readonly  # local: avoids a circular import
+        from slave_cli.config import cfg_get, load_config_readonly  # local: avoids a circular import
         cfg = load_config_readonly()
     except Exception:
         return
@@ -896,7 +896,7 @@ def _read_proc_argv(pid: int) -> Optional[list[str]]:
 
 
 def describe_holder_pid(pid: int) -> str:
-    """``PID 123 (hermes gateway run)`` for operator-facing holder lists; /proc argv first, psutil elsewhere."""
+    """``PID 123 (slave gateway run)`` for operator-facing holder lists; /proc argv first, psutil elsewhere."""
     argv = _read_proc_argv(pid)
     if argv is None and psutil is not None:
         try:
@@ -920,7 +920,7 @@ def secure_db_files(db_path: Path, *, create_main: bool = False) -> None:
     connection to the same database. A lock-losing close in one process lets a
     sibling's connection take the shared-memory DMS exclusively at its own
     close, checkpoint, and unlink the sidecars while long-lived holders
-    (gateway, desktop ``hermes serve``) keep using the deleted inodes.
+    (gateway, desktop ``slave serve``) keep using the deleted inodes.
     """
     if os.name == "nt":
         return
@@ -983,8 +983,8 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db", direc
 
     A stray read-only ``state.db`` / ``-wal`` / ``-shm`` (sudo run, restored backup, copied dotfiles) otherwise
     surfaces as an opaque "attempt to write a readonly database" inside ``_init_schema``, and the obvious wrong
-    "fix" (deleting the ``-wal``) loses committed transactions. ``chmod u+rw`` repair only inside the Hermes home
-    tree (Hermes owns those files; ``chmod`` fails on files the user doesn't own, bounding the repair exactly);
+    "fix" (deleting the ``-wal``) loses committed transactions. ``chmod u+rw`` repair only inside the slave-agent home
+    tree (slave-agent owns those files; ``chmod`` fails on files the user doesn't own, bounding the repair exactly);
     otherwise fail fast naming the file and command. Never deletes/truncates a WAL sidecar — once writable, the
     normal open checkpoints it. ``:memory:``/``file:`` skipped. Shared with ``kanban_db``.
 
@@ -994,7 +994,7 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db", direc
         return
     home: Optional[Path] = None
     with contextlib.suppress(Exception):  # pragma: no cover - defensive
-        home = Path(get_hermes_home()).resolve()
+        home = Path(get_slave_home()).resolve()
     # SQLite needs a writable directory in every journal mode (WAL/SHM sidecars, or the DELETE-mode journal).
     sidecars = (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm"))
     files = () if directory_only else tuple((p, False) for p in (db_path, *sidecars) if p.is_file())
@@ -1013,7 +1013,7 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db", direc
         wal_note = (" Do NOT delete the -wal file — it contains committed data that "
                     "will be merged into the database once it is writable." if p.name.endswith("-wal") else "")
         raise sqlite3.OperationalError(
-            f"{db_label} is not writable: {'directory' if is_dir else 'file'} {p} is read-only for this user. Hermes "
+            f"{db_label} is not writable: {'directory' if is_dir else 'file'} {p} is read-only for this user. slave-agent "
             f"needs read-write access to open the database. Fix with: chmod u+rw{x} '{p}' (files owned by another "
             f"user may need sudo/chown).{wal_note}")
 
@@ -1036,7 +1036,7 @@ def apply_durability_barriers(conn: sqlite3.Connection) -> bool:
     rides on the journal-mode setup path guests must not run."""
     ok = _reapply_durability_barriers(conn)
     with contextlib.suppress(Exception):
-        from hermes_cli.config import cfg_get, load_config_readonly  # local: avoids an import cycle
+        from slave_cli.config import cfg_get, load_config_readonly  # local: avoids an import cycle
         if (raw_synchronous := cfg_get(load_config_readonly(), "database", "synchronous", default=None)) is not None:
             _apply_synchronous_pragma(conn, raw_synchronous, db_label="state.db (guest)")
     return ok
@@ -1064,7 +1064,7 @@ def is_zeroed_sqlite_file(path: Path, *, probe_bytes: int = 100, force: bool = F
             return False
     except OSError:
         return False
-    from hermes_cli.sqlite_safe_read import has_live_connection, read_header_bytes_preopen
+    from slave_cli.sqlite_safe_read import has_live_connection, read_header_bytes_preopen
     if not force and has_live_connection(path):
         return False
 

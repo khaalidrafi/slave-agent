@@ -11,7 +11,7 @@ import weakref
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock, patch
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from persistence_assembly import open_persistence, profile_scope
@@ -39,7 +39,7 @@ class _ScriptedModel:
         self.builds, self.turns = [], []
 
     def __call__(self, **kw):
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
 
         child = MagicMock()
         child.session_id = kw.get("session_id") or f"child-sess-{len(self.builds)}"
@@ -51,7 +51,7 @@ class _ScriptedModel:
         def run_conversation(user_message, conversation_history=None, **_):
             from tests.fixtures.storage_seed import seed_messages, seed_session
             self.turns.append({"session_id": child.session_id, "message": user_message,
-                               "history": conversation_history, "home": str(get_hermes_home())})
+                               "history": conversation_history, "home": str(get_slave_home())})
             seed_session(db, child.session_id, "subagent", parent_session_id=kw.get("parent_session_id"))
             reply = f"done: {user_message}"
             seed_messages(db, child.session_id, {"role": "user", "content": user_message},
@@ -59,7 +59,7 @@ class _ScriptedModel:
             return {"final_response": reply, "completed": True, "api_calls": 1}
 
         child.run_conversation.side_effect = run_conversation
-        self.builds.append({**kw, "home": str(get_hermes_home())})
+        self.builds.append({**kw, "home": str(get_slave_home())})
         return child
 
 
@@ -207,7 +207,7 @@ def test_one_shot_sessions_refuse_continue_without_consuming_it(monkeypatch):
     from tools.delegate_tool import delegate_task
     from tools.delegate_tool_registry import _recent_subagents
 
-    monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")  # the finite ``chat -q`` marker
+    monkeypatch.setenv("SLAVE_SINGLE_QUERY_SESSION", "1")  # the finite ``chat -q`` marker
     parent = _parent()
     _finished("sa-cont-oneshot", owner=parent.session_id)
     out = json.loads(delegate_task(action="continue", subagent_id="sa-cont-oneshot", message="more",
@@ -224,17 +224,17 @@ def _write_profile(home, *, host, model, key):
     (home / ".env").write_text(f"PROFILE_KEY={key}\n", encoding="utf-8")
 
 
-@pytest.mark.live_system_guard_bypass  # its HOME is the test's own tmp dir: the "real" Hermes root is temporary
+@pytest.mark.live_system_guard_bypass  # its HOME is the test's own tmp dir: the "real" Slave root is temporary
 def test_profile_routed_child_continues_inside_its_profile_scope(tmp_path, monkeypatch):
     from tools.delegate_tool import delegate_task
     from tools.delegate_tool_routes import _route_to_task_route
 
-    launch = tmp_path / "os-home" / ".hermes"
+    launch = tmp_path / "os-home" / ".slave"
     coder = launch / "profiles" / "coder"
     _write_profile(launch, host="launch.invalid", model="launch-model", key="launch-key")
     _write_profile(coder, host="coder.invalid", model="coder-model", key="coder-key")
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setenv("PROFILE_KEY", "launch-key")
 
     model = _ScriptedModel()

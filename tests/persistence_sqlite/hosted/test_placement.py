@@ -96,7 +96,7 @@ def _pre_isolation_store(store) -> None:
 
 
 def test_the_import_runs_once_so_a_purge_is_never_undone(scopes, root):
-    stores = {scope.hermes_home_key: scope.profile_dir / "state.db" for scope in scopes.values()}
+    stores = {scope.slave_home_key: scope.profile_dir / "state.db" for scope in scopes.values()}
     first = SQLiteBackend(stores)
     try:
         _pre_isolation_store(first.open(scopes["root"]))
@@ -124,7 +124,7 @@ def test_a_profile_state_db_never_imports(backend, scopes, root):
 
 
 def _read_only(*scopes: ProfileScope) -> SQLiteBackend:
-    return SQLiteBackend({scope.hermes_home_key: scope.profile_dir / "state.db" for scope in scopes}, read_only=True)
+    return SQLiteBackend({scope.slave_home_key: scope.profile_dir / "state.db" for scope in scopes}, read_only=True)
 
 
 def test_a_read_only_store_creates_no_missing_shared_file(root):

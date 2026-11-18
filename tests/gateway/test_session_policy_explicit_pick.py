@@ -10,9 +10,9 @@ from gateway.session_policy import build_policy
 
 @pytest.fixture
 def extensions(tmp_path, monkeypatch):
-    monkeypatch.setattr('hermes_cli.plugins.get_plugin_toolset_keys_nowait', lambda: {'fake_coding_plugin'})
+    monkeypatch.setattr('slave_cli.plugins.get_plugin_toolset_keys_nowait', lambda: {'fake_coding_plugin'})
     servers = {'srv': {'command': str(tmp_path / 'absent')}, 'other': {'command': str(tmp_path / 'absent')}}
-    return {'platform_toolsets': {'cli': ['hermes-cli']}, 'mcp_servers': servers}
+    return {'platform_toolsets': {'cli': ['slave-cli']}, 'mcp_servers': servers}
 
 
 def _toolsets(tmp_path, cfg, pick):
@@ -32,7 +32,7 @@ def test_a_named_mcp_server_stays_and_the_others_do_not(tmp_path, extensions, se
 
 def test_a_named_plugin_toolset_stays(tmp_path, extensions, monkeypatch):
     monkeypatch.setattr('toolsets.validate_toolset', lambda name: True)
-    monkeypatch.setattr('hermes_cli.toolset_validation.saved_toolset_resolver', lambda _cfg: lambda name: True)
+    monkeypatch.setattr('slave_cli.toolset_validation.saved_toolset_resolver', lambda _cfg: lambda name: True)
     toolsets = _toolsets(tmp_path, extensions, ['session_search', 'fake_coding_plugin'])
     assert toolsets == {'session_search', 'fake_coding_plugin'}, toolsets
 
@@ -50,8 +50,8 @@ def test_an_all_pick_keeps_every_plugin_toolset_and_mcp_server(tmp_path, extensi
 @pytest.fixture
 def builtin_named_plugin_keys(monkeypatch):
     # The issue's leaked set: plugin keys that are also built-in toolset names.
-    monkeypatch.setattr('hermes_cli.plugins.get_plugin_toolset_keys_nowait', lambda: {'coding', 'delegation', 'fake_plug'})
-    return {'platform_toolsets': {'cli': ['hermes-cli']}}
+    monkeypatch.setattr('slave_cli.plugins.get_plugin_toolset_keys_nowait', lambda: {'coding', 'delegation', 'fake_plug'})
+    return {'platform_toolsets': {'cli': ['slave-cli']}}
 
 
 @pytest.mark.parametrize('source', ['cli', 'tui', 'gui', 'acp'])
@@ -64,23 +64,23 @@ def test_a_builtin_named_plugin_key_stays_when_picked(tmp_path, builtin_named_pl
     assert _toolsets(tmp_path, builtin_named_plugin_keys, ['session_search', 'delegation']) == {'session_search', 'delegation'}
 
 
-@pytest.mark.parametrize('pick', ['hermes-api-server', 'hermes-webhook'])
+@pytest.mark.parametrize('pick', ['slave-api-server', 'slave-webhook'])
 def test_a_composite_keeps_a_builtin_that_a_server_is_named_like(tmp_path, pick):
     # Both composites expand into built-in names; this MCP server is also called ``web``, and the pick needs web.
-    cfg = {'platform_toolsets': {'cli': ['hermes-cli']}, 'mcp_servers': {'web': {'command': str(tmp_path / 'absent')}}}
+    cfg = {'platform_toolsets': {'cli': ['slave-cli']}, 'mcp_servers': {'web': {'command': str(tmp_path / 'absent')}}}
     assert 'web' in _toolsets(tmp_path, cfg, [pick])
     assert _toolsets(tmp_path, cfg, ['session_search']) == {'session_search'}
 
 
 def test_a_composite_keeps_file_when_a_server_is_named_file(tmp_path):
-    # ``hermes-api-server`` needs the built-in file tools; an MCP server called ``file`` must not cost it them.
-    cfg = {'platform_toolsets': {'cli': ['hermes-cli']}, 'mcp_servers': {'file': {'command': str(tmp_path / 'absent')}}}
-    assert {'file', 'terminal'} <= _toolsets(tmp_path, cfg, ['hermes-api-server'])
-    # ``hermes-webhook`` has no file tools, so the unnamed server stays out.
-    assert 'file' not in _toolsets(tmp_path, cfg, ['hermes-webhook'])
+    # ``slave-api-server`` needs the built-in file tools; an MCP server called ``file`` must not cost it them.
+    cfg = {'platform_toolsets': {'cli': ['slave-cli']}, 'mcp_servers': {'file': {'command': str(tmp_path / 'absent')}}}
+    assert {'file', 'terminal'} <= _toolsets(tmp_path, cfg, ['slave-api-server'])
+    # ``slave-webhook`` has no file tools, so the unnamed server stays out.
+    assert 'file' not in _toolsets(tmp_path, cfg, ['slave-webhook'])
 
 
-@pytest.mark.parametrize('pick', ['hermes-api-server', 'hermes-webhook'])
+@pytest.mark.parametrize('pick', ['slave-api-server', 'slave-webhook'])
 def test_a_wider_plugin_key_is_not_put_back_for_a_composite(tmp_path, builtin_named_plugin_keys, pick):
     # The ``coding`` key also holds web_search, but putting it back would add terminal and file tools.
     cfg = {**builtin_named_plugin_keys, 'mcp_servers': {'web': {'command': str(tmp_path / 'absent')}}}

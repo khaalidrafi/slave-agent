@@ -35,10 +35,10 @@ TURNS = {"commentary_then_tool": redactor_turn, "text_after_tool_call": _text_af
 @pytest.mark.parametrize("turn", TURNS)
 @pytest.mark.parametrize("hold", [True, False], ids=["hold_stream", "plain_transform"])
 def test_held_turns_show_only_the_rewritten_final(hold, turn):
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from run_agent import AIAgent
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     with FakeLLMServer(TURNS[turn]()) as srv:
         redactor_home(home, srv.base_url, hold=hold)
         plugins._reset_plugin_managers_for_tests()
@@ -61,13 +61,13 @@ def test_held_turns_show_only_the_rewritten_final(hold, turn):
 
 
 def test_a_held_guardrail_halt_reply_is_not_streamed_ahead_of_the_rewrite():
-    """A turn the tool-loop guardrail halts ends with Hermes' halt explanation, pushed straight to
+    """A turn the tool-loop guardrail halts ends with slave-agent’ halt explanation, pushed straight to
     the display callback so SSE/TUI clients see why the agent stopped. Held, it arrives only as the
     final (after ``transform_llm_output``), never as a stream delta first."""
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from run_agent import AIAgent
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     failing = ToolCall("read_file", {"path": str(home / "missing" / "SECRET-9.txt")})
     with FakeLLMServer([failing] * 6 + [Text(RAW)]) as srv:
         redactor_home(home, srv.base_url, hold=True)

@@ -78,6 +78,6 @@ def test_cwd_fallback_notice_survives_a_tiny_output_limit(tmp_path, monkeypatch,
 
     result = env.execute("seq 1 5000" + ("; sleep 30" if timed_out else ""), timeout=2 if timed_out else 30,
                          bounded_capture=True, allow_cwd_fallback=True)
-    assert result.get("hermes_timed_out", False) is timed_out, result
+    assert result.get("slave_timed_out", False) is timed_out, result
     assert result["cwd_fallback"] == {"requested": str(doomed), "used": str(tmp_path.resolve())}, result
     assert env._cwd_fallback_marker not in result["output"]

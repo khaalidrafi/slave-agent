@@ -19,12 +19,12 @@ from tests.gateway.restart_test_helpers import make_restart_runner, make_restart
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".slave"
     served = default_home / "profiles" / "served"
     served.mkdir(parents=True)
     (served / "config.yaml").write_text("{}\n", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("SLAVE_HOME", str(default_home))
     return default_home, served
 
 

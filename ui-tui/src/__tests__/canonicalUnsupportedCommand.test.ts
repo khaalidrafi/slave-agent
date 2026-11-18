@@ -1,4 +1,4 @@
-import { JsonRpcGatewayError } from '@hermes/shared/json-rpc-channel'
+import { JsonRpcGatewayError } from '@slave-agent/shared/json-rpc-channel'
 import { beforeEach, expect, it, vi } from 'vitest'
 
 import { createSlashHandler } from '../app/createSlashHandler.js'
@@ -44,8 +44,8 @@ it.each([
 })
 
 it.each([
-  ['/export', 'export', 'Run `hermes profile export [name] -o <file>` in a terminal.'],
-  ['/worktree new', 'worktree', 'Start in a fresh worktree with `hermes -w`, or use the classic CLI (`hermes --cli`).'],
+  ['/export', 'export', 'Run `slave profile export [name] -o <file>` in a terminal.'],
+  ['/worktree new', 'worktree', 'Start in a fresh worktree with `slave -w`, or use the classic CLI (`slave --cli`).'],
   ['/palette', 'palette', 'Type / to search commands (the composer completes and filters them).']
 ])('%s names the refusal and what to use instead (T10)', async (cmd, name, hint) => {
   const request = vi.fn(async (method: string) => {

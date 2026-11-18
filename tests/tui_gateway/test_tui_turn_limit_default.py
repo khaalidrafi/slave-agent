@@ -3,18 +3,18 @@ unlimited turn budget as load_config, the CLI, the gateway and cron, and says so
 
 from unittest.mock import patch
 
-from hermes_cli.config import TURN_LIMIT_UNLIMITED
+from slave_cli.config import TURN_LIMIT_UNLIMITED
 from tui_gateway import server
 from tui_gateway.agent_factory import _make_agent
 from tui_gateway.method_ctx import rebind
 
 
 def _stub_make_agent(monkeypatch, cfg):
-    monkeypatch.delenv("HERMES_TUI_MAX_TURNS", raising=False)
+    monkeypatch.delenv("SLAVE_TUI_MAX_TURNS", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: cfg)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("test-model", None))
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "slave_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, target_model=None: {
             "provider": None, "base_url": None, "api_key": None, "api_mode": None,
             "command": None, "args": None, "credential_pool": None})
@@ -34,7 +34,7 @@ def test_an_unset_max_turns_gives_the_tui_agent_an_unlimited_budget(monkeypatch)
 
 
 def test_the_config_panel_shows_unlimited_or_the_user_value(monkeypatch):
-    monkeypatch.delenv("HERMES_TUI_MAX_TURNS", raising=False)
+    monkeypatch.delenv("SLAVE_TUI_MAX_TURNS", raising=False)
 
     def max_turns_row(cfg):
         monkeypatch.setattr(server, "_load_cfg", lambda: cfg)
@@ -48,13 +48,13 @@ def test_the_config_panel_shows_unlimited_or_the_user_value(monkeypatch):
 
 
 def test_foreground_uses_shared_default_and_background_keeps_its_budget(monkeypatch):
-    from hermes_cli.config import DEFAULT_CONFIG, cfg_get
+    from slave_cli.config import DEFAULT_CONFIG, cfg_get
     from tui_gateway.agent_callbacks import _cfg_max_turns
-    monkeypatch.delenv("HERMES_TUI_MAX_TURNS", raising=False)
+    monkeypatch.delenv("SLAVE_TUI_MAX_TURNS", raising=False)
     monkeypatch.setitem(cfg_get(DEFAULT_CONFIG, "agent"), "max_turns", 37)
     resolve = rebind(_cfg_max_turns, server.__dict__)
     assert resolve({}) == 37
     assert resolve({}, 25) == 25
     assert resolve({"agent": {"max_turns": 12}}) == 12
-    monkeypatch.setenv("HERMES_TUI_MAX_TURNS", "19")
+    monkeypatch.setenv("SLAVE_TUI_MAX_TURNS", "19")
     assert resolve({"agent": {"max_turns": 12}}) == 19

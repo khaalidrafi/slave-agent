@@ -1,12 +1,12 @@
 """Read the real-profile browser's saved logins for the vault's read-only ``browser:`` backend.
 
 NO decryption happens here. Two decryption-free reads, both from the already-running real-profile
-browser Hermes owns (``tools.browser_session_real_profile.real_profile_cdp``), the same mechanism
+browser slave-agent owns (``tools.browser_session_real_profile.real_profile_cdp``), the same mechanism
 PR #150283 used for cookies:
 
 - **list metadata** — ``origin_url`` and ``username_value`` are PLAINTEXT columns in the profile's
   ``Login Data`` SQLite (only ``password_value`` is encrypted); reading them is not decryption, the
-  same category as reading a cookie's name/domain. They come from the Hermes-owned snapshot copy the
+  same category as reading a cookie's name/domain. They come from the Slave-owned snapshot copy the
   real-profile consent already makes (``real_profile_copy_dir``), opened read-only.
 - **resolve a password** — Chrome's DevTools protocol exposes NO command that reads a saved password
   (``Autofill.trigger`` is cards/addresses only). The reachable mechanism is the browser's own
@@ -78,7 +78,7 @@ def read_login_metadata(copy_dir: str) -> list[dict[str, str]]:
             # Build the file: URI from the path with pathlib so a '#', '?' or space in any directory
             # component is percent-escaped — a bare f"file:{db}" truncates at the first '#' and the
             # query string, silently opening the wrong (or an empty) database.
-            # ``as_uri()`` raises ValueError on a RELATIVE path, and ``HERMES_HOME=./root`` (a
+            # ``as_uri()`` raises ValueError on a RELATIVE path, and ``SLAVE_HOME=./root`` (a
             # supported setting) makes the copy dir relative — resolve to absolute first so the
             # picker still lists instead of the ValueError escaping the sqlite3.Error handler.
             con = sqlite3.connect(f"{db.absolute().as_uri()}?mode=ro", uri=True)

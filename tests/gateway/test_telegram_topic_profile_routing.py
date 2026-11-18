@@ -67,8 +67,8 @@ def test_routed_profile_flows_into_prune_via_send_metadata(tmp_path: Path):
     runner = object.__new__(GatewayRunner)
     runner._thread_metadata_for_target = lambda *a, **k: {"thread_id": "99"}
     meta = runner._thread_metadata_for_source(_source("coder", "99"))
-    assert meta["hermes_profile"] == "coder"
-    assert "hermes_profile" not in runner._thread_metadata_for_source(_source(None, "99"))
+    assert meta["slave_profile"] == "coder"
+    assert "slave_profile" not in runner._thread_metadata_for_source(_source(None, "99"))
 
     # Cooldowns are keyed (profile, chat): alpha's reminder must not gag beta.
     assert runner._should_send_telegram_lobby_reminder(_source("alpha")) is True
@@ -88,7 +88,7 @@ def test_routed_profile_flows_into_prune_via_send_metadata(tmp_path: Path):
     adapter.platform = Platform.TELEGRAM
     persistence = open_persistence(profile_scope(home=tmp_path))
     adapter._session_store = SimpleNamespace(persistence=persistence)
-    adapter._hermes_profile_name = "default"  # transport = primary bot
+    adapter._slave_profile_name = "default"  # transport = primary bot
     adapter._prune_stale_dm_topic_binding(CHAT, "99", metadata=meta)
 
     assert db.routing.get_topic_binding(chat_id=CHAT, thread_id="99", profile_name="coder") is None

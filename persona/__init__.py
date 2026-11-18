@@ -44,8 +44,8 @@ from .redact import redact_text  # noqa: E402  (re-exported seam surface)
 def personas_dir(home: Optional[Path] = None) -> Path:
     """``<state>/personas``, created on demand."""
     if home is None:
-        from hermes_constants import get_hermes_home
-        home = get_hermes_home()
+        from slave_constants import get_slave_home
+        home = get_slave_home()
     d = Path(home) / "personas"
     d.mkdir(parents=True, exist_ok=True)
     return d

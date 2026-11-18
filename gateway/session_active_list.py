@@ -3,7 +3,7 @@
 Desktop's silent-turn check (``session-states.ts`` ``onEventSilence``) and its sidebar poll read
 this verb. Unregistered here, the WS fell back to the legacy sidecar's handler, which lists only
 the sidecar's own ``_sessions`` and never an authority-owned session: a foreground tool quiet for
-45 s read as a reaped turn, and Desktop painted "Hermes ended this turn without a reply" over a
+45 s read as a reaped turn, and Desktop painted "slave-agent ended this turn without a reply" over a
 turn that was still running. Rows keep ``server._session_live_item``'s shape; ``id`` and
 ``session_key`` are both the session id, as ``session.resume`` reports them.
 """

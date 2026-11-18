@@ -2,7 +2,7 @@
 
 ## Purpose
 
-slave-agent: a customizable agent with the hermes feature set, mouldable
+slave-agent: a customizable agent with the slave feature set, mouldable
 per deployment — personal assistant, business assistant, or developer
 assistant (Owner order 2026-11-16). Light fork doctrine per FORK.org:
 light core, optional bulk, generated brand; deployments are

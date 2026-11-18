@@ -65,7 +65,7 @@ def test_auto_vacuum_is_not_starved_by_a_retired_write_fenced_generation(tmp_pat
         current = registry.acquire(db_path)
         try:
             assert current is not parked, "inode replacement did not mint a new generation"
-            backend = SQLiteBackend.lending(scope_a.hermes_home_key, current)
+            backend = SQLiteBackend.lending(scope_a.slave_home_key, current)
             store = backend.open(scope_a)
             admin = backend.open_store_admin(scope_a, read_only=False)
             for round_index in range(3):  # consecutive rounds, fresh prunable rows each time

@@ -3,7 +3,7 @@ repo: https://github.com/pierrenode/hermes-redaction-pack
 sha: febd8bfe9971a3242d0ca18e8e7ca71d685d503b
 subdir: redaction-pack
 description: >-
-  Teaches Hermes's built-in secret redactor 71 more vendor credential formats (HashiCorp Vault,
+  Teaches slave-agent’s built-in secret redactor 71 more vendor credential formats (HashiCorp Vault,
   Doppler, Amazon Bedrock, Atlassian, Cloudflare, Supabase, Tailscale, Docker Hub, JFrog
   Artifactory, CircleCI, HubSpot, PostHog, Grafana, Sentry, Shopify and others) through
   register_redaction_patterns, so those tokens are masked in logs, tool output and model-bound

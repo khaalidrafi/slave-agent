@@ -123,9 +123,9 @@ def run():
             'auxiliary': {'title_generation': {'enabled': False}},
         }))
         env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ') if k in os.environ}
-        env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
-                   PYTHONPATH=str(ROOT), PYTHONUNBUFFERED='1', HERMES_PYTHON=sys.executable,
-                   HERMES_PYTHON_SRC_ROOT=str(ROOT), TERM='xterm-256color',
+        env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
+                   PYTHONPATH=str(ROOT), PYTHONUNBUFFERED='1', SLAVE_PYTHON=sys.executable,
+                   SLAVE_PYTHON_SRC_ROOT=str(ROOT), TERM='xterm-256color',
                    OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=model_url)
         children = []
         daemon = None
@@ -161,17 +161,17 @@ def run():
             master, slave = pty.openpty()
             fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 36, 120, 0, 0))
             launch_env = dict(env)
-            launch_env['HERMES_TUI_ACTIVE_SESSION_FILE'] = str(base / (name + '.json'))
+            launch_env['SLAVE_TUI_ACTIVE_SESSION_FILE'] = str(base / (name + '.json'))
             if sid:
-                launch_env['HERMES_TUI_RESUME'] = sid
+                launch_env['SLAVE_TUI_RESUME'] = sid
             if query:
-                launch_env['HERMES_TUI_QUERY'] = query
+                launch_env['SLAVE_TUI_QUERY'] = query
             argv = ['node', str(ROOT / 'ui-tui/dist/entry.js')]
             if kind in ('launcher', 'stop-launcher'):
                 # Exercise the actual parser and Python launcher, using the
                 # supported prebuilt path so shared dependencies stay read-only.
-                launch_env.update(HERMES_TUI_DIR=str(ROOT / 'ui-tui'), TMPDIR=str(base))
-                argv = [sys.executable, '-m', 'hermes_cli.main', '--tui', 'chat', '-q', 'WS_SHARED']
+                launch_env.update(SLAVE_TUI_DIR=str(ROOT / 'ui-tui'), TMPDIR=str(base))
+                argv = [sys.executable, '-m', 'slave_cli.main', '--tui', 'chat', '-q', 'WS_SHARED']
             proc = subprocess.Popen(argv, cwd=ROOT,
                                     env=launch_env, stdin=slave, stdout=slave, stderr=slave,
                                     start_new_session=True)

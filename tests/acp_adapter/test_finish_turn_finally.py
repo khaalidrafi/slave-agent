@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from acp_adapter.server import HermesACPAgent
+from acp_adapter.server import SlaveACPAgent
 from acp_adapter.session import SessionState
 
 
@@ -35,9 +35,9 @@ async def _noop_coro(*args, **kwargs):
 
 
 def _make_server():
-    # A bare ``HermesACPAgent()`` is the gateway viewer (``__new__`` dispatch); the in-process
+    # A bare ``SlaveACPAgent()`` is the gateway viewer (``__new__`` dispatch); the in-process
     # turn tail under test lives on the session-manager-backed agent.
-    server = HermesACPAgent(session_manager=SimpleNamespace(save_session=lambda sid: None))
+    server = SlaveACPAgent(session_manager=SimpleNamespace(save_session=lambda sid: None))
     drained = []
 
     async def fake_prompt(*, prompt, session_id, **kwargs):

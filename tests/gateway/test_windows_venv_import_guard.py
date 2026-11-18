@@ -17,7 +17,7 @@ def _venv(path, version):
 def test_committed_generation_blocks_the_legacy_venv_overlay(tmp_path, monkeypatch):
     """A PM-managed Windows gateway never overlays the leftover pre-PM venv.
 
-    hermes_bootstrap already activated the store Python onto the committed
+    slave_bootstrap already activated the store Python onto the committed
     generation; the late ``_ensure_windows_gateway_venv_imports`` overlay used
     to prepend ``<root>/venv`` (or ``VIRTUAL_ENV``) regardless, loading a cp311
     ``pydantic_core`` into 3.14.
@@ -112,7 +112,7 @@ def test_venv_import_setup_scopes_to_sys_path_not_global_environ(
     ``_ensure_windows_gateway_venv_imports`` patches the CURRENT process via
     ``sys.path``/``site.addsitedir`` only. Mutating ``os.environ["PYTHONPATH"]``
     there poisoned every child process spawned from the gateway session —
-    non-Hermes Python tools resolved Hermes' venv packages ahead of their own.
+    non-Slave Python tools resolved slave-agent’ venv packages ahead of their own.
     """
     import gateway.run as gateway_run
 
@@ -134,7 +134,7 @@ def test_venv_import_setup_scopes_to_sys_path_not_global_environ(
     assert str(site_packages) in sys.path
     # VIRTUAL_ENV stays — standard, scoped, no cross-process poisoning.
     assert os.environ["VIRTUAL_ENV"] == str(venv.resolve())
-    # The inherited PYTHONPATH must be untouched — no Hermes paths prepended.
+    # The inherited PYTHONPATH must be untouched — no Slave paths prepended.
     assert os.environ["PYTHONPATH"] == "already-there"
     assert str(site_packages) not in os.environ["PYTHONPATH"]
     assert str(root) not in os.environ["PYTHONPATH"]

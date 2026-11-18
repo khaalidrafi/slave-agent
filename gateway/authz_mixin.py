@@ -75,7 +75,7 @@ def _registry_entry(platform):
     if platform is None:
         return None
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import discover_plugins
+        from slave_cli.plugins import discover_plugins
         discover_plugins()
     with contextlib.suppress(Exception):
         from gateway.platform_registry import platform_registry
@@ -224,7 +224,7 @@ class GatewayAuthorizationMixin:
     def _adapters_for_profile(self, profile: Optional[str]) -> dict:
         """The live adapter map *profile* may deliver through: ``_profile_adapters[p]`` for a
         secondary, ``self.adapters`` only for the primary/default. ``_profile_adapters`` is consulted
-        BEFORE the active profile name: multiplex turns override ``HERMES_HOME`` so
+        BEFORE the active profile name: multiplex turns override ``SLAVE_HOME`` so
         ``_active_profile_name()`` reports the secondary profile mid-turn, and treating it as primary
         would hand it the default bot. A named profile with no map gets ``{}`` — fail closed: a
         secondary whose adapter failed to connect must NOT fall back to the default profile's adapter
@@ -240,7 +240,7 @@ class GatewayAuthorizationMixin:
                 return adapters
             # Its own LOCAL adapter stays layered over the borrowed primary bots.
             return {**self._primary_adapters(), **adapters}
-        # Identity captured at construction, not the per-turn HERMES_HOME-derived name.
+        # Identity captured at construction, not the per-turn SLAVE_HOME-derived name.
         primary_profile = getattr(self, "_primary_profile_name", None)
         if not primary_profile:
             with contextlib.suppress(Exception):
@@ -284,11 +284,11 @@ class GatewayAuthorizationMixin:
         binds no origin and the webhook leg runs as ``webhook``, so both keep the stricter rule."""
         from gateway.session_context import get_session_env
         from cron.scheduler_preflight import _CHAT_SCOPED_THREAD_PLATFORMS
-        origin_chat = get_session_env("HERMES_SESSION_CHAT_ID")
-        if (not origin_chat or get_session_env("HERMES_SESSION_PLATFORM") != platform.value
+        origin_chat = get_session_env("SLAVE_SESSION_CHAT_ID")
+        if (not origin_chat or get_session_env("SLAVE_SESSION_PLATFORM") != platform.value
                 or str(chat_id or "") != origin_chat):
             return False
-        origin_thread = get_session_env("HERMES_SESSION_THREAD_ID") or None
+        origin_thread = get_session_env("SLAVE_SESSION_THREAD_ID") or None
         target_thread = str(thread_id) if thread_id else None
         # Match the thread the send actually reaches. Where thread ids are global (not chat-scoped),
         # a thread id carries none of the origin's guild or parent, so only the origin's own thread
@@ -303,10 +303,10 @@ class GatewayAuthorizationMixin:
             target_thread = origin_thread
         target = SessionSource(
             platform=platform, chat_id=origin_chat, thread_id=target_thread,
-            scope_id=get_session_env("HERMES_SESSION_SCOPE_ID") or None,
-            parent_chat_id=get_session_env("HERMES_SESSION_PARENT_CHAT_ID") or None,
+            scope_id=get_session_env("SLAVE_SESSION_SCOPE_ID") or None,
+            parent_chat_id=get_session_env("SLAVE_SESSION_PARENT_CHAT_ID") or None,
             # A shared chat binds no route user; the turn's sender is the one dispatch matched.
-            user_id=get_session_env("HERMES_SESSION_USER_ID") or get_session_env("HERMES_SESSION_ACTOR_ID") or None)
+            user_id=get_session_env("SLAVE_SESSION_USER_ID") or get_session_env("SLAVE_SESSION_ACTOR_ID") or None)
         return self._default_bot_routes_to(target, profile)
 
     def _routed_primary_adapter(self, source: Optional[SessionSource]):
@@ -508,7 +508,7 @@ class GatewayAuthorizationMixin:
         return (adapter, profile) if registered else None
 
     def _authorization_home_for_source(self, source: SessionSource):
-        """HERMES_HOME whose allowlist admits *source*: the identity's transport home (or the
+        """SLAVE_HOME whose allowlist admits *source*: the identity's transport home (or the
         ingress-stamped one), else the home of the profile owning the adapter that delivers it.
         ``None`` = authorize in the ambient scope (multiplex off, or no live adapter — the check then
         fails closed on its own).
@@ -532,9 +532,9 @@ class GatewayAuthorizationMixin:
             return None
         _registered, profile = self._owning_profile(adapter, getattr(source, "platform", None))
         if profile is None:
-            from hermes_constants import get_process_hermes_home
-            return get_process_hermes_home()  # the primary bot's home, never the per-turn override
-        from hermes_cli.profiles import get_profile_dir
+            from slave_constants import get_process_slave_home
+            return get_process_slave_home()  # the primary bot's home, never the per-turn override
+        from slave_cli.profiles import get_profile_dir
         return get_profile_dir(profile)
 
     def _adapter_profile_for_source(self, source: SessionSource) -> Optional[str]:
@@ -769,7 +769,7 @@ class GatewayAuthorizationMixin:
             # Idempotent: the env name lives on the plugin's entry, so a runner that never ran the
             # config passes (which discover) must still see it rather than silently deny.
             with contextlib.suppress(Exception):
-                from hermes_cli.plugins import discover_plugins
+                from slave_cli.plugins import discover_plugins
                 discover_plugins()
             allow_bots_var = authz_field(source.platform.value, "allow_bots_env", _registry_entry(source.platform)) or ""
             if allow_bots_var:

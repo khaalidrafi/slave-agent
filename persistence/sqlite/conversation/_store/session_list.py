@@ -38,7 +38,7 @@ def project_compression_tips(db, sessions: list[dict[str, Any]], compact_rows: b
                 merged[key] = tip_row[key]
         if merged.get("title") is None:
             # The title is carried root->tip AFTER the publish transaction; a rotation cut off in
-            # between leaves it on the ended root, and exact-title lookups (`hermes peer dm` ->
+            # between leaves it on the ended root, and exact-title lookups (`slave peer dm` ->
             # canonical "Bot Chat") must still see the lineage under its name (#106165).
             merged["title"] = s.get("title")
         merged["_lineage_root_id"] = s["id"]

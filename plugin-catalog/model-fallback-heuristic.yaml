@@ -8,12 +8,12 @@ description: >-
   providers (parameter count, context window, release recency, flash tier, tool support, provider
   preference, and reasoning effort) — works seamlessly with or without an LLM call. Disclosure —
   session-start and API-error hooks rewrite fallback_providers and plugin settings in
-  ~/.hermes/config.yaml (primary model replacement is opt-in via
+  ~/.slave/config.yaml (primary model replacement is opt-in via
   auto_switch_primary_when_unavailable); queries public model catalog endpoints
   (models.dev/api.json, openrouter.ai/api/v1/models, and
   inference-api.nousresearch.com/v1/portal/models) to rank candidate models and check free-tier
   availability; optional interactive CLI setup saves user-entered provider API keys via
-  hermes_cli.config.save_env_value when explicitly requested.
+  slave_cli.config.save_env_value when explicitly requested.
 maintainer: tomkubik
 tier: community
 category: models

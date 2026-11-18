@@ -2,11 +2,11 @@
 // Owned namespace: `libText`.
 // Function leaves take positional args; packs use `{0}`, `{1}` (argument order documented per leaf).
 
-import { gatewayTextEn } from '@hermes/shared/gateway-text'
+import { gatewayTextEn } from '@slave-agent/shared/gateway-text'
 
 export const libTextEn = {
   libText: {
-    // @hermes/shared/gateway-client (given Ink's `t`) — transport-drop reasons that reject in-flight RPCs and
+    // @slave-agent/shared/gateway-client (given Ink's `t`) — transport-drop reasons that reject in-flight RPCs and
     // therefore surface in the transcript. `gateway not connected` /
     // `gateway not running` are deliberately NOT here: app/userMessages.ts
     // parses them (NOT_CONNECTED_RE) and rewrites them into plain words.
@@ -53,7 +53,7 @@ export const libTextEn = {
         'Apple Terminal detected · use /paste for image-only clipboard fallback, and try Ctrl+A / Ctrl+E / Ctrl+U if Cmd+←/→/⌫ gets rewritten',
       tmux: 'tmux detected · clipboard copy/paste uses passthrough when available; allow-passthrough improves OSC52 reliability',
       remote:
-        'SSH session detected · text clipboard can bridge via OSC52, but image clipboard and local screenshot paths still depend on the machine running Hermes'
+        'SSH session detected · text clipboard can bridge via OSC52, but image clipboard and local screenshot paths still depend on the machine running slave-agent'
     },
 
     // lib/billingDialog.ts — the out-of-credits confirm dialog.

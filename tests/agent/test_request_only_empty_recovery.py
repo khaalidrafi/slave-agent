@@ -14,7 +14,7 @@ import pytest
 @pytest.mark.parametrize("stream", [False, True], ids=["json", "sse"])
 @pytest.mark.parametrize("guard_continue", [False, True], ids=["tool-recovery", "intake-continue"])
 def test_recovery_is_request_only(tmp_path, monkeypatch, after_tool, parts, stream, guard_continue):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         "model:\n  supports_vision: true\n  context_length: 128000\n"
         "auxiliary:\n  title_generation:\n    enabled: false\n"
@@ -126,7 +126,7 @@ def test_recovery_is_request_only(tmp_path, monkeypatch, after_tool, parts, stre
             "parameters": {"type": "object", "properties": {}},
         }}]
         agent.valid_tool_names = {"lookup"}
-        # Only the leaf tool is substituted; Hermes owns request assembly,
+        # Only the leaf tool is substituted; Slave owns request assembly,
         # the real SDK/HTTP transport, execution bookkeeping and SQLite writes.
         monkeypatch.setattr("model_tools.handle_function_call", lambda *a, **kw: "42")
         prompt = "Look up the answer."

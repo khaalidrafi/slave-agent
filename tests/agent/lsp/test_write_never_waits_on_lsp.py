@@ -102,7 +102,7 @@ def test_late_verdict_reaches_the_model_before_the_turn_ends(mock_workspace, mon
 
     from agent.turn_stop_gates import apply_stop_gates
 
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "0")
+    monkeypatch.setenv("SLAVE_VERIFY_ON_STOP", "0")
     repo, gate = mock_workspace("by_content")
     target = repo / "c.py"
     target.write_text("x = 1\n", encoding="utf-8")

@@ -167,7 +167,7 @@ def effective_cache_ttl(ttl: str | None, *, model: str = "", provider: str = "",
     Qwen/Alibaba routes drop ``1h`` (→ ``5m``) except on ``MEASURED_1H_PROVIDERS`` minus
     ``NO_1H_TIER_MODELS``; that check runs BEFORE the generic Qwen clamp, which would swallow it.
     Then the route's declared ceiling (:func:`route_ttl_ceiling`) applies to that result on every
-    path: the prompt-cache clock reads the same helper, so what Hermes asks for and what it
+    path: the prompt-cache clock reads the same helper, so what slave-agent asks for and what it
     believes never disagree.
     """
     if ttl != "1h":
@@ -208,7 +208,7 @@ def route_ttl_ceiling(provider: str, base_url: str = "") -> str | None:
     currently drops 1h entries after ~7 minutes and bills them at the 5m rate; once that is fixed,
     lifting the ceiling is ``route_ttl_ceilings: {nous: 1h}`` or a one-field profile change.
     """
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
     from providers import get_provider_profile
 
     names = _route_names(provider, base_url)

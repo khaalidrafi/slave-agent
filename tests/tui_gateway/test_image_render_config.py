@@ -18,7 +18,7 @@ def test_config_yaml_inline_images_reaches_image_render(tmp_path, monkeypatch, v
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text(f"display:\n  inline_images: {value}\n")
-    monkeypatch.setattr(server, "_hermes_home", home)  # the launch home, bound at import
+    monkeypatch.setattr(server, "_slave_home", home)  # the launch home, bound at import
     photo = tmp_path / "big.png"
     PIL.new("RGBA", (4096, 4096), (10, 20, 30, 255)).save(photo)
 

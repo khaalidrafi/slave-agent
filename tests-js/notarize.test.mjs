@@ -5,20 +5,20 @@ import { expect, test, vi } from 'vitest'
 import notarize, { runCommand } from '../apps/desktop/scripts/notarize.mjs'
 
 const submissionId = '00000000-0000-4000-8000-000000000001'
-const missingTicket = () => Object.assign(new Error('CloudKit query for Hermes.app failed due to "Record not found".\nThe staple and validate action failed! Error 65.'), { code: 65 })
+const missingTicket = () => Object.assign(new Error('CloudKit query for Slave.app failed due to "Record not found".\nThe staple and validate action failed! Error 65.'), { code: 65 })
 // Replays of the 2026-11-03 canary: Apple's services dropped connections for about 20 minutes.
 const connectionLost = 'error is Error Domain=NSURLErrorDomain Code=-1005 "The network connection was lost." UserInfo={NSErrorFailingURLStringKey=https://api.apple-cloudkit.com/database/1/com.apple.gk.ticket-delivery/production/public/records/lookup}\nCloudKit\'s response is inconsistent with expections: (null)\nThe staple and validate action failed! Error 68.'
 const notaryTimeout = `Error: HTTPError(statusCode: nil, error: Error Domain=NSURLErrorDomain Code=-1001 "The request timed out." UserInfo={NSErrorFailingURLStringKey=https://appstoreconnect.apple.com/notary/v2/submissions/${submissionId}?, _kCFStreamErrorDomainKey=4})`
 const budget = 4 * 60 * 60 * 1000
 
 function fixture() {
-  const root = mkdtempSync(path.join(os.tmpdir(), 'hermes-notary-test-'))
-  mkdirSync(path.join(root, 'Hermes.app'))
+  const root = mkdtempSync(path.join(os.tmpdir(), 'slave-notary-test-'))
+  mkdirSync(path.join(root, 'Slave.app'))
   const key = path.join(root, 'api-key.p8')
   writeFileSync(key, 'test credential path only')
   return {
     root,
-    context: { electronPlatformName: 'darwin', appOutDir: root, packager: { appInfo: { productFilename: 'Hermes' } } },
+    context: { electronPlatformName: 'darwin', appOutDir: root, packager: { appInfo: { productFilename: 'slave-agent' } } },
     environments: [
       { APPLE_NOTARY_PROFILE: 'test-profile' },
       { APPLE_API_KEY: key, APPLE_API_KEY_ID: 'test-key', APPLE_API_ISSUER: 'test-issuer' }
@@ -58,7 +58,7 @@ test('accepted submissions retry only ticket propagation, without resubmitting o
       expect(attempts).toBe(3)
       expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([15000, 30000])
       expect(log).toHaveBeenCalledWith(expect.stringContaining(`${submissionId}: Accepted`))
-      expect(existsSync(path.join(f.root, 'Hermes.zip'))).toBe(false)
+      expect(existsSync(path.join(f.root, 'Slave.zip'))).toBe(false)
     }
   } finally {
     f.cleanup()
@@ -117,7 +117,7 @@ test('HTTP timeouts resume the same submission with notarytool wait and a shrink
       }
       expect(calls.filter(c => c.args[0] === 'stapler')).toHaveLength(1)
       expect(log).toHaveBeenCalledWith(expect.stringContaining(submissionId))
-      expect(existsSync(path.join(f.root, 'Hermes.zip'))).toBe(false)
+      expect(existsSync(path.join(f.root, 'Slave.zip'))).toBe(false)
     }
   } finally { f.cleanup() }
 })
@@ -175,7 +175,7 @@ test('wait recovery requires a known submission and stops at failures or its lim
         expect(sleep).toHaveBeenCalledTimes(scenario === 'sleep-budget' ? 1 : 0)
       }
       expect(calls.filter(c => c[2] === 'log')).toHaveLength(scenario === 'invalid' ? 1 : 0)
-      expect(existsSync(path.join(f.root, 'Hermes.zip'))).toBe(false)
+      expect(existsSync(path.join(f.root, 'Slave.zip'))).toBe(false)
     }
   } finally { f.cleanup() }
 })
@@ -223,7 +223,7 @@ test('rejections, unknown failures and exhausted propagation retries remain buil
         expect(staples).toHaveLength(scenario.startsWith('permanent-staple') ? 1 : 0)
       }
       if (scenario !== 'exhausted') expect(sleep).not.toHaveBeenCalled()
-      expect(existsSync(path.join(f.root, 'Hermes.zip'))).toBe(false)
+      expect(existsSync(path.join(f.root, 'Slave.zip'))).toBe(false)
     }
   } finally {
     f.cleanup()
@@ -256,7 +256,7 @@ test('a dropped connection while stapling an accepted ticket is retried, not fat
     expect(calls.filter(c => c[2] === 'submit')).toHaveLength(1)
     expect(staples).toBe(9)
     expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([15000, 30000, 60000, 120000, 120000, 120000, 15000, 30000])
-    expect(existsSync(path.join(f.root, 'Hermes.zip'))).toBe(false)
+    expect(existsSync(path.join(f.root, 'Slave.zip'))).toBe(false)
   } finally { f.cleanup() }
 })
 
@@ -325,7 +325,7 @@ test('connection failures that outlast the staple window still fail the build', 
       expect(staples).toBeGreaterThan(6)
       expect(slept).toBeLessThan(limit)
       expect(slept + sleep.mock.calls.at(-1)[0]).toBeGreaterThanOrEqual(limit)
-      expect(existsSync(path.join(f.root, 'Hermes.zip'))).toBe(false)
+      expect(existsSync(path.join(f.root, 'Slave.zip'))).toBe(false)
     } finally { f.cleanup() }
   }
 })

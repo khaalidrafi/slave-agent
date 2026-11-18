@@ -22,9 +22,9 @@ def _pool(source: str) -> CredentialPool:
 
 
 def test_borrowed_row_echoed_opaque_key_is_masked_on_disk(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", False)
     pool = _pool("env:ANTHROPIC_API_KEY")
     entry = pool._entries[0]

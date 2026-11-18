@@ -514,7 +514,7 @@ class SessionQuery:
     include_hidden: bool = False
     include_subagents: bool = False
     local_created_sources: Optional[tuple[str, ...]] = None
-    #: Only rows in this workspace (``hermes -c``'s rule): the git repo root equals it, or a row without one has its cwd at or under it.
+    #: Only rows in this workspace (``slave -c``'s rule): the git repo root equals it, or a row without one has its cwd at or under it.
     workspace_key: Optional[str] = None
 
 
@@ -1101,7 +1101,7 @@ class SessionRepository(Protocol):
         ...
 
     def store_owner(self) -> Optional[str]:
-        """The profile owning this store, from where the store lives: ``default`` for the store at the default Hermes root, the profile's name for one directly under ``<root>/profiles`` with a valid profile name, else ``None``. It is the owner a row created without ``profile_name`` is stamped with. Reads no row and never raises."""
+        """The profile owning this store, from where the store lives: ``default`` for the store at the default slave-agent root, the profile's name for one directly under ``<root>/profiles`` with a valid profile name, else ``None``. It is the owner a row created without ``profile_name`` is stamped with. Reads no row and never raises."""
         ...
 
     def resolve_id(self, id_or_prefix: str) -> Optional[SessionId]:
@@ -1199,7 +1199,7 @@ class SessionRepository(Protocol):
         ...
 
     def records_created_surface(self) -> bool:
-        """Whether the store records the creating surface of its sessions (``created_source``); an older store opened read-only may not, and a listing then filters on the raw source (hermes_cli/gateway_session_store.py:404-410)."""
+        """Whether the store records the creating surface of its sessions (``created_source``); an older store opened read-only may not, and a listing then filters on the raw source (slave_cli/gateway_session_store.py:404-410)."""
         ...
 
     def last_active(self, session_id: SessionId) -> Optional[float]:

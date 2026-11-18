@@ -9,11 +9,11 @@ description: >-
   concept and multiview images, texturing, rigging and animation, retopology, segmentation, Gaussian
   splats, format conversion (GLB, FBX, OBJ, STL, USDZ, 3MF) and downloads, plus the tripo-3d and
   tripo-game-asset workflow skills; Game Studio turns a rigged, animated model into a character you
-  play in Hermes Desktop, a three.js web prototype, Godot, Unity or Unreal. In Hermes Desktop: inline 3D
+  play in slave-agent Desktop, a three.js web prototype, Godot, Unity or Unreal. In slave-agent Desktop: inline 3D
   cards with Next and Download menus and a Play mode, a gallery of recent generations and a credit chip.
-  Every call that is not read-only goes through Hermes's approval prompt, local-file uploads included;
+  Every call that is not read-only goes through slave-agent’s approval prompt, local-file uploads included;
   no per-tool costs or spend limit are declared. Needs TRIPO_API_KEY from an international Tripo
-  account. Disclosure — first start downloads the pinned tripo-cli from npm through npx, which Hermes
+  account. Disclosure — first start downloads the pinned tripo-cli from npm through npx, which slave-agent
   runs on its managed Node.js as a local child process; it sends prompts and the local images (up to
   20 MB) or models (up to 150 MB) you or the agent name to Tripo's API (openapi.tripo3d.ai) under your
   key, gets only TRIPO_API_KEY from your profile, and sends no analytics. Downloads go to the plugin's
@@ -22,7 +22,7 @@ description: >-
   the plugin's data folder. The Desktop backend reads your balance and recent tasks from Tripo's API,
   serves models only from the plugin's data folder or your home folder, and downloads results only
   from Tripo's result storage; the Desktop renderer shows task previews from Tripo's short-lived result
-  links. Through Hermes's terminal tool the skills run `hermes config path`, file-size checks and
+  links. Through slave-agent’s terminal tool the skills run `slave config path`, file-size checks and
   background sleep timers on chat apps, and, when asked, a preview-video renderer (headless Chromium
   and ffmpeg already on the machine; its first run downloads three.js 0.180.0 from npm,
   integrity-checked), Python's http.server on 127.0.0.1 for the web prototype (which loads three.js

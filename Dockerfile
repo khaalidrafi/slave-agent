@@ -63,18 +63,18 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/tools
 
 # Install system dependencies in one layer, clear APT cache.
 # tini was previously PID 1 to reap orphaned zombie processes (MCP stdio
-# subprocesses, git, bun, etc.) that would otherwise accumulate when hermes
+# subprocesses, git, bun, etc.) that would otherwise accumulate when slave
 # ran as PID 1. See #15012. Phase 2 of the s6-overlay supervision plan
 # replaces tini with s6-overlay's /init (PID 1 = s6-svscan), which reaps
 # zombies non-blockingly on SIGCHLD and additionally supervises the main
-# hermes process, the dashboard, and per-profile gateways.
+# slave process, the dashboard, and per-profile gateways.
 # The second package list is the shared libraries the pinned Chromium links
 # against. `npx playwright install --with-deps` used to apt-install them as
 # a side effect; pm stages the pinned browser instead (below), so the libs
 # must be declared here. The list is the `ldd ... | grep "not found"` set of
 # the pinned chrome binary in this base image, mapped to trixie package
-# names (see .hermes/plans/termux-removal-commit-spec.md).
-# tmux backs the hermes-agent skill's interactive spawning recipe; the runtime
+# names (see .slave/plans/termux-removal-commit-spec.md).
+# tmux backs the slave-agent skill's interactive spawning recipe; the runtime
 # user cannot apt-get it later (no root, and the root fs resets on restart).
 RUN apt-get -o Acquire::Retries=3 update && \
     apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
@@ -91,9 +91,9 @@ RUN apt-get -o Acquire::Retries=3 update && \
 # build, and cannot apt at run time either (unprivileged, no sudo). Only this
 # build step needs root —
 # Xvnc is a userspace X server, so the runtime user can drive it.
-#   docker build --build-arg HERMES_BOT_DESKTOP=1 .
-ARG HERMES_BOT_DESKTOP=0
-RUN if [ "$HERMES_BOT_DESKTOP" = "1" ]; then \
+#   docker build --build-arg SLAVE_BOT_DESKTOP=1 .
+ARG SLAVE_BOT_DESKTOP=0
+RUN if [ "$SLAVE_BOT_DESKTOP" = "1" ]; then \
         apt-get -o Acquire::Retries=3 update && \
         DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
         tigervnc-standalone-server xfce4-panel xfwm4 xfdesktop4 xfce4-settings xfce4-terminal \
@@ -114,12 +114,12 @@ v = sqlite3.sqlite_version_info; \
 sys.exit(f'linked SQLite {sqlite3.sqlite_version} still has the WAL-reset bug') if v < (3, 51, 3) else None; \
 db = sqlite3.connect(':memory:'); \
 db.execute(\"CREATE VIRTUAL TABLE docs USING fts5(content, tokenize='trigram')\"); \
-db.execute(\"INSERT INTO docs VALUES ('hermes')\"); \
+db.execute(\"INSERT INTO docs VALUES ('slave')\"); \
 sys.exit('SQLite FTS5 trigram self-test failed') if db.execute(\"SELECT count(*) FROM docs WHERE docs MATCH 'erm'\").fetchone()[0] != 1 else None; \
 db.close()"
 
 # ---------- s6-overlay install ----------
-# s6-overlay provides supervision for the main hermes process, the dashboard,
+# s6-overlay provides supervision for the main slave process, the dashboard,
 # and per-profile gateways. /init becomes PID 1 below — see ENTRYPOINT.
 #
 # Multi-arch: BuildKit auto-populates TARGETARCH (amd64 / arm64). s6-overlay
@@ -164,7 +164,7 @@ RUN set -eu; \
 
 # #34192 / #66679: backward-compat shim for orchestration templates that
 # still reference the legacy /usr/bin/tini entrypoint (Hostinger's
-# 'Hermes WebUI' catalog, NAS compose projects that preserve an old
+# 'Slave WebUI' catalog, NAS compose projects that preserve an old
 # entrypoint on image update, etc.). A plain symlink to /init made the
 # path exist, but forwarded tini flags like `-g` into s6-overlay's
 # rc.init as the container CMD (`rc.init: 91: -g: not found`) and
@@ -174,8 +174,8 @@ RUN set -eu; \
 # updated.
 COPY --chmod=0755 docker/tini-shim.sh /usr/bin/tini
 
-# Non-root user for runtime; UID can be overridden via HERMES_UID at runtime
-RUN useradd -u 10000 -m -d /opt/data hermes
+# Non-root user for runtime; UID can be overridden via SLAVE_UID at runtime
+RUN useradd -u 10000 -m -d /opt/data slave
 
 
 WORKDIR /opt/hermes
@@ -200,17 +200,17 @@ WORKDIR /opt/hermes
 # baked to /etc/hermes/chromium-executable-path: the layout differs per
 # arch (chrome-linux64/chrome on amd64, chrome-linux-arm64/chrome on
 # arm64), so it is resolved at build time and never hunted at boot.
-# hermes_cli/browser_runtime.py reads it when a volume over the runtime dir
+# slave_cli/browser_runtime.py reads it when a volume over the runtime dir
 # hides pm's facts; stage2-hook.sh checks it still names a binary.
-ENV HERMES_RUNTIME_DIR=/opt/hermes/tools
+ENV SLAVE_RUNTIME_DIR=/opt/hermes/tools
 COPY pm/ pm/
-# pm's lazy imports resolve get_default_hermes_root()/project_venv_dir()
-# from hermes_constants (stdlib-only) at install time — a sealed-stage
+# pm's lazy imports resolve get_default_slave_root()/project_venv_dir()
+# from slave_constants (stdlib-only) at install time — a sealed-stage
 # `python3 -m pm.cli install` fails with "No module named
-# 'hermes_constants'" without it on the path. Copy the module next to pm.
-COPY hermes_constants.py hermes_constants.py
+# 'slave_constants'" without it on the path. Copy the module next to pm.
+COPY slave_constants.py slave_constants.py
 # PM imports the shared stdlib locking owner before deps exist.
-COPY hermes_cli/__init__.py hermes_cli/runtime_state.py hermes_cli/
+COPY slave_cli/__init__.py slave_cli/runtime_state.py slave_cli/
 COPY scripts/bundles/payload.py scripts/bundles/payload.py
 RUN set -eu; \
     python3 -c 'from pm import ensure; [ensure(name, explicit=True) for name in ("uv", "chromium", "npm", "ffmpeg", "ripgrep")]'; \
@@ -229,7 +229,7 @@ RUN set -eu; \
 RUN python3 -c 'from pathlib import Path; from pm import stage_manager_runtime; from scripts.bundles.payload import seal_pm_runtime; root = Path("/opt/hermes"); python = Path("/usr/local/bin/python3").resolve(); stage_manager_runtime(python=python, destination=root / "pm-runtime", project=root / "pm"); seal_pm_runtime(root, python)'
 
 # JS build helpers use the prepared interpreter without an installer parent.
-ENV HERMES_PYTHON=/usr/local/bin/python3
+ENV SLAVE_PYTHON=/usr/local/bin/python3
 # The standalone interpreter records its builder's clang toolchain;
 # native extensions must use the compiler installed in this image.
 ENV CC=gcc CXX=g++
@@ -259,9 +259,9 @@ FROM runtime_base AS python_deps
 # so Docker users can use these providers without requiring runtime
 # lazy-install access to PyPI (often blocked in containerized envs).
 #
-# The [otlp] extra contains the SDK/exporter imported by Hermes when Gateway
+# The [otlp] extra contains the SDK/exporter imported by Slave when Gateway
 # Health export is enabled. Collector and observability-backend dependencies
-# remain external and are not part of the Hermes production image.
+# remain external and are not part of the Slave production image.
 #
 # The Matrix gateway's deps ([matrix] extra) are baked in because
 # python-olm (transitive via mautrix[encryption]) builds from source on
@@ -295,9 +295,9 @@ FROM runtime_base AS python_deps
 COPY pyproject.toml setup.py uv.lock ./
 RUN touch ./README.md
 # --cache puts uv's cache at /opt/hermes/uv-cache, the seed path that
-# pm.packages.uv_cache_dir() merges into $HERMES_HOME/cache/uv on first use.
-# Do not leave the cache at its default: HERMES_HOME is not set yet in this
-# stage, so the default is /root/.hermes/cache/uv, which nothing reads. A plugin
+# pm.packages.uv_cache_dir() merges into $SLAVE_HOME/cache/uv on first use.
+# Do not leave the cache at its default: SLAVE_HOME is not set yet in this
+# stage, so the default is /root/.slave/cache/uv, which nothing reads. A plugin
 # install then runs with an empty cache and builds python-olm from source.
 RUN python3 -m pm.build_env --source /opt/hermes --python /usr/local/bin/python3 \
     --cache /opt/hermes/uv-cache \
@@ -322,7 +322,7 @@ RUN python3 -c 'from pathlib import Path; from pm import ensure, installed_packa
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY web/package.json web/
 COPY ui-tui/package.json ui-tui/
-COPY ui-tui/packages/hermes-ink/ ui-tui/packages/hermes-ink/
+COPY ui-tui/packages/slave-ink/ ui-tui/packages/slave-ink/
 COPY apps/shared/ apps/shared/
 COPY scripts/build/node-deps*.mjs scripts/build/electron-runtime.mjs scripts/build/pnpm-lock.mjs scripts/build/
 # Root node_modules/typescript is a link into pnpm's virtual store, which never
@@ -386,7 +386,7 @@ COPY --from=frontend_build /opt/products/web /opt/hermes/hermes_cli/web_dist
 COPY --from=webapp_build /opt/hermes/apps/desktop/dist-webapp /opt/hermes/apps/desktop/dist-webapp
 # ---------- Bot Screen X socket directory ----------
 # Xvnc would create this itself (/tmp is 1777); pre-creating it keeps ownership
-# deterministic when HERMES_UID is remapped between boots.
+# deterministic when SLAVE_UID is remapped between boots.
 RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
 # XDG_RUNTIME_DIR (set below) sits under a predictable name in world-writable /tmp.
@@ -399,7 +399,7 @@ RUN mkdir -p /tmp/hermes-runtime && chmod 0700 /tmp/hermes-runtime
 # the final read-only permissions at copy time so we skip the separate
 # `chmod -R` pass that previously walked ~30k files across the venv +
 # node_modules + source (21s amd64 / 222s arm64 — #49113).  `a+rX,go-w`
-# gives the non-root hermes user read + traverse but no write; root retains
+# gives the non-root slave user read + traverse but no write; root retains
 # write so the build steps below don't need chmod u+w dances.
 COPY --link --chmod=a+rX,go-w . .
 
@@ -408,7 +408,7 @@ RUN /opt/hermes/.venv/bin/python -m docker.build_agent
 
 # Wire the exec shim and install-method stamp.  Files under /opt/hermes are
 # already root-owned (COPY, dep assembly, npm install all run as root) and
-# read-only for the hermes user (go-w from the --chmod above).
+# read-only for the slave user (go-w from the --chmod above).
 
 USER root
 RUN mkdir -p /opt/hermes/bin && \
@@ -416,23 +416,23 @@ RUN mkdir -p /opt/hermes/bin && \
     chmod 0755 /opt/hermes /opt/hermes/bin/hermes && \
     printf 'docker\n' > /opt/hermes/.install_method
 # The ``.install_method`` stamp is baked next to the running code (the install
-# tree), NOT into $HERMES_HOME. $HERMES_HOME (/opt/data) is a shared data
+# tree), NOT into $SLAVE_HOME. $SLAVE_HOME (/opt/data) is a shared data
 # volume that is commonly bind-mounted from the host and even shared with a
 # host-side Desktop/CLI install; stamping it at boot used to clobber that
-# host install's marker and wrongly block its ``hermes update``. A code-scoped
+# host install's marker and wrongly block its ``slave update``. A code-scoped
 # stamp is read first by detect_install_method() and is immune to the share.
 # Start as root so the s6-overlay stage2 hook can usermod/groupmod and chown
-# the data volume. Each supervised service then drops to the hermes user via
-# `s6-setuidgid hermes` in its run script. If HERMES_UID is unset, services
-# run as the default hermes user (UID 10000).
+# the data volume. Each supervised service then drops to the slave user via
+# `s6-setuidgid slave` in its run script. If SLAVE_UID is unset, services
+# run as the default slave user (UID 10000).
 
 # ---------- Image provenance + install stamp ----------
 # CI (.github/workflows/docker.yml) runs scripts/write_install_stamp.py
 # before `docker build`, so the bulk `COPY . .` above already placed a
 # full-provenance /opt/hermes/install-stamp.json next to the code.
 # .dockerignore excludes .git, so the stamp is the only commit channel the
-# image carries: hermes_cli/version_info.py reads it at runtime (stamp
-# first, live git second, unknown third), and both `hermes dump` and
+# image carries: slave_cli/version_info.py reads it at runtime (stamp
+# first, live git second, unknown third), and both `slave dump` and
 # banner.get_git_banner_state() consume it through version_info.
 #
 # A local `docker build` without CI gets the minimal all-zero fallback
@@ -443,7 +443,7 @@ RUN mkdir -p /opt/hermes/bin && \
 # The versioned, non-secret provenance marker is the authoritative runtime
 # signal that this filesystem came from an immutable image.  It deliberately
 # lives outside both /opt/hermes (which operators sometimes bind-mount as a
-# checkout) and /opt/data (the mutable HERMES_HOME volume).  Its `revision`
+# checkout) and /opt/data (the mutable SLAVE_HOME volume).  Its `revision`
 # is read from the install stamp; the fallback stamp's all-zero commit maps
 # to null.
 RUN set -eu; \
@@ -456,32 +456,32 @@ RUN set -eu; \
     python3 -c 'import json, pathlib, tomllib; project = tomllib.loads(pathlib.Path("/opt/hermes/pyproject.toml").read_text(encoding="utf-8"))["project"]; stamp = json.loads(pathlib.Path("/opt/hermes/install-stamp.json").read_text(encoding="utf-8")); commit = stamp.get("commit"); revision = commit if commit and set(commit) != {"0"} else None; marker = pathlib.Path("/etc/hermes/image-provenance.json"); marker.write_text(json.dumps({"schema": 1, "deployment_kind": "image", "manager": "docker", "image": "nousresearch/hermes-agent", "version": project["version"], "revision": revision}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"); marker.chmod(0o444)'
 
 # ---------- s6-overlay service wiring ----------
-# Static services declared at build time: main-hermes, dashboard and
+# Static services declared at build time: main-slave, dashboard and
 # profile-gateways. Per-profile gateway services are registered
 # dynamically at runtime by the profile create/delete hooks (Phase 4);
 # they live under /run/hermes-service/ (tmpfs), supervised by the
-# hermes-owned s6-svscan of the profile-gateways service, never in the
+# slave-owned s6-svscan of the profile-gateways service, never in the
 # root /run/service scandir, and are reconciled on container restart by
 # /etc/cont-init.d/02-reconcile-profiles (Phase 4 Task 4.0).
 COPY docker/s6-rc.d/ /etc/s6-overlay/s6-rc.d/
 
 # stage2-hook handles UID/GID remap, volume chown, config seeding,
 # skills sync — all the work the old entrypoint.sh did before
-# `exec hermes`. Wired in as cont-init.d/01- so it
+# `exec slave`. Wired in as cont-init.d/01- so it
 # runs before user services start.
 #
 # 02-reconcile-profiles re-creates per-profile gateway s6 service
-# slots from $HERMES_HOME/profiles/<name>/ after a container restart
+# slots from $SLAVE_HOME/profiles/<name>/ after a container restart
 # (the /run/hermes-service/ scandir is tmpfs and wiped on restart). Phase 4.
 RUN mkdir -p /etc/cont-init.d && \
     printf '#!/command/with-contenv sh\nexec /opt/hermes/docker/stage2-hook.sh\n' \
-        > /etc/cont-init.d/01-hermes-setup && \
-    chmod +x /etc/cont-init.d/01-hermes-setup
+        > /etc/cont-init.d/01-slave-setup && \
+    chmod +x /etc/cont-init.d/01-slave-setup
 COPY --chmod=0755 docker/cont-init.d/015-supervise-perms /etc/cont-init.d/015-supervise-perms
 COPY --chmod=0755 docker/cont-init.d/02-reconcile-profiles /etc/cont-init.d/02-reconcile-profiles
 
 # ---------- Runtime ----------
-ENV HERMES_WEB_DIST=/opt/hermes/hermes_cli/web_dist
+ENV SLAVE_WEB_DIST=/opt/hermes/hermes_cli/web_dist
 # Point the TUI launcher at the prebuilt bundle baked at build time (the
 # frontend_build stage's scripts/build/tui.mjs product). This makes
 # _make_tui_argv take the prebuilt-bundle fast path
@@ -497,9 +497,9 @@ ENV HERMES_WEB_DIST=/opt/hermes/hermes_cli/web_dist
 # ENOTEMPTY → the chat tab dies with a 502 / "[session ended]". Pointing at the
 # prebuilt bundle sidesteps the whole check. (A separate launcher hardening is
 # tracked independently.)
-ENV HERMES_TUI_DIR=/opt/hermes/ui-tui
-ENV HERMES_HOME=/opt/data
-ENV HERMES_WRITE_SAFE_ROOT=/opt/data
+ENV SLAVE_TUI_DIR=/opt/hermes/ui-tui
+ENV SLAVE_HOME=/opt/data
+ENV SLAVE_WRITE_SAFE_ROOT=/opt/data
 # Opt-in backend SDKs install on first use into PM dependency generations under
 # /opt/data/installs (the sealed /opt/hermes/.venv is never written); stage2
 # re-resolves them against each new image. security.allow_lazy_installs: false
@@ -512,16 +512,16 @@ ENV HERMES_WRITE_SAFE_ROOT=/opt/data
 ENV XDG_RUNTIME_DIR=/tmp/hermes-runtime
 
 # `docker exec` privilege-drop shim. When operators run
-# `docker exec <c> hermes ...` they default to root, and any file the
-# command writes under $HERMES_HOME (auth.json, .env, config.yaml) ends
+# `docker exec <c> slave ...` they default to root, and any file the
+# command writes under $SLAVE_HOME (auth.json, .env, config.yaml) ends
 # up root-owned and unreadable to the supervised gateway (UID 10000).
 # The shim lives at /opt/hermes/bin/hermes, sits earliest on PATH, and
-# transparently re-exec's the real venv binary via `s6-setuidgid hermes`
+# transparently re-exec's the real venv binary via `s6-setuidgid slave`
 # when invoked as root. Non-root callers (supervised processes,
-# `--user hermes`, etc.) hit the short-circuit path with no overhead.
+# `--user slave`, etc.) hit the short-circuit path with no overhead.
 # Recursion is impossible because the shim exec's the venv binary by
 # absolute path (/opt/hermes/.venv/bin/hermes). See the shim source for
-# the opt-out env var (HERMES_DOCKER_EXEC_AS_ROOT=1).
+# the opt-out env var (SLAVE_DOCKER_EXEC_AS_ROOT=1).
 COPY --chmod=0755 docker/hermes-exec-shim.sh /opt/hermes/bin/hermes
 COPY --chmod=0755 docker/entrypoint-dispatch.sh /opt/hermes/docker/entrypoint-dispatch.sh
 
@@ -529,8 +529,8 @@ COPY --chmod=0755 docker/entrypoint-dispatch.sh /opt/hermes/docker/entrypoint-di
 # the venv bin onto PATH; Architecture B's main-wrapper.sh does the
 # same for the container's main process, but `docker exec` and our
 # cont-init.d scripts don't pass through the wrapper. Expose the venv
-# bin globally so `docker exec <container> hermes ...` and any
-# subprocess that doesn't activate the venv first still find hermes.
+# bin globally so `docker exec <container> slave ...` and any
+# subprocess that doesn't activate the venv first still find slave.
 #
 # /opt/hermes/bin is prepended ahead of the venv so the privilege-drop
 # shim wins PATH resolution. The shim's last act is to exec the venv
@@ -538,20 +538,20 @@ COPY --chmod=0755 docker/entrypoint-dispatch.sh /opt/hermes/docker/entrypoint-di
 # every other consumer.
 ENV PATH="/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:${PATH}"
 # Login shells re-read /etc/profile, which resets PATH; this re-adds the dirs above.
-COPY --chmod=0644 docker/profile-hermes-path.sh /etc/profile.d/hermes.sh
+COPY --chmod=0644 docker/profile-slave-path.sh /etc/profile.d/hermes.sh
 # PM's atomic writer creates private facts for source installs. In the
 # image these are shared, non-secret package metadata, read by UID 10000.
 # uv's environment locks are build-only and may be world-writable. Remove
 # them after all builds; never relax permissions on mutable PM/home state.
 # uv also creates its cache locks 0666 (the root .lock and one <entry>.lock
-# per wheel/sdist entry), and the seed copy into $HERMES_HOME/cache/uv keeps
+# per wheel/sdist entry), and the seed copy into $SLAVE_HOME/cache/uv keeps
 # modes. Drop the world bit instead of deleting by name: "*.lock" also matches
 # files inside unpacked wheels (setuptools/_vendor/.lock).
 RUN mkdir -p /opt/data && chmod 0644 /opt/hermes/tools/facts.json && \
     rm -f /opt/hermes/.venv/.lock /opt/hermes/pm-runtime/.lock && \
     find /opt/hermes/uv-cache ! -type l -perm -0002 -exec chmod o-w {} +
 # Build helpers use system Python above; TUI gateway children need the sealed runtime.
-ENV HERMES_PYTHON=/opt/hermes/.venv/bin/python
+ENV SLAVE_PYTHON=/opt/hermes/.venv/bin/python
 VOLUME [ "/opt/data" ]
 
 # The image ENTRYPOINT is a tiny dispatcher rather than `/init` directly.
@@ -579,8 +579,8 @@ VOLUME [ "/opt/data" ]
 #   docker run <image> sleep infinity   → entrypoint-dispatch.sh sleep infinity
 #   docker run <image> --tui            → entrypoint-dispatch.sh --tui
 #
-# main-wrapper.sh handles arg routing (bare-exec vs. hermes
-# subcommand vs. no-args), drops to the hermes user via s6-setuidgid,
+# main-wrapper.sh handles arg routing (bare-exec vs. slave
+# subcommand vs. no-args), drops to the slave user via s6-setuidgid,
 # and exec's the final program so its exit code becomes the container
 # exit code. The dispatcher preserves that contract across both the
 # supervised PID-1 path and the non-PID-1 fallback path. Without the

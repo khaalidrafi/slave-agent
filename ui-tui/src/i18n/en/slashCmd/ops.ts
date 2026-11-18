@@ -84,7 +84,7 @@ export const slashCmdOpsEn = {
       needsReview: '! needs review',
       skipped: (name: string, reason: string) => `skipped ${name}: ${reason}`,
       none: 'No plugin updates to apply.',
-      review: 'Review those with `hermes plugins update <name>` in a terminal.'
+      review: 'Review those with `slave plugins update <name>` in a terminal.'
     },
     slashWorker: {
       warning: (warning: string) => `warning: ${warning}`,

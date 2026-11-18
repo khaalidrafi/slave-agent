@@ -45,7 +45,7 @@ _STUB_MODULE = "tools.lazy_deps"
 _DELETED_PARENT = "tools"
 # The move gives every top-level package one new name under this package; the stub is caught under
 # both, including in a tree whose MOVES does not list it yet.
-_MOVED_UNDER = "hermes_agent."
+_MOVED_UNDER = "slave_agent."
 
 
 def _old_name(module: str) -> str:

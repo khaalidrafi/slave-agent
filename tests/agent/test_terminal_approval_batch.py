@@ -42,8 +42,8 @@ def _agent():
 def test_desktop_publishes_final_commands_before_wait_and_runs_in_order(tmp_path, monkeypatch, read_count, threaded_middleware):
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.delenv("SLAVE_DESKTOP", raising=False)
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(tmp_path))
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
@@ -89,7 +89,7 @@ def test_desktop_publishes_final_commands_before_wait_and_runs_in_order(tmp_path
             thread.start()
             thread.join(20)
             return results[0]
-        monkeypatch.setattr("hermes_cli.middleware.run_tool_execution_middleware", middleware)
+        monkeypatch.setattr("slave_cli.middleware.run_tool_execution_middleware", middleware)
 
     def pre_hook(name, args, **kwargs):
         if name != "terminal":
@@ -112,7 +112,7 @@ def test_desktop_publishes_final_commands_before_wait_and_runs_in_order(tmp_path
             errors.append(exc)
 
     with ExitStack() as scope, patch(
-        "hermes_cli.plugins._dispatch_pre_tool_call_hooks", side_effect=pre_hook
+        "slave_cli.plugins._dispatch_pre_tool_call_hooks", side_effect=pre_hook
     ):
         scope.callback(reset_terminal_scope, set_terminal_scope({"TERMINAL_ENV": "local", "TERMINAL_CWD": str(tmp_path)}))
         worker = threading.Thread(target=propagate_context_to_thread(run), daemon=True)
@@ -150,7 +150,7 @@ def test_cancelled_preparation_drains_requests_without_reusing_once(tmp_path, mo
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
     monkeypatch.setattr("agent.title_generator.maybe_auto_title", lambda *a, **kw: None)
     key = "cancelled-terminal-batch"
@@ -240,8 +240,8 @@ def test_failed_command_re_gates_later_prepared_approvals(tmp_path, monkeypatch)
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.delenv("SLAVE_DESKTOP", raising=False)
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(tmp_path))
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
@@ -327,7 +327,7 @@ def test_switching_yolo_off_mid_batch_re_gates_later_commands(tmp_path, monkeypa
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
     monkeypatch.setattr("agent.title_generator.maybe_auto_title", lambda *a, **kw: None)
     key = "yolo-off-terminal-batch"

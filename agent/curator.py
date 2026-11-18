@@ -20,7 +20,7 @@ from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from agent.skill_utils import get_disabled_skill_names
 from tools import skill_usage
 from utils import atomic_json_write
@@ -37,7 +37,7 @@ DEFAULT_CONSOLIDATE = False
 # --- .curator_state — persistent scheduler + status ---
 
 def _state_file() -> Path:
-    return get_hermes_home() / "skills" / ".curator_state"
+    return get_slave_home() / "skills" / ".curator_state"
 
 
 def load_state() -> dict[str, Any]:
@@ -81,9 +81,9 @@ def _subdict(node: Any, *keys: str) -> dict[str, Any]:
 
 
 def _read_config_section(*path: str, label: str, log: logging.Logger = logger) -> dict[str, Any]:
-    """Read a nested section of ~/.hermes/config.yaml. Tolerates missing file."""
+    """Read a nested section of ~/.slave/config.yaml. Tolerates missing file."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
         cfg = load_config_readonly()
     except Exception as e:
         log.debug("Failed to load config for %s: %s", label, e)
@@ -120,7 +120,7 @@ _warned_bad_values: set = set()
 
 def _bounded_count(key: str, default: int) -> int:
     """*key* (a ``curator.<key>`` day/hour count), floored at 1 like ``curator prune --days`` already
-    refuses (hermes_cli/curator.py::_cmd_prune). A value < 1 collapses stale_cutoff/archive_cutoff
+    refuses (slave_cli/curator.py::_cmd_prune). A value < 1 collapses stale_cutoff/archive_cutoff
     onto or past "now" in apply_automatic_transitions(), mass-transitioning every skill with any
     past activity on the next automatic pass — unlike the manual prune path this runs unconfirmed,
     so it falls back to the default instead of acting on the bad value."""
@@ -143,7 +143,7 @@ def get_archive_after_days() -> int:
 
 
 def get_consolidate() -> bool:
-    """LLM consolidation pass — OFF by default (prune only, no aux-model fork); ``hermes curator run --consolidate`` overrides per invocation."""
+    """LLM consolidation pass — OFF by default (prune only, no aux-model fork); ``slave curator run --consolidate`` overrides per invocation."""
     return bool(_load_config().get("consolidate", DEFAULT_CONSOLIDATE))
 
 
@@ -158,14 +158,14 @@ def _parse_iso(ts: Optional[str]) -> Optional[datetime]:
 def should_run_now(now: Optional[datetime] = None) -> bool:
     """Gates: curator.enabled, not paused, ``last_run_at`` present AND older than interval_hours. First observation seeds
     ``last_run_at`` to now and defers one interval, so a fresh install/update never mutates the library on its first tick.
-    ``hermes curator run`` bypasses this; the idle check is the caller's."""
+    ``slave curator run`` bypasses this; the idle check is the caller's."""
     from agent.idle_schedule import interval_due
 
     if not is_enabled() or is_paused():
         return False
     return interval_due(
         load_state(), get_interval_hours(), now=now or datetime.now(UTC), save=save_state,
-        seed_summary="deferred first run — curator seeded, will run after one interval; use `hermes curator run --dry-run` to preview now")
+        seed_summary="deferred first run — curator seeded, will run after one interval; use `slave curator run --dry-run` to preview now")
 
 
 # --- Automatic state transitions (pure function, no LLM) ---
@@ -270,7 +270,7 @@ CURATOR_DRY_RUN_BANNER = (
     "produce on a live run — but describe the actions you WOULD take, "
     "not actions you took. A downstream reviewer will read the report "
     "and decide whether to approve a live run with "
-    "`hermes curator run` (no flag).\n"
+    "`slave curator run` (no flag).\n"
     "\n"
     "If you accidentally take a mutating action, say so explicitly in "
     "the summary so the reviewer can revert it.\n"
@@ -279,7 +279,7 @@ CURATOR_DRY_RUN_BANNER = (
 
 
 CURATOR_REVIEW_PROMPT = (
-    "You are running as Hermes' background skill CURATOR. This is an "
+    "You are running as slave-agent’ background skill CURATOR. This is an "
     "UMBRELLA-BUILDING consolidation pass, not a passive audit and not a "
     "duplicate-finder.\n\n"
     "The goal of the skill collection is a LIBRARY OF CLASS-LEVEL "
@@ -309,7 +309,7 @@ CURATOR_REVIEW_PROMPT = (
     "to local curator-managed skills only; external skills are externally "
     "owned and read-only to this background curator.\n"
     "2. DO NOT delete any skill. Archiving (moving the skill's directory "
-    "into ~/.hermes/skills/.archive/) is the maximum destructive action. "
+    "into ~/.slave/skills/.archive/) is the maximum destructive action. "
     "Archives are recoverable; deletion is not.\n"
     "3. DO NOT touch skills shown as pinned=yes. Skip them entirely.\n"
     "3b. DO NOT archive, delete, consolidate, move, or otherwise modify any "
@@ -338,7 +338,7 @@ CURATOR_REVIEW_PROMPT = (
     "How to work — not optional:\n"
     "1. Scan the full candidate list. Identify PREFIX CLUSTERS (skills "
     "sharing a first word or domain keyword). Examples you are likely "
-    "to find: hermes-config-*, hermes-dashboard-*, gateway-*, codex-*, "
+    "to find: slave-config-*, slave-dashboard-*, gateway-*, codex-*, "
     "ollama-*, anthropic-*, gemini-*, mcp-*, salvage-*, pr-*, "
     "competitor-*, python-*, security-*, etc. Expect 10-25 clusters.\n"
     "2. For each cluster with 2+ members, do NOT ask 'are these pairs "
@@ -374,7 +374,7 @@ CURATOR_REVIEW_PROMPT = (
     "then `skill_manage action=delete` on the source. Never a terminal move "
     "— a shell mv/cp writes the same bytes with no ledger entry, so the "
     "archive that follows snapshots an already-stripped package and "
-    "`hermes curator rollback` restores a hollow skill (issue #96962).\n\n"
+    "`slave curator rollback` restores a hollow skill (issue #96962).\n\n"
     "Package integrity — not optional:\n"
     "Before demoting or archiving a skill, inspect it as a COMPLETE "
     "directory package, not just SKILL.md. A skill root may include "
@@ -462,8 +462,8 @@ CURATOR_REVIEW_PROMPT = (
 # --- Per-run reports — {YYYYMMDD-HHMMSS}/run.json + REPORT.md under logs/curator/ ---
 
 def _reports_root() -> Path:
-    """``~/.hermes/logs/curator/`` (telemetry next to agent.log, not under skills/). mkdir'd here too so gateway-only / bare-library entry paths work."""
-    root = get_hermes_home() / "logs" / "curator"
+    """``~/.slave/logs/curator/`` (telemetry next to agent.log, not under skills/). mkdir'd here too so gateway-only / bare-library entry paths work."""
+    root = get_slave_home() / "logs" / "curator"
     try:
         root.mkdir(parents=True, exist_ok=True)
     except OSError as e:
@@ -541,7 +541,7 @@ def _parse_structured_summary(llm_final: str) -> dict[str, list[dict[str, str]]]
     data = None
     if match:
         try:
-            import hermes_yaml as yaml
+            import slave_yaml as yaml
             data = yaml.safe_load(match.group(1))
         except Exception:
             pass
@@ -656,10 +656,10 @@ def _build_rename_summary(*, before_names: set[str], after_report: list[dict[str
     lines = [f"archived {total} skill(s):"] + entries[:SHOW]
     if total > SHOW:
         lines.append(f"  … and {total - SHOW} more")
-    lines.append("full report: hermes curator status")
+    lines.append("full report: slave curator status")
     umbrellas = sorted({e.get("into") for e in diff.consolidated if e.get("into")})
     if umbrellas:
-        lines.append(f"keep an umbrella stable: hermes curator pin {umbrellas[0]}")
+        lines.append(f"keep an umbrella stable: slave curator pin {umbrellas[0]}")
     return "\n".join(lines)
 
 
@@ -693,10 +693,10 @@ def _write_file(path: Path, label: str, render: Any) -> bool:
 
 def _notify_post_curator_run(run_dir: Optional[Path], dry_run: bool) -> None:
     """``post_curator_run`` for a finished pass whose run.json and REPORT.md both exist; fired after the
-    pass's state is saved, so a slow plugin load never delays what ``hermes curator status`` reports."""
+    pass's state is saved, so a slow plugin load never delays what ``slave curator status`` reports."""
     if run_dir is None or not ((run_dir / "run.json").is_file() and (run_dir / "REPORT.md").is_file()):
         return
-    from hermes_cli.lifecycle import invoke_hook  # observers + plugins; each callback isolated there
+    from slave_cli.lifecycle import invoke_hook  # observers + plugins; each callback isolated there
     invoke_hook("post_curator_run", run_dir=str(run_dir), run_json_path=str(run_dir / "run.json"),
                 report_md_path=str(run_dir / "REPORT.md"), dry_run=dry_run)
 
@@ -777,11 +777,11 @@ def _cron_rewrite_lines(entry: dict[str, Any]) -> list[str]:
 _REPORT_SECTIONS = (
     ("consolidated", "Consolidated into umbrella skills",
      "_These skills were **absorbed into another skill** during this run — their content still lives, just under a different name. "
-     "The original directory was moved to `~/.hermes/skills/.archive/` for safety and can be restored via "
-     "`hermes curator restore <name>` if the consolidation was wrong._\n", _consolidated_lines, 50, "see `run.json`"),
+     "The original directory was moved to `~/.slave/skills/.archive/` for safety and can be restored via "
+     "`slave curator restore <name>` if the consolidation was wrong._\n", _consolidated_lines, 50, "see `run.json`"),
     ("pruned", "Pruned — archived for staleness",
      "_These skills were archived without being merged into an umbrella (e.g. stale, unused, or judged irrelevant). "
-     "Directories live under `~/.hermes/skills/.archive/`. Restore any via `hermes curator restore <name>`._\n",
+     "Directories live under `~/.slave/skills/.archive/`. Restore any via `slave curator restore <name>`._\n",
      _pruned_lines, 50, "see `run.json`"),
     ("added", "New skills this run", "_Usually these are new class-level umbrellas created via `skill_manage action=create`._\n",
      lambda n: [f"- `{n}`"], None, ""),
@@ -826,8 +826,8 @@ def _render_report_markdown(p: dict[str, Any]) -> str:
         lines += ["## LLM final summary\n", final, ""]
     elif not error and (p.get("llm_summary") or ""):
         lines += ["## LLM summary\n", p.get("llm_summary"), ""]
-    lines += ["## Recovery\n", "- Restore an archived skill: `hermes curator restore <name>`",
-              "- All archives live under `~/.hermes/skills/.archive/` and are recoverable by `mv`",
+    lines += ["## Recovery\n", "- Restore an archived skill: `slave curator restore <name>`",
+              "- All archives live under `~/.slave/skills/.archive/` and are recoverable by `mv`",
               "- See `run.json` in this directory for the full machine-readable record.", ""]
     return "\n".join(lines)
 
@@ -929,7 +929,7 @@ def run_curator_review(
     recorded in ``state.last_report_path`` so users can read what WOULD have happened."""
     consolidate = get_consolidate() if consolidate is None else consolidate
     start = datetime.now(UTC)
-    hermes_home = get_hermes_home()  # the LLM pass may run on a thread with no profile binding
+    slave_home = get_slave_home()  # the LLM pass may run on a thread with no profile binding
     if dry_run:  # count candidates without mutating state
         counts = {"checked": len(_safe_curated_report()), "marked_stale": 0, "archived": 0, "reactivated": 0}
     else:
@@ -955,7 +955,7 @@ def run_curator_review(
 
     # Persist before the LLM pass so a crash mid-review still records the run.
     # Dry-run does NOT bump last_run_at/run_count (a preview must not push the
-    # next real pass out) but still records a summary for `hermes curator status`.
+    # next real pass out) but still records a summary for `slave curator status`.
     prefix = "dry-run auto: " if dry_run else "auto: "
     state = {**load_state(), "last_run_summary": f"{prefix}{auto_summary}"}
     if not dry_run:
@@ -974,7 +974,7 @@ def run_curator_review(
             llm_meta = _llm_meta("skipped (consolidation off)")
         elapsed = (datetime.now(UTC) - start).total_seconds()
         state2 = {**load_state(), "last_run_duration_seconds": elapsed, "last_run_summary": final_summary}
-        # Per-run report, best-effort; path recorded for `hermes curator status`.
+        # Per-run report, best-effort; path recorded for `slave curator status`.
         after_report = _safe_curated_report()
         report_path = None  # this pass's own report only: state2 still carries the previous pass's path
         try:
@@ -987,7 +987,7 @@ def run_curator_review(
         except Exception as e:
             logger.debug("Curator report write failed: %s", e, exc_info=True)
         save_state(state2)
-        _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, hermes_home)
+        _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, slave_home)
         _notify(on_summary, f"curator: {final_summary}")
         _notify_post_curator_run(report_path, dry_run)
 
@@ -1009,8 +1009,8 @@ def run_curator_review(
 
 # --- Provider/model resolution for the review fork ---
 
-def _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, hermes_home) -> None:
-    from hermes_cli.observability.shared_metrics_loop import record_curator_run
+def _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, slave_home) -> None:
+    from slave_cli.observability.shared_metrics_loop import record_curator_run
 
     def what_changed() -> dict[str, int]:
         before, after = _by_name(before_report), _by_name(after_report)
@@ -1021,7 +1021,7 @@ def _record_run_metric(trigger, dry_run, counts, before_report, after_report, ll
                 "merged": len(diff.consolidated), "patched": patched}
 
     outcome = "skipped" if dry_run else "failed" if llm_meta.get("error") else "success"
-    record_curator_run(trigger=trigger, outcome=outcome, counts=what_changed, hermes_home=hermes_home)
+    record_curator_run(trigger=trigger, outcome=outcome, counts=what_changed, slave_home=slave_home)
 
 
 class _ReviewRuntimeBinding(NamedTuple):
@@ -1071,8 +1071,8 @@ def _resolve_review_provider() -> tuple:
     rp: dict[str, Any] = {}
     overrides, provider, model_name, binding = {}, None, "", None
     try:
-        from hermes_cli.config import load_config_readonly
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from slave_cli.config import load_config_readonly
+        from slave_cli.runtime_provider import resolve_runtime_provider
         binding = _resolve_review_runtime(load_config_readonly())
         model_name = binding.model
         rp = resolve_runtime_provider(
@@ -1107,8 +1107,8 @@ def _run_llm_review(prompt: str) -> dict[str, Any]:
         if isinstance(acp_command, str) and acp_command:
             agent_kwargs.update(acp_command=acp_command, acp_args=list(rp.get("args") or []))
         from agent.conversation_compression_checkpoint import checkpoint_required_from_config
-        from hermes_cli.config import load_config_readonly
-        from hermes_constants import resolve_reasoning_config
+        from slave_cli.config import load_config_readonly
+        from slave_constants import resolve_reasoning_config
 
         review_agent = AIAgent(
             model=model_name, provider=provider, api_key=rp.get("api_key"), base_url=rp.get("base_url"),
@@ -1174,7 +1174,7 @@ _CLAIM_STALE_SECONDS = 3600.0
 
 
 def _run_claim_path() -> Path:
-    return get_hermes_home() / "skills" / ".locks" / "curator-run"
+    return get_slave_home() / "skills" / ".locks" / "curator-run"
 
 
 def _claim_run() -> bool:

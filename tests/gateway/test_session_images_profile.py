@@ -20,8 +20,8 @@ async def test_upload_profile_selector_names_own_home_or_is_refused(tmp_path, mo
     root = tmp_path / 'root'
     home = root / 'profiles' / 'ops'
     home.mkdir(parents=True)
-    monkeypatch.setenv('HERMES_HOME', str(root))
-    monkeypatch.setattr('hermes_constants.get_default_hermes_root', lambda: root)
+    monkeypatch.setenv('SLAVE_HOME', str(root))
+    monkeypatch.setattr('slave_constants.get_default_slave_root', lambda: root)
     with open_persistence(profile_scope(home=home)) as db:
         seed_session(db, 's', 'test')
         authority = SessionAuthority(SimpleNamespace(_draining=False), profile_id=str(home),

@@ -35,7 +35,7 @@ def test_model_short_drops_vendor_prefix(model, expected):
 
 def test_home_relative_cwd_collapses_home(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
-    sub = tmp_path / "projects" / "hermes"
+    sub = tmp_path / "projects" / "slave"
     sub.mkdir(parents=True)
     result = _home_relative_cwd(str(sub))
     assert result == "~/projects/hermes"
@@ -47,8 +47,8 @@ def test_home_relative_cwd_collapses_home(tmp_path, monkeypatch):
 
 def test_format_footer_all_fields(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("TERMINAL_CWD", str(tmp_path / "projects" / "hermes"))
-    (tmp_path / "projects" / "hermes").mkdir(parents=True)
+    monkeypatch.setenv("TERMINAL_CWD", str(tmp_path / "projects" / "slave"))
+    (tmp_path / "projects" / "slave").mkdir(parents=True)
     out = format_runtime_footer(
         model="openrouter/openai/gpt-5.4",
         context_tokens=68000,
@@ -264,13 +264,13 @@ def test_format_footer_served_model_is_opt_in_and_skips_same_model():
     differs from the requested one; the default field set never shows it."""
     # Default fields: served model is invisible.
     assert "→" not in format_runtime_footer(
-        model="hermes-router", context_tokens=0, context_length=None, cwd="/x",
+        model="slave-router", context_tokens=0, context_length=None, cwd="/x",
         served_model="gpt-4o-2024-11-20")
     line = format_runtime_footer(
-        model="hermes-router", context_tokens=0, context_length=None, cwd="/x",
+        model="slave-router", context_tokens=0, context_length=None, cwd="/x",
         served_model="gpt-4o-2024-11-20", fields=["served_model"])
-    assert line == "hermes-router → gpt-4o-2024-11-20"
-    # Hermes fallback route: requested primary → active model.
+    assert line == "slave-router → gpt-4o-2024-11-20"
+    # Slave fallback route: requested primary → active model.
     line = format_runtime_footer(
         model="qwen/qwen3.8-max", context_tokens=0, context_length=None, cwd="/x",
         requested_model="gpt-5.6-sol", served_model="qwen/qwen3.8-max", fields=["served_model"])

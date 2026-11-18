@@ -173,8 +173,8 @@ export function RelayLinkPanel({
         <Badge tone="secondary">Team Gateway</Badge>
         <span className="text-xs text-muted-foreground">
           {portalUrl
-            ? `${platform.name} reaches this agent through the shared Hermes bot. This agent's accounts are linked from Nous Portal.`
-            : `${platform.name} reaches this agent through the shared Hermes bot. Link your ${platform.name} account to it; no bot token needed.`}
+            ? `${platform.name} reaches this agent through the shared slave-agent bot. This agent's accounts are linked from Nous Portal.`
+            : `${platform.name} reaches this agent through the shared slave-agent bot. Link your ${platform.name} account to it; no bot token needed.`}
         </span>
       </div>
 

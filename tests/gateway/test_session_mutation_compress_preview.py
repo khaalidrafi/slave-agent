@@ -11,8 +11,8 @@ import pytest
 from gateway.session_authority import SessionAuthority
 from gateway.session_controls import AuthorityConnection
 from gateway.session_local import create_local_session
-from hermes_cli.gateway_client import GatewayClientError
-from hermes_cli.gateway_mutations import slash_mutation
+from slave_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_mutations import slash_mutation
 from tests.fixtures.storage_read import conversation, session_row, transcript_rows
 from tests.fixtures.storage_seed import seed_messages
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
@@ -252,7 +252,7 @@ async def test_no_op_compress_without_a_resident_agent_estimates_the_stored_prom
                                                               model='frozen', toolsets=[]))
     seed_messages(db, ref.session_id, {'role': 'user', 'content': 'hi'})
     seed_messages(db, ref.session_id, {'role': 'assistant', 'content': 'hello'})
-    prompt = 'You are Hermes. ' * 400
+    prompt = 'You are Slave. ' * 400
     tools = [{'type': 'function', 'function': {'name': 'read_file', 'description': 'Read a file. ' * 50,
                                                'parameters': {'type': 'object', 'properties': {}}}}]
     db.sessions.update_system_prompt(ref.session_id, prompt)

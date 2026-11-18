@@ -33,8 +33,8 @@ nice -n 19 pip install -e . || {
 }
 
 echo "==> compile smoke (the audit's cheap proof: the tree parses)"
-nice -n 19 python -m compileall -q hermes_cli agent tools gateway persona plugins || true
-nice -n 19 python -c "import hermes_constants, persona; print('import smoke: OK')"
+nice -n 19 python -m compileall -q slave_cli agent tools gateway persona plugins || true
+nice -n 19 python -c "import slave_constants, persona; print('import smoke: OK')"
 
 echo
 echo "bootstrap done. Run: $DIR/.venv/bin/python cli.py"

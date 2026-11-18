@@ -103,11 +103,11 @@ def test_smart_guard_reviews_the_command_after_a_literal_hash(tmp_path, monkeypa
     # Exercise real config -> command guard -> smart reviewer; replace only the
     # model call, so no provider key or command execution is needed.
     import agent.auxiliary_client as auxiliary
-    from hermes_cli import config
+    from slave_cli import config
     from tools.approval import check_all_command_guards
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
     (tmp_path / "config.yaml").write_text(
         "approvals:\n  mode: smart\nsecurity:\n  tirith_enabled: false\n",
         encoding="utf-8",

@@ -69,7 +69,7 @@ def _split(arg):
 
 
 def _first_token(arg):
-    """/kanban's verb as its handler parses it (shlex, hermes_cli/kanban.py ``run_slash``)."""
+    """/kanban's verb as its handler parses it (shlex, slave_cli/kanban.py ``run_slash``)."""
     tokens = iter(_split(arg))
     for token in tokens:
         if token == '--board':
@@ -120,12 +120,12 @@ _REFUSED_ARGUMENTS = {
 # with the client. Rides the ``unsupported_command`` refusal as ``data.detail`` (the reason stays the
 # same, so shipped clients keep working); Ink and Desktop print it under the refusal.
 REFUSAL_HINTS = {
-    'export': 'Run `hermes profile export [name] -o <file>` in a terminal.',
-    'import': 'Run `hermes profile import <archive> [--name <name>]` in a terminal.',
-    'snapshot': 'Run `hermes backup --quick` in a terminal (restore: `hermes --cli`, then /snapshot restore).',
-    'handoff': 'Hand off from the classic CLI: `hermes --cli --resume <session>`, then /handoff <platform>.',
-    'hatch': 'Generate a pet from the classic CLI (`hermes --cli`, then /hatch), or use /pet to pick one.',
-    'worktree': 'Start in a fresh worktree with `hermes -w`, or use the classic CLI (`hermes --cli`).',
+    'export': 'Run `slave profile export [name] -o <file>` in a terminal.',
+    'import': 'Run `slave profile import <archive> [--name <name>]` in a terminal.',
+    'snapshot': 'Run `slave backup --quick` in a terminal (restore: `slave --cli`, then /snapshot restore).',
+    'handoff': 'Hand off from the classic CLI: `slave --cli --resume <session>`, then /handoff <platform>.',
+    'hatch': 'Generate a pet from the classic CLI (`slave --cli`, then /hatch), or use /pet to pick one.',
+    'worktree': 'Start in a fresh worktree with `slave -w`, or use the classic CLI (`slave --cli`).',
     'palette': 'Type / to search commands (the composer completes and filters them).',
 }
 
@@ -158,7 +158,7 @@ def _parse(params, dispatch):
 
 def _resolve_alias(name, arg):
     from gateway.run import _load_gateway_config
-    from hermes_cli.commands import resolve_command
+    from slave_cli.commands import resolve_command
     quick = _load_gateway_config().get('quick_commands') or {}
     seen = set()
     while resolve_command(name) is None and name in quick:
@@ -184,7 +184,7 @@ def _runner_command(name):
     slash command, else None (read in the owning profile's scope). The exact registered name wins over
     Telegram's ``_`` -> ``-`` form, as main's CLI looked it up: ``foo_bar`` is its own command."""
     from gateway.run import _load_gateway_config
-    from hermes_cli.plugins import get_plugin_command_handler
+    from slave_cli.plugins import get_plugin_command_handler
     entry = (_load_gateway_config().get('quick_commands') or {}).get(name)
     if isinstance(entry, dict) and entry.get('type') == 'exec':
         return 'exec', str(entry.get('command') or '')
@@ -214,12 +214,12 @@ async def _run_runner_command(runner, live, name, arg, kind, shell):
     # Plugin-only: the runner's quick commands are the launch profile's under multiplex, and this
     # session's own were already resolved above in its profile (``_resolve_alias``/``_runner_command``),
     # so is the registered name (``shell``) the handler is looked up by.
-    from hermes_cli.plugins import get_plugin_command_handler
+    from slave_cli.plugins import get_plugin_command_handler
     handler = get_plugin_command_handler(shell)
     if handler is None:
         raise AuthorityRefusal('unsupported_command')
     event = MessageEvent(text='/' + name + (' ' + arg if arg else ''), source=live.source)
-    # The session's own entry, so HERMES_SESSION_ID is bound as on its turns: a background job
+    # The session's own entry, so SLAVE_SESSION_ID is bound as on its turns: a background job
     # the handler starts records this session as its parent.
     entry = await asyncio.to_thread(runner.session_store.lookup_by_session_key, live.route)
     try:
@@ -304,7 +304,7 @@ async def _on_own_thread(fn):
             except RuntimeError:  # the loop closed (gateway shutdown): nobody awaits it any more
                 pass
     try:
-        spawn_context_thread(run, name='hermes-pre-command').start()
+        spawn_context_thread(run, name='slave-pre-command').start()
     except RuntimeError as exc:  # no thread available: this delivery is skipped, as the dispatcher skips
         logger.warning('pre_command delivery skipped: %s', exc)
         return
@@ -336,7 +336,7 @@ def _pre_command(authority, ref, canonical, alias, arg):
 
     def fire():  # bound to the session it fires for: a key-less inject_message from the hook lands there
         from gateway.session_context import scoped_session_key
-        from hermes_cli.plugins import fire_pre_command_hook
+        from slave_cli.plugins import fire_pre_command_hook
         with _profile_runtime_scope(home), scoped_session_key(live.route):
             fire_pre_command_hook(surface='cli', command=canonical, alias_used=alias, args_raw=arg,
                                   session_key=ref.session_id, platform='cli')
@@ -370,8 +370,8 @@ async def observe_command(connection, ref, params):
     """``command.observe``: a recognized command the classic CLI or Ink runs itself on this session.
     ``pre_command`` fires here, in the session's profile, after the reply: the client never waits on a
     plugin and never loads one. Plain data only (the command name as typed and its arguments)."""
-    from hermes_cli.commands import resolve_command
-    from hermes_cli.profiles import profile_matches_home
+    from slave_cli.commands import resolve_command
+    from slave_cli.profiles import profile_matches_home
     authority, actor = connection.authority, connection.actor
     authority.authorize(actor, ref, 'session:read')
     name, arg = _parse(params, True)
@@ -423,8 +423,8 @@ async def execute_command(connection, ref, params, *, dispatch=False):
     authority, actor = connection.authority, connection.actor
     authority.authorize(actor, ref, 'session:read')
     name, arg = _parse(params, dispatch)
-    from hermes_cli.commands import resolve_command
-    from hermes_cli.profiles import profile_matches_home
+    from slave_cli.commands import resolve_command
+    from slave_cli.profiles import profile_matches_home
     home = Path(authority.profile_id)
     if params.get('profile') and not profile_matches_home(params['profile'], home):
         raise AuthorityRefusal('profile_mismatch')

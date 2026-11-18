@@ -14,7 +14,7 @@ MODES = (None, False, True)
 def _policy(tmp_path, monkeypatch, setting):
     home = tmp_path / f"home-{setting}"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     display = {} if setting is None else {"suppress_warning_notifications": setting}
     (home / "config.yaml").write_text(json.dumps({"display": display}))
     return home
@@ -126,7 +126,7 @@ def test_cli_vision_fallback_notice_honors_policy(tmp_path, monkeypatch, setting
         async def _vision(**kwargs): raise RuntimeError("API down")
     else:
         async def _vision(**kwargs): return json.dumps({"error": "vision unavailable"})
-    cli_obj = climod.HermesCLI.__new__(climod.HermesCLI)
+    cli_obj = climod.SlaveCLI.__new__(climod.SlaveCLI)
     cli_obj.agent = types.SimpleNamespace(_notification_config=None)
     with _patch("tools.vision_tools.vision_analyze_tool", side_effect=_vision):
         result = cli_obj._preprocess_images_with_vision("check this", [img])

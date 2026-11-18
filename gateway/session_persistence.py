@@ -26,9 +26,9 @@ _DB_UNPINNED = object()
 # Self-documenting sentinel written first into sessions.json; "_" keys are skipped on load.
 _SESSIONS_JSON_README = (
     "LEGACY MIRROR of the gateway routing index (the primary copy lives in the gateway_routing "
-    "table in ~/.hermes/state.db). Maps messaging session keys (agent:main:<platform>:...) to "
+    "table in ~/.slave/state.db). Maps messaging session keys (agent:main:<platform>:...) to "
     "active session IDs. This is NOT the session list. ALL sessions (CLI, TUI, and gateway) live "
-    "in ~/.hermes/state.db and are shown by `hermes sessions list` and `/sessions`. Disable this "
+    "in ~/.slave/state.db and are shown by `slave sessions list` and `/sessions`. Disable this "
     "file with `gateway.write_sessions_json: false` in config.yaml."
 )
 
@@ -43,7 +43,7 @@ def owner_rule():
     sign-in providers whose stamps name that owner (a plugin-registered provider counts too), and every shipped
     messaging platform's label."""
     from gateway.owner_identity import _BUNDLED_LOGINS, host_owner_subject
-    from hermes_cli.dashboard_auth.registry import list_session_providers
+    from slave_cli.dashboard_auth.registry import list_session_providers
     from persistence.authority.vocabulary import OwnerRule
     return OwnerRule(host_subject=host_owner_subject(),
                      login_providers=_BUNDLED_LOGINS | {provider.name for provider in list_session_providers()},
@@ -52,8 +52,8 @@ def owner_rule():
 
 @functools.lru_cache(maxsize=1)
 def _messaging_labels():
-    """Every platform Hermes ships: the enum and the bundled platform plugins. A runtime-registered catalog plugin
-    (hermes-mobile's ``mobile``) is not in it: its rows are routed, which excludes them."""
+    """Every platform slave-agent ships: the enum and the bundled platform plugins. A runtime-registered catalog plugin
+    (slave-mobile's ``mobile``) is not in it: its rows are routed, which excludes them."""
     from gateway.config import Platform
     bundled, aliases = Platform._scan_bundled_plugin_platforms()
     return frozenset({platform.value for platform in Platform} | set(bundled) | set(aliases))
@@ -115,17 +115,17 @@ class SessionPersistenceMixin:
 
     def _open_persistence_for_active_scope(self, home: Optional[Path] = None):
         """Storage interface handle for the active profile scope's store. ``home`` pins the profile;
-        otherwise the scope follows the context-local HERMES_HOME (resolved per call so multiplexed
+        otherwise the scope follows the context-local SLAVE_HOME (resolved per call so multiplexed
         profiles reach their own store). Handles are cached per profile folder; failed opens enter
         a bounded backoff during which callers get None and keep using the JSONL fallback.
 
         Resolving here rather than once in ``__init__`` is the whole fix for #88532: it lets the scoping
         that the multiplexed inbound path already performs actually reach session storage.
         """
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
         from persistence_assembly import open_persistence, profile_scope
 
-        scope = profile_scope(home=Path(home) if home is not None else Path(get_hermes_home()))
+        scope = profile_scope(home=Path(home) if home is not None else Path(get_slave_home()))
 
         def _open():
             try:
@@ -196,7 +196,7 @@ class SessionPersistenceMixin:
         return None if not profile or profile == "default" else profile
 
     def _profile_home_for_key(self, session_key: Optional[str]) -> Optional[Path]:
-        """HERMES_HOME of the profile owning *session_key*, or None (no named owner or
+        """SLAVE_HOME of the profile owning *session_key*, or None (no named owner or
         unresolvable)."""
         profile = self._named_profile_for_key(session_key)
         if profile is None:
@@ -206,7 +206,7 @@ class SessionPersistenceMixin:
             return cache[profile]
         home: Optional[Path] = None
         try:
-            from hermes_cli.profiles import get_profile_dir, profile_exists
+            from slave_cli.profiles import get_profile_dir, profile_exists
             if profile_exists(profile):
                 home = Path(get_profile_dir(profile))
         except Exception as exc:
@@ -221,7 +221,7 @@ class SessionPersistenceMixin:
     def _persistence_for_key(self, session_key: Optional[str]):
         """The storage interface handle on the store holding *session_key*'s rows, whatever scope is
         active (the owning profile is encoded in the key). The active scope follows the ambient
-        HERMES_HOME that only the inbound message path installs; unscoped background work (expiry
+        SLAVE_HOME that only the inbound message path installs; unscoped background work (expiry
         watcher) would otherwise write profile rows into the ROOT store until the stale-route self-heal
         drops a live conversation.
 

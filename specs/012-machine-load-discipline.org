@@ -49,7 +49,7 @@ order is explicit: "BEWARE of freezing this machine!"
    that ~qoder --list-sessions~-class node startups are themselves ≈1 GB
    events on this box.
 7. On non-FHS distros the test runner needs its interpreter named:
-   ~HERMES_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh …~ (PM
+   ~SLAVE_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh …~ (PM
    bootstrap stages binaries whose ELF interpreter does not exist there) —
    also a load-safety matter: do not let the runner hunt for interpreters.
 8. /tmp gets reaped on this box (a staged /tmp/ao script vanished mid-run):

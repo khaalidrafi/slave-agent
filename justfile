@@ -5,13 +5,13 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 [group('setup')]
 [unix]
 setup:
-    bash setup-hermes.sh --runtime-only --test-environment
+    bash setup-slave.sh --runtime-only --test-environment
 
 # Provision the PM tools, Python runtime and test environment
 [group('setup')]
 [windows]
 setup:
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup-hermes.ps1 -RuntimeOnly
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup-slave.ps1 -RuntimeOnly
 
 # Install the JS workspaces from pnpm-lock.yaml
 [group('setup')]
@@ -65,7 +65,7 @@ check-icons:
 check-repo-guards:
     scripts/ci/local_step.sh scripts/ci/check_infographic_images.py scripts/ci/check_common_ancestor.py scripts/ci/check_contributor_emails.py 'scripts/ci/scan_supply_chain.py patterns' 'scripts/ci/scan_supply_chain.py dependency-bounds'
 
-# Fail when uv.lock is out of sync with pyproject.toml (re-resolves against PyPI; prepares pm's runtime in the Hermes home)
+# Fail when uv.lock is out of sync with pyproject.toml (re-resolves against PyPI; prepares pm's runtime in the Slave home)
 [group('check')]
 check-uv-lock:
     scripts/ci/local_step.sh scripts/ci/verify_uv_lock.py
@@ -96,7 +96,7 @@ test +args:
 test-all:
     scripts/run_tests.sh
 
-# Run every JS workspace's tests (builds @hermes/ink first, as the TUI's check does)
+# Run every JS workspace's tests (builds @slave-agent/ink first, as the TUI's check does)
 [group('test')]
 test-js:
     pnpm --dir ui-tui run build:ink
@@ -132,7 +132,7 @@ desktop-build:
 tui:
     pnpm --dir ui-tui run dev
 
-# Run a command against a throwaway HERMES_HOME (scripts/dev-sandbox.sh)
+# Run a command against a throwaway SLAVE_HOME (scripts/dev-sandbox.sh)
 [group('dev')]
 [positional-arguments]
 sandbox *args:

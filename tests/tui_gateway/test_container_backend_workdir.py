@@ -30,11 +30,11 @@ def _write_cfg(home: Path, body: str) -> Path:
 
 @pytest.fixture
 def launch_home(tmp_path, monkeypatch):
-    """A temp launch HERMES_HOME the gateway and the cache-mount mapper both read."""
-    home = tmp_path / "hermes-home"
+    """A temp launch SLAVE_HOME the gateway and the cache-mount mapper both read."""
+    home = tmp_path / "slave-home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", home)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", home)
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.delenv("TERMINAL_CWD", raising=False)
     # The desktop's gateway runs from the user's home: a host dir holding the user's files.
@@ -110,4 +110,4 @@ def test_attached_host_file_is_staged_and_agent_sees_container_path(launch_home,
         f"summarise @file:{server._format_ref_value(ref_path)}", cwd=cwd, allowed_root=cwd,
         context_length=200_000)
     assert not ctx.warnings, ctx.warnings
-    assert f"available on disk at `/root/.hermes/attachments/{stored.name}`" in ctx.message
+    assert f"available on disk at `/root/.slave/attachments/{stored.name}`" in ctx.message

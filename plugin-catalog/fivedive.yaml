@@ -3,7 +3,7 @@ repo: https://github.com/5dive-ai/5dive-plugins
 sha: d9e8ad1ad0f6e109d54a213e743d25284389f875
 subdir: plugins/dashboard/hermes
 title: 5dive app
-description: "5dive app chat for Hermes: talk to your Hermes agent from the 5dive web and mobile app (text, voice notes, files). Disclosure — local spool folder only (0700, the agent's own user); reads the upload files the 5dive bridge names in a message; no network calls, no listener, no shell commands, no stored credentials."
+description: "5dive app chat for slave-agent: talk to your slave-agent from the 5dive web and mobile app (text, voice notes, files). Disclosure — local spool folder only (0700, the agent's own user); reads the upload files the 5dive bridge names in a message; no network calls, no listener, no shell commands, no stored credentials."
 maintainer: 5dive-ai
 tier: community
 category: platform

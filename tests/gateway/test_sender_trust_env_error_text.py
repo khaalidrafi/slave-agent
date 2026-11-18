@@ -63,7 +63,7 @@ def _weixin(monkeypatch):
 @pytest.mark.parametrize("trust_env", [False, True])
 @pytest.mark.parametrize("sender", [_line, _weixin], ids=["line", "weixin"])
 def test_trust_env_false_keeps_the_real_api_error(tmp_path, monkeypatch, sender, trust_env):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(f"gateway:\n  trust_env: {str(trust_env).lower()}\n")
     for name in ("HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy",
                  "NO_PROXY", "no_proxy"):
@@ -89,7 +89,7 @@ def test_wecom_connect_under_trust_env_false_never_shows_the_proxy_secret(tmp_pa
     from gateway.config import PlatformConfig
     from plugins.platforms.wecom.adapter import WeComAdapter
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("gateway:\n  trust_env: false\n")
     for name in ("HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy",
                  "NO_PROXY", "no_proxy"):

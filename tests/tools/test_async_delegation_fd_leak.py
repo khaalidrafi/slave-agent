@@ -12,7 +12,7 @@ import sqlite3
 
 import pytest
 
-from hermes_cli.sqlite_safe_read import has_live_connection
+from slave_cli.sqlite_safe_read import has_live_connection
 from persistence import PermanentStoreError
 from tools import async_delegation as ad
 from persistence_assembly import profile_scope

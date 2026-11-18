@@ -1,6 +1,6 @@
-"""The TUI gateway child imports the tree it was launched from, whatever HERMES_PYTHON_SRC_ROOT says.
+"""The TUI gateway child imports the tree it was launched from, whatever SLAVE_PYTHON_SRC_ROOT says.
 
-A checkout's dev shell exports HERMES_PYTHON_SRC_ROOT=<checkout>. An install started from that
+A checkout's dev shell exports SLAVE_PYTHON_SRC_ROOT=<checkout>. An install started from that
 shell must not run the checkout's agent code: its own CLI over another tree's ``run_agent``.
 """
 
@@ -19,8 +19,8 @@ def test_entry_ignores_an_inherited_source_root(tmp_path):
     (decoy / "run_agent.py").write_text("raise SystemExit('imported the decoy tree')\n", encoding="utf-8")
 
     env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
-    env.update(PYTHONPATH=str(PROJECT_ROOT), HERMES_PYTHON_SRC_ROOT=str(decoy),
-               HERMES_HOME=str(tmp_path / "home"))
+    env.update(PYTHONPATH=str(PROJECT_ROOT), SLAVE_PYTHON_SRC_ROOT=str(decoy),
+               SLAVE_HOME=str(tmp_path / "home"))
     report = tmp_path / "report.json"
     # tui_gateway routes stdout to stderr (the JSON-RPC channel), so the probe writes a file.
     result = subprocess.run(

@@ -34,10 +34,10 @@ async def _legacy_ws_snapshot(root, home, env, requests):
     shutil.copy2(home / 'config.yaml', legacy_home / 'config.yaml')
     for directory in ('skills', 'plugins'):
         shutil.copytree(home / directory, legacy_home / directory)
-    legacy_env = {**env, 'HERMES_HOME': str(legacy_home),
-                  'HERMES_DASHBOARD_SESSION_TOKEN': 'disposable-discovery-token'}
+    legacy_env = {**env, 'SLAVE_HOME': str(legacy_home),
+                  'SLAVE_DASHBOARD_SESSION_TOKEN': 'disposable-discovery-token'}
     with (home.parent / 'legacy-serve.log').open('w+') as log:
-        process = subprocess.Popen([sys.executable, '-m', 'hermes_cli.main', 'serve',  # noqa: ASYNC220 -- Popen returns immediately; the test drives the child through its handle
+        process = subprocess.Popen([sys.executable, '-m', 'slave_cli.main', 'serve',  # noqa: ASYNC220 -- Popen returns immediately; the test drives the child through its handle
                                     '--host', '127.0.0.1', '--port', '0', '--skip-build', '--isolated'],
                                    cwd=root, env=legacy_env, stdin=subprocess.DEVNULL,
                                    stdout=log, stderr=subprocess.STDOUT)
@@ -48,7 +48,7 @@ async def _legacy_ws_snapshot(root, home, env, requests):
             while process.poll() is None and time.monotonic() < deadline:
                 log.seek(0)
                 output = log.read()
-                if match := re.search(r'HERMES_BACKEND_READY port=(\d+)', output):
+                if match := re.search(r'SLAVE_BACKEND_READY port=(\d+)', output):
                     port = int(match.group(1))
                     break
                 await asyncio.sleep(.1)
@@ -96,7 +96,7 @@ def test_ordinary_daemon_discovery_matches_legacy_extensions(tmp_path):
     (plugin / '__init__.py').write_text(
         "def register(ctx):\n    ctx.register_command('probe-plugin', lambda args: args, description='Disposable plugin discovery')\n")
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED='1')
     requests = [('commands.catalog', {}), *[('complete.slash', {'text': text})
         for text in ('/', '/probe', '/probe-quick', '/help', '/details c', 'plain')]]
@@ -116,8 +116,8 @@ sys.__stdout__.write(json.dumps(results) + '\\n')
                 pass
         ticket = control(home, 'session-ticket', {
             'profile_id': str(home), 'instance_id': descriptor['instance_id'], 'purpose': 'interactive'})
-        async with connect(url, subprotocols=['hermes-gateway-v1',
-                           'hermes-gateway-ticket.' + ticket['ticket']]) as ws:
+        async with connect(url, subprotocols=['slave-gateway-v1',
+                           'slave-gateway-ticket.' + ticket['ticket']]) as ws:
             async def rpc(method, params):
                 await ws.send(json.dumps({'jsonrpc': '2.0', 'id': method, 'method': method, 'params': params}))
                 async with asyncio.timeout(20):
@@ -185,7 +185,7 @@ sys.__stdout__.write(json.dumps(results) + '\\n')
 @pytest.mark.asyncio
 async def test_discovery_authorizes_before_scanning(tmp_path, monkeypatch):
     from agent import skill_commands
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from gateway.session_controls import AuthorityConnection
 
     def forbidden(*args, **kwargs):

@@ -1,6 +1,6 @@
 """A real profile gateway authority that admits cron fires without running an agent turn.
 
-Shared by the cron run-history suites (tests/hermes_state, tests/hermes_cli): fires go through
+Shared by the cron run-history suites (tests/slave_state, tests/slave_cli): fires go through
 the real producer (``gateway/session_cron.py``) over SQLite, so run history reads exactly what a
 scheduler fire writes.
 """
@@ -18,7 +18,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 def cron_owner(home, monkeypatch):
     """The owner of the profile at *home*, over ``home/state.db``."""
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     (home / 'config.yaml').write_text('model: test-model\n', encoding='utf-8')
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {}, 'platform_toolsets': {'cli': []}})
     persistence = storage_handle(home)

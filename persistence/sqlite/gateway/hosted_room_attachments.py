@@ -19,7 +19,7 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, TypeVar
 
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 from persistence import JsonValue, PermanentStoreError
 from persistence.gateway.hosted_rooms import (
     AttachmentConflictError,

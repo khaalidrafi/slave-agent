@@ -1,4 +1,4 @@
-"""Regression test for the ``HermesMCPOAuthProvider.async_auth_flow`` bidirectional
+"""Regression test for the ``SlaveMCPOAuthProvider.async_auth_flow`` bidirectional
 generator bridge.
 
 PR #11383 introduced a subclass method that wrapped the SDK's ``auth_flow`` with::
@@ -39,7 +39,7 @@ pytest.importorskip("mcp.client.auth.oauth2", reason="MCP SDK 1.26.0+ required")
 
 
 @pytest.mark.asyncio
-async def test_hermes_provider_forwards_401_triggers_refresh(tmp_path, monkeypatch):
+async def test_slave_provider_forwards_401_triggers_refresh(tmp_path, monkeypatch):
     """A 401 response MUST flow into the inner generator and trigger the
     SDK's 401 recovery branch.
 
@@ -56,15 +56,15 @@ async def test_hermes_provider_forwards_401_triggers_refresh(tmp_path, monkeypat
     from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import HermesTokenStorage
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import SlaveTokenStorage
+    from tools.mcp_oauth_manager import _SLAVE_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _HERMES_PROVIDER_CLS is not None
+    assert _SLAVE_PROVIDER_CLS is not None
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     reset_manager_for_tests()
 
-    storage = HermesTokenStorage("srv")
+    storage = SlaveTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="old_access",
@@ -85,9 +85,9 @@ async def test_hermes_provider_forwards_401_triggers_refresh(tmp_path, monkeypat
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="Hermes Agent",
+        client_name="slave-agent",
     )
-    provider = _HERMES_PROVIDER_CLS(
+    provider = _SLAVE_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,
@@ -133,7 +133,7 @@ async def test_long_lived_resource_request_does_not_block_concurrent_post(
 
     MCP SDK 2.0.0 wraps its entire auth-flow generator in one lock.  Leaving
     the GET response pending then prevents a concurrent POST from even
-    acquiring its Bearer token.  Hermes narrows that lock around resource I/O
+    acquiring its Bearer token.  slave-agent narrows that lock around resource I/O
     while retaining it for OAuth state transitions.
     """
     from tools.mcp_tool import sdk_httpx
@@ -141,15 +141,15 @@ async def test_long_lived_resource_request_does_not_block_concurrent_post(
     from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import HermesTokenStorage
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import SlaveTokenStorage
+    from tools.mcp_oauth_manager import _SLAVE_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _HERMES_PROVIDER_CLS is not None
+    assert _SLAVE_PROVIDER_CLS is not None
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     reset_manager_for_tests()
 
-    storage = HermesTokenStorage("srv")
+    storage = SlaveTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="access-token",
@@ -168,12 +168,12 @@ async def test_long_lived_resource_request_does_not_block_concurrent_post(
         )
     )
 
-    provider = _HERMES_PROVIDER_CLS(
+    provider = _SLAVE_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=OAuthClientMetadata(
             redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-            client_name="Hermes Agent",
+            client_name="slave-agent",
         ),
         storage=storage,
         redirect_handler=_noop_redirect,
@@ -244,7 +244,7 @@ async def test_fabricated_dcr_registration_rejected_before_network(tmp_path, mon
     ``registration_endpoint`` in their ASM, so the SDK falls back to guessing
     ``POST {server_origin}/register`` (``create_client_registration_request``,
     mcp/client/auth/utils.py) — a URL those servers answer with an opaque 404
-    (GH#78190). The guard in ``HermesMCPOAuthProvider`` must intercept that
+    (GH#78190). The guard in ``SlaveMCPOAuthProvider`` must intercept that
     guessed request and raise an actionable ``OAuthRegistrationError`` before
     any network call, instead of letting the gateway burn the reconnect
     ladder on an unrecoverable registration failure.
@@ -259,24 +259,24 @@ async def test_fabricated_dcr_registration_rejected_before_network(tmp_path, mon
     from mcp.shared.auth import OAuthClientMetadata
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import HermesTokenStorage
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import SlaveTokenStorage
+    from tools.mcp_oauth_manager import _SLAVE_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _HERMES_PROVIDER_CLS is not None, "SDK OAuth types must be available"
+    assert _SLAVE_PROVIDER_CLS is not None, "SDK OAuth types must be available"
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     reset_manager_for_tests()
 
     # Empty storage: no tokens, no client_info — the SDK's 401 branch must
     # take the registration path (this is the cold gateway state for a
     # provider whose cached client is gone).
-    storage = HermesTokenStorage("srv")
+    storage = SlaveTokenStorage("srv")
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="Hermes Agent",
+        client_name="slave-agent",
     )
-    provider = _HERMES_PROVIDER_CLS(
+    provider = _SLAVE_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,
@@ -345,7 +345,7 @@ async def test_fabricated_dcr_registration_rejected_before_network(tmp_path, mon
     assert "does not support automatic client registration" in text
     assert "https://example.com/register" in text
     assert "config.yaml" in text
-    assert "hermes mcp login srv" in text
+    assert "slave mcp login srv" in text
     await flow.aclose()
 
 
@@ -364,20 +364,20 @@ async def test_advertised_registration_endpoint_passes_through(tmp_path, monkeyp
     from mcp.shared.auth import OAuthClientMetadata
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import HermesTokenStorage
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import SlaveTokenStorage
+    from tools.mcp_oauth_manager import _SLAVE_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _HERMES_PROVIDER_CLS is not None, "SDK OAuth types must be available"
+    assert _SLAVE_PROVIDER_CLS is not None, "SDK OAuth types must be available"
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     reset_manager_for_tests()
 
-    storage = HermesTokenStorage("srv")
+    storage = SlaveTokenStorage("srv")
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="Hermes Agent",
+        client_name="slave-agent",
     )
-    provider = _HERMES_PROVIDER_CLS(
+    provider = _SLAVE_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,
@@ -459,22 +459,22 @@ async def test_guard_ignores_non_fabricated_post_paths(tmp_path, monkeypatch):
     from mcp.shared.auth import OAuthClientMetadata, OAuthMetadata
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import HermesTokenStorage
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import SlaveTokenStorage
+    from tools.mcp_oauth_manager import _SLAVE_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _HERMES_PROVIDER_CLS is not None, "SDK OAuth types must be available"
+    assert _SLAVE_PROVIDER_CLS is not None, "SDK OAuth types must be available"
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     reset_manager_for_tests()
 
-    provider = _HERMES_PROVIDER_CLS(
+    provider = _SLAVE_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=OAuthClientMetadata(
             redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-            client_name="Hermes Agent",
+            client_name="slave-agent",
         ),
-        storage=HermesTokenStorage("srv"),
+        storage=SlaveTokenStorage("srv"),
         redirect_handler=_noop_redirect,
         callback_handler=_noop_callback,
     )

@@ -19,7 +19,7 @@ reaches are recorded too:
 Cells live in ``tests/fixtures/provider_wire_snapshot_variants.json``; regenerate and review the
 diff exactly like the base snapshot::
 
-    HERMES_UPDATE_WIRE_SNAPSHOT=1 .venv/bin/python -m pytest tests/agent/transports/test_provider_wire_snapshot_variants.py
+    SLAVE_UPDATE_WIRE_SNAPSHOT=1 .venv/bin/python -m pytest tests/agent/transports/test_provider_wire_snapshot_variants.py
 """
 
 from __future__ import annotations
@@ -112,7 +112,7 @@ STREAM_CELLS: list[tuple[str, str, str, str, dict[str, Any]]] = [
 ]
 
 # (key, provider, model, base_url, options) for the auxiliary client. Options: ``config`` (YAML
-# written to the test's HERMES_HOME config.yaml), ``task``, ``extra_body``.
+# written to the test's SLAVE_HOME config.yaml), ``task``, ``extra_body``.
 AUX_CELLS: list[tuple[str, str, str, str | None, dict[str, Any]]] = [
     ("aux:openrouter", "openrouter", "anthropic/claude-opus-5.5", "https://openrouter.ai/api/v1", {}),
     # OpenRouter forwards max_tokens; an OpenAI-family model name turns it into max_completion_tokens.
@@ -185,7 +185,7 @@ def _aux_kwargs(monkeypatch, provider: str, model: str, base_url: str | None, op
 
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)  # flips the direct-OpenAI key choice
     if "config" in opts:
-        Path(os.environ["HERMES_HOME"], "config.yaml").write_text(opts["config"], encoding="utf-8")
+        Path(os.environ["SLAVE_HOME"], "config.yaml").write_text(opts["config"], encoding="utf-8")
     task = opts.get("task")
     main = {"provider": provider, "model": model, "base_url": base_url or "", "session_id": "aux-snapshot"}
     out: dict[str, Any] = {}

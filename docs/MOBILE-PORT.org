@@ -33,7 +33,7 @@ for reasons the upstream cannot give us for free.
 
 What "mobile" means elsewhere, checked against the source of truth:
 
-- Upstream Hermes has NO native Android app.  Its mobile story is the
+- Upstream slave-agent has NO native Android app.  Its mobile story is the
   Termux APT channel plus the TUI (upstream README, "Android / Termux:
   a signed APT repository for aarch64 devices").  ~apps/~ holds the
   Electron desktop shell and the Tauri bootstrap installer, nothing

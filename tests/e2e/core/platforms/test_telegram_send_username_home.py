@@ -1,8 +1,8 @@
-"""``hermes send --to telegram`` with the home channel set to a private user's ``@username``.
+"""``slave send --to telegram`` with the home channel set to a private user's ``@username``.
 
 The Bot API resolves ``@username`` only for public channels and supergroups, so every send to such a
 home answers a bare "Chat not found" while ``telegram:<numeric id>`` works (#95121). The REAL
-``hermes send`` CLI against the Bot API stand-in, which answers an ``@`` chat id the way Telegram
+``slave send`` CLI against the Bot API stand-in, which answers an ``@`` chat id the way Telegram
 does: the failure must name the cause and the numeric-id fix; a numeric home still delivers.
 """
 

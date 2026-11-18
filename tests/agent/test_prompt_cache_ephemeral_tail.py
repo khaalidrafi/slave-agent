@@ -8,7 +8,7 @@ that the request still carries the same bytes.
 
 from agent.prompt_caching import apply_anthropic_cache_control, strip_anthropic_cache_control
 
-STATIC = "You are Hermes.\n"
+STATIC = "You are Slave.\n"
 SESSION = STATIC + "## Skills\n- alpha: does a thing\n"
 SYSTEM = SESSION + "\n\nYou are a focused subagent.\nCONTEXT:\ntask-specific text"
 
@@ -84,13 +84,13 @@ def test_real_agent_keeps_one_split_and_marks_the_session_prompt_on_the_first_ca
     from run_agent import AIAgent
     from tests.agent.test_prompt_cache_prefix_contract import _prefix_breaks
     from tests.e2e.core.history._helpers import NO_BACKGROUND_REVIEW, OFFLINE_CONFIG
-    from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_hermes_home
+    from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_slave_home
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     with FakeLLMServer([]) as srv:
         route = (f"custom_providers:\n  - name: cacherelay\n    base_url: {srv.base_url}\n    api_key: sk-fake-e2e\n"
                  "    models:\n      fake-model:\n        prompt_caching: true\n")
-        write_hermes_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + route)
+        write_slave_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + route)
         srv.push(ToolCall("terminal", {"command": "echo one"}), ToolCall("terminal", {"command": "echo two"}), Text("done"))
         agent = AIAgent(provider="custom:cacherelay", base_url=srv.base_url, api_key="sk-fake-e2e", model="fake-model",
                         persistence=open_persistence(profile_scope(home=home)), session_id="tail", quiet_mode=True,

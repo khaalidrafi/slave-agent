@@ -6,7 +6,7 @@ its MAIN-vs-MAIN self-check was 15/15 identical. With the rewire merged there is
 diff, so each step here asserts what main's capture showed (the pre-rewire baseline) against the
 current checkout, where the gateway daemon runs the agent, tools and session writes.
 
-One real ``hermes`` (``display.interface: cli``) session in a private tmux server, loopback
+One real ``slave`` (``display.interface: cli``) session in a private tmux server, loopback
 ``FakeLLMServer`` keyed on the ``STEPn`` marker in the latest user message (zero spend):
 
 01 startup · 02 markdown · 03a approval modal · 03b approve once → tool reply · 04 read_file ·
@@ -78,7 +78,7 @@ def _aux(record: dict[str, Any]):
 
 
 def _session_rows(ch: ClassicHome) -> list[dict[str, Any]]:
-    conn = sqlite3.connect(f"file:{ch.hermes_home / 'state.db'}?mode=ro", uri=True, timeout=10)
+    conn = sqlite3.connect(f"file:{ch.slave_home / 'state.db'}?mode=ro", uri=True, timeout=10)
     conn.row_factory = sqlite3.Row
     try:
         return [dict(r) for r in conn.execute("SELECT id, title, message_count FROM sessions ORDER BY started_at")]
@@ -117,14 +117,14 @@ def test_classic_cli_matches_main_baseline_across_fifteen_steps(tmp_path: Path) 
         try:
             pane.launch()
             assert pane.ready(), f"01_startup: no status bar:\n{pane.screen()}"
-            s.expect("01_startup", ["Welcome to Hermes Agent!", "Session:", PROMPT], s.capture("01_startup", scrollback=True))
+            s.expect("01_startup", ["Welcome to slave-agent!", "Session:", PROMPT], s.capture("01_startup", scrollback=True))
 
             pane.submit("STEP2 please show me some markdown")
             assert pane.wait(["End of STEP2 reply."], 60), pane.screen()
             pane.settle()
             md = s.capture("02_markdown")
             # Rendered through Rich inside main's reply box, not raw markdown.
-            s.expect("02_markdown", ["\u2624 Hermes", "Heading Two", "- alpha item", "def hello():"], md)
+            s.expect("02_markdown", ["\u2624 slave-agent", "Heading Two", "- alpha item", "def hello():"], md)
             assert "# Heading Two" not in md and "```" not in md, f"02_markdown: raw markdown:\n{md}"
 
             pane.submit("STEP3 please run echo hi in the terminal")
@@ -135,7 +135,7 @@ def test_classic_cli_matches_main_baseline_across_fifteen_steps(tmp_path: Path) 
             pane.keys("Enter")  # main's preselected first choice: Allow once
             assert pane.wait([STEP3_DONE], 60), pane.screen()
             pane.settle()
-            s.expect("03b_tool_reply", ["\u2192 allowed once", "\u2624 Hermes", STEP3_DONE], s.capture("03b_tool_reply"))
+            s.expect("03b_tool_reply", ["\u2192 allowed once", "\u2624 slave-agent", STEP3_DONE], s.capture("03b_tool_reply"))
 
             pane.submit("STEP4 please read notes.txt")
             assert pane.wait([STEP4_DONE], 60), pane.screen()
@@ -182,7 +182,7 @@ def test_classic_cli_matches_main_baseline_across_fifteen_steps(tmp_path: Path) 
             pane.submit("/quit")
             assert pane.wait_dead(30), f"10a_exit_summary: CLI alive 30 s after /quit:\n{pane.screen()}"
             summary = s.capture("10a_exit_summary", scrollback=True).split("/quit")[-1]
-            s.expect("10a_exit_summary", ["Resume this session with:", "hermes --resume ", f'hermes -c "{TITLE}"',
+            s.expect("10a_exit_summary", ["Resume this session with:", "slave --resume ", f'slave -c "{TITLE}"',
                                           "Session:", f"Title:          {TITLE}", "Duration:", "Messages:"], summary)
 
             pane.launch("-c")
@@ -197,7 +197,7 @@ def test_classic_cli_matches_main_baseline_across_fifteen_steps(tmp_path: Path) 
             pane.launch("chat", "-q", "hello")
             assert pane.wait([HELLO_REPLY], 120), f"11a_q_tty:\n{pane.screen()}"
             pane.settle(quiet=3.0, timeout=30)
-            s.expect("11a_q_tty", ["\u2624 Hermes", HELLO_REPLY, PROMPT], s.capture("11a_q_tty"))
+            s.expect("11a_q_tty", ["\u2624 slave-agent", HELLO_REPLY, PROMPT], s.capture("11a_q_tty"))
             pane.kill()
 
             piped = ch.run("chat", "-q", "hello")

@@ -50,16 +50,16 @@ def test_gap_another_owner_tracks():
 def _run(tmp_path: Path, strict: str | None) -> dict[str, str]:
     cell = tmp_path / "test_cell.py"
     cell.write_text(_CELL, encoding="utf-8")
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTEST_", "HERMES_E2E_"))}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTEST_", "SLAVE_E2E_"))}
     env["PYTHONPATH"] = str(_REPO)
     if strict is not None:
-        env["HERMES_E2E_STRICT_ACCEPTANCE"] = strict
+        env["SLAVE_E2E_STRICT_ACCEPTANCE"] = strict
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", str(cell), "-rA", "-q", "-p", "no:cacheprovider",
          "-p", "no:randomly", "-o", "addopts=", "--rootdir", str(tmp_path)],
         cwd=tmp_path, env=env, capture_output=True, text=True, timeout=120, check=False)
     if strict and strict not in ("0",):
-        assert "known gap is not excused" not in proc.stdout or f"HERMES_E2E_STRICT_ACCEPTANCE={strict.strip()}:" in proc.stdout
+        assert "known gap is not excused" not in proc.stdout or f"SLAVE_E2E_STRICT_ACCEPTANCE={strict.strip()}:" in proc.stdout
     outcomes = {}
     for line in proc.stdout.splitlines():
         for verdict in ("PASSED", "FAILED", "XFAIL"):

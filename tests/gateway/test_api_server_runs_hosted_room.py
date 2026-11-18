@@ -1,4 +1,4 @@
-"""Tests for /v1/runs under hosted-room grants (``HermesRoom`` authorization).
+"""Tests for /v1/runs under hosted-room grants (``SlaveRoom`` authorization).
 
 Covers room-member invitations/grants driving runs: exact approval request ids,
 grant scope limits on approval policy, status/event-stream access, and refusals.
@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from aiohttp.test_utils import TestClient, TestServer
 
 from gateway.platforms.api_server_runs import _RunStream
@@ -123,9 +123,9 @@ class TestHostedRoomRuns:
     async def test_invitation_uses_validated_app_managed_local_catalog(
         self, auth_adapter, monkeypatch
     ):
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
+        monkeypatch.setenv("SLAVE_DESKTOP", "1")
         monkeypatch.setenv(
-            "HERMES_ROOM_LINK_URL", "https://peer.example.test/hermes"
+            "SLAVE_ROOM_LINK_URL", "https://peer.example.test/hermes"
         )
         app = _create_runs_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -204,7 +204,7 @@ class TestHostedRoomRuns:
             now=100,
         )
         hosted_rooms.reserve_peer_room(
-            storage_handle(get_hermes_home()), placement="shared",
+            storage_handle(get_slave_home()), placement="shared",
             claims=old_claims,
             expires_at=1000,
             now=100,
@@ -215,7 +215,7 @@ class TestHostedRoomRuns:
             refreshed = await cli.post(
                 "/v1/room-members/grants/refresh",
                 json={"ttl_seconds": 300},
-                headers={"Authorization": f"HermesRoom {old_grant}"},
+                headers={"Authorization": f"SlaveRoom {old_grant}"},
             )
             body = await refreshed.json()
         assert refreshed.status == 200
@@ -252,7 +252,7 @@ class TestHostedRoomRuns:
             now=100,
         )
         hosted_rooms.reserve_peer_room(
-            storage_handle(get_hermes_home()), placement="shared",
+            storage_handle(get_slave_home()), placement="shared",
             claims=status_claims,
             expires_at=1000,
             now=100,
@@ -262,7 +262,7 @@ class TestHostedRoomRuns:
             status_refresh = await cli.post(
                 "/v1/room-members/grants/refresh",
                 json={"ttl_seconds": 300},
-                headers={"Authorization": f"HermesRoom {status_only}"},
+                headers={"Authorization": f"SlaveRoom {status_only}"},
             )
             status_refresh_body = await status_refresh.json()
         assert status_refresh.status == 401
@@ -287,7 +287,7 @@ class TestHostedRoomRuns:
             denied = await cli.post(
                 "/v1/room-members/grants/refresh",
                 json={},
-                headers={"Authorization": f"HermesRoom {fully_expired}"},
+                headers={"Authorization": f"SlaveRoom {fully_expired}"},
             )
             denied_body = await denied.json()
         assert denied.status == 401
@@ -327,7 +327,7 @@ class TestHostedRoomRuns:
             now=100,
         )
         hosted_rooms.reserve_peer_room(
-            storage_handle(get_hermes_home()), placement="shared",
+            storage_handle(get_slave_home()), placement="shared",
             claims=drifted_claims,
             expires_at=1000,
             now=100,
@@ -338,7 +338,7 @@ class TestHostedRoomRuns:
             refused = await cli.post(
                 "/v1/room-members/grants/refresh",
                 json={"ttl_seconds": 300},
-                headers={"Authorization": f"HermesRoom {drifted}"},
+                headers={"Authorization": f"SlaveRoom {drifted}"},
             )
             refused_body = await refused.json()
         assert refused.status == 403
@@ -371,7 +371,7 @@ class TestHostedRoomRuns:
             denied = await cli.post(
                 "/v1/room-members/grants/refresh",
                 json={},
-                headers={"Authorization": f"HermesRoom {revoked}"},
+                headers={"Authorization": f"SlaveRoom {revoked}"},
             )
             denied_body = await denied.json()
         assert denied.status == 401
@@ -417,14 +417,14 @@ class TestHostedRoomRuns:
                 permission="status",
             )
             hosted_rooms.reserve_peer_room(
-                storage_handle(get_hermes_home()), placement="shared",
+                storage_handle(get_slave_home()), placement="shared",
                 claims=claims,
                 expires_at=float(claims["status_expires_at"]),
             )
 
         def request(token):
             return SimpleNamespace(
-                headers={"Authorization": f"HermesRoom {token}"},
+                headers={"Authorization": f"SlaveRoom {token}"},
                 method="POST",
                 path="/v1/runs",
             )
@@ -468,22 +468,22 @@ class TestHostedRoomRuns:
             first = await cli.post(
                 "/v1/room-members/grants/revoke",
                 json={},
-                headers={"Authorization": f"HermesRoom {old_grant}"},
+                headers={"Authorization": f"SlaveRoom {old_grant}"},
             )
             repeated = await cli.post(
                 "/v1/room-members/grants/revoke",
                 json={},
-                headers={"Authorization": f"HermesRoom {old_grant}"},
+                headers={"Authorization": f"SlaveRoom {old_grant}"},
             )
             denied = await cli.get(
                 "/v1/room-members/capabilities",
-                headers={"Authorization": f"HermesRoom {old_grant}"},
+                headers={"Authorization": f"SlaveRoom {old_grant}"},
             )
             denied_run = await cli.post(
                 "/v1/runs",
                 data="{never parsed",
                 headers={
-                    "Authorization": f"HermesRoom {old_grant}",
+                    "Authorization": f"SlaveRoom {old_grant}",
                     "Content-Type": "application/json",
                 },
             )
@@ -504,14 +504,14 @@ class TestHostedRoomRuns:
                 now=201,
             )
             hosted_rooms.reserve_peer_room(
-                storage_handle(get_hermes_home()), placement="shared",
+                storage_handle(get_slave_home()), placement="shared",
                 claims=future_claims,
                 expires_at=1000,
                 now=201,
             )
             repaired = await cli.get(
                 "/v1/room-members/capabilities",
-                headers={"Authorization": f"HermesRoom {future_grant}"},
+                headers={"Authorization": f"SlaveRoom {future_grant}"},
             )
         assert first.status == repeated.status == 200
         assert denied.status == 403
@@ -544,7 +544,7 @@ class TestHostedRoomRuns:
                 headers={"Authorization": "Bearer sk-secret"},
             )
             grant = (await invitation.json())["grant"]
-            room_headers = {"Authorization": f"HermesRoom {grant}"}
+            room_headers = {"Authorization": f"SlaveRoom {grant}"}
             run_id = "run_room_stream"
             scope_request = MagicMock()
             scope_request.headers = room_headers
@@ -601,7 +601,7 @@ class TestHostedRoomRuns:
                 method,
                 f"/v1/runs/run_ownerless{suffix}",
                 json={} if method == "POST" else None,
-                headers={"Authorization": f"HermesRoom {grant}"},
+                headers={"Authorization": f"SlaveRoom {grant}"},
             )
         assert response.status == 404
 
@@ -634,7 +634,7 @@ class TestHostedRoomRuns:
             catalog = invitation_body["catalog"]
             probe = await cli.get(
                 "/v1/room-members/capabilities",
-                headers={"Authorization": f"HermesRoom {grant}"},
+                headers={"Authorization": f"SlaveRoom {grant}"},
             )
             probe_body = await probe.json()
             assert probe.status == 200
@@ -674,7 +674,7 @@ class TestHostedRoomRuns:
                     "/v1/runs",
                     json={"input": prompt, "hosted_room_dispatch": dispatch},
                     headers={
-                        "Authorization": f"HermesRoom {grant}",
+                        "Authorization": f"SlaveRoom {grant}",
                         "Idempotency-Key": "room:task-room-1:1",
                     },
                 )
@@ -684,7 +684,7 @@ class TestHostedRoomRuns:
                 for _ in range(40):
                     status = await cli.get(
                         f"/v1/runs/{run_id}",
-                        headers={"Authorization": f"HermesRoom {grant}"},
+                        headers={"Authorization": f"SlaveRoom {grant}"},
                     )
                     status_body = await status.json()
                     if status_body.get("status") == "completed":
@@ -747,7 +747,7 @@ class TestHostedRoomRuns:
                     "/v1/runs",
                     json={"input": prompt, "hosted_room_dispatch": dispatch},
                     headers={
-                        "Authorization": f"HermesRoom {invitation_body['grant']}",
+                        "Authorization": f"SlaveRoom {invitation_body['grant']}",
                         "Idempotency-Key": "room:task-room-1:1",
                     },
                 )

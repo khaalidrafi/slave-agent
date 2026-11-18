@@ -20,14 +20,14 @@ PROVIDER = "patience-fixture"
 
 @pytest.fixture
 def process_agent(monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from providers import get_provider_profile
     from run_agent import AIAgent
 
-    for name in ("HERMES_API_CALL_STALE_TIMEOUT", "HERMES_STREAM_STALE_TIMEOUT", "HERMES_LOCAL_STREAM_STALE_TIMEOUT",
-                 "HERMES_API_TIMEOUT"):
+    for name in ("SLAVE_API_CALL_STALE_TIMEOUT", "SLAVE_STREAM_STALE_TIMEOUT", "SLAVE_LOCAL_STREAM_STALE_TIMEOUT",
+                 "SLAVE_API_TIMEOUT"):
         monkeypatch.delenv(name, raising=False)
-    plugin = get_hermes_home() / "plugins" / PROVIDER
+    plugin = get_slave_home() / "plugins" / PROVIDER
     plugin.mkdir(parents=True)
     (plugin / "plugin.yaml").write_text(
         f"name: {PROVIDER}\nkind: model-provider\nversion: 0.1.0\ndescription: test fixture\n")
@@ -53,9 +53,9 @@ def _budgets(agent, model: str) -> tuple[float, float]:
 
 
 def _write_config(text: str) -> None:
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    (get_hermes_home() / "config.yaml").write_text(text)
+    (get_slave_home() / "config.yaml").write_text(text)
 
 
 def test_external_process_stall_budget_is_one_explicit_deadline(process_agent):

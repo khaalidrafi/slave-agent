@@ -1,13 +1,13 @@
 """The slash worker inherits the parent agent's provider and base URL, not the config default.
 
 Regression for #57283 (provider) and #141953 (base URL; the child side is
-``test_slash_worker_real_cli_route.py``, against a real ``HermesCLI``).
+``test_slash_worker_real_cli_route.py``, against a real ``SlaveCLI``).
 
 A Desktop/TUI MoA session pins the live agent to the virtual ``moa`` provider, but the
-persistent slash-worker subprocess was spawned with only ``--model``. HermesCLI re-resolves
+persistent slash-worker subprocess was spawned with only ``--model``. SlaveCLI re-resolves
 the provider from config.yaml, so a ``/moa`` one-shot dispatched the MoA PRESET NAME to the
 configured real provider (openrouter 402 / "No available channel for model default"). The
-worker argv must carry ``--provider`` and the child must hand it to ``HermesCLI``.
+worker argv must carry ``--provider`` and the child must hand it to ``SlaveCLI``.
 """
 
 from types import SimpleNamespace
@@ -89,9 +89,9 @@ def test_slash_exec_spawns_with_the_live_agent_provider(monkeypatch):
     assert worker_args[3:] == ("moa", "https://chatgpt.com/backend-api/codex")
 
 
-def test_slash_worker_child_forwards_provider_to_hermes_cli(monkeypatch):
-    """The child's argparse accepts --provider and hands it to HermesCLI (mocked): the MoA
-    virtual provider must reach ``HermesCLI(provider=...)`` instead of config re-resolution."""
+def test_slash_worker_child_forwards_provider_to_slave_cli(monkeypatch):
+    """The child's argparse accepts --provider and hands it to SlaveCLI (mocked): the MoA
+    virtual provider must reach ``SlaveCLI(provider=...)`` instead of config re-resolution."""
     import sys as _sys
     import types
 
@@ -103,8 +103,8 @@ def test_slash_worker_child_forwards_provider_to_hermes_cli(monkeypatch):
         def __init__(self, **kwargs):
             built.update(kwargs)
 
-    # main() resolves HermesCLI from ``cli`` at call time, so patch it there.
-    monkeypatch.setitem(_sys.modules, "cli", types.SimpleNamespace(HermesCLI=_FakeCLI))
+    # main() resolves SlaveCLI from ``cli`` at call time, so patch it there.
+    monkeypatch.setitem(_sys.modules, "cli", types.SimpleNamespace(SlaveCLI=_FakeCLI))
     monkeypatch.setattr(sw, "_prepare_slash_worker_runtime", lambda: None)
     monkeypatch.setattr(sw.sys, "stdin", type("S", (), {"readline": lambda self: ""})())
     monkeypatch.setattr(_sys, "argv", ["slash_worker", "--session-key", "s", "--model", "m",

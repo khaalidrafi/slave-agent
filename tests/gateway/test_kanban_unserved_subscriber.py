@@ -12,7 +12,7 @@ import pytest
 from gateway import kanban_watchers_notifier as notifier
 from gateway.config import Platform
 from gateway.kanban_watchers_notifier import _KanbanNotification
-from hermes_cli import kanban_db_connect as kbc
+from slave_cli import kanban_db_connect as kbc
 from tests.gateway.test_kanban_routed_transport import RecordingAdapter, collect, completion, setup_runner
 
 
@@ -27,7 +27,7 @@ def test_unserved_subscriber_is_rewound_when_parked_and_dropped_when_deleted(tmp
     secondary = RecordingAdapter()
     runner._profile_adapters["yuki"] = {Platform.DISCORD: secondary}
     task = completion(mode="wake")
-    yuki = tmp_path / ".hermes" / "profiles" / "yuki"
+    yuki = tmp_path / ".slave" / "profiles" / "yuki"
     if gone == "parked":
         (yuki / "gateway.parked").write_text("", encoding="utf-8")
     fail_counts = {}

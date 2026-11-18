@@ -52,10 +52,10 @@ export function prepareElectronRuntime({ source, install = true, env = process.e
   // install.js unpacks with @electron-internal/extract-zip, whose Windows binding imports
   // VCRUNTIME140.dll. A fresh Windows has none, so the load fails (ERR_DLOPEN_FAILED).
   // Node loads bindings with LOAD_WITH_ALTERED_SEARCH_PATH, so a copy beside the binding
-  // is found first. HERMES_VC_RUNTIME is the copy our Python ships.
-  if (process.platform === 'win32' && env.HERMES_VC_RUNTIME && dependencies?.['@electron-internal/extract-zip']) {
+  // is found first. SLAVE_VC_RUNTIME is the copy our Python ships.
+  if (process.platform === 'win32' && env.SLAVE_VC_RUNTIME && dependencies?.['@electron-internal/extract-zip']) {
     const binding = dirname(createRequire(manifest).resolve('@electron-internal/extract-zip'))
-    copyFileSync(env.HERMES_VC_RUNTIME, join(binding, 'vcruntime140.dll'))
+    copyFileSync(env.SLAVE_VC_RUNTIME, join(binding, 'vcruntime140.dll'))
   }
   console.log(`electron-runtime: preparing locked Electron ${version} (${process.platform}-${process.arch})...`)
   run(process.execPath, [join(packageRoot, 'install.js')], { cwd: source, env: installerEnv })

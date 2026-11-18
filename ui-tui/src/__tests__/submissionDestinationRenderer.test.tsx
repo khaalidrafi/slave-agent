@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -13,7 +13,7 @@ import { useQueue } from '../hooks/useQueue.js'
 
 it('submits interpolated queued input only to its captured owner and removes it only after the matching receipt', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-submit-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   const info = { model: 'test', profile_name: 'alpha', stored_session_id: 'stored-owner', skills: {}, tools: {} }
   patchUiState({ sid: 'owner', info })
@@ -100,7 +100,7 @@ it('submits interpolated queued input only to its captured owner and removes it 
 
 it('refuses the whole submit when a {!cmd} cannot run instead of sending a placeholder to the model', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-submit-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'owner', info: { model: 'test', stored_session_id: 'stored-owner', skills: {}, tools: {} } as any })
 

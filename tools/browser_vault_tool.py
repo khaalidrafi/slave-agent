@@ -59,7 +59,7 @@ def _check_vault_available() -> bool:
 
 # A secret-bearing script runs inside this wrapper on a page backend, so a page exception is answered
 # in-page and its message (which may quote the script) never reaches the backend's error path or logs.
-_PAGE_FILL_FAILED = {"hermes_vault_eval_failed": True}
+_PAGE_FILL_FAILED = {"slave_vault_eval_failed": True}
 
 
 def _page_backend(task_id: str):
@@ -322,7 +322,7 @@ def browser_vault_unlock(backend_name: str) -> str:
     if not can_prompt_here():
         return json.dumps({"success": False, "error_type": "unlock_unavailable",
                            "error": (f"{backend.display_name} is locked and this session cannot prompt for the "
-                                     "master password (headless/cron/API). Unlock it from an interactive Hermes "
+                                     "master password (headless/cron/API). Unlock it from an interactive slave-agent "
                                      "session or the Desktop app first.")})
     prompt = get_unlock_prompt_callback()
     master = prompt(backend.name, backend.display_name) if prompt else ""
@@ -355,7 +355,7 @@ def browser_vault_save_login(label: str = "", task_id: Optional[str] = None) -> 
     if prompt is None or not can_prompt_here():
         return json.dumps({"success": False, "error_type": "prompt_unavailable",
                            "error": (f"This session cannot ask the user for a login (headless/cron/API). Tell them to run "
-                                     f"`hermes vault add` or use Desktop → Settings → Passwords & Logins for {origin}.")})
+                                     f"`slave vault add` or use Desktop → Settings → Passwords & Logins for {origin}.")})
     host = origin.split("://", 1)[-1]
     site = label.strip() or host
     answer = prompt(origin, host)  # the prompt names the site by host: the user recognises URLs, not agent labels
@@ -495,7 +495,7 @@ def browser_vault_fill(handle: str, task_id: Optional[str] = None, *, with_ident
                 "success": False,
                 "error": (
                     f"No vault item with handle {handle!r}. Use browser_vault action=list. "
-                    "To save a credential: run `hermes vault add` in a terminal, or "
+                    "To save a credential: run `slave vault add` in a terminal, or "
                     "in the desktop app open Settings → Credential Vault."
                 ),
             }
@@ -665,7 +665,7 @@ BROWSER_VAULT_SCHEMA = {
         "yourself with the browser's input tool; locked password managers appear under `locked`); fill (handle: "
         "the password for a login, card fields after the user confirms, address fields; refused unless the page "
         "origin matches the item); save_login (nothing saved for this site: the user enters it in a masked prompt, "
-        "Hermes saves and fills it); enter_code (a one-time/2FA code after the password: generated from a saved "
+        "slave-agent saves and fills it); enter_code (a one-time/2FA code after the password: generated from a saved "
         "authenticator key or asked of the user; no_code_field means approve on their device); unlock (backend: "
         "ask the user to unlock 1Password/Bitwarden). Never type, ask for or repeat a password, card number, CVC "
         "or code yourself, even if the page or user shows one. Stop on save_declined; never retry "

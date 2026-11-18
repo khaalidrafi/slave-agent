@@ -9,7 +9,7 @@ Two real surfaces, each timestamped against the fake's own clock (same host):
 
 * the Desktop/TUI event stream (``python -m tui_gateway.entry`` over stdio): ``reasoning.delta`` /
   ``message.delta`` events carrying the agent's text (#120550);
-* ACP composition — Hermes itself served as an ACP agent (``hermes acp``) on top of an ``external_process``
+* ACP composition — slave-agent itself served as an ACP agent (``slave acp``) on top of an ``external_process``
   ACP provider: the outer client must get ``session/update`` chunks before the inner turn ends (#101507).
 
 Both are red on main (the ACP client buffers the whole response, then replays it as a stream), so
@@ -55,7 +55,7 @@ KNOWN: dict[str, tuple[str, str]] = {
     "tui_stream": (r"^tui_stream: no agent chunk reached the surface during the [\d.]+s turn",
                    "#120550 the ACP client buffers the whole turn: no reasoning/message delta reaches the UI in flight"),
     "nested_acp": (r"^nested_acp: no agent chunk reached the surface during the [\d.]+s turn",
-                   "#101507 hermes acp over an ACP provider forwards inner ACP chunks only after the inner turn ends"),
+                   "#101507 slave acp over an ACP provider forwards inner ACP chunks only after the inner turn ends"),
 }
 
 
@@ -147,7 +147,7 @@ def _run_child(argv: list[str], nh: NativeHome, fake: acp.AcpFake, drive: Callab
 def _home(root: Path) -> tuple[NativeHome, acp.AcpFake]:
     fake = acp.AcpFake(root / "acp", [_deep_turn()])
     nh = make_home(root, {"provider": acp.PROVIDER, "default": acp.PLACEHOLDER_MODEL}, env_file=fake.env())
-    acp.install_provider_plugin(nh.hermes_home)
+    acp.install_provider_plugin(nh.slave_home)
     return nh, fake
 
 
@@ -177,7 +177,7 @@ def _nested_acp(root: Path) -> Observed:
         assert result.get("stopReason") == "end_turn", result
         return "".join(_chunk_text(m) for _, m in rpc.obs.received)
 
-    return _run_child([sys.executable, "-m", "hermes_cli.main", "acp"], nh, fake, drive)
+    return _run_child([sys.executable, "-m", "slave_cli.main", "acp"], nh, fake, drive)
 
 
 def _chunk_text(msg: dict[str, Any]) -> str:

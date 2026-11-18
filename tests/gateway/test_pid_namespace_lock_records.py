@@ -49,7 +49,7 @@ def namespaced_holder(tmp_path, monkeypatch):
         pytest.skip("unprivileged user+PID namespaces are not available on this host")
     home, locks = tmp_path / "home", tmp_path / "locks"
     home.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home), "HERMES_GATEWAY_LOCK_DIR": str(locks)}
+    env = {**os.environ, "SLAVE_HOME": str(home), "SLAVE_GATEWAY_LOCK_DIR": str(locks)}
     root = Path(__file__).resolve().parents[2]
     proc = subprocess.Popen(
         ["unshare", "--user", "--map-root-user", "--pid", "--fork", "--mount-proc",
@@ -60,8 +60,8 @@ def namespaced_holder(tmp_path, monkeypatch):
         assert line, proc.stderr.read()
         held = json.loads(line)
         assert held["ok"]
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(locks))
+        monkeypatch.setenv("SLAVE_HOME", str(home))
+        monkeypatch.setenv("SLAVE_GATEWAY_LOCK_DIR", str(locks))
         yield held, home, locks, lambda: _end(proc)
     finally:
         _end(proc)
@@ -115,8 +115,8 @@ def test_a_dead_owner_in_another_pid_namespace_is_reclaimed_and_reported(namespa
 
 def test_a_dead_owner_in_this_namespace_is_still_reclaimed(tmp_path, monkeypatch):
     """Control: the namespace check must not wedge the ordinary stale-lock recovery."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
     (tmp_path / "home").mkdir()
     dead = subprocess.Popen([sys.executable, "-c", "pass"])
     dead.wait()
@@ -137,14 +137,14 @@ def test_a_successor_on_the_same_home_does_not_keep_a_dead_owners_token(namespac
     hold = _HOLD.replace('"123:fixture"', '"456:successor"').replace("status.write_pid_file()", "")
     successor = subprocess.Popen(
         [sys.executable, "-c", hold, str(root)],
-        env={**os.environ, "HERMES_HOME": str(home), "HERMES_GATEWAY_LOCK_DIR": str(locks)},
+        env={**os.environ, "SLAVE_HOME": str(home), "SLAVE_GATEWAY_LOCK_DIR": str(locks)},
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         line = successor.stdout.readline()
         assert line and json.loads(line)["ok"], successor.stderr.read()
         other = tmp_path / "other-home"
         other.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(other))
+        monkeypatch.setenv("SLAVE_HOME", str(other))
         monkeypatch.setattr(status, "_looks_like_gateway_process", lambda pid: True)
         acquired, _existing = status.acquire_scoped_lock("telegram-bot-token", "123:fixture")
         assert acquired, "a successor on the dead owner's home kept its old token reserved"

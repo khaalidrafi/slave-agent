@@ -93,7 +93,7 @@ async def test_retired_terminal_retry_after_eviction_keeps_compact_outcome(api, 
     async with TestClient(TestServer(app)) as client:
         response = await client.post('/v1/responses', json={'input': 'work'}, headers=headers)
         original = await response.json()
-        sid = response.headers['X-Hermes-Session-Id']
+        sid = response.headers['X-Slave-Session-Id']
         removed = owner.persistence.sessions.delete(sid, media_root=str(native_inputs_root()))
         after_sessions_removed(owner.persistence, owner.persistence.scope.profile_dir, removed, reason='delete',
                                primary=sid)

@@ -1,5 +1,5 @@
 /* Visual self-verification tool: `pnpm run visual` renders real TUI surfaces
- * across theme x background scenes to <tmpdir>/hermes-tui-visual/tui-visual.html,
+ * across theme x background scenes to <tmpdir>/slave-tui-visual/tui-visual.html,
  * then shot.mjs screenshots it to tui-visual.png for eyeball + agent review.
  *
  * Original note: : render real TUI surfaces with ANSI colors intact,
@@ -13,8 +13,8 @@ import { mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { PassThrough } from 'stream'
 
-import { Box, renderSync, Text } from '@hermes/ink'
-import type { SessionInfo } from '@hermes/shared/gateway-types'
+import { Box, renderSync, Text } from '@slave-agent/ink'
+import type { SessionInfo } from '@slave-agent/shared/gateway-types'
 import React, { type ReactElement } from 'react'
 
 import { GatewayProvider } from '../../src/app/gatewayContext.js'
@@ -49,12 +49,12 @@ const SLATE = {
   status_bar_text: '#C9D1D9'
 }
 
-// The regenerated slate light_colors block from hermes_cli/skin_engine.py
+// The regenerated slate light_colors block from slave_cli/skin_engine.py
 // (relight recipe: vivid hue-preserved accents, airy capped-saturation text,
 // darker calm dims).
 
 const info: SessionInfo = {
-  cwd: '/Users/brooklyn/www/hermes-agent',
+  cwd: '/Users/brooklyn/www/slave-agent',
   mcp_servers: [{ connected: true, name: 'figma', tools: 12, transport: 'sse' }],
   model: 'claude-opus-4.8-fast',
   skills: {
@@ -228,7 +228,7 @@ interface Scene {
 }
 
 const setup = (bgHex: string) => {
-  process.env.HERMES_TUI_BACKGROUND = bgHex
+  process.env.SLAVE_TUI_BACKGROUND = bgHex
   resetOverlayState()
   resetUiState()
 }

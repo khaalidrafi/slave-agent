@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.sqlite_safe_read as safe_read
+import slave_cli.sqlite_safe_read as safe_read
 from persistence.sqlite.admin import SQLiteStoreAdmin
 from persistence.sqlite.admin._backup import _query_ro_sqlite, _restore_db_pages
 from persistence.sqlite.services import probe_state_db
@@ -102,7 +102,7 @@ def test_doctor_session_count_and_damage_check_are_tracked(state_db, tracked):
 
 
 def test_shared_metrics_first_session_read_is_tracked(state_db, tracked):
-    import hermes_cli.observability.shared_metrics_snapshot as snap
+    import slave_cli.observability.shared_metrics_snapshot as snap
     with sqlite3.connect(state_db) as conn:
         conn.execute("ALTER TABLE sessions ADD COLUMN started_at REAL")
         conn.execute("UPDATE sessions SET started_at = 1.0")
@@ -114,7 +114,7 @@ def test_shared_metrics_first_session_read_is_tracked(state_db, tracked):
 
 def test_worktree_liveness_reads_are_tracked(state_db, tracked, tmp_path):
     """Cron's worktree sweep runs these inside the gateway process, not only from the CLI."""
-    from hermes_cli.worktree_ops import _retained_tree_is_live, _tree_still_served
+    from slave_cli.worktree_ops import _retained_tree_is_live, _tree_still_served
     tree = tmp_path / "tree"
     tree.mkdir()
     _retained_tree_is_live(str(state_db), str(tree))
@@ -129,7 +129,7 @@ def test_backup_integrity_query_is_tracked(state_db, tracked):
 
 
 def test_approvals_suggest_scan_is_tracked(state_db, tracked):
-    from hermes_cli.approvals_suggest import scan_approval_history
+    from slave_cli.approvals_suggest import scan_approval_history
     scan_approval_history(state_db, days=0)
     assert _key(state_db) in tracked
 

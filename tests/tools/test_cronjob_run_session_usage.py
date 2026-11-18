@@ -5,7 +5,7 @@ import sqlite3
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence.conversation.sessions import NewSession
 from persistence.conversation.usage import UsageDelta
 from persistence_assembly import open_persistence, profile_scope
@@ -19,7 +19,7 @@ def _calls(store, session_id, count):
 
 @pytest.fixture()
 def home():
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     return home
 

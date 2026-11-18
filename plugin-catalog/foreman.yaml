@@ -11,7 +11,7 @@ requires_hermes: ">=0.22.6"
 version: "0.1.0"
 docs_url: https://github.com/PedValme/foreman/blob/main/plugin/README.md
 # Pinned to the same commit as sha.
-# The first image is a real capture of the panel in Hermes Desktop v0.23.0 (demo repository data); the rest are the
+# The first image is a real capture of the panel in slave-agent Desktop v0.23.0 (demo repository data); the rest are the
 # panel's code rendered in a browser preview with scripted data (the README captions say so).
 screenshots:
   - "https://raw.githubusercontent.com/PedValme/foreman/ce9b01a2904edb2aadefcb4ae7111d5dc97622c8/docs/screenshots/panel-real-app.png"

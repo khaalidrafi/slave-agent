@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent.inline_tool_executors import INLINE_TOOL_EXECUTORS
-from hermes_cli.config import load_config, save_config
+from slave_cli.config import load_config, save_config
 from tools.memory_tool import MemoryStore, apply_memory_pending
 from tools.registry import registry
 from tools.skill_provenance import reset_current_write_origin, set_current_write_origin

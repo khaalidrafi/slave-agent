@@ -13,7 +13,7 @@ description: >-
   api.weirapp.io and spends Weir credits (5,000 free a month, then prepaid packs); the search terms,
   handles and links you look up are sent to Weir. Data tools are annotated read-only; the optional
   monitor tools appear only with the monitors:write scope, and the package marks its server
-  untrusted, so Hermes asks before any call that is not read-only and refuses those calls in
+  untrusted, so slave-agent asks before any call that is not read-only and refuses those calls in
   unattended runs; a `weir` server you define in config.yaml replaces the package's and drops that
   prompt unless you add `trust: untrusted`. Weir is not affiliated with X or Reddit. The tool set is
   served by the remote server at runtime and is not covered by the pinned sha.

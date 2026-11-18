@@ -7,11 +7,11 @@ import pytest
 
 @pytest.fixture
 def usage_mod(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     (home / "skills" / "local-skill").mkdir(parents=True)
     (home / "skills" / "local-skill" / "SKILL.md").write_text("---\nname: local-skill\ndescription: d\n---\nbody\n")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     import importlib
     import tools.skill_usage as mod
     importlib.reload(mod)
@@ -19,7 +19,7 @@ def usage_mod(tmp_path, monkeypatch):
 
 
 def test_usage_report_lists_plugin_skills_with_their_counts(usage_mod, tmp_path, monkeypatch):
-    from hermes_cli import plugins
+    from slave_cli import plugins
     md = tmp_path / "plug" / "skills" / "model-3d" / "SKILL.md"
     md.parent.mkdir(parents=True)
     md.write_text("---\nname: model-3d\ndescription: d\n---\nbody\n")

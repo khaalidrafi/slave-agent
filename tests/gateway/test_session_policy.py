@@ -43,7 +43,7 @@ def test_policy_selects_surface_and_isolates_cwd(tmp_path):
 @pytest.mark.asyncio
 async def test_launch_options_reach_the_owner_frozen_and_hooks_consented(tmp_path, monkeypatch):
     """`-s/--skills`, `--checkpoints`, `--pass-session-id`, `--accept-hooks` (and an exported
-    HERMES_ACCEPT_HOOKS=1, which the TUI forwards) were refused by session.create, so no session
+    SLAVE_ACCEPT_HOOKS=1, which the TUI forwards) were refused by session.create, so no session
     could be created with them. They are this session's creation policy, applied by the owner."""
     import json
     from types import SimpleNamespace
@@ -54,14 +54,14 @@ async def test_launch_options_reach_the_owner_frozen_and_hooks_consented(tmp_pat
     from gateway.session_controls import AuthorityConnection
     from gateway.session_policy import restore_policy
     from agent import shell_hooks
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
 
     home = tmp_path / 'home'
     (home / 'skills' / 'launch-fixture').mkdir(parents=True)
     (home / 'skills' / 'launch-fixture' / 'SKILL.md').write_text(
         '---\nname: launch-fixture\ndescription: fixture\n---\n\nLAUNCH_SKILL_BODY\n')
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.delenv('HERMES_ACCEPT_HOOKS', raising=False)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.delenv('SLAVE_ACCEPT_HOOKS', raising=False)
     hook = tmp_path / 'hook.sh'
     hook.write_text('#!/bin/sh\nexit 0\n')
     cfg = {'platform_toolsets': {'cli': []}, 'hooks': {'pre_tool_call': [{'command': str(hook)}]}}
@@ -98,7 +98,7 @@ async def test_launch_options_reach_the_owner_frozen_and_hooks_consented(tmp_pat
     for params in ({'skills': ['missing-typo']}, {'skills': 'launch-fixture'}, {'checkpoints': 'yes'},
                    {'model': 'm', 'safe_mode': True, 'skills': ['launch-fixture']}):
         assert await create('refused-' + json.dumps(params), **params) in {'unknown_skill', 'invalid_params'}, params
-    # An exported HERMES_ACCEPT_HOOKS=1 must not brick a --safe-mode TUI: no profile hooks, no refusal.
+    # An exported SLAVE_ACCEPT_HOOKS=1 must not brick a --safe-mode TUI: no profile hooks, no refusal.
     assert (await create('safe', model='m', safe_mode=True, accept_hooks=True)).startswith('local-')
 
 
@@ -113,7 +113,7 @@ def test_launch_policy_reaches_real_turn_runner(tmp_path):
     state.mkdir()
     from tests.gateway.fixtures.local_recovery_probe import child_env
     env = child_env()
-    env.update(HOME=str(home), USERPROFILE=str(home), HERMES_HOME=str(state), PYTHONPATH=str(repo))
+    env.update(HOME=str(home), USERPROFILE=str(home), SLAVE_HOME=str(state), PYTHONPATH=str(repo))
     result = subprocess.run([sys.executable, str(Path(__file__).parent / 'fixtures' / 'session_policy_peer.py')],
                             cwd=tmp_path, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=130, check=False)
     assert result.returncode == 0, result.stdout + '\n' + result.stderr
@@ -124,7 +124,7 @@ def test_launch_policy_reaches_real_turn_runner(tmp_path):
 
 def test_launch_options_are_frozen_and_validated(tmp_path):
     from gateway.session_policy import build_policy
-    from hermes_constants import parse_reasoning_effort
+    from slave_constants import parse_reasoning_effort
     from persistence.core.errors import AuthorityRefusal
     cfg = {'agent': {'max_turns': 8, 'reasoning_effort': 'low'}}
     params = dict(cwd=str(tmp_path), provider='custom', base_url='http://127.0.0.1:1234/v1',
@@ -150,7 +150,7 @@ def test_provider_override_drops_the_previous_providers_route(tmp_path):
     from gateway.session_policy import build_policy
     cfg = {'model': {'default': 'deepseek-chat', 'provider': 'deepseek',
                      'base_url': 'https://api.deepseek.com/v1', 'api_mode': 'chat_completions',
-                     'key_env': 'HERMES_CUSTOM_QWENAI_API_KEY'}}
+                     'key_env': 'SLAVE_CUSTOM_QWENAI_API_KEY'}}
     policy = build_policy(dict(cwd=str(tmp_path), model='mimo-v2.6-flash', provider='xiaomi'), cfg)
     assert policy.config()['model'] == {'default': 'deepseek-chat', 'provider': 'xiaomi'}
     # A provider change plus an explicit URL still drops the replaced provider's wire protocol
@@ -184,7 +184,7 @@ def test_provider_pick_over_auto_template_sends_its_key_to_its_own_endpoint(tmp_
     Google AI Studio pick resolved provider=gemini against openrouter.ai, so the Google key went
     to OpenRouter (401). The frozen route must resolve to Google's own endpoint."""
     from gateway.session_policy import build_policy
-    from hermes_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
+    from slave_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
     monkeypatch.setenv('GOOGLE_API_KEY', 'sk-google')
     monkeypatch.setenv('OPENROUTER_API_KEY', 'sk-openrouter')
     cfg = {'model': {'default': 'anthropic/claude-opus-4.6', 'provider': 'auto',
@@ -201,7 +201,7 @@ def test_provider_alias_pick_keeps_the_profiles_endpoint(tmp_path, monkeypatch):
     """`--provider vllm` over `provider: custom` + a local base_url is the same provider under an
     alias: the pick must keep the configured endpoint and key, not fail with no endpoint."""
     from gateway.session_policy import build_policy
-    from hermes_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
+    from slave_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
     for var in ('CUSTOM_BASE_URL', 'OPENAI_BASE_URL'):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv('LOCAL_LLM_KEY', 'sk-local')
@@ -219,7 +219,7 @@ def test_custom_pick_over_unrecorded_or_auto_profile_keeps_its_endpoint(tmp_path
     `custom` at that URL, so a `custom` pick is the same route: it must keep the endpoint and
     key pointer instead of dropping them and failing with no endpoint configured."""
     from gateway.session_policy import build_policy
-    from hermes_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
+    from slave_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
     for var in ('CUSTOM_BASE_URL', 'OPENAI_BASE_URL'):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv('LOCAL_KEY', 'sk-local')
@@ -237,7 +237,7 @@ def test_provider_alias_spelling_and_auto_pick_keep_the_profiles_route(tmp_path,
     """`deepinfra` and `deep-infra` are one provider, and an explicit `auto` pick (the thin-client
     sentinel) means "the profile's route": neither drops the configured proxy and wire mode."""
     from gateway.session_policy import build_policy
-    from hermes_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
+    from slave_cli.runtime_provider import frozen_runtime_config, resolve_runtime_provider
     for var in ('CUSTOM_BASE_URL', 'OPENAI_BASE_URL'):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv('DEEPINFRA_API_KEY', 'sk-deepinfra')
@@ -283,11 +283,11 @@ def test_bare_pick_of_a_shadowed_custom_entry_keeps_the_profiles_route(tmp_path,
 
 def test_unlimited_max_turns_spellings_create_an_uncapped_session(tmp_path):
     """`--max-turns 0` / -1 / none / unlimited meant "no cap" before the gateway cutover: session.create
-    freezes them as the unlimited budget, and `hermes chat` sends 0 instead of dropping it as falsy."""
+    freezes them as the unlimited budget, and `slave chat` sends 0 instead of dropping it as falsy."""
     import argparse
     import sys
     from gateway.session_policy import build_policy
-    from hermes_cli.gateway_chat import _launch_flags, _requested_policy
+    from slave_cli.gateway_chat import _launch_flags, _requested_policy
     cfg = {'agent': {'max_turns': 8}}
     for spelling in (0, -1, 'none', 'unlimited', '0'):
         assert build_policy(dict(cwd=str(tmp_path), max_turns=spelling), cfg).max_turns == sys.maxsize, spelling
@@ -365,10 +365,10 @@ def test_frozen_route_keeps_its_endpoint_after_live_config_edit(tmp_path, monkey
     from types import SimpleNamespace
     from gateway.session_policy import build_policy, bind_launch_key
     from gateway.run_turn_prepare import GatewayTurnPrepareMixin
-    from hermes_cli.config_effective import load_user_config_effective
+    from slave_cli.config_effective import load_user_config_effective
     home = tmp_path / 'home'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
 
     def write(url, key):
         (home / 'config.yaml').write_text(json.dumps(
@@ -393,15 +393,15 @@ def test_frozen_bare_custom_route_keeps_its_endpoint_pool_and_launch_key_wins(tm
     from types import SimpleNamespace
     from gateway.session_policy import build_policy, bind_launch_key
     from gateway.run_turn_prepare import GatewayTurnPrepareMixin
-    from hermes_cli.config_effective import load_user_config_effective
+    from slave_cli.config_effective import load_user_config_effective
     home = tmp_path / 'home'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     url = 'http://127.0.0.1:1/v1'
     (home / 'config.yaml').write_text(json.dumps(
         {'model': {'provider': 'custom', 'base_url': url, 'api_key': 'sk-frozen-config', 'default': 'm'}}))
     pool = object()
-    monkeypatch.setattr('hermes_cli.runtime_provider._try_resolve_from_custom_pool', lambda base_url, *a, **k: {
+    monkeypatch.setattr('slave_cli.runtime_provider._try_resolve_from_custom_pool', lambda base_url, *a, **k: {
         'provider': 'custom', 'api_mode': 'chat_completions', 'base_url': base_url, 'api_key': 'sk-pooled',
         'source': 'pool:custom', 'credential_pool': pool} if base_url.rstrip('/') == url else None)
     authority = SimpleNamespace(instance_id='i', epoch=1, profile_id='p', db=None)
@@ -425,10 +425,10 @@ def _frozen_fixture_routes(tmp_path, monkeypatch, *launches):
     from types import SimpleNamespace
     from gateway.session_policy import build_policy, bind_launch_key
     from gateway.run_turn_prepare import GatewayTurnPrepareMixin
-    from hermes_cli.config_effective import load_user_config_effective
+    from slave_cli.config_effective import load_user_config_effective
     home = tmp_path / 'home'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
 
     def write(url):
         (home / 'config.yaml').write_text(json.dumps({'model': {'provider': 'fixture', 'default': 'm'},
@@ -476,7 +476,7 @@ def test_lazy_info_reports_the_free_tier_pinned_model(tmp_path, monkeypatch):
     from types import SimpleNamespace
     from gateway.session_local import _lazy_model
     from gateway.session_policy import build_policy
-    from hermes_cli import anon_auth
+    from slave_cli import anon_auth
     authority = SimpleNamespace(runner=None, profile_id='fixture')
     monkeypatch.setattr(anon_auth, 'free_tier_route', lambda: True)
     configured = replace(build_policy({'cwd': str(tmp_path)}, {'model': {'default': 'cfg-model'}}), model='cfg-model')
@@ -487,7 +487,7 @@ def test_lazy_info_reports_the_free_tier_pinned_model(tmp_path, monkeypatch):
 
 
 def test_run_budget_is_a_frozen_launch_option(tmp_path):
-    """`hermes chat --run-budget N` (main: AIAgent(run_budget_seconds=N)): frozen as the session's
+    """`slave chat --run-budget N` (main: AIAgent(run_budget_seconds=N)): frozen as the session's
     agent.run_budget_seconds; the profile's own value applies without the flag; junk is refused."""
     from gateway.session_policy import build_policy
     from persistence.core.errors import AuthorityRefusal
@@ -511,7 +511,7 @@ def test_run_budget_passes_the_session_create_contract():
 
 
 def test_verbose_is_a_frozen_launch_option(tmp_path):
-    """`hermes chat -v` (main: AIAgent(quiet_mode=False)): the session agent's status lines are not quieted."""
+    """`slave chat -v` (main: AIAgent(quiet_mode=False)): the session agent's status lines are not quieted."""
     from gateway.session_policy import build_policy
     from persistence.core.errors import AuthorityRefusal
     assert build_policy(dict(cwd=str(tmp_path), verbose=True), {}).verbose is True

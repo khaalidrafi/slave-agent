@@ -137,7 +137,7 @@ def test_a_successful_turn_completes_without_a_surface():
 
 _FALLBACK_SIGNED_OUT = {'failure_reason': 'auth', 'failure_retryable': False, 'error': 'HTTP 401: Not logged in',
                         'primary_auth_failure': {'provider': 'nous', 'error': 'No access token found for Nous Portal login.',
-                                                 'relogin': 'hermes portal'}}
+                                                 'relogin': 'slave portal'}}
 _DIRECTSDK = {'provider': 'claude-subscription-directsdk-experimental', 'model': 'claude-opus-5-5'}
 
 

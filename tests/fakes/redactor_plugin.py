@@ -1,6 +1,6 @@
 """A redaction plugin for ``transform_llm_output`` stream-hold tests.
 
-``redactor_home(home, base_url, hold=...)`` writes a loopback-routed ``HERMES_HOME`` with a user
+``redactor_home(home, base_url, hold=...)`` writes a loopback-routed ``SLAVE_HOME`` with a user
 plugin that rewrites every ``SECRET-<digits>`` in the final reply to ``[REDACTED]``, registered
 with ``hold_stream=True`` when ``hold`` is set. ``redactor_turn()`` is the scripted model turn: a
 tool call carrying commentary (model text between tool calls) and then the streamed answer.
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tests.fakes.fake_llm_provider import Text, ToolCall, write_hermes_home
+from tests.fakes.fake_llm_provider import Text, ToolCall, write_slave_home
 
 RAW = "Here is the config. Your api key is SECRET-123 and the backup key is SECRET-456. Keep them safe."
 REWRITE = "Here is the config. Your api key is [REDACTED] and the backup key is [REDACTED]. Keep them safe."
@@ -44,7 +44,7 @@ def redactor_home(home: Path, base_url: str, *, hold: bool) -> Path:
     plugin.mkdir(parents=True, exist_ok=True)
     (plugin / "plugin.yaml").write_text("name: redactor\nversion: 0.1.0\n", encoding="utf-8")
     (plugin / "__init__.py").write_text(_PLUGIN.format(hold=", hold_stream=True" if hold else ""), encoding="utf-8")
-    return write_hermes_home(home, base_url, extra_config=_CONFIG)
+    return write_slave_home(home, base_url, extra_config=_CONFIG)
 
 
 def redactor_turn(*, delay_per_chunk: float = 0.0) -> list:

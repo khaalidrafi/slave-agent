@@ -13,8 +13,8 @@ def run_worker(tmp_path, body, mode="safe"):
     home = tmp_path / mode
     home.mkdir(exist_ok=True)
     (home / "config.yaml").write_text("agent:\n  max_turns: 17\n", encoding="utf-8")
-    env = dict(os.environ, HERMES_HOME=str(home), HOME=str(home), PROBE_MODE=mode)
-    for key in ("HERMES_SAFE_MODE", "HERMES_IGNORE_USER_CONFIG", "HERMES_IGNORE_RULES"):
+    env = dict(os.environ, SLAVE_HOME=str(home), HOME=str(home), PROBE_MODE=mode)
+    for key in ("SLAVE_SAFE_MODE", "SLAVE_IGNORE_USER_CONFIG", "SLAVE_IGNORE_RULES"):
         env.pop(key, None)
     root = Path(__file__).resolve().parents[2]
     script = home / "worker_probe.py"
@@ -44,19 +44,19 @@ def test_worker_config_is_frozen_before_any_profile_read(tmp_path, mode):
             if event == "open" and str(args[0]).endswith("config.yaml") and args[1] != "w":
                 reads.append(str(args[0]))
         sys.addaudithook(audit)
-        from hermes_cli.config import load_config, load_config_readonly, read_raw_config, read_raw_config_readonly, DEFAULT_CONFIG
-        from hermes_cli import env_loader
+        from slave_cli.config import load_config, load_config_readonly, read_raw_config, read_raw_config_readonly, DEFAULT_CONFIG
+        from slave_cli import env_loader
         callbacks = []
         env_loader._apply_managed_env = lambda **kw: callbacks.append("managed")
         env_loader._apply_external_secret_sources = lambda home: callbacks.append("secrets")
         env_loader._reapply_terminal_config_bridge = lambda home: callbacks.append("terminal")
-        env_loader.load_hermes_dotenv()
+        env_loader.load_slave_dotenv()
         cfg = load_config()
         assert cfg["compression"] == DEFAULT_CONFIG["compression"]
         first = cfg["agent"]["max_turns"]
         cfg["agent"]["max_turns"] = 123
         if mode != "ordinary":
-            Path(os.environ["HERMES_HOME"], "config.yaml").write_text("[broken YAML")
+            Path(os.environ["SLAVE_HOME"], "config.yaml").write_text("[broken YAML")
             # Audit excludes this fixture write, not the preceding reads.
         results = []
         def check():
@@ -77,7 +77,7 @@ def test_private_worker_binding_is_one_shot_typed_and_not_env_selected(tmp_path)
         import json, os
         from dataclasses import FrozenInstanceError
         from agent.safe_worker_policy import _bind_safe_worker_policy, safe_worker_enabled, worker_config_snapshot
-        os.environ["HERMES_SAFE_MODE"] = "1"
+        os.environ["SLAVE_SAFE_MODE"] = "1"
         assert not safe_worker_enabled()
         for value in (1, "true", None):
             try:
@@ -112,7 +112,7 @@ def test_safe_worker_never_discovers_or_invokes_customizations(tmp_path, mode):
         import json, os, sys
         from pathlib import Path
         mode = os.environ["PROBE_MODE"]
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["SLAVE_HOME"])
         (home / "config.yaml").write_text("plugins:\n  enabled: [sentinel]\n")
         events = home / "events"
         def mark(value):
@@ -121,7 +121,7 @@ def test_safe_worker_never_discovers_or_invokes_customizations(tmp_path, mode):
             p = home / "plugins" / name
             p.mkdir(parents=True)
             (p / "plugin.yaml").write_text("name: " + name.split("/")[-1] + "\nversion: 1.0.0\nkind: " + kind + "\n")
-            prefix = "from pathlib import Path\nimport os\ndef mark(s):\n    with (Path(os.environ['HERMES_HOME']) / 'events').open('a') as f: f.write(s + '\\n')\n"
+            prefix = "from pathlib import Path\nimport os\ndef mark(s):\n    with (Path(os.environ['SLAVE_HOME']) / 'events').open('a') as f: f.write(s + '\\n')\n"
             if kind == "standalone":
                 code = "mark('plugin-import')\ndef register(ctx):\n    mark('plugin-register')\n    ctx.register_hook('on_session_start', lambda **kw: mark('plugin-hook'))\n"
             else:
@@ -136,7 +136,7 @@ def test_safe_worker_never_discovers_or_invokes_customizations(tmp_path, mode):
                 reads.append(str(args[0]))
         sys.addaudithook(audit)
         import providers
-        from hermes_cli import plugins, lifecycle
+        from slave_cli import plugins, lifecycle
         plugins.discover_plugins()
         providers.list_providers()
         from providers.base import ProviderProfile
@@ -170,7 +170,7 @@ def test_safe_worker_bypasses_rule_readers_even_without_cli_flags(tmp_path, mode
         import json, os, sys
         from pathlib import Path
         mode = os.environ["PROBE_MODE"]
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["SLAVE_HOME"])
         project = home / "project"; project.mkdir()
         (project / "AGENTS.md").write_text("PROJECT_SENTINEL")
         sub = project / "sub"; sub.mkdir()
@@ -227,7 +227,7 @@ def test_bare_agent_constructor_cannot_restore_safe_customizations(tmp_path, mod
         import json, os, sys
         from pathlib import Path
         mode = os.environ["PROBE_MODE"]
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["SLAVE_HOME"])
         (home / "SOUL.md").write_text("IDENTITY_SENTINEL")
         if mode != "ordinary":
             from agent.safe_worker_policy import _bind_safe_worker_policy
@@ -270,7 +270,7 @@ def test_direct_secret_hydration_cannot_read_bypassed_yaml(tmp_path, mode):
         import json, os, sys
         from pathlib import Path
         mode = os.environ["PROBE_MODE"]
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["SLAVE_HOME"])
         if mode != "ordinary":
             from agent.safe_worker_policy import _bind_safe_worker_policy
             _bind_safe_worker_policy(safe_mode=mode == "safe", ignore_user_config=True, config={})
@@ -279,7 +279,7 @@ def test_direct_secret_hydration_cannot_read_bypassed_yaml(tmp_path, mode):
             if event == "open" and str(args[0]).endswith("config.yaml") and args[1] != "w":
                 reads.append(str(args[0]))
         sys.addaudithook(audit)
-        from hermes_cli.env_loader import hydrate_profile_secret_sources
+        from slave_cli.env_loader import hydrate_profile_secret_sources
         assert hydrate_profile_secret_sources(home) == {}
         other = home / "other"; other.mkdir()
         (other / "config.yaml").write_text("agent: {}")
@@ -293,7 +293,7 @@ def test_direct_secret_hydration_cannot_read_bypassed_yaml(tmp_path, mode):
 def test_private_policy_refuses_late_binding_and_fork_inheritance(tmp_path):
     late = run_worker(tmp_path, r"""
         import json
-        import hermes_cli.config
+        import slave_cli.config
         from agent.safe_worker_policy import _bind_safe_worker_policy
         try:
             _bind_safe_worker_policy(safe_mode=True, ignore_user_config=True, config={})

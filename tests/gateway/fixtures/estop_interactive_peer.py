@@ -1,10 +1,10 @@
-"""GW-1 fixture: `hermes pause` holds every gateway turn, including interactive (TUI/Desktop/CLI) ones.
+"""GW-1 fixture: `slave pause` holds every gateway turn, including interactive (TUI/Desktop/CLI) ones.
 
-A real GatewayRunner + session authority + WS API in a fake HERMES_HOME, a loopback model. Phase 1
+A real GatewayRunner + session authority + WS API in a fake SLAVE_HOME, a loopback model. Phase 1
 starts a turn that blocks in the model, engages the ESTOP and releases it: the running turn must
 finish normally. Phase 2 submits a new interactive turn while paused: its completion must carry
-``estop.paused_reply()`` (the reason and "run `hermes resume`") and the model is never called.
-Phase 3 resumes and the next turn runs. Writes receipt.json into HERMES_HOME.
+``estop.paused_reply()`` (the reason and "run `slave resume`") and the model is never called.
+Phase 3 resumes and the next turn runs. Writes receipt.json into SLAVE_HOME.
 """
 import asyncio
 from http.server import ThreadingHTTPServer
@@ -20,13 +20,13 @@ async def probe():
     from gateway.run import GatewayRunner
     from gateway.session_authority import initialize_session_authority
     from gateway.run_api import start_gateway_api, stop_gateway_api
-    from hermes_cli import web_server
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from slave_cli import web_server
+    from slave_cli.dashboard_auth.ws_tickets import mint_ticket
     from tests.gateway.fixtures.local_recovery_probe import Model
     from agent import estop
     from websockets.asyncio.client import connect
 
-    home = Path(os.environ['HERMES_HOME'])
+    home = Path(os.environ['SLAVE_HOME'])
     peer = ThreadingHTTPServer(('127.0.0.1', 0), Model)
     peer.requests, peer.blocked, peer.release = [], threading.Event(), threading.Event()
     threading.Thread(target=peer.serve_forever, daemon=True).start()

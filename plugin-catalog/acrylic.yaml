@@ -2,7 +2,7 @@ name: acrylic
 title: Acrylic
 repo: https://github.com/Saderius/hermes-acrylic
 sha: ae5b8b47d07e280b7d0491d3dee51e69a88d9110
-description: 'Acrylic glass for Hermes Desktop: a frosted, see-through theme with five presets (Acrylic, Frosted, Sanded, Expressive, Heavy frost) and your own tint, haze and grain. Tested mostly on Windows 11, where it uses the system''s real acrylic blur; elsewhere it falls back to a CSS version.'
+description: 'Acrylic glass for slave-agent Desktop: a frosted, see-through theme with five presets (Acrylic, Frosted, Sanded, Expressive, Heavy frost) and your own tint, haze and grain. Tested mostly on Windows 11, where it uses the system''s real acrylic blur; elsewhere it falls back to a CSS version.'
 maintainer: Saderius
 tier: community
 category: desktop

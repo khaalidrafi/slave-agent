@@ -6,19 +6,19 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_logging
+import slave_logging
 
 
 @pytest.fixture
 def make_agent(monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     import run_agent
 
-    home = get_hermes_home()
+    home = get_slave_home()
     (home / "config.yaml").write_text("", encoding="utf-8")
     (home / "memories" / "MEMORY.md").write_text("The notebook is blue.", encoding="utf-8")
     # run_agent may have been imported before this test's home was selected.
-    monkeypatch.setattr(run_agent, "_hermes_home", home)
+    monkeypatch.setattr(run_agent, "_slave_home", home)
     agents = []
 
     def create():
@@ -61,11 +61,11 @@ def make_agent(monkeypatch):
 def test_config_failure_warns_without_exposing_values_and_preserves_defaults(
     make_agent, monkeypatch, caplog, failure_at, reader,
 ):
-    from hermes_cli import config
-    from hermes_constants import get_hermes_home
+    from slave_cli import config
+    from slave_constants import get_slave_home
     import sys
 
-    home = get_hermes_home()
+    home = get_slave_home()
     configured = (
         "prompt_caching:\n  cache_ttl: 1h\n"
         "model:\n  reasoning_echo: true\n"
@@ -93,7 +93,7 @@ def test_config_failure_warns_without_exposing_values_and_preserves_defaults(
             def import_with_failure(name, globals=None, locals=None, fromlist=(), level=0):
                 caller = sys._getframe(1).f_code.co_name
                 if (
-                    name == "hermes_cli.config"
+                    name == "slave_cli.config"
                     and "load_config_readonly" in fromlist
                     and (globals or {}).get("__name__")
                     in {"agent.agent_init", "agent.reasoning_params"}
@@ -137,7 +137,7 @@ def test_config_failure_warns_without_exposing_values_and_preserves_defaults(
     }
     messages = [record.getMessage() for record in warnings]
     # errors.log is written by the logging QueueListener thread: drain it before reading the file.
-    hermes_logging.flush_log_queue()
+    slave_logging.flush_log_queue()
     persisted = (home / "logs" / "errors.log").read_text(encoding="utf-8-sig")
     for scope in affected:
         assert any(expected_sections[scope] in message for message in messages)
@@ -185,7 +185,7 @@ def test_config_failure_warns_without_exposing_values_and_preserves_defaults(
 
 
 def test_empty_config_initializes_memory_without_a_load_warning(make_agent, caplog):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     with caplog.at_level(logging.WARNING, logger="run_agent"):
         agent = make_agent()
@@ -193,7 +193,7 @@ def test_empty_config_initializes_memory_without_a_load_warning(make_agent, capl
     assert agent._memory_manager is None
     assert agent._memory_store is not None
     assert agent._memory_store.memory_entries == ["The notebook is blue."]
-    assert (get_hermes_home() / "config.yaml").read_bytes() == b""
+    assert (get_slave_home() / "config.yaml").read_bytes() == b""
     assert not any(
         record.name == "run_agent" and record.levelno >= logging.WARNING
         and "config" in record.getMessage().lower()

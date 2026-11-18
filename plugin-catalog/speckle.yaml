@@ -7,7 +7,7 @@ description: >-
   Browse, query and diff 3D/BIM models (mainly for the AECO industry) from Speckle
   (Revit, Rhino, IFC, Archicad, Tekla, ETABS, Civil 3D, Blender), run saved checks on
   every new version, get a chat message when a watched model gets a new version, and see
-  the model in a live 3D viewer in Hermes Desktop. Requires a Speckle personal access
+  the model in a live 3D viewer in slave-agent Desktop. Requires a Speckle personal access
   token (SPECKLE_TOKEN). Disclosure — network connections go to the configured Speckle
   server (app.speckle.systems by default), the only host that receives the token, and to
   the file storage that server links to for model downloads, without the token; the 3D

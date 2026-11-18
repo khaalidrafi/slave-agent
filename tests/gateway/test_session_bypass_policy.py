@@ -36,15 +36,15 @@ def test_bypass_session_freezes_code_defaults_without_reading_profile(tmp_path, 
     (possibly malformed) config.yaml, .env and plugin toolsets are never consulted."""
     from types import SimpleNamespace
     from gateway.session_local import _bypass_policy
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
-    import gateway.session_policy, hermes_cli.tools_config, toolsets, tools.terminal_scope
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.config_defaults import DEFAULT_CONFIG
+    import gateway.session_policy, slave_cli.tools_config, toolsets, tools.terminal_scope
+    from slave_cli.plugins import discover_plugins
 
     home = tmp_path / 'home'
     home.mkdir()
     (home / 'config.yaml').write_text('model: [unterminated\n  terminal: {backend: docker}\n', encoding='utf-8')
     (home / '.env').write_text('TERMINAL_ENV=docker\n', encoding='utf-8')
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     # The ordinary owner discovered plugins at startup, long before this launch (contract J:
     # an owner that boots against broken config is a separate limitation).
     discover_plugins()
@@ -52,7 +52,7 @@ def test_bypass_session_freezes_code_defaults_without_reading_profile(tmp_path, 
     active = [True]
 
     def witness(event, args):
-        if event == 'hermes.test.done':
+        if event == 'slave.test.done':
             active[0] = False
         elif active[0] and event == 'open' and str(home) in str(args[0]):
             import traceback
@@ -65,13 +65,13 @@ def test_bypass_session_freezes_code_defaults_without_reading_profile(tmp_path, 
               'base_url': 'http://127.0.0.1:9/v1', 'safe_mode': True, 'toolsets': ['terminal']}
     private = {}
     policy = _bypass_policy(params, private_secrets=private)
-    sys.audit('hermes.test.done')  # audit hooks cannot be removed; close the witness window
+    sys.audit('slave.test.done')  # audit hooks cannot be removed; close the witness window
     assert not opened, '\n'.join(p + '\n' + s for p, s in opened)
     config = policy.config()
     assert config['model']['provider'] == 'custom' and config['model']['base_url'] == params['base_url']
     assert config.get('plugins', {}).get('enabled', DEFAULT_CONFIG.get('plugins', {}).get('enabled')) in (None, [])
-    from hermes_cli.plugins import get_plugin_toolset_keys_nowait
+    from slave_cli.plugins import get_plugin_toolset_keys_nowait
     assert 'terminal' in policy.toolsets and not set(policy.toolsets) & get_plugin_toolset_keys_nowait()
     terminal = json.loads(policy.terminal_json)
     assert terminal['TERMINAL_ENV'] == 'local' and terminal['TERMINAL_CWD'] == str(cwd)
-    assert dict(os.environ).get('HERMES_SAFE_MODE') is None
+    assert dict(os.environ).get('SLAVE_SAFE_MODE') is None

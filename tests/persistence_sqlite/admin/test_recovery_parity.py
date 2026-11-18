@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.session_recovery import inspect_session_database, recover_session_database
+from slave_cli.session_recovery import inspect_session_database, recover_session_database
 from persistence.sqlite.admin import SQLiteStoreAdmin, _lost_and_found
 from persistence.sqlite.admin._lost_and_found import find_sqlite3_cli
-from tests.hermes_cli.test_session_recovery import (
+from tests.slave_cli.test_session_recovery import (
     _corrupt_middle_table_leaf, _corrupt_table_root, _make_many_sessions_source, _make_page_spanning_source,
     _make_source, _sha256,
 )
-from tests.hermes_cli.test_session_recovery_lost_and_found import _make_schema_unreadable_source
+from tests.slave_cli.test_session_recovery_lost_and_found import _make_schema_unreadable_source
 
 _FREE_SPACE = ("work_dir_free_bytes", "output_dir_free_bytes")
 

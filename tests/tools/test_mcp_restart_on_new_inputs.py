@@ -50,10 +50,10 @@ def test_restart_only_when_resolved_launch_inputs_change(monkeypatch, tmp_path):
         "env": {"DEMO_KEY": "${DEMO_KEY}"}}}}), encoding="utf-8")
     (home / "config.yaml").write_text("plugins:\n  enabled: [envecho]\n", encoding="utf-8")
     (home / ".env").write_text("DEMO_KEY=first\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("DEMO_KEY", "first")
 
-    from hermes_cli.config import save_env_value
+    from slave_cli.config import save_env_value
     from tools import mcp_tool_discovery as disc
     from tools import mcp_tool_loop as _loop
     from tools.mcp_tool_common import _core

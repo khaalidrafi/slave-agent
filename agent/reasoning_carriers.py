@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any, NamedTuple, Optional
 
-CARRIER_TYPE = "hermes.native_assistant"
+CARRIER_TYPE = "slave.native_assistant"
 _GEMINI_KEY = "extra_content"
 
 

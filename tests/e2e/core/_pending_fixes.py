@@ -7,7 +7,7 @@ failure (a timeout, a lost reply, a boot failure), and simply passes once the fi
 merges first. Wrap only the final assertions. When a fix has landed, delete its ``known_failure``.
 Probe-gated gaps live in ``tests/e2e/core/delivery/_pending_fixes.py``.
 
-Strict acceptance: ``HERMES_E2E_STRICT_ACCEPTANCE`` turns ``known_failure`` blocks into hard
+Strict acceptance: ``SLAVE_E2E_STRICT_ACCEPTANCE`` turns ``known_failure`` blocks into hard
 failures (the gap's own assertion, annotated): ``1`` every block, or a comma list of owners
 (``upd-txn``) for the blocks whose reason starts with ``<owner>:``. Only an acceptance run of an
 integrated batch sets it (the ``strict_acceptance`` dispatch input of ci.yaml /
@@ -24,7 +24,7 @@ from typing import ContextManager, Iterator, Mapping, Tuple, Type
 
 import pytest
 
-STRICT_ACCEPTANCE_ENV = "HERMES_E2E_STRICT_ACCEPTANCE"
+STRICT_ACCEPTANCE_ENV = "SLAVE_E2E_STRICT_ACCEPTANCE"
 
 
 def strict_acceptance(reason: str) -> bool:

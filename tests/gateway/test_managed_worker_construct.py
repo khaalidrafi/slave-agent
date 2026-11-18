@@ -91,7 +91,7 @@ def run_pair(tmp_path, extra_config, turn, *, before_create=None, **create_param
                                       'api_key': 'loopback-only'}], **extra_config(home)}
     (home / 'config.yaml').write_text(json.dumps(config))
     env = {**child_env(), **{k: os.environ[k] for k in ('TIRITH_ENABLED',) if k in os.environ}}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=purl)
 
     def query(sql, args=()):
@@ -180,7 +180,7 @@ def test_managed_turn_sends_configured_instruction_and_prefill(tmp_path):
 @pytest.mark.platforms("linux")
 def test_new_sessions_send_the_profiles_current_prefill(tmp_path):
     """CFG-7: a ``prefill_messages_file`` path and contents edited after the daemon started reach the
-    next new session, in process and managed, as a new ``hermes chat`` process read them on main."""
+    next new session, in process and managed, as a new ``slave chat`` process read them on main."""
     def pair(home, name, mark):
         (home / name).write_text(json.dumps([{'role': 'user', 'content': f'PREFILL_{mark}_Q'},
                                              {'role': 'assistant', 'content': f'PREFILL_{mark}_A'}]))

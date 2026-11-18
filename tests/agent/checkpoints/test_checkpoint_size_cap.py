@@ -7,12 +7,12 @@ import pytest
 
 import agent.checkpoints.manager as checkpoints
 from agent.checkpoints import maintenance as checkpoint_maintenance
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 @pytest.fixture
 def history(tmp_path, monkeypatch):
-    base = get_hermes_home() / "checkpoints"
+    base = get_slave_home() / "checkpoints"
     project = min((tmp_path / name for name in ("project-a", "project-b")),
                   key=lambda path: checkpoints._project_hash(str(path)))
     project.mkdir()
@@ -150,7 +150,7 @@ def test_snapshot_pruning_stops_at_a_failed_count_rewrite(history, monkeypatch, 
     assert manager.ensure_checkpoint(str(project), "latest")
     assert len(changed_refs) == 1  # The new checkpoint only; the trim failed before update-ref.
     assert "injected rewrite failure" in caplog.text
-    store = checkpoints._store_path(get_hermes_home() / "checkpoints")
+    store = checkpoints._store_path(get_slave_home() / "checkpoints")
     ref = checkpoints._ref_name(checkpoints._project_hash(str(project)))
     ok, out, _ = original(["rev-list", "--count", ref], store, str(project))
     assert ok and int(out) == 7  # Nothing trimmed: the failed rewrite left history whole.

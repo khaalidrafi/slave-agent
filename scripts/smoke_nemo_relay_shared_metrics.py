@@ -1,4 +1,4 @@
-"""Run a real Hermes CLI turn and validate the Relay shared-metrics output."""
+"""Run a real slave-agent CLI turn and validate the Relay shared-metrics output."""
 
 from __future__ import annotations
 
@@ -28,19 +28,19 @@ SKILL_CANARY = "relay-smoke-private-agent-skill"
 INSTALLED_SKILL_CANARY = "relay-smoke-private-installed-skill"
 
 
-def _resolve_hermes_executable(hermes_repo: Path) -> Path:
+def _resolve_slave_executable(slave_repo: Path) -> Path:
     for relative_path in (
-        Path(".venv") / "bin" / "hermes",
-        Path(".venv") / "Scripts" / "hermes.exe",
+        Path(".venv") / "bin" / "slave",
+        Path(".venv") / "Scripts" / "slave.exe",
     ):
-        candidate = hermes_repo / relative_path
+        candidate = slave_repo / relative_path
         if candidate.is_file():
             return candidate
-    discovered = shutil.which("hermes")
+    discovered = shutil.which("slave")
     if discovered:
         return Path(discovered)
     raise SystemExit(
-        "Hermes executable not found in the repository virtual environment "
+        "slave-agent executable not found in the repository virtual environment "
         "or on PATH"
     )
 
@@ -236,10 +236,10 @@ class _ModelHandler(BaseHTTPRequestHandler):
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--hermes-repo",
+        "--slave-repo",
         type=Path,
         default=Path.cwd(),
-        help="Hermes source checkout containing .venv/bin/hermes",
+        help="slave-agent source checkout containing .venv/bin/hermes",
     )
     parser.add_argument(
         "--relay-python",
@@ -251,7 +251,7 @@ def _arguments() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=None,
-        help="Directory for the isolated HERMES_HOME and captured output",
+        help="Directory for the isolated SLAVE_HOME and captured output",
     )
     return parser.parse_args()
 
@@ -318,11 +318,11 @@ UPDATE_RECEIPT: dict[str, Any] = {
 # The offline probes in the skill-lifecycle subprocess: one failed URL plugin install and one failed
 # update run (UPDATE_RECEIPT), identical in SQLite and in the export.
 FAILURE_EXPECTED_DIMENSIONS = {
-    "hermes.extension.install.count": {
+    "slave.extension.install.count": {
         "failure_class": "clone_failed", "kind": "plugin", "name": "custom", "outcome": "failed",
         "registry": "none", "source": "local",
     },
-    "hermes.update.run": {
+    "slave.update.run": {
         "apply_mode": "unknown", "duration_bucket": "lt_30s", "failed_stage": "apply",
         "failure_class": "fetch_failed", "from_version_age_bucket": "unknown", "kind": "cli",
         "outcome": "failed",
@@ -334,7 +334,7 @@ def expected_update_stages() -> list[tuple[str, str]]:
     """One row per marked stage of UPDATE_RECEIPT, plus a failed row for the stage the run died in:
     stage marks are end marks, so the apply stage the fetch failure stopped has none of its own."""
     marked = [(stage["name"], stage["outcome"]) for stage in UPDATE_RECEIPT["stages"]]
-    died_in = FAILURE_EXPECTED_DIMENSIONS["hermes.update.run"]["failed_stage"]
+    died_in = FAILURE_EXPECTED_DIMENSIONS["slave.update.run"]["failed_stage"]
     return sorted([*marked, (died_in, "failed")])
 
 
@@ -346,28 +346,28 @@ def _validate_exact_rows(rows: dict[str, list[dict[str, Any]]], expected: dict[s
 
 def _validate_failure_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
     _validate_exact_rows(rows, FAILURE_EXPECTED_DIMENSIONS)
-    stages = sorted((row["dimensions"]["stage"], row["dimensions"]["outcome"]) for row in rows["hermes.update.stage"])
+    stages = sorted((row["dimensions"]["stage"], row["dimensions"]["outcome"]) for row in rows["slave.update.stage"])
     if stages != expected_update_stages():
-        raise AssertionError(f"Unexpected update stages: {rows['hermes.update.stage']}")
+        raise AssertionError(f"Unexpected update stages: {rows['slave.update.stage']}")
 # ---- end iuf c1 ----
 
 
 # One interactive turn (2 model calls, 1 read_file) on the canary custom model: the v5 per-turn,
 # per-conversation rows it must produce, identical in SQLite and in the export. The agent-created
-# skill is Hermes' own work, so it records no feature_adoption row (the exact name sets assert that).
+# skill is Slave' own work, so it records no feature_adoption row (the exact name sets assert that).
 V5_EXPECTED_DIMENSIONS = {
-    "hermes.task_cost.count": {
+    "slave.task_cost.count": {
         "api_calls_bucket": "2", "model": "custom", "outcome": "completed", "provider": "custom",
         "tokens_bucket": "lt_2k", "tool_calls_bucket": "1",
     },
-    "hermes.tool_output_truncation.count": {"original_size_bucket": "lt_1k", "tool": "read_file", "truncated": "no"},
-    "hermes.tool_enabled_unused.count": {"toolset": "file", "used": "yes"},
+    "slave.tool_output_truncation.count": {"original_size_bucket": "lt_1k", "tool": "read_file", "truncated": "no"},
+    "slave.tool_enabled_unused.count": {"toolset": "file", "used": "yes"},
 }
 
 
 def _validate_v5_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
     _validate_exact_rows(rows, V5_EXPECTED_DIMENSIONS)
-    [overhead] = rows["hermes.tool_overhead.count"]  # the file toolset's 4 tools, schema tokens estimated
+    [overhead] = rows["slave.tool_overhead.count"]  # the file toolset's 4 tools, schema tokens estimated
     if (
         overhead["value"] != 1
         or overhead["dimensions"]["execution_surface"] != "cli"
@@ -381,8 +381,8 @@ def _validate_v5_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
 # gateway reports its own boot latency and the local platform's delivery and first-reply latency for
 # the turn. The turn's single read_file call is one tool batch.
 GATEWAY_TURN_EXPECTED_DIMENSIONS = {
-    "hermes.platform.delivery": {"failure_class": "none", "outcome": "sent", "platform": "local"},
-    "hermes.tool_batch.count": {"connector_share": "none", "model": "custom", "provider": "custom", "size_bucket": "1"},
+    "slave.platform.delivery": {"failure_class": "none", "outcome": "sent", "platform": "local"},
+    "slave.tool_batch.count": {"connector_share": "none", "model": "custom", "provider": "custom", "size_bucket": "1"},
 }
 # Each process that launched once reports one startup row: the chat client and the gateway it started.
 EXPECTED_STARTUP_SURFACES = ("cli", "gateway_boot")
@@ -390,10 +390,10 @@ EXPECTED_STARTUP_SURFACES = ("cli", "gateway_boot")
 
 def _validate_gateway_turn_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
     _validate_exact_rows(rows, GATEWAY_TURN_EXPECTED_DIMENSIONS)
-    replies = rows["hermes.gateway.reply_latency"]  # the bucket is whatever the host's load made it
+    replies = rows["slave.gateway.reply_latency"]  # the bucket is whatever the host's load made it
     if any(row["dimensions"]["platform"] != "local" for row in replies) or sum(row["value"] for row in replies) != 1:
         raise AssertionError(f"Unexpected gateway reply latency: {replies}")
-    startup = rows["hermes.startup.latency"]
+    startup = rows["slave.startup.latency"]
     if sorted(row["dimensions"]["surface"] for row in startup) != sorted(EXPECTED_STARTUP_SURFACES) or any(
         row["value"] != 1 for row in startup
     ):
@@ -402,34 +402,34 @@ def _validate_gateway_turn_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
 
 # The metric names the scenario must produce, exactly, in SQLite and in the export.
 EXPECTED_METRIC_NAMES = frozenset({
-    "hermes.client.active",
-    "hermes.context_peak.count",
-    "hermes.extension.install.count",  # iuf c1
-    "hermes.gateway.reply_latency",
-    "hermes.install.milestone",
-    "hermes.install.snapshot",
-    "hermes.model_reply_issue.count",
-    "hermes.model_route.count",
-    "hermes.model_tokens.sum",
-    "hermes.model_tool_quality.count",
-    "hermes.platform.delivery",
-    "hermes.session.count",
-    "hermes.skill.lifecycle.count",
-    "hermes.skill.load.count",
-    "hermes.startup.latency",
-    "hermes.task_cost.count",
-    "hermes.task_run.duration",
-    "hermes.task_run.finished",
-    "hermes.task_run.started",
-    "hermes.tool.usage.count",
-    "hermes.tool_batch.count",
-    "hermes.tool_call.count",
-    "hermes.tool_call.latency",
-    "hermes.tool_enabled_unused.count",
-    "hermes.tool_output_truncation.count",
-    "hermes.tool_overhead.count",
-    "hermes.update.run",  # iuf c1
-    "hermes.update.stage",  # iuf c1
+    "slave.client.active",
+    "slave.context_peak.count",
+    "slave.extension.install.count",  # iuf c1
+    "slave.gateway.reply_latency",
+    "slave.install.milestone",
+    "slave.install.snapshot",
+    "slave.model_reply_issue.count",
+    "slave.model_route.count",
+    "slave.model_tokens.sum",
+    "slave.model_tool_quality.count",
+    "slave.platform.delivery",
+    "slave.session.count",
+    "slave.skill.lifecycle.count",
+    "slave.skill.load.count",
+    "slave.startup.latency",
+    "slave.task_cost.count",
+    "slave.task_run.duration",
+    "slave.task_run.finished",
+    "slave.task_run.started",
+    "slave.tool.usage.count",
+    "slave.tool_batch.count",
+    "slave.tool_call.count",
+    "slave.tool_call.latency",
+    "slave.tool_enabled_unused.count",
+    "slave.tool_output_truncation.count",
+    "slave.tool_overhead.count",
+    "slave.update.run",  # iuf c1
+    "slave.update.stage",  # iuf c1
 })
 
 
@@ -488,19 +488,19 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         raise AssertionError(
             f"Unexpected SQLite counters:\n{json.dumps(counters, indent=2)}"
         )
-    if by_name["hermes.client.active"] != [
+    if by_name["slave.client.active"] != [
         {
-            "name": "hermes.client.active",
+            "name": "slave.client.active",
             "dimensions": {},
             "value": 1,
             "packaged_value": 1,
         }
     ]:
         raise AssertionError(
-            f"Unexpected client-active counter: {by_name['hermes.client.active']}"
+            f"Unexpected client-active counter: {by_name['slave.client.active']}"
         )
     # Two primary calls; each lands in whatever TTFT bucket the host's load put it in.
-    models = by_name["hermes.model_route.count"]
+    models = by_name["slave.model_route.count"]
     expected_model = {
         "call_role": "primary", "error_class": "none", "model": "custom", "outcome": "success",
         "provider": "custom",
@@ -511,10 +511,10 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or sum(m["packaged_value"] for m in models) != 2
     ):
         raise AssertionError(
-            f"Unexpected model counter: {by_name['hermes.model_route.count']}"
+            f"Unexpected model counter: {by_name['slave.model_route.count']}"
         )
     expected_start = {
-        "name": "hermes.task_run.started",
+        "name": "slave.task_run.started",
         "dimensions": {
             "entrypoint": "one_shot",
             "execution_surface": "cli",
@@ -523,11 +523,11 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         "value": 1,
         "packaged_value": 1,
     }
-    if by_name["hermes.task_run.started"] != [expected_start]:
+    if by_name["slave.task_run.started"] != [expected_start]:
         raise AssertionError(
-            f"Unexpected task start: {by_name['hermes.task_run.started']}"
+            f"Unexpected task start: {by_name['slave.task_run.started']}"
         )
-    [terminal] = by_name["hermes.task_run.finished"]
+    [terminal] = by_name["slave.task_run.finished"]
     expected_terminal_dimensions = {
         "end_reason": "completed",
         "entrypoint": "one_shot",
@@ -543,53 +543,53 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or terminal["packaged_value"] != 1
     ):
         raise AssertionError(f"Unexpected task terminal counter: {terminal}")
-    [duration] = by_name["hermes.task_run.duration"]
+    [duration] = by_name["slave.task_run.duration"]
     if duration["dimensions"] != {
         "duration_bucket": duration["dimensions"].get("duration_bucket"),
         "execution_surface": "cli", "outcome": "success", "retry_count_bucket": "0",
     } or duration["value"] != 1:
         raise AssertionError(f"Unexpected task duration counter: {duration}")
-    [cost] = by_name["hermes.task_cost.count"]
+    [cost] = by_name["slave.task_cost.count"]
     if (cost["dimensions"]["api_calls_bucket"], cost["dimensions"]["tool_calls_bucket"]) != ("2", "1"):
         raise AssertionError(f"Unexpected task cost counter: {cost}")
-    if [c["dimensions"] for c in by_name["hermes.tool.usage.count"]] != [
+    if [c["dimensions"] for c in by_name["slave.tool.usage.count"]] != [
         {"error_class": "none", "outcome": "success", "tool_name": "read_file"}
     ]:
-        raise AssertionError(f"Unexpected tool usage: {by_name['hermes.tool.usage.count']}")
-    [snapshot] = by_name["hermes.install.snapshot"]
+        raise AssertionError(f"Unexpected tool usage: {by_name['slave.tool.usage.count']}")
+    [snapshot] = by_name["slave.install.snapshot"]
     if (
         snapshot["value"] != 1 or snapshot["dimensions"]["memory_provider"] != "builtin"
         # The smoke config leaves compression.prepare_ahead at its default.
         or snapshot["dimensions"]["compression_prepare_ahead"] != "off"
     ):
         raise AssertionError(f"Unexpected install snapshot: {snapshot}")
-    [session] = by_name["hermes.session.count"]
+    [session] = by_name["slave.session.count"]
     if (session["dimensions"]["turn_count_bucket"], session["dimensions"]["last_outcome"]) != (
         "1", "success",
     ):
         raise AssertionError(f"Unexpected session summary: {session}")
-    tokens = {c["dimensions"]["token_type"]: c["value"] for c in by_name["hermes.model_tokens.sum"]}
+    tokens = {c["dimensions"]["token_type"]: c["value"] for c in by_name["slave.model_tokens.sum"]}
     if tokens != {"input": 20, "output": 2}:
-        raise AssertionError(f"Unexpected token sums: {by_name['hermes.model_tokens.sum']}")
-    [quality] = by_name["hermes.model_tool_quality.count"]
+        raise AssertionError(f"Unexpected token sums: {by_name['slave.model_tokens.sum']}")
+    [quality] = by_name["slave.model_tool_quality.count"]
     if quality["dimensions"] != {"call_role": "primary", "issue": "none", "model": "custom", "provider": "custom"}:
         raise AssertionError(f"Unexpected tool-call quality: {quality}")
-    [reply] = by_name["hermes.model_reply_issue.count"]  # both scripted replies are usable
+    [reply] = by_name["slave.model_reply_issue.count"]  # both scripted replies are usable
     if (reply["dimensions"], reply["value"]) != ({"issue": "none", "model": "custom", "provider": "custom"}, 2):
         raise AssertionError(f"Unexpected model reply issues: {reply}")
-    [peak] = by_name["hermes.context_peak.count"]
+    [peak] = by_name["slave.context_peak.count"]
     if (peak["dimensions"]["provider"], peak["dimensions"]["model"], peak["dimensions"]["limit_hit"]) != (
         "custom", "custom", "no",
     ):
         raise AssertionError(f"Unexpected context peak: {peak}")
-    milestones = {c["dimensions"]["milestone"] for c in by_name["hermes.install.milestone"]}
+    milestones = {c["dimensions"]["milestone"] for c in by_name["slave.install.milestone"]}
     if not {"first_task_started", "first_task_success", "first_tool_success"} <= milestones:
         raise AssertionError(f"Missing install milestones: {sorted(milestones)}")
-    [tool] = by_name["hermes.tool_call.count"]
+    [tool] = by_name["slave.tool_call.count"]
     expected_tool_dimensions = {
         "approval_outcome": "not_required", "outcome": "success", "tool_category": "file",
     }
-    [latency] = by_name["hermes.tool_call.latency"]
+    [latency] = by_name["slave.tool_call.latency"]
     if (
         tool["dimensions"] != expected_tool_dimensions
         or latency["dimensions"]["latency_bucket"] == "unknown"
@@ -598,7 +598,7 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or tool["packaged_value"] != 1
     ):
         raise AssertionError(f"Unexpected tool counter: {tool}")
-    lifecycle = by_name["hermes.skill.lifecycle.count"]
+    lifecycle = by_name["slave.skill.lifecycle.count"]
     expected_actions = {
         "archived",
         "created",
@@ -614,7 +614,7 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or any(counter["packaged_value"] != 1 for counter in lifecycle)
     ):
         raise AssertionError(f"Unexpected skill lifecycle counters: {lifecycle}")
-    loads = by_name["hermes.skill.load.count"]
+    loads = by_name["slave.skill.load.count"]
     expected_load_states = {
         ("first_use", "not_applicable", "1"),
         ("reused", "no_new_patch", "2"),
@@ -653,7 +653,7 @@ def _validate_packages(
         import jsonschema
     except ImportError as exc:
         raise RuntimeError(
-            "The Hermes development environment requires jsonschema"
+            "The slave-agent development environment requires jsonschema"
         ) from exc
     schema = json.loads(schema_path.read_text(encoding="utf-8-sig"))
     packages = [
@@ -664,7 +664,7 @@ def _validate_packages(
         jsonschema.validate(package, schema)
         if set(package["resource"]) != {
             "architecture",
-            "hermes_version",
+            "slave_version",
             "install_method",
             "os_family",
         }:
@@ -692,18 +692,18 @@ def _validate_packages(
         raise AssertionError(
             f"Unexpected package metrics:\n{json.dumps(metrics, indent=2)}"
         )
-    if metrics["hermes.client.active"] != [
+    if metrics["slave.client.active"] != [
         {
-            "name": "hermes.client.active",
+            "name": "slave.client.active",
             "type": "counter",
             "dimensions": {},
             "value": 1,
         }
     ]:
         raise AssertionError(
-            f"Unexpected client-active metric: {metrics['hermes.client.active']}"
+            f"Unexpected client-active metric: {metrics['slave.client.active']}"
         )
-    models = metrics["hermes.model_route.count"]
+    models = metrics["slave.model_route.count"]
     if any(
         {k: v for k, v in m["dimensions"].items() if k != "ttft_bucket"} != {
             "call_role": "primary", "error_class": "none", "model": "custom", "outcome": "success",
@@ -712,9 +712,9 @@ def _validate_packages(
         for m in models
     ) or sum(m["value"] for m in models) != 2:
         raise AssertionError(
-            f"Unexpected model metric: {metrics['hermes.model_route.count']}"
+            f"Unexpected model metric: {metrics['slave.model_route.count']}"
         )
-    [terminal] = metrics["hermes.task_run.finished"]
+    [terminal] = metrics["slave.task_run.finished"]
     if terminal["dimensions"] != {
         "end_reason": "completed",
         "entrypoint": "one_shot",
@@ -725,14 +725,14 @@ def _validate_packages(
         "termination": "none",
     }:
         raise AssertionError(f"Unexpected task terminal metric: {terminal}")
-    [tool] = metrics["hermes.tool_call.count"]
+    [tool] = metrics["slave.tool_call.count"]
     if (
         tool["dimensions"]
         != {"approval_outcome": "not_required", "outcome": "success", "tool_category": "file"}
-        or metrics["hermes.tool_call.latency"][0]["dimensions"]["latency_bucket"] == "unknown"
+        or metrics["slave.tool_call.latency"][0]["dimensions"]["latency_bucket"] == "unknown"
     ):
         raise AssertionError(f"Unexpected tool metric: {tool}")
-    lifecycle = metrics["hermes.skill.lifecycle.count"]
+    lifecycle = metrics["slave.skill.lifecycle.count"]
     if {metric["dimensions"]["action"] for metric in lifecycle} != {
         "archived",
         "created",
@@ -743,7 +743,7 @@ def _validate_packages(
         "stale",
     }:
         raise AssertionError(f"Unexpected skill lifecycle metrics: {lifecycle}")
-    loads = metrics["hermes.skill.load.count"]
+    loads = metrics["slave.skill.load.count"]
     if {
         (
             metric["dimensions"]["reuse_state"],
@@ -765,12 +765,12 @@ def _validate_packages(
 
 def main() -> int:
     args = _arguments()
-    hermes_repo = args.hermes_repo.resolve()
+    slave_repo = args.slave_repo.resolve()
     # The gateway identity check must come from the tree under test, not whatever tree the venv's
     # editable install points at.
-    sys.path.insert(0, str(hermes_repo))
+    sys.path.insert(0, str(slave_repo))
     relay_python = args.relay_python.resolve() if args.relay_python else None
-    hermes = _resolve_hermes_executable(hermes_repo)
+    slave = _resolve_slave_executable(slave_repo)
     if relay_python is not None and not any(
         (relay_python / "nemo_relay").glob("_native.*")
     ):
@@ -785,8 +785,8 @@ def main() -> int:
             raise SystemExit(f"Refusing to replace existing output directory: {root}")
         root.mkdir(parents=True)
     else:
-        root = Path(tempfile.mkdtemp(prefix="hermes-relay-shared-metrics-"))
-    home = root / "hermes-home"
+        root = Path(tempfile.mkdtemp(prefix="slave-relay-shared-metrics-"))
+    home = root / "slave-home"
     workdir = root / "workspace"
     workdir.mkdir()
     (workdir / TOOL_FILE).write_text(TOOL_RESULT_CANARY, encoding="utf-8")
@@ -823,15 +823,15 @@ def main() -> int:
     try:
         _write_config(home, server.server_port)
         env = os.environ.copy()
-        env["HERMES_HOME"] = str(home)
-        python_paths = [str(hermes_repo)]
+        env["SLAVE_HOME"] = str(home)
+        python_paths = [str(slave_repo)]
         if relay_python is not None:
             python_paths.append(str(relay_python))
         python_paths.append(env.get("PYTHONPATH", ""))
         env["PYTHONPATH"] = os.pathsep.join(python_paths).rstrip(os.pathsep)
         result = subprocess.run(
             [
-                str(hermes),
+                str(slave),
                 "chat",
                 "--query",
                 PROMPT_CANARY,
@@ -862,11 +862,11 @@ def main() -> int:
             print(f"Gateway turn rows did not reach {metrics_db} in time", file=sys.stderr)
         _stop_auto_started_gateway(home)
 
-    (root / "hermes.stdout.txt").write_text(result.stdout, encoding="utf-8")
-    (root / "hermes.stderr.txt").write_text(result.stderr, encoding="utf-8")
+    (root / "slave.stdout.txt").write_text(result.stdout, encoding="utf-8")
+    (root / "slave.stderr.txt").write_text(result.stderr, encoding="utf-8")
     if result.returncode != 0:
         raise AssertionError(
-            f"Hermes exited with {result.returncode}\n"
+            f"slave-agent exited with {result.returncode}\n"
             f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
     if len(_ModelHandler.requests) != 2:
@@ -877,19 +877,19 @@ def main() -> int:
     if request.get("model") != MODEL_CANARY:
         raise AssertionError(f"Unexpected model request: {request.get('model')!r}")
     if PROMPT_CANARY not in json.dumps(request.get("messages", [])):
-        raise AssertionError("Hermes model request did not contain the prompt canary")
+        raise AssertionError("slave-agent model request did not contain the prompt canary")
     follow_up = json.dumps(_ModelHandler.requests[1].get("messages", []))
     if TOOL_CALL_CANARY not in follow_up or TOOL_RESULT_CANARY not in follow_up:
-        raise AssertionError("Hermes did not return the tool result to the model")
+        raise AssertionError("slave-agent did not return the tool result to the model")
     if RESPONSE_CANARY not in result.stdout:
-        raise AssertionError("Hermes did not print the mock model response")
+        raise AssertionError("slave-agent did not print the mock model response")
 
     skill_result = subprocess.run(
         [
             sys.executable,
             "-c",
             "\n".join([
-                "from hermes_cli.observability import relay_shared_metrics",
+                "from slave_cli.observability import relay_shared_metrics",
                 "from tools.skill_usage import (",
                 "    STATE_ACTIVE, STATE_ARCHIVED, STATE_STALE, bump_patch,",
                 "    bump_use, record_created, record_installed, set_state,",
@@ -910,8 +910,8 @@ def main() -> int:
                 # A real failing plugin install (offline: a file:// repo that does not exist) and a
                 # final update receipt whose fetch failed: each emits one row with a failure_class.
                 "from pathlib import Path",
-                "from hermes_cli.plugins_cmd import PluginOperationError, _install_plugin_core",
-                "from hermes_cli.plugins_cmd_install import recorded_install",
+                "from slave_cli.plugins_cmd import PluginOperationError, _install_plugin_core",
+                "from slave_cli.plugins_cmd_install import recorded_install",
                 "missing = (Path.cwd() / 'no-such-plugin-repo').as_uri()",
                 "try:",
                 "    recorded_install(lambda: _install_plugin_core(missing, force=False),",
@@ -919,7 +919,7 @@ def main() -> int:
                 "    raise SystemExit('bogus plugin install succeeded')",
                 "except PluginOperationError:",
                 "    pass",
-                "from hermes_cli.observability.shared_metrics_update import record_update_receipt",
+                "from slave_cli.observability.shared_metrics_update import record_update_receipt",
                 f"record_update_receipt({UPDATE_RECEIPT!r})",
                 "runtime = relay_shared_metrics._get_runtime()",
                 "assert runtime is not None",
@@ -954,14 +954,14 @@ def main() -> int:
     counters = _validate_store(telemetry / "metrics.sqlite3")
     package_paths, packages = _validate_packages(
         telemetry / "outbox",
-        hermes_repo
-        / "hermes_cli"
+        slave_repo
+        / "slave_cli"
         / "observability"
         / "schemas"
-        / "hermes.shared_metrics.v4.schema.json",
+        / "slave.shared_metrics.v4.schema.json",
     )
 
-    print("Hermes -> NeMo Relay shared-metrics smoke test passed")
+    print("slave-agent -> NeMo Relay shared-metrics smoke test passed")
     print(f"Artifact directory: {root}")
     print(f"Model requests: {len(_ModelHandler.requests)}")
     print(f"SQLite counters: {json.dumps(counters, indent=2)}")

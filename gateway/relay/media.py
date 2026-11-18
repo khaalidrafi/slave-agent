@@ -50,7 +50,7 @@ _UPLOAD_RETRY_STATUSES = frozenset({403, 408, 429, 500, 502, 503, 504})
 
 # Discord's CDN (and other public hosts) 403 urllib's default UA, which
 # silently killed every CDN pass-through download. Always send a descriptive UA.
-_MEDIA_USER_AGENT = "HermesAgent-Relay/1.0 (+https://github.com/NousResearch/hermes-agent)"
+_MEDIA_USER_AGENT = "SlaveAgent-Relay/1.0 (+https://github.com/NousResearch/hermes-agent)"
 
 
 def media_base_url(relay_dial_url: str) -> str:
@@ -90,7 +90,7 @@ class RelayMediaClient:
         any host that names that path. Userinfo is refused outright so a parser
         differential (``https://evil\\@connector/…``) cannot split host and target.
         """
-        from hermes_cli.urllib_security import url_origin
+        from slave_cli.urllib_security import url_origin
 
         try:
             candidate = urllib.parse.urlsplit(url or "")
@@ -115,7 +115,7 @@ class RelayMediaClient:
         set apart from the ``GATEWAY_RELAY_URL`` this client is built from; those downloads
         then 401 and the attachment is lost, so name both origins instead of failing quietly.
         """
-        from hermes_cli.urllib_security import url_origin
+        from slave_cli.urllib_security import url_origin
 
         try:
             parts = urllib.parse.urlsplit(url)

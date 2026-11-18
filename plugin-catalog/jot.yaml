@@ -1,7 +1,7 @@
 name: jot
 repo: https://github.com/Totoro-qaq/hermes-jot
 sha: 'b65b550108c8e742cc5737055213da947dc54e0f'
-description: Notes, checklists and documents beside Hermes that your agent can read and update safely, with revision checks and undo for AI edits.
+description: Notes, checklists and documents beside slave-agent that your agent can read and update safely, with revision checks and undo for AI edits.
 maintainer: Totoro-qaq
 tier: community
 category: desktop
@@ -14,7 +14,7 @@ screenshots:
   - https://raw.githubusercontent.com/Totoro-qaq/hermes-jot/b65b550108c8e742cc5737055213da947dc54e0f/assets/readme/workspace.en.jpg
   - https://raw.githubusercontent.com/Totoro-qaq/hermes-jot/b65b550108c8e742cc5737055213da947dc54e0f/assets/readme/sidebar.en.jpg
 known_issues:
-  - Requires a current Hermes Desktop build with SandboxedFrame and gateway file-download SDK support.
+  - Requires a current slave-agent Desktop build with SandboxedFrame and gateway file-download SDK support.
   - Word attachments use download or the default application; the tested host does not render DOCX.
 capabilities:
   provides_tools: [jot_list, jot_read, jot_create, jot_update, jot_set_task, jot_delete]

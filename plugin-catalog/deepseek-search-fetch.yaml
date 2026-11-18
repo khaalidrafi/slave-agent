@@ -11,7 +11,7 @@ title: "DeepSeek Search & Fetch"
 image: https://raw.githubusercontent.com/JasonSwindle/hermes-deepseek-search-fetch/252c68a41d677d11f7a25fdb5c3fddf215ed5546/docs/banner.png
 platforms: []
 known_issues:
-  - "Billed by DeepSeek per successful request (list price $0.75 per 1,000; failed calls are free); web_extract calls Fetch one URL at a time, so multi-URL extracts run sequentially to the effective deadline (min(extract_deadline, web.extract_timeout - 1.5s), with bodies aborted at that deadline) and return the pages already fetched; and ori_question is not forwarded, because Hermes hands the provider only the query and a result limit."
+  - "Billed by DeepSeek per successful request (list price $0.75 per 1,000; failed calls are free); web_extract calls Fetch one URL at a time, so multi-URL extracts run sequentially to the effective deadline (min(extract_deadline, web.extract_timeout - 1.5s), with bodies aborted at that deadline) and return the pages already fetched; and ori_question is not forwarded, because slave-agent hands the provider only the query and a result limit."
 capabilities:
   provides_tools: []
   provides_hooks: []

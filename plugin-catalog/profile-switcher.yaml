@@ -2,10 +2,10 @@ name: profile-switcher
 repo: https://github.com/okyssta/hermes-profile-switcher
 sha: 1cf6274592631621bd721bb24501462b83e3b965
 title: Profile Switcher
-description: 'The Alt+Tab gesture for Hermes profiles. Hold Ctrl+Alt and tap Tab to cycle through your
+description: 'The Alt+Tab gesture for slave-agent profiles. Hold Ctrl+Alt and tap Tab to cycle through your
   profiles, release to land on the highlighted one — the same hold-tap-release rhythm as the OS app
   switcher. (Alt+Tab, Win+Tab and Cmd+Tab are owned by the window manager and cannot be bound by any
-  application, so the gesture lives on ctrl+alt+tab, unclaimed by the OS and by Hermes core.) Each row
+  application, so the gesture lives on ctrl+alt+tab, unclaimed by the OS and by slave-agent core.) Each row
   shows the profile''s model and most recent conversation; a working profile shows a spinner. Also opens
   with a single contributed keybind (Cmd+Alt+P / Ctrl+Alt+P, rebindable in the app''s own keybind panel),
   a status-bar chip, and a palette command. The switch goes through the Desktop''s own profile path, so

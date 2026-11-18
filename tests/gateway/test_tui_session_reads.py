@@ -2,7 +2,7 @@
 every local session's /cron reads run main's handler on the owner, and its writes run there only when
 the classic CLI sends them on its own command socket (a viewer's connection keeps main's refusal).
 
-Main's TUI answered these itself (``session.status``: ``Hermes TUI Status``; ``/context``:
+Main's TUI answered these itself (``session.status``: ``slave-agent TUI Status``; ``/context``:
 ``_format_live_context_output`` with the category table; ``/cron``: the classic CLI's overview in
 the slash worker). Through the owner a TUI session got the messaging gateway's markdown instead
 (FINDINGS rows 17 / 19 / 21). Other surfaces keep the gateway's handlers.
@@ -27,8 +27,8 @@ async def owner(tmp_path, monkeypatch):
     home.mkdir()
     (home / 'config.yaml').write_text(
         'model: {default: fake-model, provider: custom, base_url: "http://127.0.0.1:9/v1"}\n')
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,
                              _cached_agent_for=lambda route: None)
@@ -53,7 +53,7 @@ async def test_tui_status_is_main_tui_status(owner):
     sid = (await owner.call('session.create', request_id='t', source='tui', cwd=str(owner.workdir)))['session_id']
     out = await _exec(owner, sid, 'status')
     lines = out.splitlines()
-    assert lines[0] == 'Hermes TUI Status' and lines[1] == '', out
+    assert lines[0] == 'slave-agent TUI Status' and lines[1] == '', out
     assert lines[2].startswith('Session ID: ') and lines[3].startswith('Path: ')
     labels = [line.split(':')[0] for line in lines[4:]]
     assert labels == ['Model', 'Created', 'Last Activity', 'Tokens', 'Agent Running'], out
@@ -103,12 +103,12 @@ async def test_tui_context_with_a_live_agent_renders_the_category_table(owner, m
 @pytest.mark.asyncio
 async def test_tui_cron_is_the_classic_overview_with_the_profile_jobs(owner):
     from cron.jobs import create_job
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(str(owner.home))
+    from slave_constants import reset_slave_home_override, set_slave_home_override
+    token = set_slave_home_override(str(owner.home))
     try:
         create_job('Summarize the news', '0 9 * * *', name='daily-digest')
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     sid = (await owner.call('session.create', request_id='t', source='tui', cwd=str(owner.workdir)))['session_id']
     out = await _exec(owner, sid, 'cron')
     assert '(^_^) Scheduled Tasks' in out and '/cron list' in out, out
@@ -152,12 +152,12 @@ async def test_cron_writes_stay_refused_on_a_viewer_connection_and_reads_list_al
     created the session, a classic CLI session included. Its reads still list, ``-a`` included (main's TUI
     alias)."""
     from cron.jobs import create_job, pause_job
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(str(owner.home))
+    from slave_constants import reset_slave_home_override, set_slave_home_override
+    token = set_slave_home_override(str(owner.home))
     try:
         pause_job(create_job('ping', 'every 2h', name='parked')['id'])
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     for source in ('cli', 'tui', 'gui', 'acp'):
         sid = (await owner.call('session.create', request_id=source, source=source,
                                 cwd=str(owner.workdir)))['session_id']
@@ -194,7 +194,7 @@ async def test_concurrent_cron_runs_never_wait_on_the_pool_their_jobs_need(owner
     # The fire is submitted to the owner bound to the home of the authority's store (bind_owner).
     home = store_location(owner.authority.persistence.scope).resolve().parent
     (home / 'config.yaml').write_text((owner.home / 'config.yaml').read_text())
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     ids = [create_job('ping', 'every 2h', name=name)['id'] for name in ('one', 'two')]
     sid = (await owner.call('session.create', request_id='r', source='cli', cwd=str(owner.workdir)))['session_id']
     asyncio.get_running_loop().set_default_executor(concurrent.futures.ThreadPoolExecutor(1))

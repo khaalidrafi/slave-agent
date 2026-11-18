@@ -68,8 +68,8 @@ def test_retained_result_lookup_does_not_initialize_session_store(tmp_path, monk
     from tools import process_registry_results as receipts
 
     db_path = tmp_path / "state.db"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(receipts, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setattr(receipts, "get_slave_home", lambda: tmp_path)
     directory = tmp_path / "logs" / "process-results"
     directory.mkdir(parents=True)
     (directory / "proc_owned.json").write_text(json.dumps({
@@ -170,7 +170,7 @@ def test_headless_terminal_result_survives_cli_exit(tmp_path, request):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     url = f"http://127.0.0.1:{server.server_port}/v1"
-    env = {**os.environ, "HERMES_HOME": str(home), "HOME": str(tmp_path),
+    env = {**os.environ, "SLAVE_HOME": str(home), "HOME": str(tmp_path),
            "USERPROFILE": str(tmp_path), "TERMINAL_CWD": str(tmp_path),
            "OPENAI_BASE_URL": url, "OPENAI_API_KEY": "local-test-only",
            "PYTHONPATH": str(REPO_ROOT)}
@@ -236,14 +236,14 @@ def test_headless_terminal_result_survives_cli_exit(tmp_path, request):
     ''')
     def read_result(profile):
         result = subprocess.run([sys.executable, "-c", consumer, process_id],
-                                cwd=tmp_path, env={**env, "HERMES_HOME": str(profile)},
+                                cwd=tmp_path, env={**env, "SLAVE_HOME": str(profile)},
                                 check=True, stdin=subprocess.DEVNULL, capture_output=True,
                                 text=True, encoding="utf-8", timeout=30)
         return json.loads(result.stdout)
 
     receipt = json.loads((home / "logs" / "process-results" / f"{process_id}.json").read_text(encoding="utf-8"))
     assert receipt["parent_session_id"]  # CLI owner must be stamped before its reader starts.
-    env["HERMES_SESSION_ID"] = receipt["parent_session_id"]
+    env["SLAVE_SESSION_ID"] = receipt["parent_session_id"]
     recovered = read_result(home)
     assert recovered["result"]["status"] == "exited", recovered
     assert recovered["status"]["exit_code"] == 7, recovered
@@ -264,7 +264,7 @@ def test_receipts_are_bounded_redacted_and_session_scoped(tmp_path, monkeypatch)
     secret = "sk-" + "aB2cD3eF4gH5iJ6kL7mN8pQ9rS0tU1vW2xY3zA4bC5dE6fG7"
     from gateway.session_context import scoped_current_session_id
     from tools.process_registry_results import load_completed_results
-    monkeypatch.setenv("HERMES_SESSION_ID", "owner-session")
+    monkeypatch.setenv("SLAVE_SESSION_ID", "owner-session")
     sessions = []
     registry = ProcessRegistry()
     for index in range(3):
@@ -279,8 +279,8 @@ def test_receipts_are_bounded_redacted_and_session_scoped(tmp_path, monkeypatch)
         registry._running[session.id] = session
         registry._move_to_finished(session)
         sessions.append(session)
-    from hermes_constants import get_hermes_home
-    paths = list((get_hermes_home() / "logs" / "process-results").glob("*.json"))
+    from slave_constants import get_slave_home
+    paths = list((get_slave_home() / "logs" / "process-results").glob("*.json"))
     assert len(paths) == 2
     assert all(secret not in path.read_text(encoding="utf-8") for path in paths)
     for path in paths:
@@ -324,9 +324,9 @@ def test_receipts_are_bounded_redacted_and_session_scoped(tmp_path, monkeypatch)
     assert fresh.get(recovered.id) is None
 
     # Multiplex readers must keep the producer's profile on native threads.
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+    from slave_constants import set_slave_home_override, reset_slave_home_override
     profile = tmp_path / "thread-profile"
-    token = set_hermes_home_override(profile)
+    token = set_slave_home_override(profile)
     try:
         with scoped_current_session_id("thread-owner"):
             child = registry.spawn_local(
@@ -337,5 +337,5 @@ def test_receipts_are_bounded_redacted_and_session_scoped(tmp_path, monkeypatch)
             assert (profile / "logs" / "process-results" / f"{child.id}.json").exists()
             assert "SCOPED_RESULT" in ProcessRegistry().read_log(child.id)["output"]
     finally:
-        reset_hermes_home_override(token)
-    assert not (get_hermes_home() / "logs" / "process-results" / f"{child.id}.json").exists()
+        reset_slave_home_override(token)
+    assert not (get_slave_home() / "logs" / "process-results" / f"{child.id}.json").exists()

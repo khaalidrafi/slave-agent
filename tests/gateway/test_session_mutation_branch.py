@@ -10,7 +10,7 @@ from tests.gateway.test_native_http_auth import daemon, ticket
 
 async def branch_round(home, descriptor, previous=None):
     async with connect(descriptor['api_origin'].replace('http:', 'ws:') + '/api/ws', subprotocols=[
-            'hermes-gateway-v1', 'hermes-gateway-ticket.' + ticket(home, descriptor, 'interactive')]) as ws:
+            'slave-gateway-v1', 'slave-gateway-ticket.' + ticket(home, descriptor, 'interactive')]) as ws:
         async def rpc(method, **params):
             await ws.send(json.dumps({'id': 1, 'method': method, 'params': params}))
             while True:

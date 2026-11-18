@@ -17,7 +17,7 @@ import pytest
 from plugins.config_backends import remote as remote_pkg
 from plugins.config_backends.remote import backend as backend_mod
 from plugins.config_backends.remote import credentials as cred_mod
-from hermes_cli.config_backend import ConfigLockedError, get_config_backend
+from slave_cli.config_backend import ConfigLockedError, get_config_backend
 
 from .stub_plane import StubPlane, remote_env
 
@@ -26,7 +26,7 @@ from .stub_plane import StubPlane, remote_env
 def plane(tmp_path, monkeypatch):
     home = Path(tmp_path) / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     with StubPlane() as p:
         for k, v in remote_env(p).items():
             monkeypatch.setenv(k, v)
@@ -40,16 +40,16 @@ def plane(tmp_path, monkeypatch):
 
 
 def _tui_server(monkeypatch, home):
-    from hermes_cli import banner
+    from slave_cli import banner
     monkeypatch.setattr(banner, "prefetch_update_check", lambda: None)
     from tui_gateway import server
-    monkeypatch.setattr(server, "_hermes_home", home)
+    monkeypatch.setattr(server, "_slave_home", home)
     server._cfg_cache = server._cfg_sig = server._cfg_path = None
     return server
 
 
 def _switch(model="new-model", provider="new-provider"):
-    from hermes_cli.model_switch import ModelSwitchResult
+    from slave_cli.model_switch import ModelSwitchResult
     return ModelSwitchResult(success=True, new_model=model, target_provider=provider, provider_changed=True,
                              api_key="", base_url="", api_mode="", is_global=True)
 
@@ -58,8 +58,8 @@ def _switch(model="new-model", provider="new-provider"):
 
 def test_locked_provider_refuses_the_whole_model_switch(plane):
     """A tenant lock on model.provider alone: the switch raises and model.default stays put."""
-    from hermes_cli.config import read_raw_config
-    from hermes_cli.model_switch import persist_model_selection
+    from slave_cli.config import read_raw_config
+    from slave_cli.model_switch import persist_model_selection
     plane.upper = {"model": {"default": "old-model", "provider": "old-provider"}}
     plane.upper_locks = [{"path": "model.provider", "level": "tenant"}]
 
@@ -73,7 +73,7 @@ def test_locked_provider_refuses_the_whole_model_switch(plane):
 
 
 def test_unlocked_model_switch_is_one_patch_and_keeps_siblings(plane):
-    from hermes_cli.model_switch import persist_model_selection
+    from slave_cli.model_switch import persist_model_selection
     plane.profile("default").update(values={"model": {"default": "old-model", "provider": "old-provider",
                                                       "model_slots": {"fast": "mini"}}}, version=1)
 
@@ -88,14 +88,14 @@ def test_unlocked_model_switch_is_one_patch_and_keeps_siblings(plane):
 
 def test_file_backend_model_switch_still_writes_every_key(tmp_path, monkeypatch):
     """Control: the file backend keeps its key-by-key round-trip (comments, siblings intact)."""
-    import hermes_yaml as yaml
-    from hermes_cli.model_switch import persist_model_selection
-    monkeypatch.delenv("HERMES_CONFIG_BACKEND", raising=False)
+    import slave_yaml as yaml
+    from slave_cli.model_switch import persist_model_selection
+    monkeypatch.delenv("SLAVE_CONFIG_BACKEND", raising=False)
     remote_pkg._reset_for_tests()
     cfg = tmp_path / "config.yaml"
     cfg.write_text("# keep me\nmodel:\n  default: old\n  provider: old-p\n  api_mode: x\n  model_slots:\n"
                    "    fast: mini\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
     persist_model_selection(_switch(), cfg)
 
@@ -110,7 +110,7 @@ def test_tui_focus_on_under_a_partial_lock_changes_nothing(plane, monkeypatch):
     focus_view alone refuses all three (no stash or mode left behind), and the session is unchanged."""
     plane.upper = {"display": {"tool_progress": "verbose", "focus_view": False}}
     plane.upper_locks = [{"path": "display.focus_view", "level": "tenant"}]
-    monkeypatch.delenv("HERMES_TUI_TOOL_PROGRESS", raising=False)
+    monkeypatch.delenv("SLAVE_TUI_TOOL_PROGRESS", raising=False)
     server = _tui_server(monkeypatch, plane.home)
     session = {"session_key": "k", "tool_progress_mode": "verbose", "focus_view": False}
     server._sessions["s1"] = session
@@ -196,7 +196,7 @@ def _start(target, name):
 
 
 def test_concurrent_reader_never_sees_the_unmigrated_doc(plane, monkeypatch):
-    from hermes_cli.config_backend import read_config_doc
+    from slave_cli.config_backend import read_config_doc
     latest = _legacy_profile(plane)
     backend = get_config_backend()
     backend._state(plane.home)
@@ -219,7 +219,7 @@ def test_concurrent_reader_never_sees_the_unmigrated_doc(plane, monkeypatch):
 
 
 def test_concurrent_readonly_reader_never_sees_the_unmigrated_doc(plane, monkeypatch):
-    from hermes_cli.config_backend import read_config_doc_readonly
+    from slave_cli.config_backend import read_config_doc_readonly
     latest = _legacy_profile(plane)
     backend = get_config_backend()
     backend._state(plane.home)
@@ -240,8 +240,8 @@ def test_concurrent_readonly_reader_never_sees_the_unmigrated_doc(plane, monkeyp
 def test_writer_during_a_migration_sends_only_its_edit(plane, monkeypatch):
     """Concurrent-writer control: the edit diffs against completed migration output, so the
     migration's removal is never sent (D12) and the stored legacy value survives."""
-    from hermes_cli.config import read_raw_config, set_config_value
-    from hermes_cli.config_backend import read_config_doc
+    from slave_cli.config import read_raw_config, set_config_value
+    from slave_cli.config_backend import read_config_doc
     _legacy_profile(plane)
     backend = get_config_backend()
     backend._state(plane.home)
@@ -268,7 +268,7 @@ def test_writer_during_a_migration_sends_only_its_edit(plane, monkeypatch):
 def test_poll_installing_a_newer_doc_mid_read_is_migrated_before_it_is_returned(plane, monkeypatch):
     """A poll installs a fresh legacy doc between a reader completing the old one and taking its
     snapshot: the reader goes round again and still returns only migrated output."""
-    from hermes_cli.config_backend import read_config_doc
+    from slave_cli.config_backend import read_config_doc
     latest = _legacy_profile(plane)
     backend = get_config_backend()
     st = backend._state(plane.home)
@@ -293,8 +293,8 @@ def test_poll_installing_a_newer_doc_mid_read_is_migrated_before_it_is_returned(
 
 def test_migration_recursion_still_sees_its_private_copy(plane, monkeypatch):
     """Control: a migration step's own reads get its private copy without starting another pass."""
-    from hermes_cli import config as config_mod
-    from hermes_cli import config_migrations
+    from slave_cli import config as config_mod
+    from slave_cli import config_migrations
     latest = backend_mod._latest_config_version()
     plane.profile("default").update(values={"old_key": 1}, version=1, writer=latest - 1)
     seen = []
@@ -342,7 +342,7 @@ def test_profile_editor_reports_mcp_unapplied_when_legacy_disabled_cleanup_is_lo
     """Enabling an MCP server writes ``enabled: true`` AND drops the legacy ``disabled``. When a
     lock keeps ``disabled: true``, the editor (which honours ``disabled``) still shows the server
     off, so the edit must not be acknowledged; unlocked, it lands and the editor agrees."""
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli.config import read_user_config_raw
     from tui_gateway.methods_profiles import _mcp_entry_enabled
     plane.upper = {"mcp_servers": {"example": {"command": "unused", "enabled": False}}}
     plane.profile("default")["values"] = {"mcp_servers": {"example": {"disabled": True}}}
@@ -366,7 +366,7 @@ def test_profile_editor_reports_a_locked_skills_edit_as_not_applied(plane, monke
     Remote Config lock instead of raising. The editor must report that section unapplied, not
     acknowledge an edit the plane never stored; unlocked, the same edit lands and is reported."""
     import json
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli.config import read_user_config_raw
     plane.upper = {"skills": {"disabled": []}}
     plane.upper_locks = [{"path": "skills.disabled", "level": "tenant"}]
     server = _tui_server(monkeypatch, plane.home)

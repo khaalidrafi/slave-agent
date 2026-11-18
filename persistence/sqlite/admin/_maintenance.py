@@ -35,8 +35,8 @@ from ..conversation._store.search import (
 from . import _reconcile
 from ._base import AdminFile
 
-# caplog tests pin the "hermes_state" logger name.
-logger = logging.getLogger("hermes_state")
+# caplog tests pin the "slave_state" logger name.
+logger = logging.getLogger("slave_state")
 
 
 def _optimize_fts(holder: StoreHolder) -> int:
@@ -145,7 +145,7 @@ class _FtsStorageOptimizer:
     One blocking rebuild held the write lock ~16 min on a 25 GB DB, so the backfill and teardown
     run in chunks: each its own bounded transaction (WAL growth stays small), resumable from its
     marker (claimed by CAS), and a progress tick. They run back to back with no pause while no other
-    process holds state.db: the foreground `hermes sessions optimize-storage` refuses to start under
+    process holds state.db: the foreground `slave sessions optimize-storage` refuses to start under
     a holder (held_store_refusal), and a fixed 0.2 s pause after each few-ms chunk was >95% of the
     wall time. Chunk size (in ROWS, never an id span: a pruned store has id gaps) adapts toward
     TARGET seconds, since rows cost ~1000x more in trigram_data than in docsize. A side thread
@@ -642,7 +642,7 @@ class MaintenanceAdmin(AdminFile):
                 holder._raise_if_db_replaced()
                 if holder._conn is None:
                     holder._reopen_after_close_locked(context="write")
-                # PASSIVE, not TRUNCATE: a manual `hermes sessions vacuum` runs in a transient CLI
+                # PASSIVE, not TRUNCATE: a manual `slave sessions vacuum` runs in a transient CLI
                 # process; a TRUNCATE reset here would race a live gateway writer.
                 _try_checkpoint(holder, "PASSIVE", "WAL checkpoint (PASSIVE) before VACUUM failed: %s")
                 holder._conn.execute("VACUUM")

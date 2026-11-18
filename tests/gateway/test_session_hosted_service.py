@@ -13,7 +13,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 @pytest.mark.asyncio
 async def test_room_owner_survives_service_restart_and_foreign_actor_cannot_claim(tmp_path, monkeypatch):
     from gateway.session_hosted_service import CanonicalHostedRoomService
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = open_persistence(profile_scope(home=tmp_path))
     authority = SimpleNamespace(db=db, persistence=storage_handle(tmp_path), profile_id=str(tmp_path), epoch=db.runtime.begin_epoch(instance_id='test'))
     try:
@@ -65,7 +65,7 @@ def test_hosted_dequeue_checks_exact_task_member_and_frozen_input(tmp_path, monk
     from gateway import hosted_room_driver as tasks
     from gateway.hosted_rooms import local_authority_gateway_id
     from tui_gateway.hosted_room_driver import HostedRoomBinding
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         authority = SimpleNamespace(db=db, persistence=storage_handle(tmp_path), profile_id=str(tmp_path), epoch=db.runtime.begin_epoch(instance_id='test'))
         service = CanonicalHostedRoomService(authority, None)
@@ -100,7 +100,7 @@ def test_hosted_dequeue_checks_exact_task_member_and_frozen_input(tmp_path, monk
 async def test_service_does_not_plan_or_run_historical_unowned_rooms(tmp_path, monkeypatch):
     from gateway.session_hosted_service import CanonicalHostedRoomService
     from gateway.hosted_rooms import create_room, local_authority_gateway_id
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         authority = SimpleNamespace(db=db, persistence=storage_handle(tmp_path), profile_id=str(tmp_path), epoch=db.runtime.begin_epoch(instance_id='test'))
         service = CanonicalHostedRoomService(authority, asyncio.get_running_loop())
@@ -120,7 +120,7 @@ def test_rejected_create_never_leaves_owner_only_reservation(tmp_path, monkeypat
     from gateway.session_controls import AuthorityConnection
     from tests.fixtures.storage_holder import hosted_room_reload
     from gateway.session_hosted_service import CanonicalHostedRoomService
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     (tmp_path / 'profiles' / 'two').mkdir(parents=True)
     (tmp_path / 'config.yaml').write_text(
         'hosted_rooms:\n  profiles:\n    two: ' + str((tmp_path / 'profiles' / 'two').resolve()) + '\n')

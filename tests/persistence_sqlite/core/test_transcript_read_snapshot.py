@@ -5,7 +5,7 @@ lands, this process's or another connection's."""
 import sqlite3
 import threading
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_holder import raw_holder
@@ -39,10 +39,10 @@ def test_reads_inside_a_snapshot_see_one_generation(tmp_path):
 
 
 def test_a_delete_journal_store_is_not_pinned_and_any_write_makes_it_inconsistent(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "slave-home"
     home.mkdir()
     (home / "config.yaml").write_text(yaml.safe_dump({"database": {"journal_mode": "delete"}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     store = open_persistence(profile_scope(home=home))
     try:
         seed_session(store, "s1", "cli")

@@ -1,7 +1,7 @@
 """Tool result persistence -- preserves large outputs instead of truncating. Layers against
 context overflow: (1) per-tool caps inside each tool; (2) ``maybe_persist_tool_result`` —
 output over the tool's threshold is persisted and replaced by a preview + path; canonical home
-is ALWAYS host-side ``$HERMES_HOME/cache/spillover/{id}.txt`` (works for sessions that never
+is ALWAYS host-side ``$SLAVE_HOME/cache/spillover/{id}.txt`` (works for sessions that never
 ran a terminal), remote backends get the translated in-sandbox path (probed for readability)
 else a copy in the sandbox temp dir; (3) ``enforce_turn_budget``."""
 
@@ -21,7 +21,7 @@ from tools.budget_config import DEFAULT_PREVIEW_SIZE_CHARS, BudgetConfig, DEFAUL
 logger = logging.getLogger(__name__)
 PERSISTED_OUTPUT_TAG = "<persisted-output>"
 PERSISTED_OUTPUT_CLOSING_TAG = "</persisted-output>"
-STORAGE_DIR = os.path.join(tempfile.gettempdir(), "hermes-results")
+STORAGE_DIR = os.path.join(tempfile.gettempdir(), "slave-results")
 SPILLOVER_SUBDIR = "cache/spillover"
 # Fallback spillover age only (unreadable config); the real default is the session
 # retention window — see _spillover_retention_hours().
@@ -42,9 +42,9 @@ _spillover_pruned_homes: set = set()  # profile home keys already swept this pro
 
 
 def get_spillover_dir():
-    """Return $HERMES_HOME/cache/spillover as a Path (not created)."""
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / SPILLOVER_SUBDIR
+    """Return $SLAVE_HOME/cache/spillover as a Path (not created)."""
+    from slave_constants import get_slave_home
+    return get_slave_home() / SPILLOVER_SUBDIR
 
 
 def _spillover_retention_hours() -> int:
@@ -53,7 +53,7 @@ def _spillover_retention_hours() -> int:
     days later must still find what the ``<persisted-output>`` pointer promises (#126351).
     Falls back to the legacy 24h cache age when the config is unreadable."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
         days = float((load_config_readonly().get("sessions") or {}).get("retention_days", 90))
         if not math.isfinite(days):  # YAML ``.inf`` / ``.nan`` parse as floats; int() would raise
             return SPILLOVER_MAX_AGE_HOURS
@@ -75,7 +75,7 @@ _SPILLOVER_NAME_RE = re.compile(r"spillover(?:/|\\+)([A-Za-z0-9_.-]+)")
 SPILLOVER_SQL_FILTER = "(instr(content, 'spillover') > 0 OR instr(api_content, 'spillover') > 0)"
 
 
-_ARCHIVE_PATH_RE = re.compile(r"(?:^|[/\\])(?:spillover|hermes-results)[/\\][^/\\]+$")
+_ARCHIVE_PATH_RE = re.compile(r"(?:^|[/\\])(?:spillover|slave-results)[/\\][^/\\]+$")
 
 
 def expired_archive_fields(path: str) -> dict:
@@ -165,8 +165,8 @@ def _prune_spillover_once() -> None:
     """Best-effort prune, at most once per process PER PROFILE HOME (CLI-only installs never run
     housekeeping; a multiplexed gateway must sweep every profile's ``cache/spillover``, not just the
     first one that spilled)."""
-    from hermes_constants import hermes_home_key
-    home_key = hermes_home_key()
+    from slave_constants import slave_home_key
+    home_key = slave_home_key()
     with _spillover_prune_lock:
         if home_key in _spillover_pruned_homes:
             return
@@ -189,7 +189,7 @@ def _is_host_side_env(env) -> bool:
 
 
 def _write_to_spillover(content: str, filename: str):
-    """Write host-side to $HERMES_HOME/cache/spillover; returns path str or None.
+    """Write host-side to $SLAVE_HOME/cache/spillover; returns path str or None.
 
     The write is size-verified before the caller tells the model "Full output saved":
     a partially-flushed file (quota, ENOSPC race) fails closed to the bounded inline

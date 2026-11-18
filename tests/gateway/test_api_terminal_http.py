@@ -55,7 +55,7 @@ async def test_chat_budget_exhausted_turn_is_length_not_cancelled(stream, result
     try:
         async with TestClient(TestServer(app)) as client:
             response = await client.post('/v1/chat/completions', json={
-                'model': 'hermes', 'stream': stream, 'messages': [{'role': 'user', 'content': 'hi'}]})
+                'model': 'slave', 'stream': stream, 'messages': [{'role': 'user', 'content': 'hi'}]})
             assert response.status == 200
             if stream:
                 chunks = [json.loads(line[6:]) for line in (await response.text()).splitlines()
@@ -67,7 +67,7 @@ async def test_chat_budget_exhausted_turn_is_length_not_cancelled(stream, result
                 content = final['choices'][0]['message']['content']
             assert content == 'wrap-up'
             assert final['choices'][0]['finish_reason'] == finish
-            assert final['hermes']['error_code'] == code
+            assert final['slave']['error_code'] == code
     finally:
         adapter._response_store.close()
         adapter._run_idempotency_store.close()

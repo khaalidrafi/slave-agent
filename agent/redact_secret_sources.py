@@ -2,11 +2,11 @@
 command sources, ...).
 
 The shape-based passes in ``agent.redact`` cannot recognise an arbitrary vault value (a
-``DATABASE_URL``, an opaque field with no vendor prefix), so ``hermes_cli.env_loader`` publishes
+``DATABASE_URL``, an opaque field with no vendor prefix), so ``slave_cli.env_loader`` publishes
 each home's applied values here whenever it publishes that home's snapshot, and every
 ``redact_sensitive_text`` caller plus the tool-result builder scrub them by exact substring.
 
-Keyed by ``hermes_home_key`` so a multiplex gateway never scrubs profile B's output with profile
+Keyed by ``slave_home_key`` so a multiplex gateway never scrubs profile B's output with profile
 A's values (which would also confirm to B that the bytes exist). A publish REPLACES the home's set:
 the size tracks the configured sources instead of growing with every re-pull, and nothing is
 evicted while it is still applied. Memory only: never persisted or logged.
@@ -46,7 +46,7 @@ _SECRET_LINE_RE = re.compile(r"[A-Za-z0-9+/=]{16,}")
 
 # home key -> its registered exact values, longest first; or, until a scrub first reads it, the applied
 # ``{name: value}`` map. Classifying imports agent.redact, which latches security.redact_secrets at import,
-# and startup publishes from load_hermes_dotenv BEFORE hermes_cli/main.py bridges that setting.
+# and startup publishes from load_slave_dotenv BEFORE slave_cli/main.py bridges that setting.
 _VALUES_BY_HOME: dict[str, tuple[str, ...] | dict[str, str]] = {}
 _LOCK = threading.Lock()
 
@@ -116,13 +116,13 @@ def _exact_forms(values: dict[str, str]) -> tuple[str, ...]:
     return tuple(sorted(exact, key=len, reverse=True))
 
 
-def publish_secret_source_values(hermes_home: str | Path, values: dict[str, str]) -> None:
-    """Replace ``hermes_home``'s registered values with the ones its sources just applied (classified by
+def publish_secret_source_values(slave_home: str | Path, values: dict[str, str]) -> None:
+    """Replace ``slave_home``'s registered values with the ones its sources just applied (classified by
     the first scrub that reads them, see ``_VALUES_BY_HOME``)."""
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
 
     applied = {name: value for name, value in values.items() if isinstance(value, str)}
-    key = hermes_home_key(hermes_home)
+    key = slave_home_key(slave_home)
     with _LOCK:
         if applied:
             _VALUES_BY_HOME[key] = applied
@@ -149,9 +149,9 @@ def redact_secret_source_values(text: str) -> str:
     """Exact-substring scrub of the current profile's applied secret-source values."""
     if not _VALUES_BY_HOME or not isinstance(text, str) or not text:
         return text
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
 
-    for value in _registered(hermes_home_key()):
+    for value in _registered(slave_home_key()):
         if value in text:
             text = text.replace(value, REDACTED_SECRET_SOURCE_VALUE)
     return text

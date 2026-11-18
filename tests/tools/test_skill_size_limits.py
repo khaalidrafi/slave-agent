@@ -22,7 +22,7 @@ def isolate_skills(tmp_path, monkeypatch):
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
     monkeypatch.setattr("tools.skills_tool.SKILLS_DIR", skills_dir)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     return skills_dir
 
 

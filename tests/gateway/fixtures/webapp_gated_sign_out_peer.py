@@ -1,6 +1,6 @@
 """A real gateway serving the Webapp behind the sign-in gate; a browser signs in, then the owner signs out.
 
-Run as ``python webapp_gated_sign_out_peer.py <port>`` with an isolated ``HERMES_HOME``. The listener binds
+Run as ``python webapp_gated_sign_out_peer.py <port>`` with an isolated ``SLAVE_HOME``. The listener binds
 loopback only; a public URL engages the sign-in gate (``engage_sign_in_gate``), and the bundled password
 provider (``plugins/dashboard_auth/basic``) is configured with a throwaway password. Writes ``receipt.json``
 there (the gateway redirects stdout). No external inference: the model points at a closed port.
@@ -78,7 +78,7 @@ async def across_sign_out(runner, origin, ask):
     from websockets.asyncio.client import connect
 
     from gateway.runtime_bootstrap import TicketStore
-    from hermes_cli import web_host_terminal
+    from slave_cli import web_host_terminal
     from tests.gateway.fixtures.local_recovery_probe import rpc
 
     # A harmless program stands in for the user's login shell.
@@ -88,7 +88,7 @@ async def across_sign_out(runner, origin, ask):
     report = {}
 
     def chat_protocols(value):
-        return ["hermes-gateway-v1", f"hermes-gateway-ticket.{value}"]
+        return ["slave-gateway-v1", f"slave-gateway-ticket.{value}"]
 
     async def sign_in(browser):
         signed_in = await browser.post("/auth/password-login", headers=page,
@@ -133,9 +133,9 @@ async def across_sign_out(runner, origin, ask):
         async with httpx.AsyncClient(base_url=origin, timeout=20, cookies=stolen) as replay:
             report["replayed_cookies_after"] = _refusal(await replay.get("/api/sessions"))
         # The provider tokens those cookies held, presented on their own as a native app would.
-        # The Webapp's listener names its cookies for the gateway (``hermes_session_at_<gateway>``).
+        # The Webapp's listener names its cookies for the gateway (``slave_session_at_<gateway>``).
         access, refresh = (next(value for key, value in stolen.items() if key.startswith(f"{name}_")).strip('"')
-                           for name in ("hermes_session_at", "hermes_session_rt"))
+                           for name in ("slave_session_at", "slave_session_rt"))
         async with httpx.AsyncClient(base_url=origin, timeout=20) as thief:
             report["stolen_access_token_after"] = _refusal(
                 await thief.get("/api/sessions", headers={"Authorization": "Bearer " + access}))
@@ -152,16 +152,16 @@ async def probe(port):
     from gateway.run_api import stop_gateway_api
     from gateway.run_runtime import start_gateway_runtime_api
     from gateway.session_authority import initialize_session_authority
-    from hermes_cli.dashboard_auth import list_providers
-    from hermes_cli.plugins import discover_plugins
-    import hermes_cli.webapp
+    from slave_cli.dashboard_auth import list_providers
+    from slave_cli.plugins import discover_plugins
+    import slave_cli.webapp
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     write_config(home, port)
     dist = home / "dist-webapp"
     dist.mkdir()
     (dist / "index.html").write_text("<!doctype html><html><body>WEBAPP_BUNDLE</body></html>", encoding="utf-8")
-    hermes_cli.webapp.webapp_dist_dir = lambda _root: dist  # the built bundle, without a build
+    slave_cli.webapp.webapp_dist_dir = lambda _root: dist  # the built bundle, without a build
     discover_plugins()  # the gateway loads the bundled sign-in providers at startup
     runner = GatewayRunner()
     runner.session_control_server = GatewayControlServer(home)  # verbs only; not listening
@@ -171,7 +171,7 @@ async def probe(port):
     await initialize_session_authority(runner, profile_id=str(home), instance_id="webapp-gated")
     await start_gateway_runtime_api(runner)
     api = runner.session_api
-    from hermes_cli import web_server
+    from slave_cli import web_server
 
     def ask(verb):
         raw = json.dumps({"protocol": 1, "verb": verb, "id": 1, "params": {}}).encode()
@@ -189,7 +189,7 @@ async def probe(port):
 
 
 def main():
-    receipt = Path(os.environ["HERMES_HOME"]) / "receipt.json"
+    receipt = Path(os.environ["SLAVE_HOME"]) / "receipt.json"
     try:
         receipt.write_text(json.dumps(asyncio.run(probe(int(sys.argv[1])))))
     except BaseException:

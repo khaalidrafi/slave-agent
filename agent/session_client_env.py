@@ -1,5 +1,5 @@
 """A local session's client environment: the allowlisted values a shell-launched client (classic CLI,
-Ink TUI) sends as ``session.create``'s ``client_env``. Main's ``hermes`` process read them from its own
+Ink TUI) sends as ``session.create``'s ``client_env``. Main's ``slave`` process read them from its own
 shell; the one gateway now runs every session, so they are frozen with the session's policy and bound
 for its turns only, never written to the gateway's ``os.environ``. Desktop sends none: its sessions
 keep the gateway's environment, and so does a session created before ``client_env`` existed.
@@ -20,10 +20,10 @@ from contextvars import ContextVar
 from tools.code_execution_env import is_secret_env_name
 
 # What main's CLI read per process and the gateway otherwise reads daemon-wide.
-BEHAVIOUR_ENV = ('HERMES_EPHEMERAL_SYSTEM_PROMPT', 'HERMES_PREFILL_MESSAGES_FILE', 'HERMES_INFERENCE_PROVIDER',
-                 'HERMES_ENABLE_PROJECT_PLUGINS')
+BEHAVIOUR_ENV = ('SLAVE_EPHEMERAL_SYSTEM_PROMPT', 'SLAVE_PREFILL_MESSAGES_FILE', 'SLAVE_INFERENCE_PROVIDER',
+                 'SLAVE_ENABLE_PROJECT_PLUGINS')
 # Behaviour values that name the client's host: a path, or the opt-in that inspects the client's folder.
-HOST_BEHAVIOUR = ('HERMES_PREFILL_MESSAGES_FILE', 'HERMES_ENABLE_PROJECT_PLUGINS')
+HOST_BEHAVIOUR = ('SLAVE_PREFILL_MESSAGES_FILE', 'SLAVE_ENABLE_PROJECT_PLUGINS')
 TOOL_ENV = ('PATH', 'VIRTUAL_ENV', 'GOPATH', 'GOROOT', 'CARGO_HOME', 'RUSTUP_HOME', 'JAVA_HOME')
 TOOL_ENV_PREFIXES = ('CONDA_', 'NODE_', 'NVM_', 'PYENV_')
 # ``terminal.client_env_passthrough`` names more non-secret toolchain variables for a profile.
@@ -48,10 +48,10 @@ def configured_names(config) -> frozenset:
 def _travels(name: str, secret=None) -> bool:
     """A toolchain name may travel unless it is a credential by execute_code's secret policy (even when
     listed: ``NODE_AUTH_TOKEN`` matches ``NODE_``; secrets reach tools through ``terminal.env_passthrough``)
-    or a Hermes control name (a delegated child's markers, Kanban pins). ``secret``: a session's frozen
+    or a slave-agent control name (a delegated child's markers, Kanban pins). ``secret``: a session's frozen
     copy of that policy's substrings."""
     hidden = is_secret_env_name(name) if secret is None else any(s in name.upper() for s in secret)
-    return not hidden and not name.startswith('HERMES_')
+    return not hidden and not name.startswith('SLAVE_')
 
 
 def client_env_rules(config, *, local=True) -> dict:

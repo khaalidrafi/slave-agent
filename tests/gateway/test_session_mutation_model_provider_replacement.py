@@ -33,11 +33,11 @@ def peers():
             t.join(timeout=5)
 
 
-async def pick(tmp_path, monkeypatch, before, after, provider, *, request=None, hermes_home=None):
+async def pick(tmp_path, monkeypatch, before, after, provider, *, request=None, slave_home=None):
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import build_policy, bind_launch_key, restore_policy
     from gateway.run_turn_prepare import _resolve_policy_agent_runtime
-    monkeypatch.setenv('HERMES_HOME', str(hermes_home or tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(slave_home or tmp_path))
     (tmp_path / 'config.yaml').write_text(json.dumps(before))
     private = {}
     policy = build_policy({'cwd': str(tmp_path), 'model': 'original', **(request or {})},
@@ -141,7 +141,7 @@ async def test_pick_reads_only_the_owning_profiles_config(tmp_path, monkeypatch)
         before = {'model': {'provider': 'custom', 'base_url': root_url, 'default': 'original'}}
         after = {**before, 'providers': {'loop': {'base_url': bu, 'api_key': 'other-key',
                                                   'models': {'switched': {}}}}}
-        config, runtime = await pick(other, monkeypatch, before, after, 'loop', hermes_home=tmp_path)
+        config, runtime = await pick(other, monkeypatch, before, after, 'loop', slave_home=tmp_path)
         assert runtime['base_url'].rstrip('/') == bu
         assert b.bearers == ['Bearer other-key'] and not root_peer.bearers
         assert config['providers']['loop']['base_url'] == bu
@@ -162,7 +162,7 @@ async def test_pick_expands_provider_refs_against_the_profiles_current_env(tmp_p
         before = {'model': {'provider': 'custom', 'base_url': boot_url, 'default': 'original'}}
         after = {**before, 'providers': {'loop': {'base_url': '${LOOP_URL}', 'api_key': 'loop-key',
                                                   'models': {'switched': {}}}}}
-        config, runtime = await pick(home, monkeypatch, before, after, 'loop', hermes_home=tmp_path)
+        config, runtime = await pick(home, monkeypatch, before, after, 'loop', slave_home=tmp_path)
         assert runtime['base_url'].rstrip('/') == bu
         assert b.bearers == ['Bearer loop-key'] and not boot_peer.bearers
         assert config['providers']['loop']['base_url'] == bu
@@ -183,8 +183,8 @@ def test_removed_provider_key_is_not_sent_to_retargeted_endpoint(tmp_path):
         (home / 'models_dev_cache.json').write_text(json.dumps({'custom': {'id':'custom','models':{
             name:{'id':name,'name':name,'limit':{'context':100000,'output':4000}} for name in ('original','switched')}}}))
         env = child_env()
-        env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
-                   XDG_CONFIG_HOME=str(user / '.config'), HERMES_GATEWAY_LOCK_DIR=str(home / 'locks'),
+        env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
+                   XDG_CONFIG_HOME=str(user / '.config'), SLAVE_GATEWAY_LOCK_DIR=str(home / 'locks'),
                    PYTHONPATH=str(root), PYTHONUNBUFFERED='1',
                    OPENAI_API_KEY='original-only-key', OPENAI_BASE_URL=origin_url)
         async def run(desc):

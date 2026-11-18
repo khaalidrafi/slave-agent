@@ -1,4 +1,4 @@
-"""A producer delivery (Hermes Cloud relay) that answers or redirects the chat's running turn.
+"""A producer delivery (slave-agent Cloud relay) that answers or redirects the chat's running turn.
 
 A messaging adapter's inbound passes ``GatewayInboundMixin._handle_message`` before the durable FIFO:
 a typed reply to a pending clarify / slash-confirm / ``/update`` prompt resolves it there, a bare

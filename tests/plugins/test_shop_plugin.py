@@ -2,7 +2,7 @@
 
 Two layers, because each catches a different bug:
 
-* **Registration through real discovery** (a temp ``HERMES_HOME`` +
+* **Registration through real discovery** (a temp ``SLAVE_HOME`` +
   ``plugins.enabled``) — a plugin that loads but registers nothing, or registers
   into the wrong toolset, is invisible to a unit test of the handler.
 * **Handlers against a live local HTTP storefront** — this adapter's whole job is
@@ -26,7 +26,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_yaml
+import slave_yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _TAGS = itertools.count()
@@ -173,7 +173,7 @@ def _load_plugin(tag="under_test"):
     Tagged and evicted per call: the plugin's ``register()`` closures are what we
     exercise, and a cached module would hand one test another test's settings.
     """
-    module_name = f"hermes_plugins_test_shop_{tag}"
+    module_name = f"slave_plugins_test_shop_{tag}"
     plugin_dir = REPO_ROOT / "plugins" / "shop"
     spec = importlib.util.spec_from_file_location(
         module_name, plugin_dir / "__init__.py",
@@ -217,7 +217,7 @@ def _call(ctx, tool, **args):
 
 class TestRegistration:
     def test_four_tools_land_in_a_named_shop_toolset(self, shop_ctx):
-        """``shop`` is a NAMED toolset, never ``_HERMES_CORE_TOOLS``: a session
+        """``shop`` is a NAMED toolset, never ``_SLAVE_CORE_TOOLS``: a session
         with no shop must not pay these schemas on every API call."""
         assert set(shop_ctx.tools) == {"shop_queue", "shop_orders", "shop_order", "shop_catalog"}
         assert {t["toolset"] for t in shop_ctx.tools.values()} == {"shop"}
@@ -357,7 +357,7 @@ class TestReadOnly:
 
 
 class TestCli:
-    """``hermes shop`` — the same adapter calls a terminal operator and a
+    """``slave shop`` — the same adapter calls a terminal operator and a
     scheduled job run. The call sheet is a cron script, so if the CLI drifted
     from the tools, the shop's nightly numbers and its chat answers would be two
     different readings of one store."""
@@ -365,7 +365,7 @@ class TestCli:
     def _parser(self, shop_ctx):
         import argparse
 
-        sub = argparse.ArgumentParser(prog="hermes shop")
+        sub = argparse.ArgumentParser(prog="slave shop")
         shop_ctx.cli["shop"]["setup"](sub)
         return sub
 
@@ -406,12 +406,12 @@ class TestSlashCommand:
 
 class TestDiscovery:
     def test_bundled_plugin_loads_through_real_discovery(self, tmp_path, monkeypatch):
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".slave"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("SLAVE_HOME", str(home))
         (home / "config.yaml").write_text(
-            hermes_yaml.safe_dump({"plugins": {"enabled": ["shop"]}}), encoding="utf-8")
-        from hermes_cli import plugins as pmod
+            slave_yaml.safe_dump({"plugins": {"enabled": ["shop"]}}), encoding="utf-8")
+        from slave_cli import plugins as pmod
 
         mgr = pmod.PluginManager()
         mgr.discover_and_load()

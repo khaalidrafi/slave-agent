@@ -41,7 +41,7 @@ def _deferred_behind_unconfirmed_stop(tmp_path: Path):
     service.runtime.clock = lambda: now[0]
     service.runtime.lease_ttl_seconds, service.runtime.indeterminate_defer_seconds = 1000, 5
     service.create_room(room_id="room-1", name="Two daemons", members=[
-        {"member_id": "default", "profile": "default", "handle": "hermes"},
+        {"member_id": "default", "profile": "default", "handle": "slave"},
         {"member_id": "ops", "profile": "ops", "handle": "ops"}])
     service.send(room_id="room-1", event_id="user-1", payload={"text": "@ops inspect", "thread_id": "thread-1"})
     task, = driver.list_tasks(db, placement="profile", room_id="room-1", status="queued")

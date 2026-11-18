@@ -239,7 +239,7 @@ class TestDeepSeekFullKwargsIntegration:
     def test_cli_parse_none_full_kwargs_disable_thinking(self, deepseek_profile):
         """``--reasoning none`` / ``parse_reasoning_effort('none')`` → disabled on the wire."""
         from agent.transports.chat_completions import ChatCompletionsTransport
-        from hermes_constants import parse_reasoning_effort
+        from slave_constants import parse_reasoning_effort
 
         kwargs = ChatCompletionsTransport().build_kwargs(
             model="deepseek-v4-pro",
@@ -267,7 +267,7 @@ class TestDeepSeekAuxModel:
 
 
     def test_fallback_models_are_current_ids(self, deepseek_profile):
-        from hermes_cli.model_normalize import _normalize_for_deepseek
+        from slave_cli.model_normalize import _normalize_for_deepseek
         # Every advertised id must survive normalization unchanged (no retired alias in the picker).
         assert all(_normalize_for_deepseek(m) == m for m in deepseek_profile.fallback_models)
 

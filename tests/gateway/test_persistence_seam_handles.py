@@ -7,7 +7,7 @@ import pytest
 
 from gateway.run import _SESSION_DB_UNPINNED, GatewayRunner
 from gateway.run_runtime_init import GatewayRuntimeInitMixin
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 class _Runner(GatewayRuntimeInitMixin):
@@ -35,11 +35,11 @@ def test_runner_without_a_session_store_reads_its_own_handle_per_profile(tmp_pat
     runner._session_db_handles, runner._session_db_handles_lock = {}, threading.Lock()
     launch = runner.persistence
     assert runner.persistence is launch and runner._session_db is launch
-    assert launch.scope.profile_dir == get_hermes_home().resolve()
+    assert launch.scope.profile_dir == get_slave_home().resolve()
 
     other = tmp_path / "other"
     other.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(other))
+    monkeypatch.setenv("SLAVE_HOME", str(other))
     secondary = runner.persistence
     assert secondary is not launch and secondary.scope.profile_dir == other.resolve()
     runner.close_all_session_db_handles()
@@ -57,7 +57,7 @@ def test_session_store_owns_a_handle_per_path_that_the_runner_borrows(tmp_path, 
     assert store.persistence is launch and connects[before:] == []
     other = tmp_path / "other"
     other.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(other))  # the scope a multiplexed turn binds
+    monkeypatch.setenv("SLAVE_HOME", str(other))  # the scope a multiplexed turn binds
     secondary = store.persistence
     assert secondary is not launch and secondary.scope.profile_dir == other.resolve()
     assert (other / "state.db").exists()  # the scope's handle opens eagerly
@@ -86,7 +86,7 @@ def test_api_adapter_without_a_runtime_keeps_a_handle_beside_each_cached_store(t
         before = len(connects)
         handle = adapter_persistence(adapter)
         assert connects[before:] == [] and adapter_persistence(adapter) is handle
-        assert handle.scope.profile_dir == get_hermes_home().resolve()
+        assert handle.scope.profile_dir == get_slave_home().resolve()
         assert db is not None
     finally:
         adapter._close_cached_session_dbs()

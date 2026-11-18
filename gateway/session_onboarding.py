@@ -84,7 +84,7 @@ async def start(connection, ref, params):
         finally:
             discards.ids.difference_update(plan['replaced'])
         if plan['claimed'] is not None:
-            from hermes_cli import free_tier_bootstrap
+            from slave_cli import free_tier_bootstrap
             await asyncio.to_thread(free_tier_bootstrap.refresh_record)
         _withdraw_setup_cards(authority, [sid for sid in plan['replaced'] if sid not in deleted])
         chat = SessionRef(authority.profile_id, stored)
@@ -105,7 +105,7 @@ def _choose_run(authority, request):
     from session_rules.onboarding_flow import Facts
     from agent.onboarding_record import load, open_session_ids
     from agent.onboarding_text import opening_prompt
-    from hermes_cli.auth_constants import AuthError
+    from slave_cli.auth_constants import AuthError
     db = persistence = authority_persistence(authority)
     open_ids = open_session_ids(db, persistence=persistence)
     stored = None if request.rerun or request.fresh_launch else next(iter(open_ids), None)
@@ -134,9 +134,9 @@ def _choose_run(authority, request):
 def _claim_before_run(*, assume_fresh):
     """``onboarding.run: true`` on disk before the welcome-trial claim, so a crash after the claim still
     opens onboarding next launch."""
-    from hermes_cli import anon_auth
-    from hermes_cli.onboarding_run import set_run
-    from hermes_cli.welcome_trial import claim_desktop_free_tier, provider_configured
+    from slave_cli import anon_auth
+    from slave_cli.onboarding_run import set_run
+    from slave_cli.welcome_trial import claim_desktop_free_tier, provider_configured
     if not anon_auth.on_local_desktop_backend():
         # A CLI or TUI holds a native ticket too: its start schedules nothing. A rerun (Settings, any
         # Desktop) never claims and never reaches here.

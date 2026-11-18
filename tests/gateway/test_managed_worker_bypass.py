@@ -61,21 +61,21 @@ def test_worker_binds_bypass_policy_before_runtime_imports(tmp_path, mode):
     plugin = home / 'plugins' / 'sentinel'
     plugin.mkdir(parents=True)
     (plugin / 'plugin.yaml').write_text('name: sentinel\nversion: 1.0.0\nkind: standalone\n', encoding='utf-8')
-    (plugin / '__init__.py').write_text("import os; from pathlib import Path\nPath(os.environ['HERMES_HOME'], 'plugin-executed').touch()\ndef register(ctx): pass\n", encoding='utf-8')
+    (plugin / '__init__.py').write_text("import os; from pathlib import Path\nPath(os.environ['SLAVE_HOME'], 'plugin-executed').touch()\ndef register(ctx): pass\n", encoding='utf-8')
     script = tmp_path / 'probe.py'
     script.write_text(f'''
 import json, os, sys, threading
 sys.path.insert(0, {str(root)!r})
 from agent.managed_worker import bind_worker_policy
-home = os.environ['HERMES_HOME']
+home = os.environ['SLAVE_HOME']
 frame = {{'safe_mode': {mode == 'safe'!r}, 'ignore_user_config': True,
          'policy': {{'config_json': json.dumps({{'model': {{'default': 'safe-fixture', 'provider': 'custom'}},
                     'plugins': {{'enabled': ['sentinel']}}, 'agent': {{'max_turns': 7}}}})}}}}
 opened = []
 sys.addaudithook(lambda event, args: opened.append(str(args[0])) if event == 'open' and home in str(args[0]) else None)
 bind_worker_policy(frame)
-from hermes_cli.config import load_config, read_raw_config
-from hermes_cli.plugins import discover_plugins, get_plugin_manager
+from slave_cli.config import load_config, read_raw_config
+from slave_cli.plugins import discover_plugins, get_plugin_manager
 discover_plugins()
 cfg = load_config()
 raw = read_raw_config()
@@ -88,7 +88,7 @@ print(json.dumps({{'max_turns': cfg['agent']['max_turns'], 'raw_model': raw['mod
 ''', encoding='utf-8')
     from tests.gateway.fixtures.local_recovery_probe import child_env
     env = {**child_env(), **{k: os.environ[k] for k in ('TIRITH_ENABLED',) if k in os.environ}}
-    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), HERMES_HOME=str(home), PYTHONPATH=str(root))
+    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), SLAVE_HOME=str(home), PYTHONPATH=str(root))
     result = subprocess.run([sys.executable, str(script)], cwd=root, env=env, stdin=subprocess.DEVNULL,
                             capture_output=True, text=True, timeout=90, check=False)
     assert result.returncode == 0, result.stdout + result.stderr

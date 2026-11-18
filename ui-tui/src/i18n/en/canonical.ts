@@ -3,7 +3,7 @@
 // Owned namespace: `canonical`. Function leaves take positional args; packs use `{0}`, `{1}`.
 // Status-bar phrases here are free text (nothing compares against them).
 
-import { gatewayTextEn } from '@hermes/shared/gateway-text'
+import { gatewayTextEn } from '@slave-agent/shared/gateway-text'
 
 export const canonicalEn = {
   canonical: {
@@ -65,10 +65,10 @@ export const canonicalEn = {
       notFound: (path: string) => `Image not found: ${path}`,
       noOwnerPath: 'Image upload did not return an owner path'
     },
-    // @hermes/shared/gateway-canonical (given Ink's `t`) and launchOptions.ts — launch-contract refusals.
+    // @slave-agent/shared/gateway-canonical (given Ink's `t`) and launchOptions.ts — launch-contract refusals.
     launch: {
       ...gatewayTextEn.canonical.launch,
-      invalidToolProgress: (value: string) => `invalid HERMES_TUI_TOOL_PROGRESS: ${value}`
+      invalidToolProgress: (value: string) => `invalid SLAVE_TUI_TOOL_PROGRESS: ${value}`
     }
   }
 }

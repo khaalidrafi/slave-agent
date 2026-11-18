@@ -14,7 +14,7 @@ description: >-
   a URL passthrough fetches anything over the network. Writes are confined to the plugin's own data
   directory: memos and extraction audit trails take a bare filename under <data_dir>/exports/, and
   the deal book is JSON under <data_dir>. Document input is treated as untrusted, because it is:
-  local reads go through Hermes' read block list with no $HOME fallback, and URL input is limited to
+  local reads go through slave-agent’ read block list with no $HOME fallback, and URL input is limited to
   public http(s) with every redirect hop re-checked. Not investment advice.
 maintainer: johnnyminer
 tier: community

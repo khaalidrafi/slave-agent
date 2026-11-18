@@ -34,7 +34,7 @@ class AdmissionQueued(AuthorityRefusal):
     input is committed: the row stays queued and the next owner runs it exactly once, so a client
     that resends it submits the work twice. ``str()`` is the message every API surface shows."""
 
-    MESSAGE = 'Hermes is restarting. Your input is saved and will run once when it is back; do not resend it.'
+    MESSAGE = 'slave-agent is restarting. Your input is saved and will run once when it is back; do not resend it.'
 
     def __init__(self):
         super().__init__('admission_queued')

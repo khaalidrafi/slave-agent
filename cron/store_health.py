@@ -4,7 +4,7 @@ A full disk or read-only mount fails every store write on every 60s tick. Instea
 per failing call site, each store directory gets ONE in-memory record: set by the first failed
 write, updated by later ones, cleared by the first jobs.json save that lands. While it is set,
 the tick skips the advance/claim work that can only fail and re-probes the store at most once a
-minute. ``probe_store`` is also what ``hermes cron status`` and ``hermes doctor`` use: they run in
+minute. ``probe_store`` is also what ``slave cron status`` and ``slave doctor`` use: they run in
 another process, so they cannot read this record or trust markers in a directory nobody can write.
 """
 
@@ -27,7 +27,7 @@ logger = logging.getLogger("cron.jobs")
 PROBE_INTERVAL_SECONDS = 60.0
 # Store-write failures that degrade the store (the tick keeps running) instead of failing the tick.
 UNWRITABLE_ERRNOS = frozenset({errno.EROFS, errno.EACCES, errno.EPERM, errno.ENOSPC, errno.EDQUOT})
-# `hermes doctor` warns below this, before the store actually starts failing.
+# `slave doctor` warns below this, before the store actually starts failing.
 LOW_FREE_BYTES = 100 << 20
 FIX_HINT = "free disk space, remount it read-write, or fix permissions on {store}"
 

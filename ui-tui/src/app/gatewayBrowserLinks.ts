@@ -1,4 +1,4 @@
-import type { BillingStepUpVerificationPayload, FreeTierChallengePayload } from '@hermes/shared/gateway-events'
+import type { BillingStepUpVerificationPayload, FreeTierChallengePayload } from '@slave-agent/shared/gateway-events'
 
 import { t } from '../i18n/runtime.js'
 
@@ -37,7 +37,7 @@ export function createBillingVerificationPresenter(
 
 /**
  * `free_tier.challenge`: the account service wants a browser check before it
- * mints the free-tier token (hermes_cli/anon_challenge.py). The gateway polls
+ * mints the free-tier token (slave_cli/anon_challenge.py). The gateway polls
  * for the result on its own; this only puts the link where the user is. An
  * optional check is the desktop's to run hidden, never the user's. One browser
  * tab per ticket, however many attempts resume it.

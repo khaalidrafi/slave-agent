@@ -1,14 +1,14 @@
 """NousDashboardAuthProvider — Nous Portal OAuth (authorization-code + PKCE).
 
 Implements ``nous-account-service/docs/agent-dashboard-oauth-contract.md``; registers only
-when a client_id (``dashboard.oauth.client_id`` / ``HERMES_DASHBOARD_OAUTH_CLIENT_ID``, shape
+when a client_id (``dashboard.oauth.client_id`` / ``SLAVE_DASHBOARD_OAUTH_CLIENT_ID``, shape
 ``agent:{instance_id}``) is configured. Access tokens are RS256 JWTs verified against the
 Portal JWKS with ``aud`` = bare client_id. Portal issues a 24h *rotating* refresh token with
 reuse detection: the middleware MUST persist ``Session.refresh_token`` back to the cookie on
 every refresh or the next refresh replays a rotated token and revokes the whole session.
 
 While the gateway serves the Webapp, its sign-in uses the client Web Access registered for the
-Webapp instead of the configured one (``hermes_cli.dashboard_auth.listener_client``).
+Webapp instead of the configured one (``slave_cli.dashboard_auth.listener_client``).
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Optional
 
-from hermes_cli.dashboard_auth import (
+from slave_cli.dashboard_auth import (
     InvalidCodeError, LoginStart, ProviderError, Session, TokenPrincipal, listener_client)
 from plugins.dashboard_auth._shared import (
     DEFAULT_TOKEN_LEEWAY_SECONDS,
@@ -167,19 +167,19 @@ def _settings() -> dict:
     if own is not None:
         return {"client_id": own[0], "portal_url": own[1],
                 "token_leeway": parse_leeway(section.get("token_leeway"))}
-    client_id = resolve_env_or_cfg("HERMES_DASHBOARD_OAUTH_CLIENT_ID", section.get("client_id", ""))
-    portal_url = resolve_env_or_cfg("HERMES_DASHBOARD_PORTAL_URL", section.get("portal_url", "")) or _DEFAULT_PORTAL_URL
+    client_id = resolve_env_or_cfg("SLAVE_DASHBOARD_OAUTH_CLIENT_ID", section.get("client_id", ""))
+    portal_url = resolve_env_or_cfg("SLAVE_DASHBOARD_PORTAL_URL", section.get("portal_url", "")) or _DEFAULT_PORTAL_URL
     if not client_id:
         raise SkipRegistration(
-            "HERMES_DASHBOARD_OAUTH_CLIENT_ID is not set (and dashboard.oauth.client_id "
+            "SLAVE_DASHBOARD_OAUTH_CLIENT_ID is not set (and dashboard.oauth.client_id "
             "in config.yaml is empty). The Nous Portal provisions this env var (shape "
-            "'agent:{instance_id}') when it deploys a Hermes Agent instance — set it to "
+            "'agent:{instance_id}') when it deploys a slave-agent instance — set it to "
             "your provisioned client id (either as an env var or under "
             "dashboard.oauth.client_id in config.yaml), or pass --insecure to skip the "
             "OAuth gate entirely.")
     if not client_id.startswith("agent:"):
         raise SkipRegistration(
-            f"HERMES_DASHBOARD_OAUTH_CLIENT_ID={client_id!r} doesn't match the contract "
+            f"SLAVE_DASHBOARD_OAUTH_CLIENT_ID={client_id!r} doesn't match the contract "
             f"shape 'agent:{{instance_id}}'. The Nous Portal provisions this value at deploy "
             f"time; check your Fly app's secrets or override with the value from the Portal admin UI.",
             level="warning")
@@ -203,7 +203,7 @@ def register(ctx) -> None:
 def _swap_provider() -> Callable[[], None]:
     """Put a provider on the listener's own client (``listener_client.use`` has made it current) in
     place of the registered one; the returned undo puts that one, or none, back."""
-    from hermes_cli.dashboard_auth.registry import (
+    from slave_cli.dashboard_auth.registry import (
         register_global_provider, restore_registration, snapshot_registration)
 
     previous = snapshot_registration(NousDashboardAuthProvider.name)

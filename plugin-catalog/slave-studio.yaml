@@ -1,0 +1,39 @@
+name: slave-studio
+repo: https://github.com/PabloTheThinker/hermes-studio
+sha: e95be949a416d0f5b1a80eae964d547a7aec7770
+subdir: slave_plugin/hermes-studio
+title: slave-agent Studio
+description: "Local video tools for any slave-agent: long video or link in, captioned shorts out, plus timeline edits, Canva-style designs and photo tools, as 14 chat tools and a /studio chat slash. Whisper + FFmpeg on your machine. Never posts. Disclosure — every tool runs the separately installed slave-studio engine CLI (v0.6.2+, installed by its own command, not covered by this pin) as a subprocess with a timeout and a minimal environment (PATH, HOME, LANG, TMPDIR, PYTHONPATH, SLAVE_STUDIO_*); tool calls read only media/image files under your home folder, /mnt, /media, /srv or the Studio library and write only new files inside ~/.slave/clips (never overwrite); links must be public http(s), and yt-dlp runs with every connection and redirect hop checked against loopback, private, link-local, CGNAT and reserved addresses; slave_studio_desk starts a detached local desk on 127.0.0.1 (loopback only); the plugin ships a local `slave-studio mcp` server entry; the `/studio` chat command queues a Studio job into the current chat as a user message; optional local Ollama for clip titles; caption cues and the desk log go under <slave home>/plugin-data/hermes-studio; caption lines are written by the calling agent; no credentials, no telemetry and no social publishing."
+maintainer: PabloTheThinker
+tier: community
+category: tools
+requires_hermes: ">=0.19.0"
+docs_url: https://github.com/PabloTheThinker/hermes-studio#readme
+version: "0.6.2"
+image: https://raw.githubusercontent.com/PabloTheThinker/hermes-studio/e95be949a416d0f5b1a80eae964d547a7aec7770/docs/catalog/banner.png
+screenshots:
+  - https://raw.githubusercontent.com/PabloTheThinker/hermes-studio/e95be949a416d0f5b1a80eae964d547a7aec7770/docs/catalog/01-timeline.jpg
+  - https://raw.githubusercontent.com/PabloTheThinker/hermes-studio/e95be949a416d0f5b1a80eae964d547a7aec7770/docs/catalog/02-clips-library.jpg
+  - https://raw.githubusercontent.com/PabloTheThinker/hermes-studio/e95be949a416d0f5b1a80eae964d547a7aec7770/docs/catalog/05-edit-timeline.jpg
+platforms: []
+known_issues:
+  - Needs the slave-agent Studio engine v0.6.2 or newer installed separately (uv tool install --python 3.12 git+https://github.com/PabloTheThinker/hermes-studio@v0.6.2). If the CLI is missing or older, each tool returns a missing_dependency error with that command.
+capabilities:
+  provides_tools:
+    - slave_studio_run
+    - slave_studio_transcribe
+    - slave_studio_plan
+    - slave_studio_list
+    - slave_studio_probe
+    - slave_studio_desk
+    - slave_studio_captions
+    - slave_studio_edit
+    - slave_studio_recommend
+    - slave_studio_copy
+    - slave_studio_restyle
+    - slave_studio_name
+    - slave_studio_design
+    - slave_studio_photo
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []

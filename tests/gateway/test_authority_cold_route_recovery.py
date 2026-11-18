@@ -79,7 +79,7 @@ def _seed(tmp_path, sid, source, *, routed=True, row_origin=_ROUTE, row_source=N
         entry = SessionEntry(entry_key or route, sid, now, now, origin=entry_source or None,
                              platform=source.platform, transport_profile=transport_profile)
         # The routing index lives in the store's routing home, which is cached per process: write where
-        # the cold store will read, not where this test's HERMES_HOME happens to point.
+        # the cold store will read, not where this test's SLAVE_HOME happens to point.
         store._routing_persistence.routing.upsert_routing_entry(
             route, json.dumps(entry.to_dict()), routing_scope=store._routing_scope())
     return route
@@ -114,7 +114,7 @@ async def _refused(tmp_path, sid, reason='not_found', **cold_args):
 
 @pytest.fixture(autouse=True)
 def _home(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
 
 
 @pytest.mark.asyncio

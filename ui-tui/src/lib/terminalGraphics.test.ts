@@ -17,6 +17,6 @@ describe('detectTerminalGraphics', () => {
     expect(detectTerminalGraphics({ ...kitty, TMUX: '/tmp/tmux-1000/default,1,0' })).toBe('unicode')
     expect(detectTerminalGraphics({ ...kitty, STY: '1234.pts-0.host' })).toBe('unicode')
     expect(detectTerminalGraphics({ ...kitty, TERM_PROGRAM: 'vscode' })).toBe('unicode')
-    expect(detectTerminalGraphics({ ...kitty, HERMES_PTY_HOST: 'dashboard' })).toBe('unicode')
+    expect(detectTerminalGraphics({ ...kitty, SLAVE_PTY_HOST: 'dashboard' })).toBe('unicode')
   })
 })

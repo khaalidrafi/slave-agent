@@ -85,7 +85,7 @@ def _approval_click(open_id, *, user_id=None, union_id=None, chat_id="oc_group")
     return SimpleNamespace(event=SimpleNamespace(
         token="tok", context=SimpleNamespace(open_chat_id=chat_id),
         operator=SimpleNamespace(open_id=open_id, user_id=user_id, union_id=union_id),
-        action=SimpleNamespace(tag="button", value={"hermes_action": "approve_once", "approval_id": 1}),
+        action=SimpleNamespace(tag="button", value={"slave_action": "approve_once", "approval_id": 1}),
     ))
 
 
@@ -93,7 +93,7 @@ def _update_prompt_click(open_id):
     return SimpleNamespace(event=SimpleNamespace(
         token="tok", context=SimpleNamespace(open_chat_id="oc_group"),
         operator=SimpleNamespace(open_id=open_id),
-        action=SimpleNamespace(tag="button", value={"hermes_update_prompt_action": "y", "update_prompt_id": 2}),
+        action=SimpleNamespace(tag="button", value={"slave_update_prompt_action": "y", "update_prompt_id": 2}),
     ))
 
 
@@ -266,7 +266,7 @@ class TestFeishuAllowlistMatchesEveryOperatorId:
 
     @pytest.mark.asyncio
     async def test_update_prompt_recheck_matches_tenant_user_id(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         adapter = _make_adapter(allowed={"u_tenant"})
 
         await adapter._resolve_update_prompt(2, "y", "Alice", open_id="ou_x", chat_id="oc_group", user_id="u_tenant")

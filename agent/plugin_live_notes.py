@@ -1,8 +1,8 @@
 """Tell an open chat about a plugin that went live while it runs, once, without breaking its cache.
 
-An install from any surface (the onboarding plugins card, Settings, ``hermes plugins install`` with a
+An install from any surface (the onboarding plugins card, Settings, ``slave plugins install`` with a
 serve backend) makes the plugin's MCP tools and skills usable in this profile's open chats at once
-(``hermes_cli.plugins_activation.load_and_go_live``) and queues the notice here, one per plugin key: a
+(``slave_cli.plugins_activation.load_and_go_live``) and queues the notice here, one per plugin key: a
 second install or update of the same plugin replaces its notice. The notice rides the next tool result
 of the running turn (``agent/tool_executor.py``), after its content: a new row not yet flushed, so no
 cached byte moves. When no tool runs again this turn, the next user message carries it instead

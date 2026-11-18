@@ -16,7 +16,7 @@ afterEach(() => {
 test.each(["package.json", ".postcssrc.json"])(
   "dashboard CSS builds without loading an ancestor BOM-marked %s",
   async (filename) => {
-    const fixture = mkdtempSync(path.join(tmpdir(), "hermes-web-postcss-"));
+    const fixture = mkdtempSync(path.join(tmpdir(), "slave-web-postcss-"));
     fixtures.push(fixture);
     const root = path.join(fixture, "web");
     mkdirSync(root);

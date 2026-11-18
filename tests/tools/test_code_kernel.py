@@ -108,7 +108,7 @@ class TestEditedModuleWarning(unittest.TestCase):
     that runs next must say so instead of letting a correct fix look like it failed."""
 
     def _module(self, body, name="editme_mod"):
-        folder = tempfile.mkdtemp(prefix="hermes-kernel-mod-")
+        folder = tempfile.mkdtemp(prefix="slave-kernel-mod-")
         self.addCleanup(lambda: __import__("shutil").rmtree(folder, ignore_errors=True))
         path = Path(folder) / f"{name}.py"
         path.write_text(body, encoding="utf-8")
@@ -177,15 +177,15 @@ class TestKernelLifecycle(unittest.TestCase):
         repo_root = str(Path(__file__).resolve().parents[2])
         host_src = textwrap.dedent(f"""
             import json, os, sys, time
-            os.environ["HERMES_HOME"] = sys.argv[1]
+            os.environ["SLAVE_HOME"] = sys.argv[1]
             sys.path.insert(0, {repo_root!r})
             from tools.code_kernel import SessionKernel, _spawn
             k = SessionKernel(("parent-death",))
             _spawn(k, task_id="parent-death", child_python=sys.executable,
                    child_cwd="", sandbox_tools=frozenset(), max_tool_calls=1)
             cell = json.dumps({{"id": "x", "code": "import os, time\\n"
-                "assert 'HERMES_KERNEL_PARENT_PROCESS_HANDLE' not in os.environ\\n"
-                "assert 'HERMES_KERNEL_PARENT_DEATH_FD' not in os.environ\\n"
+                "assert 'SLAVE_KERNEL_PARENT_PROCESS_HANDLE' not in os.environ\\n"
+                "assert 'SLAVE_KERNEL_PARENT_DEATH_FD' not in os.environ\\n"
                 "time.sleep(300)"}}) + "\\n"
             k.proc.stdin.write(cell.encode()); k.proc.stdin.flush()
             print(k.proc.pid, flush=True)
@@ -276,7 +276,7 @@ class TestKernelOwnershipAndLifecycle(unittest.TestCase):
     with anything. The owner is the approval session key; disposal rides
     the same session boundary that clears approval/yolo state, idle
     kernels are reaped, and the process-wide live count is capped (the
-    lifecycle shape carried forward from hermes-agent#88637).
+    lifecycle shape carried forward from slave-agent#88637).
     """
 
     def _run_as(self, session_key, code, task_id, **kwargs):
@@ -480,7 +480,7 @@ class TestKernelOwnershipAndLifecycle(unittest.TestCase):
         self.assertEqual([r["status"] for r in results], ["success"] * 6)
         self.assertEqual(len(_KERNELS), 1)
         runners = [proc for proc, args in spawned
-                   if len(args) == 2 and Path(args[1]).name == "hermes_kernel_runner.py"]
+                   if len(args) == 2 and Path(args[1]).name == "slave_kernel_runner.py"]
         self.assertEqual(len(runners), 1, "parallel cells spawned an unowned kernel")
         kernel = next(iter(_KERNELS.values()))
         self.assertIs(kernel.proc, runners[0])
@@ -500,8 +500,8 @@ class TestInScriptToolErrors(unittest.TestCase):
             return json.dumps({"ok": True})
 
         with _kernel_config(), patch("model_tools.handle_function_call", new=_handle):
-            failed = _run("import hermes_tools\nhermes_tools.write_file('a.py', 'x')\nprint('done')\n")
-            clean = _run("import hermes_tools\nhermes_tools.web_search(query='q')\n")
+            failed = _run("import slave_tools\nslave_tools.write_file('a.py', 'x')\nprint('done')\n")
+            clean = _run("import slave_tools\nslave_tools.web_search(query='q')\n")
         self.assertEqual(failed["status"], "success", failed)
         self.assertEqual(failed["tool_errors"], [{"tool": "write_file", "error": "Refusing to overwrite a.py: never read"}])
         self.assertNotIn("tool_errors", clean)
@@ -530,7 +530,7 @@ class TestPerCellRpcAuthority(unittest.TestCase):
         from tools.terminal_tool import set_approval_callback
 
         seen = []
-        cell = "import hermes_tools\nhermes_tools.web_search(query='q')\n"
+        cell = "import slave_tools\nslave_tools.web_search(query='q')\n"
         with _kernel_config(), patch(
             "model_tools.handle_function_call", new=self._recorder(seen)
         ):
@@ -574,7 +574,7 @@ class TestPerCellRpcAuthority(unittest.TestCase):
 
             set_approval_callback(cb_one)
             try:
-                first = _run("import hermes_tools\nalias = hermes_tools.web_search\n")
+                first = _run("import slave_tools\nalias = slave_tools.web_search\n")
                 set_approval_callback(cb_two)
                 second = _run("alias(query='q')\n")
             finally:
@@ -673,8 +673,8 @@ class TestStaleStagingDirSweep(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             with patch("tools.code_kernel.tempfile.gettempdir", return_value=tmp):
-                old = Path(tmp, "hermes_kernel_old")
-                young = Path(tmp, "hermes_kernel_young")
+                old = Path(tmp, "slave_kernel_old")
+                young = Path(tmp, "slave_kernel_young")
                 bystander = Path(tmp, "unrelated_dir")
                 for path in (old, young, bystander):
                     path.mkdir()
@@ -696,11 +696,11 @@ class TestCellStdoutSpill(unittest.TestCase):
     def test_cell_spill_on_disk_is_sanitized(self):
         import stat as stat_mod
         from agent.redact import redact_sensitive_text
-        from hermes_constants import get_hermes_dir
+        from slave_constants import get_slave_dir
         secret = "ghp_" + "0123456789abcdef"
         masked = redact_sensitive_text(secret, code_file=True)
         with _kernel_config():
-            probe = _run("import os\nprint(os.environ['HERMES_KERNEL_SPILL_DIR'])")
+            probe = _run("import os\nprint(os.environ['SLAVE_KERNEL_SPILL_DIR'])")
             kernel_tmp = probe["output"].strip()
             # The secret lands PAST the runner's 1MB clip: the host-side spill of the
             # clipped head cannot contain it, so a masked remnant in the published file
@@ -714,7 +714,7 @@ class TestCellStdoutSpill(unittest.TestCase):
         # Published under the host spill dir, not the cell-writable kernel tmpdir:
         # survives kernel teardown and post-publish mutation by later cells.
         self.assertEqual(os.path.dirname(spill),
-                         str(get_hermes_dir("cache/exec", "exec_spill")))
+                         str(get_slave_dir("cache/exec", "exec_spill")))
         self.assertIn("FULL output saved", result.get("warning", ""))
         # The raw tmpdir copy is dropped once republished.
         self.assertFalse(os.path.exists(
@@ -764,7 +764,7 @@ class TestCellStdoutSpill(unittest.TestCase):
             with _kernel_config():
                 result = _run(
                     "import os\n"
-                    "d = os.environ['HERMES_KERNEL_SPILL_DIR']\n"
+                    "d = os.environ['SLAVE_KERNEL_SPILL_DIR']\n"
                     "os.symlink(" + repr(str(target)) + ", os.path.join(d, 'cell_000001_stdout.txt'))\n"
                     "print('x' * 1_100_000)")
             self.assertEqual(result["status"], "success", result)

@@ -161,7 +161,7 @@ def test_concurrent_load_waits_for_the_first_load(tmp_path, monkeypatch):
 
 
 def test_parent_shells_run_from_their_own_package_folders(tmp_path, monkeypatch):
-    """A parent package nested below another one (``hermes_agent.plugins.memory`` once ``plugins`` moves)
+    """A parent package nested below another one (``slave_agent.plugins.memory`` once ``plugins`` moves)
     runs its own ``__init__.py``, found through the import system, not a folder under ``plugins/``."""
     memory = tmp_path / "test_loader_root" / "plugins" / "memory"
     (memory / "demo").mkdir(parents=True)

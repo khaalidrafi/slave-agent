@@ -27,15 +27,15 @@ class _CapturingPickerAdapter:
 
 @pytest.mark.asyncio
 async def test_model_picker_receives_a_providers_whole_catalog(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     # JSON is valid YAML: a built-in provider whose catalog the user extended past 50 models.
     (home / "config.yaml").write_text(json.dumps({
         "model": {"provider": "deepseek", "default": "bigcat-model-01"},
         "providers": {"deepseek": {"models": _MODELS}}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test-not-a-key")
-    monkeypatch.setattr(gateway_run, "_hermes_home", home)
+    monkeypatch.setattr(gateway_run, "_slave_home", home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
 
     adapter = _CapturingPickerAdapter()

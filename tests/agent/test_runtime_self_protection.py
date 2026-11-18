@@ -1,6 +1,6 @@
 """The runtime's own interpreter/venv is not agent-deletable (#58748).
 
-A Hermes session asked to clean up "older Pythons" removed the base
+A slave-agent session asked to clean up "older Pythons" removed the base
 interpreter its own venv pointed at; the next boot died with ``uv trampoline
 failed to spawn Python child process``. These tests pin both defense layers:
 
@@ -27,7 +27,7 @@ from agent import runtime_self_protection as rsp
 @pytest.fixture
 def fake_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """A venv whose pyvenv.cfg points at a uv-managed base interpreter."""
-    venv = tmp_path / "hermes-agent" / "venv"
+    venv = tmp_path / "slave-agent" / "venv"
     venv.mkdir(parents=True)
     exe_dir = venv / ("Scripts" if sys.platform == "win32" else "bin")
     exe_dir.mkdir()
@@ -166,7 +166,7 @@ def test_normal_command_unaffected(fake_runtime, monkeypatch):
 # A relative target used to be resolved against the process cwd only, so the
 # shell's own `cd` was ignored: `cd <project>; rm -rf .` was blocked whenever the
 # process cwd happened to be an ancestor of the install (the gateway's cwd is
-# usually the user's home), while `cd ~/.hermes/hermes-agent && rm -rf venv` —
+# usually the user's home), while `cd ~/.slave/slave-agent && rm -rf venv` —
 # the delete this floor exists for — passed.
 
 
@@ -182,12 +182,12 @@ def test_relative_delete_after_cd_resolves_against_that_directory(fake_runtime, 
 
 def test_cd_into_the_install_blocks_a_relative_venv_delete(fake_runtime, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     assert rsp.command_deletes_runtime(f"cd {install} && rm -rf venv") is not None
     assert rsp.command_deletes_runtime(f"cd {install}; rm -rf ./venv/bin") is not None
     assert rsp.command_deletes_runtime(f"cd {install} && find . -name '*.pyc' -delete") is not None
     # No `cd` at all: a relative target keeps its process-cwd reading.
-    assert rsp.command_deletes_runtime("rm -rf hermes-agent") is not None
+    assert rsp.command_deletes_runtime("rm -rf slave-agent") is not None
 
 
 def test_cd_tracks_tilde_and_chained_segments(fake_runtime, tmp_path, monkeypatch):
@@ -197,7 +197,7 @@ def test_cd_tracks_tilde_and_chained_segments(fake_runtime, tmp_path, monkeypatc
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.chdir(tmp_path)
     assert rsp.command_deletes_runtime("cd ~/projects/x && rm -rf .") is None
-    assert rsp.command_deletes_runtime(f"cd {tmp_path}; cd hermes-agent && rm -rf venv") is not None
+    assert rsp.command_deletes_runtime(f"cd {tmp_path}; cd slave-agent && rm -rf venv") is not None
 
 
 def test_unresolvable_cd_falls_back_to_the_process_cwd(fake_runtime, tmp_path, monkeypatch):
@@ -213,8 +213,8 @@ def test_a_cd_or_pushd_that_does_not_go_home_keeps_the_old_directory(fake_runtim
     # or `pushd +N` / `-N` rotates the directory stack, `pushd -n` never moves, a glob is the
     # shell's to expand, a `;` inside quotes is no separator, and `cd -- -L` names a directory.
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.chdir(tmp_path / "hermes-agent")
-    (tmp_path / "hermes-agent" / "child'").mkdir()
+    monkeypatch.chdir(tmp_path / "slave-agent")
+    (tmp_path / "slave-agent" / "child'").mkdir()
     for cd in ("cd '~'", 'cd "~"', "cd \\~", "pushd", f"cd '{tmp_path};missing'", "cd child';missing'", "cd -- -L"):
         assert rsp.command_deletes_runtime(f"{cd}; rm -rf venv") is not None, cd
     for cd in ("cd ~+", 'cd ""', "pushd +0", "pushd -0", "cd ../hermes-*", f"pushd -n {tmp_path}"):
@@ -224,18 +224,18 @@ def test_a_cd_or_pushd_that_does_not_go_home_keeps_the_old_directory(fake_runtim
 
 def test_cd_dash_p_keeps_the_old_directory(fake_runtime, tmp_path, monkeypatch):
     # `cd -P` enters the symlink's target, so a later `cd ..` returns to the install.
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     (install / "child").mkdir()
     (tmp_path / "link").symlink_to(install / "child")
     monkeypatch.chdir(install)
     for cd in ("cd -P", "cd -LP"):
-        assert rsp.command_deletes_runtime(f"{cd} {tmp_path / 'link'}; cd ..; rm -rf ../hermes-agent/venv") is not None, cd
+        assert rsp.command_deletes_runtime(f"{cd} {tmp_path / 'link'}; cd ..; rm -rf ../slave-agent/venv") is not None, cd
 
 
 def test_a_cd_into_a_missing_dir_keeps_the_directory_the_shell_reached(fake_runtime, tmp_path, monkeypatch):
     # Each missing `cd` fails and leaves the shell in the install; enough of them used to
     # push the install out of the capped candidate set, leaving only the process cwd.
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.chdir(elsewhere)
@@ -245,7 +245,7 @@ def test_a_cd_into_a_missing_dir_keeps_the_directory_the_shell_reached(fake_runt
 
 
 def test_a_reassigned_home_makes_a_bare_cd_unknowable(fake_runtime, tmp_path, monkeypatch):
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.setenv("HOME", str(elsewhere))
@@ -260,14 +260,14 @@ def test_cd_does_not_hide_an_absolute_or_dollar_home_target(fake_runtime, tmp_pa
     monkeypatch.chdir(tmp_path)
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
-    assert rsp.command_deletes_runtime(f"cd {elsewhere} && rm -rf $HOME/hermes-agent/venv") is not None
-    assert rsp.command_deletes_runtime(f"cd {elsewhere} && rm -rf ${{HOME}}/hermes-agent/venv") is not None
+    assert rsp.command_deletes_runtime(f"cd {elsewhere} && rm -rf $HOME/slave-agent/venv") is not None
+    assert rsp.command_deletes_runtime(f"cd {elsewhere} && rm -rf ${{HOME}}/slave-agent/venv") is not None
 
 
 def test_a_cd_that_may_not_move_the_shell_keeps_the_old_directory(fake_runtime, tmp_path, monkeypatch):
     # `||` runs the delete only when the cd FAILED, a piped cd runs in a subshell,
     # and after `;` a cd into a missing directory leaves the shell where it was.
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.chdir(install)
@@ -283,7 +283,7 @@ def test_a_cd_that_may_not_move_the_shell_keeps_the_old_directory(fake_runtime, 
 def test_a_failed_and_chain_does_not_carry_its_cd_past_the_list(fake_runtime, tmp_path, monkeypatch):
     # A failing `cd` skips the rest of its `&&` chain; a later `;`/`||` segment
     # then runs in the directory the shell was in before the chain.
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     monkeypatch.chdir(install)
     missing = tmp_path / "missing"
     assert rsp.command_deletes_runtime(f"cd {missing} && echo ok; rm -rf venv") is not None
@@ -295,7 +295,7 @@ def test_a_failed_and_chain_does_not_carry_its_cd_past_the_list(fake_runtime, tm
 
 
 def test_only_a_bare_cd_builtin_moves_the_shell(fake_runtime, tmp_path, monkeypatch):
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.chdir(install)
@@ -308,7 +308,7 @@ def test_only_a_bare_cd_builtin_moves_the_shell(fake_runtime, tmp_path, monkeypa
 
 
 def test_a_pipeline_continued_on_the_next_line_keeps_its_cd_in_a_subshell(fake_runtime, tmp_path, monkeypatch):
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.chdir(install)
@@ -320,7 +320,7 @@ def test_a_pipeline_continued_on_the_next_line_keeps_its_cd_in_a_subshell(fake_r
 
 def test_a_cd_the_walk_does_not_model_brings_back_the_process_cwd(fake_runtime, tmp_path, monkeypatch):
     # After a certain `cd`, a later directory change the walk cannot follow still moves the shell.
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     (install / "child").mkdir()
     monkeypatch.chdir(install)
     for move in ("if true; then cd ..; fi", "builtin cd ..", "command cd ..", "{ cd ..; }", "eval 'cd ..'", "up() { cd ..; }; up",
@@ -329,7 +329,7 @@ def test_a_cd_the_walk_does_not_model_brings_back_the_process_cwd(fake_runtime, 
 
 
 def test_a_cd_target_removed_earlier_in_the_command_does_not_count(fake_runtime, tmp_path, monkeypatch):
-    install = tmp_path / "hermes-agent"
+    install = tmp_path / "slave-agent"
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.chdir(install)
@@ -337,18 +337,18 @@ def test_a_cd_target_removed_earlier_in_the_command_does_not_count(fake_runtime,
 
 
 def test_cdpath_makes_a_relative_cd_unknowable(fake_runtime, tmp_path, monkeypatch):
-    # With CDPATH set, `cd hermes-agent` from inside the install re-enters it
-    # instead of failing on the missing `./hermes-agent`.
-    monkeypatch.chdir(tmp_path / "hermes-agent")
-    assert rsp.command_deletes_runtime(f"export CDPATH={tmp_path}; cd hermes-agent && rm -rf venv") is not None
+    # With CDPATH set, `cd slave-agent` from inside the install re-enters it
+    # instead of failing on the missing `./slave-agent`.
+    monkeypatch.chdir(tmp_path / "slave-agent")
+    assert rsp.command_deletes_runtime(f"export CDPATH={tmp_path}; cd slave-agent && rm -rf venv") is not None
     monkeypatch.setenv("CDPATH", str(tmp_path))
-    assert rsp.command_deletes_runtime("cd hermes-agent && rm -rf venv") is not None
+    assert rsp.command_deletes_runtime("cd slave-agent && rm -rf venv") is not None
 
 
 def test_many_cds_into_missing_dirs_stay_linear(fake_runtime, tmp_path, monkeypatch):
     import time
 
-    monkeypatch.chdir(tmp_path / "hermes-agent")
+    monkeypatch.chdir(tmp_path / "slave-agent")
     cds = "; ".join(f"cd d{i}" for i in range(40))
     began = time.monotonic()
     assert rsp.command_deletes_runtime(f"{cds}; rm -rf venv") is not None
@@ -378,6 +378,6 @@ def test_a_bare_assignment_keeps_the_or_that_follows_it(fake_runtime, tmp_path, 
     work.mkdir()
     monkeypatch.chdir(work)
     for assign in ("FOO=x", f"HOME={install}"):
-        for tail in (" ; rm -rf ../hermes-agent/venv", " && rm -rf ../hermes-agent/venv", "\nrm -rf ../hermes-agent/venv"):
+        for tail in (" ; rm -rf ../slave-agent/venv", " && rm -rf ../slave-agent/venv", "\nrm -rf ../slave-agent/venv"):
             command = f"{assign} || cd ..{tail}"
             assert rsp.command_deletes_runtime(command) is not None, command

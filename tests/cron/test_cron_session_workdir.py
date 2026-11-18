@@ -54,11 +54,11 @@ def _run_job_with_real_db(job, db, tmp_path):
 
 
 def _run_job_in_owner(job, db, tmp_path):
-    with patch("cron.scheduler._hermes_home", tmp_path), \
+    with patch("cron.scheduler._slave_home", tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_cli.runtime_provider.resolve_runtime_provider", return_value=_RUNTIME), \
+         patch("slave_cli.env_loader.load_slave_dotenv"), \
+         patch("slave_cli.env_loader.reset_secret_source_cache"), \
+         patch("slave_cli.runtime_provider.resolve_runtime_provider", return_value=_RUNTIME), \
          patch("run_agent.AIAgent", _FakeCronAgent):
         return run_job(job)
 

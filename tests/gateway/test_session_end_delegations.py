@@ -31,9 +31,9 @@ async def _owner(tmp_path, monkeypatch):
     from gateway.run_shutdown_session_end import GatewaySessionEndMixin
     from gateway.session_authority import initialize_session_authority
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
-    monkeypatch.setattr('hermes_cli.lifecycle.invoke_hook', lambda name, **kwargs: None)
+    monkeypatch.setattr('slave_cli.lifecycle.invoke_hook', lambda name, **kwargs: None)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
 
     async def finalize(**kwargs):
@@ -203,7 +203,7 @@ async def _local(tmp_path, monkeypatch):
     from gateway.session_local import create_local_session
     from persistence_assembly import open_persistence, profile_scope
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(SessionAuthority, '_schedule', lambda self, ref: None)  # admitted rows stay queued
     runner = GatewayRunner(GatewayConfig(sessions_dir=tmp_path / 'sessions'))
     # The storage interface handle on the same state.db, as the runner and its authority hold one in production.
@@ -312,7 +312,7 @@ async def test_messaging_completion_still_starts_its_turn(tmp_path, monkeypatch)
     from gateway.run import GatewayRunner
     from gateway.session_authority import SessionAuthority, initialize_session_authority
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from plugins.platforms.discord.adapter import DiscordAdapter
     from tests.gateway.test_completion_admission import pending
 
@@ -325,7 +325,7 @@ async def test_messaging_completion_still_starts_its_turn(tmp_path, monkeypatch)
     runner._wire_adapter_handlers(adapter)
     source = adapter.build_source(chat_id='42', chat_type='dm', user_id='42')
     human = MessageEvent(text='human', source=source, message_id='human')
-    with native_callback(runner, human, get_hermes_home()):
+    with native_callback(runner, human, get_slave_home()):
         await authority.admit_native(human)
     key = runner.session_store._generate_session_key(source)
     sid = runner.session_store.peek_session_id(key)

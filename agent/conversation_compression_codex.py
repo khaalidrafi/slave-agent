@@ -54,7 +54,7 @@ def _compress_context_via_codex_app_server(
 ) -> tuple[list, str]:
     """Route compaction to Codex app-server for Codex-owned threads.
     Rewriting the local transcript would not shrink the Codex thread, so Codex compacts its own thread and
-    Hermes' transcript is left unchanged. Every exit, raising ones included, logs one attempt record."""
+    slave-agent’ transcript is left unchanged. Every exit, raising ones included, logs one attempt record."""
     from agent.conversation_compression import (
         COMPACTION_STATUS, _CompressionActivityHeartbeat, _emit_compaction_done, _existing_system_prompt,
         _reset_read_dedup_caches, _swallow,
@@ -69,10 +69,10 @@ def _compress_context_via_codex_app_server(
     _sid = getattr(agent, "session_id", None) or "none"
     _tokens = f"{approx_tokens:,}" if approx_tokens else "unknown"
     auto_mode = str(getattr(agent, "codex_app_server_auto_compaction", "native") or "native").lower()
-    if auto_mode not in {"native", "hermes", "off"}:
+    if auto_mode not in {"native", "slave", "off"}:
         auto_mode = "native"
     skip_reason = skip_status = skip_class = None
-    if not force and auto_mode != "hermes":
+    if not force and auto_mode != "slave":
         skip_reason, skip_status, skip_class = f"mode={auto_mode} force=false", "skipped", f"codex_auto_{auto_mode}"
     elif not force:
         # Automatic entrypoints honor the compressor-owned cooldown: a recent compaction
@@ -99,7 +99,7 @@ def _compress_context_via_codex_app_server(
         result = codex_session.compact_thread()
     except BaseException as exc:
         _activity_heartbeat.stop("context compression failed")
-        # Same class shape as the Hermes route's raising exits; the caller still gets the original error.
+        # Same class shape as the Slave route's raising exits; the caller still gets the original error.
         _record("aborted", f"exception:{type(exc).__name__}")
         raise
     failed = bool(getattr(result, "interrupted", False) or getattr(result, "error", None))

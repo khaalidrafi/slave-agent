@@ -1,7 +1,7 @@
-"""Browser Use harness daemons die with the Hermes process that drove them.
+"""Browser Use harness daemons die with the slave-agent process that drove them.
 
 The harness detaches its daemon on purpose (``start_new_session``) so a session persists across
-``browser_exec`` calls; that also made it outlive a SIGKILLed / OOM-killed Hermes forever (#121095).
+``browser_exec`` calls; that also made it outlive a SIGKILLed / OOM-killed slave-agent forever (#121095).
 browser_exec now hands the daemon's process group to the per-process owner-death supervisor. These
 tests drive the real registration seam against a real detached stand-in daemon.
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import process_identity
+from slave_cli import process_identity
 from tests.waiting import wait_until
 from tools import browser_use_cli
 
@@ -159,7 +159,7 @@ def test_a_sigkilled_owner_takes_its_harness_daemon_with_it(tmp_path):
         "print(d.pid, flush=True)\n"
         "time.sleep(300)\n"
     )
-    env = dict(os.environ, HERMES_HOME=str(tmp_path / "home"), PYTHONPATH=str(Path(__file__).resolve().parents[2]))
+    env = dict(os.environ, SLAVE_HOME=str(tmp_path / "home"), PYTHONPATH=str(Path(__file__).resolve().parents[2]))
     owner = subprocess.Popen([sys.executable, "-c", owner_src], env=env, stdin=subprocess.DEVNULL,
                              stdout=subprocess.PIPE, text=True)
     daemon_pid = None
@@ -168,7 +168,7 @@ def test_a_sigkilled_owner_takes_its_harness_daemon_with_it(tmp_path):
         owner.kill()
         owner.wait(timeout=10)
         wait_until(lambda: not _group_alive(daemon_pid), timeout=15,
-                   what="the harness daemon to die with the kill -9'd Hermes process that drove it")
+                   what="the harness daemon to die with the kill -9'd slave-agent process that drove it")
     finally:
         if daemon_pid is not None:
             try:
@@ -181,9 +181,9 @@ def test_a_sigkilled_owner_takes_its_harness_daemon_with_it(tmp_path):
         process_identity._supervised_pgids.clear()
 
 
-def test_a_daemon_another_live_hermes_started_on_the_same_name_is_never_registered(tmp_path, registered):
-    """Two Hermes processes on the default BU_NAME read the same bu-default.pid. The daemon belongs
-    to the one whose CLI started it: the other must not hand it to its supervisor, or that Hermes
+def test_a_daemon_another_live_slave_started_on_the_same_name_is_never_registered(tmp_path, registered):
+    """Two slave-agent processes on the default BU_NAME read the same bu-default.pid. The daemon belongs
+    to the one whose CLI started it: the other must not hand it to its supervisor, or that slave-agent
     dying would kill a browser session the first still uses."""
     pkg = tmp_path / "pkgroot" / "browser_harness"
     pkg.mkdir(parents=True)
@@ -211,7 +211,7 @@ def test_a_daemon_another_live_hermes_started_on_the_same_name_is_never_register
 
 def test_a_long_first_browser_exec_owns_its_daemon_before_the_call_returns(monkeypatch):
     """The first call starts the daemon and may run for minutes (navigation, user code). Its daemon
-    must reach the supervisor during the call, or a Hermes killed mid-call leaves it running."""
+    must reach the supervisor during the call, or a slave-agent killed mid-call leaves it running."""
     import threading
 
     owned_during_call = threading.Event()

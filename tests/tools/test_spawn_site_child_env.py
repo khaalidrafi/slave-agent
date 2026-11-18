@@ -42,7 +42,7 @@ def _compute_host_seen(child_env, monkeypatch, names):
         sup.shutdown()
 
 
-def test_compute_host_is_hermes_and_keeps_its_full_environment(child_env, monkeypatch):
+def test_compute_host_is_slave_and_keeps_its_full_environment(child_env, monkeypatch):
     # It runs agent turns for the dashboard, so it needs what the turn needs: keys set only in the
     # process env (Docker -e, systemd) are not in any .env for it to reload (#65895).
     _plant(monkeypatch)
@@ -52,12 +52,12 @@ def test_compute_host_is_hermes_and_keeps_its_full_environment(child_env, monkey
 
 @pytest.mark.platforms("posix")  # the stand-in binaries are shebang scripts
 @pytest.mark.parametrize("site", ["lsp_server", "lsp_go_install", "lsp_npm_install", "raft_bridge", "buzz_cli"])
-def test_third_party_children_never_see_hermes_credentials(child_env, monkeypatch, site):
+def test_third_party_children_never_see_slave_credentials(child_env, monkeypatch, site):
     _plant(monkeypatch)
     # Profile home mode (the container default) re-points HOME; the CLIs whose own logins live
     # under the user's HOME get it back, language servers and installers follow the terminal.
     monkeypatch.setenv("TERMINAL_HOME_MODE", "profile")
-    (child_env / "hermes" / "home").mkdir(parents=True, exist_ok=True)
+    (child_env / "slave" / "home").mkdir(parents=True, exist_ok=True)
     out = child_env / "seen.json"
     own = {"lsp_server": "LSP_OWN_SETTING", "lsp_go_install": "GOBIN", "lsp_npm_install": "PATH",
            "raft_bridge": "RAFT_CHANNEL_TOKEN", "buzz_cli": "BUZZ_PRIVATE_KEY"}[site]
@@ -103,4 +103,4 @@ def test_third_party_children_never_see_hermes_credentials(child_env, monkeypatc
     assert {k: seen[k] for k in (*_TIER1, _PROVIDER)} == dict.fromkeys((*_TIER1, _PROVIDER))
     assert seen[own]  # the child's own configuration still arrives
     user_home = site in ("raft_bridge", "buzz_cli")
-    assert seen["HOME"] == str(child_env if user_home else child_env / "hermes" / "home")
+    assert seen["HOME"] == str(child_env if user_home else child_env / "slave" / "home")

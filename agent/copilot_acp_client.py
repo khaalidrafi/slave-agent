@@ -27,20 +27,20 @@ from agent.acp_client import ACPClient
 
 _warned = False
 _PLACEHOLDER = "copilot-acp"
-_COMMAND_ENV_VARS = ("HERMES_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH")
-_ARGS_ENV_VAR = "HERMES_COPILOT_ACP_ARGS"
+_COMMAND_ENV_VARS = ("SLAVE_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH")
+_ARGS_ENV_VAR = "SLAVE_COPILOT_ACP_ARGS"
 # Stderr fingerprint of the deprecated `gh copilot` extension: BOTH the product name AND a deprecation
 # marker (the new `@github/copilot` CLI legitimately mentions "copilot-cli").
 _GH_EXTENSION_REQUIRED = ("gh-copilot",)
 _GH_EXTENSION_MARKERS = ("has been deprecated", "no commands will be executed")
 _GH_EXTENSION_ERROR = (
-    "Hermes ACP mode requires the NEW GitHub Copilot CLI (github.com/github/copilot-cli), but the binary it just "
+    "slave-agent ACP mode requires the NEW GitHub Copilot CLI (github.com/github/copilot-cli), but the binary it just "
     "spawned is the deprecated `gh copilot` extension.\n\n"
     "Install the new CLI:\n  npm install -g @github/copilot\n  # then verify with: copilot --help\n\n"
-    "If `copilot` already resolves to the new CLI but you still see this,\npoint Hermes at it explicitly:\n"
-    "  export HERMES_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
+    "If `copilot` already resolves to the new CLI but you still see this,\npoint slave-agent at it explicitly:\n"
+    "  export SLAVE_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
     "Alternative: use the `copilot` provider (no ACP, hits the Copilot API\ndirectly with a Copilot subscription "
-    "token) via `hermes setup`.\n\nOriginal error:\n"
+    "token) via `slave setup`.\n\nOriginal error:\n"
 )
 
 
@@ -63,10 +63,10 @@ class _DeprecatedCopilotACPClient(ACPClient):
     marker_base_url = "acp://copilot"
     placeholder_model = _PLACEHOLDER
     label = "Copilot ACP"
-    missing_command_hint = "Install GitHub Copilot CLI or set HERMES_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
+    missing_command_hint = "Install GitHub Copilot CLI or set SLAVE_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
     unsupported_transport_hint = (
         "Either install a CLI that ships with --acp support (e.g. `@github/copilot` late 2025+), or set "
-        "HERMES_COPILOT_ACP_COMMAND / HERMES_COPILOT_ACP_ARGS to a working pair.")
+        "SLAVE_COPILOT_ACP_COMMAND / SLAVE_COPILOT_ACP_ARGS to a working pair.")
 
     def model_entry_disabled(self, entry: dict[str, Any]) -> bool:
         return _copilot_disabled(entry)
@@ -135,10 +135,10 @@ def _former_attribute(name: str) -> Any:
         return _COMPAT[name]
     if name in _FORWARDED:
         return getattr(_acp, name)
-    if name == "hermes_subprocess_env":
-        from tools.environments.local import hermes_subprocess_env  # lazy: hermes_cli.config may still be importing
+    if name == "slave_subprocess_env":
+        from tools.environments.local import slave_subprocess_env  # lazy: slave_cli.config may still be importing
 
-        return hermes_subprocess_env
+        return slave_subprocess_env
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -154,4 +154,4 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__() -> list[str]:
-    return sorted({*globals(), *_COMPAT, *_FORWARDED, "hermes_subprocess_env"})
+    return sorted({*globals(), *_COMPAT, *_FORWARDED, "slave_subprocess_env"})

@@ -19,7 +19,7 @@ def _init_repo(repo):
 class TestFsmonitorInjection:
 
     def test_check_ignore_does_not_execute_repo_fsmonitor(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         repo = tmp_path / "repo"
         (repo / "somedir").mkdir(parents=True)
         (repo / "somedir" / "f.txt").write_text("TOKEN_ALPHA = 1\n")
@@ -34,7 +34,7 @@ class TestFsmonitorInjection:
         assert not marker.exists()
 
     def test_gitignore_filtering_still_applies(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         repo = tmp_path / "repo"
         # Directory matches come from find and are filtered only by git check-ignore;
         # "generated_cache" is outside the fixed prune list, so only git drops it.

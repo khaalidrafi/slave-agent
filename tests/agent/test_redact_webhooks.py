@@ -10,7 +10,7 @@ from agent.redact import RedactingFormatter, redact_sensitive_text
 
 class TestIncomingWebhookUrls:
     """An incoming-webhook URL is itself the credential: whoever holds it can post into the
-    workspace as the app. Hermes keeps one as ``incoming_webhook_url`` for Teams delivery and
+    workspace as the app. slave-agent keeps one as ``incoming_webhook_url`` for Teams delivery and
     ships Slack and Discord adapters, so they reach config dumps, tool output and logs."""
 
     # Built at runtime: a contiguous token-shaped webhook literal trips secret scanners.

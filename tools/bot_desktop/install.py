@@ -25,7 +25,7 @@ from pathlib import Path
 import time
 from typing import Callable, Optional
 
-from hermes_constants import hermes_home_key
+from slave_constants import slave_home_key
 from tools.bot_desktop import runtime
 
 logger = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ def claim() -> str:
     claims before handing off to a worker passes ``claimed=True`` to :func:`install_packages`, which then
     owns releasing it — a check-then-spawn pair (a read-only check + later claim on the worker) lets
     two Install clicks both pass the check."""
-    key = hermes_home_key()
+    key = slave_home_key()
     with _install_lock:
         if key in _slot_files:
             raise InstallBusy("an install is already running for this profile")
@@ -85,7 +85,7 @@ def install_packages(*, ask_password: Callable[[], str], on_line: Callable[[str]
     """Run the package install; returns the process exit code (0 = success, ``-1`` = cancelled,
     :data:`NO_SUDO` = unprivileged host without sudo — the command to run by hand was streamed).
     ``claimed=True``: the caller already holds the slot via :func:`claim`; it is released here either way."""
-    key = hermes_home_key() if claimed else None
+    key = slave_home_key() if claimed else None
     try:
         if not runtime.is_supported_host():
             raise RuntimeError("Bot Desktop runs on Linux gateway hosts only")
@@ -156,7 +156,7 @@ _TERM_GRACE_SECONDS = 5.0
 def _drain_until(proc: subprocess.Popen, on_line: Callable[[str], None], deadline: float) -> bool:
     """Stream ``proc.stdout`` lines to ``on_line`` until EOF (``True``) or ``deadline`` (``False``).
 
-    Readiness-polled rather than a blocking ``for line in proc.stdout``: from an unprivileged Hermes no
+    Readiness-polled rather than a blocking ``for line in proc.stdout``: from an unprivileged slave-agent no
     signal reaches a root-owned apt/dnf child, and that child keeps the pipe's write end open, so a
     blocking read would never see EOF and the profile's install slot would be held forever.
     """

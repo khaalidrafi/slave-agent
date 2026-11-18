@@ -27,7 +27,7 @@ def test_terminal_cwd_follows_the_backend(tmp_path, monkeypatch, terminal, param
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text(json.dumps({"terminal": terminal}), encoding="utf-8")  # JSON is YAML
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     launch = tmp_path / "project"
     launch.mkdir()
 

@@ -1,4 +1,4 @@
-"""Argument-name checks for the tools Hermes ships.
+"""Argument-name checks for the tools slave-agent ships.
 
 A call that omits a required argument is refused before the handler runs, naming the
 field; a call that carries a name the schema does not declare still reaches the handler

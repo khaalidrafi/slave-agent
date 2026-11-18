@@ -1,6 +1,6 @@
 """Editor session metadata and commands on the shipped gateway path (tracker ACP-1/2/3/6/7/11).
 
-An actual ``hermes acp`` stdio process against an ordinary isolated gateway. Main's in-process
+An actual ``slave acp`` stdio process against an ordinary isolated gateway. Main's in-process
 server (``acp_adapter/server.py``, ``acp_adapter/commands.py``) is the reference for each reply.
 """
 import json
@@ -35,7 +35,7 @@ async def test_new_session_carries_picker_modes_provenance_and_commands(daemon, 
         sid = result['sessionId']
         assert 'local-wire-stub' in result['models']['currentModelId'], result
         assert result['modes']['currentModeId'] == 'default', result
-        assert result['_meta']['hermes']['sessionProvenance']['acpSessionId'] == sid, result
+        assert result['_meta']['slave']['sessionProvenance']['acpSessionId'] == sid, result
         await async_wait_until(lambda: _updates(acp, sid, 'available_commands_update'))
         advertised = {c['name'] for c in _updates(acp, sid, 'available_commands_update')[0]['availableCommands']}
         assert {'help', 'model', 'tools', 'context', 'reset', 'compress', 'steer', 'queue', 'version',

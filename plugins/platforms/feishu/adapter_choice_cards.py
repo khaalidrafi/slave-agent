@@ -26,10 +26,10 @@ class FeishuChoiceCardsMixin:
 
     # Card-action value key -> handler; the first key a click's value carries routes it.
     _CARD_ACTION_ROUTES = (
-        ("hermes_action", "_handle_approval_card_action"),
-        ("hermes_update_prompt_action", "_handle_update_prompt_card_action"),
-        ("hermes_clarify_action", "_handle_clarify_card_action"),
-        ("hermes_choice_picker_action", "_handle_choice_picker_card_action"),
+        ("slave_action", "_handle_approval_card_action"),
+        ("slave_update_prompt_action", "_handle_update_prompt_card_action"),
+        ("slave_clarify_action", "_handle_clarify_card_action"),
+        ("slave_choice_picker_action", "_handle_choice_picker_card_action"),
     )
 
     def _init_choice_card_state(self) -> None:
@@ -65,10 +65,10 @@ class FeishuChoiceCardsMixin:
             mark_awaiting_text(clarify_id)
         actions = [
             _card_button(str(i), "primary" if i == 1 else "default",
-                         {"hermes_clarify_action": str(i - 1), "clarify_id": clarify_id})
+                         {"slave_clarify_action": str(i - 1), "clarify_id": clarify_id})
             for i in range(1, len(choices) + 1)]
         actions.append(_card_button(t("platform.feishu.clarify.other"), "default",
-                                    {"hermes_clarify_action": "other", "clarify_id": clarify_id}))
+                                    {"slave_clarify_action": "other", "clarify_id": clarify_id}))
         card = self._clarify_card(body, "blue", actions=actions)
         try:
             return await self._send_interactive_card(
@@ -110,7 +110,7 @@ class FeishuChoiceCardsMixin:
         from tools import clarify_gateway
 
         entry = clarify_gateway.get_pending(clarify_id)
-        token = str(action_value.get("hermes_clarify_action") or "")
+        token = str(action_value.get("slave_clarify_action") or "")
         if entry is None or entry.session_key != state.get("session_key"):
             # The wait ended (timeout, /new) before the retire reached this card.
             self._clarify_state.pop(clarify_id, None)
@@ -169,7 +169,7 @@ class FeishuChoiceCardsMixin:
             label = str(choice.get("label") or choice.get("value") or "")
             label = self._truncate_preview(f"✓ {label}" if choice.get("is_current") else label, _BUTTON_LABEL_MAX, "…")
             actions.append(_card_button(label, "primary" if choice.get("is_current") else "default",
-                                        {"hermes_choice_picker_action": str(i), "picker_id": picker_id}))
+                                        {"slave_choice_picker_action": str(i), "picker_id": picker_id}))
         heading, _, rest = str(title or "").partition("\n")
         header = heading.replace("*", "").strip()
         # A one-line title (usage-limit offer) gets the full labels as body: buttons truncate them.
@@ -202,7 +202,7 @@ class FeishuChoiceCardsMixin:
         from gateway.approval_actor import picker_refusal, refusal_text
         if requester := picker_refusal(state["on_choice_selected"], checked[3] or checked[0], extra=self.config.extra):
             return self._card_toast(refusal_text(requester))  # another member's tap: only they see it, card stays open
-        token = str(action_value.get("hermes_choice_picker_action") or "")
+        token = str(action_value.get("slave_choice_picker_action") or "")
         choices = state["choices"]
         if not (token.isdigit() and int(token) < len(choices)):
             return self._card_response()

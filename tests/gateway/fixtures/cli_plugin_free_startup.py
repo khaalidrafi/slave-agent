@@ -1,9 +1,9 @@
 """The classic CLI's real startup and command dispatch, in a fresh process, recording every plugin
 discovery / execution entry point it reaches (#134889 PLG-7).
 
-``argv[1]`` is the launch: ``oneshot`` (``_prepare_agent_startup``, as ``hermes chat -q`` runs it) or
+``argv[1]`` is the launch: ``oneshot`` (``_prepare_agent_startup``, as ``slave chat -q`` runs it) or
 ``interactive`` (main's fast path: discovery deferred to the first turn). The rest of argv are the
-chat flags (``-t terminal``, ``-s <skill>``). The gateway for ``HERMES_HOME`` must already run, with the probe plugin
+chat flags (``-t terminal``, ``-s <skill>``). The gateway for ``SLAVE_HOME`` must already run, with the probe plugin
 (a ``pre_command`` hook, a command, a skill and a toolset) loaded. Prints one JSON line.
 """
 import io
@@ -16,7 +16,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 from agent import skill_commands
-from hermes_cli import plugins
+from slave_cli import plugins
 
 calls = []
 
@@ -39,7 +39,7 @@ _spy(skill_commands, 'get_plugin_skill_commands')
 
 
 def _add_skill(name):
-    path = Path(os.environ['HERMES_HOME'], 'skills', name)
+    path = Path(os.environ['SLAVE_HOME'], 'skills', name)
     path.mkdir(parents=True)
     (path / 'SKILL.md').write_text(f'---\nname: {name}\ndescription: Added mid-run\n---\nSay {name.upper()}_BODY.\n')
 
@@ -65,12 +65,12 @@ COMPLETE = ('/probe', '/tools enable ', '/tools disable ')
 
 def main():
     mode, flags = sys.argv[1], sys.argv[2:]
-    from hermes_cli import main as hermes_main
-    args = hermes_main._light_chat_parser().parse_args(['chat', *flags])
+    from slave_cli import main as slave_main
+    args = slave_main._light_chat_parser().parse_args(['chat', *flags])
     if mode == 'interactive':
-        os.environ['HERMES_DEFER_AGENT_STARTUP'] = '1'
+        os.environ['SLAVE_DEFER_AGENT_STARTUP'] = '1'
     else:
-        hermes_main._prepare_agent_startup(args)
+        slave_main._prepare_agent_startup(args)
     import cli
     from prompt_toolkit.document import Document
     outputs, errors, completions = {}, [], {}
@@ -91,7 +91,7 @@ def main():
                 errors.append(f'{command}: {traceback.format_exc()}')
             outputs[command if command not in outputs else f'{command} #2'] = out.getvalue()[start:]
         try:
-            from hermes_cli.commands_completion import cli_slash_completer
+            from slave_cli.commands_completion import cli_slash_completer
             completer = cli_slash_completer(c)  # the prompt's own completer
             for text in COMPLETE:
                 completions[text] = sorted({x.text for x in completer.get_completions(Document(text), None)})
@@ -103,7 +103,7 @@ def main():
     print(json.dumps({'calls': calls, 'agent': agent, 'session_id': c.session_id, 'output': out.getvalue(),
                       'outputs': outputs, 'errors': errors, 'completions': completions, 'queued': queued,
                       'model_tools': 'model_tools' in sys.modules,
-                      'plugin_modules': sorted(m for m in sys.modules if m.startswith('hermes_plugins'))}),
+                      'plugin_modules': sorted(m for m in sys.modules if m.startswith('slave_plugins'))}),
           file=sys.__stdout__, flush=True)
     os._exit(0)
 

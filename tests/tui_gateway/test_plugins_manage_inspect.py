@@ -27,7 +27,7 @@ def _repo(path, files):
 def test_inspect_reports_halves_and_installs_nothing(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     repo = _repo(tmp_path / "pkg", {"plugin.yaml": "name: pkg\nversion: 1.0.0\n", "__init__.py": "",
                                     "desktop/plugin.js": "export default {}\n"})
 

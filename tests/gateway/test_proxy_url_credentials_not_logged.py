@@ -33,7 +33,7 @@ def test_telegram_request_builder_logs_proxy_without_credentials(monkeypatch, ca
     from plugins.platforms.telegram import adapter as tg
 
     monkeypatch.setenv("TELEGRAM_PROXY", PROXY)
-    monkeypatch.setenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
+    monkeypatch.setenv("SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
     adapter = tg.TelegramAdapter(PlatformConfig(enabled=True, token="123456:TOKEN"))
     with caplog.at_level(logging.INFO), \
             patch.object(tg, "HTTPXRequest", lambda **kw: types.SimpleNamespace(**kw)), \
@@ -310,7 +310,7 @@ def test_telegram_connect_error_never_echoes_proxy_password(monkeypatch, caplog)
     from plugins.platforms.telegram import adapter as tg
 
     monkeypatch.setenv("TELEGRAM_PROXY", f"http://bob:{TOKEN}#x@127.0.0.1:3128")
-    monkeypatch.setenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
+    monkeypatch.setenv("SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
     adapter = tg.TelegramAdapter(PlatformConfig(enabled=True, token="123456:TOKEN"))
     with caplog.at_level(logging.INFO), \
             patch.object(tg, "HTTPXRequest", lambda **kw: httpx.AsyncClient(proxy=kw.get("proxy"))), \

@@ -17,7 +17,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 from tests.waiting import async_wait_until, wait_until
 from tests.tui_gateway.test_hosted_room_service import _FakeRPC, _server
 
-from hermes_cli import urllib_security
+from slave_cli import urllib_security
 from gateway import hosted_room_driver as driver
 from gateway.config import PlatformConfig
 from gateway.hosted_rooms import local_authority_gateway_id

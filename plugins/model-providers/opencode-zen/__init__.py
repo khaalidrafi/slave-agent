@@ -7,7 +7,7 @@ chat_completions reasoning translations (GLM-5.2, Kimi K2, DeepSeek, Ox Alpha).
 from typing import Any
 
 from agent import reasoning_effort as re_
-from hermes_cli.version_info import hermes_user_agent
+from slave_cli.version_info import slave_user_agent
 from providers import register_provider
 from providers.base import LazyHeaders, ProviderProfile
 from datetime import UTC
@@ -16,8 +16,8 @@ from datetime import UTC
 # default_headers so they survive model switches and credential rotation.
 _ATTRIBUTION_HEADERS = {
     "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
-    "User-Agent": lambda: hermes_user_agent("HermesAgent"),
+    "X-Title": "slave-agent",
+    "User-Agent": lambda: slave_user_agent("SlaveAgent"),
 }
 
 
@@ -77,7 +77,7 @@ class OpenCodeGoProfile(ProviderProfile):
         import httpx
 
         from agent.account_usage import AccountUsageSnapshot, AccountUsageWindow
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from slave_cli.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested=self.name, explicit_base_url=base_url, explicit_api_key=api_key)
         token = str(runtime.get("api_key", "") or "").strip()

@@ -1,7 +1,7 @@
 name: salesforce-guard
 title: Salesforce Guard
 repo: https://github.com/sforceai/salesforce-release-guard
-subdir: hermes-plugin
+subdir: slave-plugin
 sha: da0a581c82b070680219a1adfb2f91815fba0581
 version: "0.4.3"
 maintainer: sforceai
@@ -17,7 +17,7 @@ capabilities:
 docs_url: https://github.com/sforceai/salesforce-release-guard/blob/da0a581c82b070680219a1adfb2f91815fba0581/README.md
 readme: false
 known_issues:
-  - Use a dedicated review profile. On deferred-tool Hermes clients, set tools.tool_search.enabled to off to expose native schemas; the guard remains enabled.
+  - Use a dedicated review profile. On deferred-tool slave-agent clients, set tools.tool_search.enabled to off to expose native schemas; the guard remains enabled.
   - On Windows, use the documented short-folder route. Arbitrary deep paths are not verified supported.
 screenshots:
   - https://raw.githubusercontent.com/sforceai/salesforce-release-guard/da0a581c82b070680219a1adfb2f91815fba0581/docs/assets/comparison-desktop.png

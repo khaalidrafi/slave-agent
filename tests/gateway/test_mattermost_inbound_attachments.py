@@ -113,7 +113,7 @@ async def test_bot_admitted_by_allow_bots_keeps_its_attachments(mattermost, monk
 async def test_attachment_body_is_read_under_inbound_media_cap(mattermost):
     from gateway.platforms.base import get_document_cache_dir, get_inbound_media_max_bytes
 
-    Path(os.environ["HERMES_HOME"], "config.yaml").write_text("gateway:\n  max_inbound_media_bytes: 1048576\n")
+    Path(os.environ["SLAVE_HOME"], "config.yaml").write_text("gateway:\n  max_inbound_media_bytes: 1048576\n")
     cap = get_inbound_media_max_bytes()
     assert cap == 1048576
     dm, _hits = mattermost

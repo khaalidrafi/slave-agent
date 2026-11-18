@@ -1,6 +1,6 @@
 """HTTP client for the agent routes of the config plane (contract.md §7.1, §7.2).
 
-Plain HTTP (D9), stdlib only: it runs inside ``load_hermes_dotenv`` before most of Hermes is
+Plain HTTP (D9), stdlib only: it runs inside ``load_slave_dotenv`` before most of slave-agent is
 imported. Every request re-resolves the bearer (contract §10.2).
 """
 from __future__ import annotations
@@ -18,8 +18,8 @@ from .credentials import plane_token
 from .destination import checked_url, display_url, open_credentialed
 
 DEFAULT_URL = "https://config-config.nousresearch.com"
-URL_ENV = "HERMES_CONFIG_REMOTE_URL"
-INSTANCE_ENV = "HERMES_CONFIG_INSTANCE_ID"
+URL_ENV = "SLAVE_CONFIG_REMOTE_URL"
+INSTANCE_ENV = "SLAVE_CONFIG_INSTANCE_ID"
 _HTTP_TIMEOUT_S = 15.0
 
 
@@ -92,7 +92,7 @@ def request(method: str, home: Path, profile: str, *, etag: Optional[str] = None
     url = f"{plane}/v1/config/self?{urllib.parse.urlencode({'profile': profile})}"
     headers = {
         "Authorization": f"Bearer {token or plane_token(home)}",
-        "X-Hermes-Instance-Id": instance_id(),
+        "X-Slave-Instance-Id": instance_id(),
         "Accept": "application/json",
     }
     data = None

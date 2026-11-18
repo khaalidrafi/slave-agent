@@ -1,7 +1,7 @@
 """The SQLite delegation-ledger verbs against tools/async_delegation.py, and their transaction shape.
 
 Each parity case writes the ledger rows into a schema-built ``state.db``, keeps a copy, runs the legacy function with
-``HERMES_HOME`` at the profile home (the ledger resolves its file there), restores the copy and runs the backend verb
+``SLAVE_HOME`` at the profile home (the ledger resolves its file there), restores the copy and runs the backend verb
 (composed with the owner probe and the redaction the legacy function ran, which stay with the caller), then compares
 the outcomes and the ``async_delegations`` rows. The shape cases prove the sweeps take owners as data, touch only rows
 unchanged since the caller's read, open no connection and probe no process inside the transaction, and reach the
@@ -126,7 +126,7 @@ def run_ledger_both(backend, scope, monkeypatch, rows: list[dict[str, Any]], leg
     snapshot = path.with_name("seed.db")
     copy_db(path, snapshot)
     with monkeypatch.context() as patch:
-        patch.setenv("HERMES_HOME", str(path.parent))
+        patch.setenv("SLAVE_HOME", str(path.parent))
         before = outcome(legacy)
     legacy_rows = dump(path, TABLES)
     copy_db(snapshot, path)
@@ -279,7 +279,7 @@ def test_sweep_orphaned_completions(backend, scope_a, monkeypatch):
     target: queue.Queue = queue.Queue()
 
     def legacy():
-        ad._offered.add((ad.hermes_home_key(ad.get_hermes_home()), "dead-offered"))
+        ad._offered.add((ad.slave_home_key(ad.get_slave_home()), "dead-offered"))
         count = ad.sweep_orphaned_completions(target, now=NOW)
         return count, drain(target)
 

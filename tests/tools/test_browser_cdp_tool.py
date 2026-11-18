@@ -728,7 +728,7 @@ LOCAL_TAB = "http://127.0.0.1:3000/"
     ("Target.createTarget", {"url": PUBLIC_PAGE}, True),
     ("Target.createTarget", {"url": "http://127.0.0.1:3000/admin"}, False),  # checked like Page.navigate
     ("Target.createTarget", {"url": PRIVATE_URL}, False),
-    ("Target.createTarget", {"url": "about:blank"}, True),  # a blank tab, as Hermes's own helpers open
+    ("Target.createTarget", {"url": "about:blank"}, True),  # a blank tab, as Slave's own helpers open
     ("Target.createTarget", {"url": ""}, True),
     ("Target.createTarget", {}, True),
     ("Target.createTarget", {"url": "file:///etc/passwd"}, False),  # every other non-http scheme stays refused

@@ -6,7 +6,7 @@ Intentionally does NOT smoke-test the webhook: the gateway and the tunnel both r
 processes the user starts AFTER this wizard exits, so any in-wizard probe would fail."""
 
 from __future__ import annotations
-from hermes_cli.cli_output import line_input
+from slave_cli.cli_output import line_input
 
 import re
 import secrets
@@ -145,7 +145,7 @@ def _persist(env_var: str, value: Optional[str], current: Optional[str],
              saved: str = "  ✓ Saved: {v}", kept: str = "  ✓ Keeping existing: {v}") -> Optional[str]:
     """Save ``value`` to .env, else keep ``current``; prints the matching line. Returns the effective
     value (None when neither exists). ``{v}`` in ``saved``/``kept`` is the value."""
-    from hermes_cli.config import save_env_value
+    from slave_cli.config import save_env_value
     if value:
         save_env_value(env_var, value)
         print(saved.format(v=value))
@@ -213,7 +213,7 @@ _OPTIONAL_ID_STEPS = (
 
 def _credential_step(step) -> bool:
     """Run one _CREDENTIAL_STEPS entry. Returns True when the wizard must abort."""
-    from hermes_cli.config import get_env_value
+    from slave_cli.config import get_env_value
     title, env_var, label, validator, secret, preview, saved, kept, missing, required, help_text = step
     _header(title)
     current = get_env_value(env_var) or None
@@ -229,7 +229,7 @@ def _credential_step(step) -> bool:
 
 def _step_optional_ids() -> dict:
     """STEP 4: optional App ID / WABA ID. Returns {env var: effective value or None}."""
-    from hermes_cli.config import get_env_value
+    from slave_cli.config import get_env_value
     _header("STEP 4 — App ID & WABA ID (optional; WABA ID binds inbound webhooks)")
     ids = {}
     for label, env_var, validator, help_text in _OPTIONAL_ID_STEPS:
@@ -242,7 +242,7 @@ def _step_optional_ids() -> dict:
 
 def _step_verify_token() -> str:
     """STEP 5: generate (or keep) the webhook verify token; returns the effective token."""
-    from hermes_cli.config import get_env_value, save_env_value
+    from slave_cli.config import get_env_value, save_env_value
     _header("STEP 5 — Verify Token (auto-generated)")
     verify_token = get_env_value("WHATSAPP_CLOUD_VERIFY_TOKEN") or None
     regen = "y"
@@ -266,7 +266,7 @@ def _step_verify_token() -> str:
 
 def _step_allowlist() -> None:
     """STEP 6: recipient allowlist (spaces/dashes/'+' stripped from each entry)."""
-    from hermes_cli.config import get_env_value, save_env_value
+    from slave_cli.config import get_env_value, save_env_value
     _header("STEP 6 — Recipient Allowlist")
     _lines(
         "", "  Who is allowed to message the bot? (Comma-separated phone",
@@ -294,7 +294,7 @@ def run_whatsapp_cloud_setup() -> int:
     """Interactive wizard for the WhatsApp Cloud API adapter. Returns 0 on success, 1 on abort."""
     _lines(
         "", "☤ WhatsApp Business Cloud API Setup", "=" * 50, "",
-        "This wizard configures Hermes to talk to WhatsApp via Meta's",
+        "This wizard configures slave-agent to talk to WhatsApp via Meta's",
         "official Cloud API. It's the production-grade path:", "",
         "  • No QR codes, no Node.js bridge subprocess",
         "  • Stable connection — no account-ban risk",
@@ -324,7 +324,7 @@ def run_whatsapp_cloud_setup() -> int:
 
     _header("SETUP COMPLETE — Next steps")
     _lines(
-        "", "  Hermes needs a public HTTPS URL to receive WhatsApp messages.",
+        "", "  slave-agent needs a public HTTPS URL to receive WhatsApp messages.",
         "  The recommended path is Cloudflare Tunnel (free, no port",
         "  forwarding, no DNS setup).", "",
         "    1. Install cloudflared (one-time, if you don't have it):",
@@ -336,8 +336,8 @@ def run_whatsapp_cloud_setup() -> int:
         "    2. Start the tunnel in a separate terminal:",
         "         cloudflared tunnel --url http://localhost:8090",
         "       Note the printed https://<random>.trycloudflare.com URL.", "",
-        "    3. Start the Hermes gateway in another terminal:",
-        "         hermes gateway", "",
+        "    3. Start the slave-agent gateway in another terminal:",
+        "         slave gateway", "",
         "    4. Verify your local config is reachable. From a third",
         "       terminal, with the tunnel URL substituted:", "",
         "         curl 'https://YOUR-TUNNEL.trycloudflare.com/whatsapp/webhook?\\",

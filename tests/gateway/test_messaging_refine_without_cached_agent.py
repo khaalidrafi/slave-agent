@@ -83,11 +83,11 @@ def _gateway(root, url, **overrides):
         'terminal': {'backend': 'local'},
         **overrides,
     }
-    (gw.hermes_home / 'config.yaml').write_text(json.dumps(config))
-    (gw.hermes_home / 'prefill.json').write_text(json.dumps([
+    (gw.slave_home / 'config.yaml').write_text(json.dumps(config))
+    (gw.slave_home / 'prefill.json').write_text(json.dumps([
         {'role': 'user', 'content': 'PREFILL_EXAMPLE'}, {'role': 'assistant', 'content': 'Noted.'}]))
-    (gw.hermes_home / '.env').write_text('OPENROUTER_API_KEY=loopback-only\n')
-    memories = gw.hermes_home / 'memories'
+    (gw.slave_home / '.env').write_text('OPENROUTER_API_KEY=loopback-only\n')
+    memories = gw.slave_home / 'memories'
     if not memories.exists():
         memories.mkdir()
         (memories / 'MEMORY.md').write_text('WARM_FACT\n§\nCOLD_FACT\n§\nKEEP_FACT')
@@ -119,7 +119,7 @@ def test_messaging_refine_reviews_the_stored_conversation_once_the_cached_agent_
     out = {}
     try:
         warm = _gateway(root, url)
-        out['memory_file'] = warm.hermes_home / 'memories' / 'MEMORY.md'
+        out['memory_file'] = warm.slave_home / 'memories' / 'MEMORY.md'
         try:
             warm.start()
             mark = warm.mark()
@@ -187,7 +187,7 @@ def test_bare_refine_runs_while_automatic_reviews_are_disabled(tmp_path):
         finally:
             warm.stop()
         # The loopback review removes WARM_FACT again; put it back so the cold removal has a target.
-        (warm.hermes_home / 'memories' / 'MEMORY.md').write_text('WARM_FACT\n§\nKEEP_FACT')
+        (warm.slave_home / 'memories' / 'MEMORY.md').write_text('WARM_FACT\n§\nKEEP_FACT')
         cold = _gateway(root, url, **overrides)  # restarted: no cached agent, the stored conversation
         try:
             cold.start()

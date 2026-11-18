@@ -28,13 +28,13 @@ import sqlite3
 import pytest
 
 import sqlite_support
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 
 def _write_config(monkeypatch: pytest.MonkeyPatch, tmp_path, config: object) -> None:
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "slave-home"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     (home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 
 
@@ -86,7 +86,7 @@ class TestTheWarningFires:
 
         conn = sqlite3.connect(str(path))
         try:
-            with caplog.at_level("WARNING", logger="hermes_state"):
+            with caplog.at_level("WARNING", logger="slave_state"):
                 assert apply_wal_with_fallback(conn, db_label="state.db") == "wal"
         finally:
             conn.close()
@@ -126,7 +126,7 @@ class TestTheWarningFires:
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
 
-        with caplog.at_level("WARNING", logger="hermes_state"):
+        with caplog.at_level("WARNING", logger="slave_state"):
             for name in ("a", "b"):
                 path = tmp_path / f"{name}.db"
                 _make_delete_db_with_content(path)
@@ -148,7 +148,7 @@ class TestTheWarningFires:
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
 
-        with caplog.at_level("WARNING", logger="hermes_state"):
+        with caplog.at_level("WARNING", logger="slave_state"):
             for label in ("state.db", "kanban.db"):
                 path = tmp_path / f"{label}"
                 _make_delete_db_with_content(path)
@@ -181,7 +181,7 @@ class TestTheWarningStaysQuiet:
 
         conn = sqlite3.connect(str(tmp_path / "fresh.db"))
         try:
-            with caplog.at_level("WARNING", logger="hermes_state"):
+            with caplog.at_level("WARNING", logger="slave_state"):
                 assert apply_wal_with_fallback(conn, db_label="fresh.db") == "wal"
         finally:
             conn.close()
@@ -200,7 +200,7 @@ class TestTheWarningStaysQuiet:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("CREATE TABLE t (x)")
             conn.commit()
-            with caplog.at_level("WARNING", logger="hermes_state"):
+            with caplog.at_level("WARNING", logger="slave_state"):
                 assert apply_wal_with_fallback(conn, db_label="already-wal.db") == "wal"
         finally:
             conn.close()
@@ -218,7 +218,7 @@ class TestTheWarningStaysQuiet:
 
         conn = sqlite3.connect(str(path))
         try:
-            with caplog.at_level("WARNING", logger="hermes_state"):
+            with caplog.at_level("WARNING", logger="slave_state"):
                 assert apply_wal_with_fallback(conn, db_label="configured-delete.db") == "delete"
             assert conn.execute("PRAGMA journal_mode").fetchone()[0].lower() == "delete"
         finally:
@@ -249,7 +249,7 @@ class TestTheWarningStaysQuiet:
 
         conn = sqlite3.connect(str(path))
         try:
-            with caplog.at_level("WARNING", logger="hermes_state"):
+            with caplog.at_level("WARNING", logger="slave_state"):
                 apply_wal_with_fallback(conn, db_label="vulnerable.db")
         finally:
             conn.close()

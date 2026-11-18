@@ -3,11 +3,11 @@
 Provides ``start_gateway()`` (start all configured adapters) and ``GatewayRunner`` (lifecycle).
 Run via ``python -m gateway.run`` or ``python cli.py --gateway``."""
 
-# hermes_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
+# slave_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
-    import hermes_bootstrap
-except ModuleNotFoundError as exc:  # a partial ``hermes update`` can leave the bootstrap unregistered
-    if exc.name != "hermes_bootstrap" and not "hermes_bootstrap".startswith(f"{exc.name}."):
+    import slave_bootstrap
+except ModuleNotFoundError as exc:  # a partial ``slave update`` can leave the bootstrap unregistered
+    if exc.name != "slave_bootstrap" and not "slave_bootstrap".startswith(f"{exc.name}."):
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import asyncio
@@ -44,9 +44,9 @@ from agent.interrupt_compat import request_hard_interrupt
 from agent.message_metadata import ABSORBED_MESSAGE_UIDS, MESSAGE_UID, copy_identity_fields, is_compaction_scaffolding, replay_metadata_fields
 from agent.turn_context import compression_made_progress
 from agent.session_activity import ActivityProvenance, AwakeIdleMeter
-from hermes_cli.config import _is_ssh_remote_tilde_cwd, cfg_get, config_exists
+from slave_cli.config import _is_ssh_remote_tilde_cwd, cfg_get, config_exists
 from gateway.run_common import _csv_or_list_to_set
-from hermes_cli.fallback_config import pre_agent_fallback_notice
+from slave_cli.fallback_config import pre_agent_fallback_notice
 from gateway.turn_executor import _UnboundedThreadExecutor
 
 # Per-session AIAgent cache bounds (agents are heavy); see _enforce_agent_cache_cap/_session_housekeeping_watcher.
@@ -194,7 +194,7 @@ def hygiene_compaction_recovered(
 def _hygiene_compression_timeout_message(
     *, total_exhausted: bool, elapsed: float, idle_timeout: float, progress_observed: bool) -> str:
     """Describe the host timeout that actually ended hygiene compression. Chat users cannot edit
-    model config, so the copy names /compress, /new and `hermes doctor`, never a config key or the
+    model config, so the copy names /compress, /new and `slave doctor`, never a config key or the
     raw second counts (those stay in the gateway log)."""
     lead = t("gateway.compress.hygiene_timeout")
     if total_exhausted:
@@ -228,13 +228,13 @@ async def run_codex_hygiene_compaction(
 
     See #73503.
     * Evicting the cached live agent afterwards destroys the only real context: the next turn spawns an
-    EMPTY thread and the model starts blank while Hermes still mirrors a full history (abrupt amnesia — the
+    EMPTY thread and the model starts blank while slave-agent still mirrors a full history (abrupt amnesia — the
     user-facing damage documented on #73503).
     """
     mode = str(auto_mode or "native").lower()
-    if mode not in {"native", "hermes", "off"}:
+    if mode not in {"native", "slave", "off"}:
         mode = "native"
-    if mode != "hermes":
+    if mode != "slave":
         # native = app-server compacts itself; off = operator disabled. Local fallback can't shrink the thread.
         return f"skipped:mode={mode}"
 
@@ -247,7 +247,7 @@ async def run_codex_hygiene_compaction(
 
     compressor = getattr(agent, "context_compressor", None)
     count_before = getattr(compressor, "compression_count", 0)
-    # copy_context carries profile secret scope / HERMES_HOME override (executors don't propagate ContextVars).
+    # copy_context carries profile secret scope / SLAVE_HOME override (executors don't propagate ContextVars).
     worker_future = asyncio.get_running_loop().run_in_executor(
         None, copy_context().run,
         lambda: agent._compress_context(history, "", approx_tokens=approx_tokens, task_id=session_id or "default", trigger="gateway_hygiene"))
@@ -407,7 +407,7 @@ _GATEWAY_ENDPOINT_UNREACHABLE_RE = re.compile(
     "(" + "|".join(_ENDPOINT_UNREACHABLE_MARKERS) + ")", re.IGNORECASE)
 
 def _ensure_windows_gateway_venv_imports() -> None:
-    """Make detached Windows gateway runs see the Hermes venv packages.
+    """Make detached Windows gateway runs see the slave-agent venv packages.
 
     Patched before MCP discovery so tool injection does not depend on launchers preserving PYTHONPATH."""
     if sys.platform != "win32":
@@ -417,7 +417,7 @@ def _ensure_windows_gateway_venv_imports() -> None:
     from pm.environments import committed_venv, venv_python_version
 
     # A PM install's store Python was already activated onto the committed generation by
-    # hermes_bootstrap; overlaying the leftover pre-PM venv loads a foreign ABI (#122183).
+    # slave_bootstrap; overlaying the leftover pre-PM venv loads a foreign ABI (#122183).
     if committed_venv(project_root) is not None:
         return
     candidates = [Path(v) for v in (os.environ.get("VIRTUAL_ENV"),) if v] + [project_root / "venv"]
@@ -870,7 +870,7 @@ def _telegramize_command_mentions(text: str, platform: Any) -> str:
     if platform_value != "telegram":
         return text
 
-    from hermes_cli.commands_platforms import _sanitize_telegram_name
+    from slave_cli.commands_platforms import _sanitize_telegram_name
 
     def _replace(match: re.Match[str]) -> str:
         sanitized = _sanitize_telegram_name(match.group(1))
@@ -902,7 +902,7 @@ def _coerce_gateway_timestamp(value: Any) -> Optional[float]:
     if isinstance(value, bool):  # bool is a subclass of int — skip it
         return None
     if isinstance(value, (int, float)):
-        # Some platform events use milliseconds; Hermes state rows use seconds.
+        # Some platform events use milliseconds; Slave state rows use seconds.
         return float(value) / 1000.0 if float(value) > 10_000_000_000 else float(value)
     if isinstance(value, str):
         text = value.strip()
@@ -933,14 +933,14 @@ def _startup_restore_drain_timeout_secs() -> float:
 
     Duplicate-agent safety does NOT depend on it: ``_schedule_resume_pending_sessions`` claims SYNCHRONOUSLY.
     """
-    return _float_env("HERMES_STARTUP_RESTORE_DRAIN_TIMEOUT", _STARTUP_RESTORE_DRAIN_TIMEOUT_SECS_DEFAULT)
+    return _float_env("SLAVE_STARTUP_RESTORE_DRAIN_TIMEOUT", _STARTUP_RESTORE_DRAIN_TIMEOUT_SECS_DEFAULT)
 
 
 def _startup_warmup_timeout_secs() -> float:
     """Max seconds the boot warm-up (``_warm_turn_prerequisites``) may hold the inbound gate shut.
 
     On timeout the gate opens and the warm-up finishes in the background. Non-positive disables it."""
-    return _float_env("HERMES_STARTUP_WARMUP_TIMEOUT", _STARTUP_WARMUP_TIMEOUT_SECS_DEFAULT)
+    return _float_env("SLAVE_STARTUP_WARMUP_TIMEOUT", _STARTUP_WARMUP_TIMEOUT_SECS_DEFAULT)
 
 
 def _warm_turn_machinery_sync() -> int:
@@ -958,14 +958,14 @@ def _warm_turn_machinery_sync() -> int:
     # registered tool, which dials OpenRouter/DeepInfra for profiles that never enabled them).
     enabled_toolsets = None
     try:
-        from hermes_cli.config import load_config_readonly
-        from hermes_cli.tools_config import _get_platform_tools
+        from slave_cli.config import load_config_readonly
+        from slave_cli.tools_config import _get_platform_tools
 
         enabled_toolsets = sorted(_get_platform_tools(load_config_readonly(), "cli"))
     except Exception:
         logger.debug("platform toolset resolution failed; warming the full tool surface", exc_info=True)
     tool_defs = model_tools.get_tool_definitions(enabled_toolsets=enabled_toolsets, quiet_mode=True)
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
 
     agent_cfg = load_config_readonly().get("agent")
     if not isinstance(agent_cfg, dict) or agent_cfg.get("environment_probe", True):
@@ -1239,7 +1239,7 @@ def _build_gateway_agent_history(
     """Convert stored gateway transcript rows into agent replay messages.
 
     Observed context stays out of ``conversation_history`` so consecutive-user repair can't merge it in."""
-    from hermes_time import get_timezone as _get_msg_tz
+    from slave_time import get_timezone as _get_msg_tz
     from gateway.message_timestamps import (
         render_user_content_with_timestamp as _render_msg_ts,
         strip_leading_message_timestamps as _strip_msg_ts,
@@ -1536,12 +1536,12 @@ def _home_thread_env_var(platform_name: str) -> str:
 
 def _restart_notification_pending() -> bool:
     """Return True when a /restart completion marker is waiting to be delivered."""
-    return (_hermes_home / ".restart_notify.json").exists()
+    return (_slave_home / ".restart_notify.json").exists()
 
 
 def _planned_restart_notification_path() -> Path:
     from gateway.restart_notice import planned_restart_marker_path
-    return planned_restart_marker_path(_hermes_home)
+    return planned_restart_marker_path(_slave_home)
 
 
 def _planned_restart_notification_pending() -> bool:
@@ -1549,37 +1549,37 @@ def _planned_restart_notification_pending() -> bool:
 
 
 # Gateway marker so a lazily imported cli.py load_cli_config() doesn't clobber TERMINAL_CWD.
-os.environ["_HERMES_GATEWAY"] = "1"
+os.environ["_SLAVE_GATEWAY"] = "1"
 
-from hermes_constants import get_hermes_home, get_hermes_home_override, get_process_hermes_home
-# The PROCESS's own home, never an import-time ContextVar: a multiplexed backend (``hermes serve``)
+from slave_constants import get_slave_home, get_slave_home_override, get_process_slave_home
+# The PROCESS's own home, never an import-time ContextVar: a multiplexed backend (``slave serve``)
 # first imports this module lazily from a session's agent build, under that session's routed profile
 # override, and the import-time config bridge below would then latch the secondary's terminal.* and
 # settings into the launch process env for every later launch-profile turn.
-_hermes_home = get_process_hermes_home()
+_slave_home = get_process_slave_home()
 
-# Load ~/.hermes/.env first: user-managed env files must override stale shell exports on restart.
-from hermes_cli.env_loader import bridge_config_scalars, load_hermes_dotenv
-from hermes_cli._startup_fast import project_root_str
-_env_path = _hermes_home / '.env'
-load_hermes_dotenv(hermes_home=_hermes_home, project_env=Path(project_root_str()) / '.env')
+# Load ~/.slave/.env first: user-managed env files must override stale shell exports on restart.
+from slave_cli.env_loader import bridge_config_scalars, load_slave_dotenv
+from slave_cli._startup_fast import project_root_str
+_env_path = _slave_home / '.env'
+load_slave_dotenv(slave_home=_slave_home, project_env=Path(project_root_str()) / '.env')
 
 
 def _reload_runtime_env_preserving_config_authority() -> None:
     """Reload .env per turn for rotated keys while config.yaml stays authoritative for budgets (else a
-    stale HERMES_MAX_ITERATIONS wins). Multiplex never reloads .env globally: secrets come from the
+    stale SLAVE_MAX_ITERATIONS wins). Multiplex never reloads .env globally: secrets come from the
     per-turn ``set_secret_scope`` and mutating ``os.environ`` would leak the default profile's keys to
     every profile; it still honors the max_turns bridge."""
     from agent.secret_scope import is_multiplex_active
     if not is_multiplex_active():
-        load_hermes_dotenv(hermes_home=_hermes_home, project_env=Path(project_root_str()) / '.env')
-    _bridge_max_turns_from_config(_hermes_home)
+        load_slave_dotenv(slave_home=_slave_home, project_env=Path(project_root_str()) / '.env')
+    _bridge_max_turns_from_config(_slave_home)
 
 
 def _bridge_max_turns_from_config(home: Path) -> None:
     """Re-bridge agent.max_turns (+ sessions.*) per turn; managed overlay applies or it reverts.
     Skipped inside a served secondary's scope: the env slots are the launch profile's and
-    hermes_state reads the routed profile's ``sessions.*`` from its own config under scope."""
+    slave_state reads the routed profile's ``sessions.*`` from its own config under scope."""
     from gateway.platforms._shared import profile_scoped
     if profile_scoped():
         return
@@ -1597,12 +1597,12 @@ def _bridge_max_turns_from_config(home: Path) -> None:
 def _current_max_iterations() -> int:
     """Return the per-turn iteration budget after runtime env refresh; ``resolve_turn_limit`` maps
     ``agent.max_turns: none``/``unlimited`` (bridged as a string) to the unlimited sentinel, not an
-    ``int()`` crash. A routed profile (HERMES_HOME override, multiplexed turns) reads ITS
-    ``agent.max_turns`` straight from config: the ``HERMES_MAX_ITERATIONS`` bridge is one process-wide
+    ``int()`` crash. A routed profile (SLAVE_HOME override, multiplexed turns) reads ITS
+    ``agent.max_turns`` straight from config: the ``SLAVE_MAX_ITERATIONS`` bridge is one process-wide
     slot holding the launch profile's value, so every secondary would inherit the default's budget."""
     _reload_runtime_env_preserving_config_authority()
-    from hermes_cli.config import resolve_turn_limit as _resolve_turn_limit
-    override = get_hermes_home_override()
+    from slave_cli.config import resolve_turn_limit as _resolve_turn_limit
+    override = get_slave_home_override()
     if override:
         config_path = Path(override) / 'config.yaml'
         try:
@@ -1611,7 +1611,7 @@ def _current_max_iterations() -> int:
             cfg = {}
         agent_cfg = cfg.get("agent")
         return _resolve_turn_limit(agent_cfg.get("max_turns") if isinstance(agent_cfg, dict) else None)
-    return _resolve_turn_limit(os.getenv("HERMES_MAX_ITERATIONS"))
+    return _resolve_turn_limit(os.getenv("SLAVE_MAX_ITERATIONS"))
 
 
 from contextlib import asynccontextmanager as _asynccontextmanager, contextmanager as _contextmanager, suppress
@@ -1634,17 +1634,17 @@ def _multiplex_profile_homes(config: object) -> list[tuple[str, Path]]:
     reserved = getattr(config, "_runtime_profile_homes", None)
     if reserved is not None:
         return list(reserved)
-    from hermes_cli.profiles import profiles_to_serve
+    from slave_cli.profiles import profiles_to_serve
     return list(profiles_to_serve(multiplex=True))
 
 
 def _cron_tick_profile_homes(config: object) -> list[tuple[str, Path]]:
     """Profile homes the in-process ticker visits: the served set PLUS the process-active
     profile: ``profiles_to_serve`` lists default + every live named profile, but a ``--profile
-    <name>`` gateway's own profile may sit outside ``profiles/`` (custom HERMES_HOME). One host
+    <name>`` gateway's own profile may sit outside ``profiles/`` (custom SLAVE_HOME). One host
     process ticks all of them regardless of ``gateway.multiplex_profiles``. Adapter startup
     already skips ``active``."""
-    from hermes_cli.profiles import get_active_profile_name, get_profile_dir
+    from slave_cli.profiles import get_active_profile_name, get_profile_dir
 
     homes = _multiplex_profile_homes(config)
     active = get_active_profile_name() or "default"  # launch profile, pre-identity (ticker boot)
@@ -1659,8 +1659,8 @@ def _cron_tick_profile_homes(config: object) -> list[tuple[str, Path]]:
 def _cron_profile_gate(name: str, home: Path) -> bool:
     """Tick ``home`` this cycle unless ANOTHER gateway process owns it.
 
-    Same stand-down the serve/Desktop ticker applies (``hermes_cli/web_server.py``): a host that
-    has not finished converging onto the one host gateway (``hermes gateway migrate --multiplex``)
+    Same stand-down the serve/Desktop ticker applies (``slave_cli/web_server.py``): a host that
+    has not finished converging onto the one host gateway (``slave gateway migrate --multiplex``)
     may still run profile B's own gateway, and without this both it and this process race B's
     ``cron/.tick.lock``. The lock stops a simultaneous double-run but not the race: when this
     process wins, B's delivery leaves through ``SharedRouteAdapters``/fail-closed instead of B's
@@ -1695,7 +1695,7 @@ def _enable_multiplex_log_routing(config: object) -> bool:
     if not getattr(config, "multiplex_profiles", False):
         return False
     try:
-        from hermes_logging import enable_profile_log_routing
+        from slave_logging import enable_profile_log_routing
         return enable_profile_log_routing([home for _name, home in _multiplex_profile_homes(config)])
     except Exception:
         logger.debug("could not enable per-profile log routing", exc_info=True)
@@ -1765,17 +1765,17 @@ def _terminal_scope_cwd(default: str = "") -> str:
 
 def _load_profile_secret_scope(profile_home: Path) -> dict:
     """Hydrate and load one profile's secrets under its home override."""
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+    from slave_constants import set_slave_home_override, reset_slave_home_override
     # Caller already hydrated external sources off-loop (#99519).
-    from hermes_cli.env_loader import hydrate_profile_secret_sources
+    from slave_cli.env_loader import hydrate_profile_secret_sources
     from tui_gateway.launch_profile_policy import owner_secret_scope
 
-    home_token = set_hermes_home_override(str(profile_home))
+    home_token = set_slave_home_override(str(profile_home))
     try:
         hydrate_profile_secret_sources(Path(profile_home))
         return owner_secret_scope(Path(profile_home))
     finally:
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
 
 
 @_contextmanager
@@ -1783,7 +1783,7 @@ def _profile_runtime_scope(
     profile_home: Path, prepared_secret_scope: Optional[dict] = None, *,
     hydrate_secrets: bool = True, prepared_terminal_scope: Optional[dict] = None):
     """Scope config/skills/memory AND credentials to a profile for one turn (multiplexed path only).
-    ``set_hermes_home_override`` is a contextvar (reaches the agent worker via ``copy_context()``);
+    ``set_slave_home_override`` is a contextvar (reaches the agent worker via ``copy_context()``);
     ``set_secret_scope`` makes the profile ``.env`` the credential source without mutating
     ``os.environ``, so subprocesses never inherit cross-profile secrets."""
     from agent.runtime_scope import bind_state, scope_for_profile
@@ -1811,7 +1811,7 @@ def load_gateway_config_for_runner() -> "GatewayConfig":
     """Load gateway config for the process-level GatewayRunner. An UNSET ``multiplex_profiles`` is
     settled first by ``resolve_multiplex_mode`` (the default is on; the boot guard keeps a fleet that
     still runs per-profile gateways standalone). Multiplexed: set multiplex-active, then reload
-    under the default root's ``_profile_runtime_scope`` — not ``get_hermes_home()``, which is the
+    under the default root's ``_profile_runtime_scope`` — not ``get_slave_home()``, which is the
     named launcher when a profile-scoped process started the host. A scope miss must not fall
     through to that process's ``os.environ``. Off -> identical to ``load_gateway_config()``.
 
@@ -1820,10 +1820,10 @@ def load_gateway_config_for_runner() -> "GatewayConfig":
     The probe load above only decides whether this process is a multiplexer. The primary
     config is the scoped reload: multiplex must already be active (a scope miss must not
     fall through to the launching profile's ``os.environ``) and the home must be the
-    default root, not ``get_hermes_home()`` — a named launcher's home is not the owner
+    default root, not ``get_slave_home()`` — a named launcher's home is not the owner
     of the primary adapter map.
     """
-    from hermes_cli.gateway_multiplex_mode import log_multiplex_decision, resolve_multiplex_mode
+    from slave_cli.gateway_multiplex_mode import log_multiplex_decision, resolve_multiplex_mode
     cfg = load_gateway_config()
     log_multiplex_decision(resolve_multiplex_mode(cfg))
     if not cfg.multiplex_profiles:
@@ -1834,8 +1834,8 @@ def load_gateway_config_for_runner() -> "GatewayConfig":
     except Exception:
         logger.debug("could not set multiplex-active before primary config load", exc_info=True)
     try:
-        from hermes_constants import get_default_hermes_root
-        home = get_default_hermes_root()
+        from slave_constants import get_default_slave_root
+        home = get_default_slave_root()
     except Exception:
         return cfg
     try:
@@ -1850,7 +1850,7 @@ def load_gateway_config_for_runner() -> "GatewayConfig":
 
 async def _discover_gateway_mcp_tools(config: object) -> None:
     """Run startup MCP discovery for every profile this gateway serves: ``discover_mcp_tools`` reads
-    ``mcp_servers`` from ``get_hermes_home()``'s config, so an unscoped call only connects the launch
+    ``mcp_servers`` from ``get_slave_home()``'s config, so an unscoped call only connects the launch
     profile's servers (single-profile gateways keep the unscoped call).
 
     Under multiplex, run it once per served profile inside that profile's ``_profile_runtime_scope`` and
@@ -1860,7 +1860,7 @@ async def _discover_gateway_mcp_tools(config: object) -> None:
     No gateway run can complete a browser OAuth flow (nobody watches its stdout; on Windows its
     DEVNULL stdin even passes ``isatty``), so discovery runs with interactive OAuth suppressed — the
     same gate the CLI's background discovery uses. An expired token then parks the server with an
-    actionable ``hermes mcp login`` warning instead of opening an authorize tab.
+    actionable ``slave mcp login`` warning instead of opening an authorize tab.
     """
     from tools.mcp_oauth import suppress_interactive_oauth
     from tools.mcp_tool_discovery import discover_mcp_tools
@@ -1882,9 +1882,9 @@ def _platform_has_bot_credential(platform: "Platform", platform_config: "Platfor
     ``PlatformConfig.token`` (Signal session paths, port-binding HTTP adapters) always return True."""
     from gateway.config import PLATFORM_TOKEN_ENV_NAMES, Platform
     if platform is Platform.WHATSAPP:
-        from hermes_constants import get_hermes_dir
+        from slave_constants import get_slave_dir
         session = Path(platform_config.extra.get(
-            "session_path", get_hermes_dir("platforms/whatsapp/session", "whatsapp/session")))
+            "session_path", get_slave_dir("platforms/whatsapp/session", "whatsapp/session")))
         return (session / "creds.json").exists()
     if platform not in PLATFORM_TOKEN_ENV_NAMES:
         return True
@@ -1899,7 +1899,7 @@ def _platform_has_bot_credential(platform: "Platform", platform_config: "Platfor
     # transient failure — after which it stays down until the gateway is restarted by hand. Mirror the
     # adapter's own gate: homeserver + user_id + password. Read ONLY from extra, never os.getenv:
     # build_config() already copies all three env vars onto extra, and importing this module loads
-    # ~/.hermes/.env, so an env fallback would report "has credential" for every Matrix config on the box —
+    # ~/.slave/.env, so an env fallback would report "has credential" for every Matrix config on the box —
     # including the empty-primary multiplex case (#64674) this check exists to evict.
     if platform is not Platform.MATRIX:
         return False
@@ -1912,28 +1912,28 @@ _DOCKER_MEDIA_OUTPUT_CONTAINER_PATHS = {"/output", "/outputs"}
 
 # Internal bridge, not a config source: seed from the canonical default after dotenv so an ambient
 # process/.env value can never control lease safety.
-from hermes_cli.config_defaults import DEFAULT_CONFIG as _DEFAULT_CONFIG
-os.environ["HERMES_TURN_LEASE_TIMEOUT"] = str(_DEFAULT_CONFIG["agent"]["gateway_turn_lease_timeout"])
+from slave_cli.config_defaults import DEFAULT_CONFIG as _DEFAULT_CONFIG
+os.environ["SLAVE_TURN_LEASE_TIMEOUT"] = str(_DEFAULT_CONFIG["agent"]["gateway_turn_lease_timeout"])
 
 # Bridge config.yaml values into env so os.getenv() picks them up. config.yaml unconditionally wins
 # over .env for these keys; a `not in os.environ` guard would let stale .env entries shadow config.
 _AGENT_ENV_BRIDGE = {
-    "gateway_timeout": "HERMES_AGENT_TIMEOUT",
-    "gateway_turn_lease_timeout": "HERMES_TURN_LEASE_TIMEOUT",
-    "gateway_timeout_warning": "HERMES_AGENT_TIMEOUT_WARNING",
-    "gateway_notify_interval": "HERMES_AGENT_NOTIFY_INTERVAL",
-    "session_stall_timeout": "HERMES_SESSION_STALL_TIMEOUT",
-    "restart_drain_timeout": "HERMES_RESTART_DRAIN_TIMEOUT",
-    "cron_drain_timeout": "HERMES_CRON_DRAIN_TIMEOUT",
-    "gateway_auto_continue_freshness": "HERMES_AUTO_CONTINUE_FRESHNESS",
-    "gateway_startup_restore_drain_timeout": "HERMES_STARTUP_RESTORE_DRAIN_TIMEOUT",
-    "gateway_startup_warmup_timeout": "HERMES_STARTUP_WARMUP_TIMEOUT"}
+    "gateway_timeout": "SLAVE_AGENT_TIMEOUT",
+    "gateway_turn_lease_timeout": "SLAVE_TURN_LEASE_TIMEOUT",
+    "gateway_timeout_warning": "SLAVE_AGENT_TIMEOUT_WARNING",
+    "gateway_notify_interval": "SLAVE_AGENT_NOTIFY_INTERVAL",
+    "session_stall_timeout": "SLAVE_SESSION_STALL_TIMEOUT",
+    "restart_drain_timeout": "SLAVE_RESTART_DRAIN_TIMEOUT",
+    "cron_drain_timeout": "SLAVE_CRON_DRAIN_TIMEOUT",
+    "gateway_auto_continue_freshness": "SLAVE_AUTO_CONTINUE_FRESHNESS",
+    "gateway_startup_restore_drain_timeout": "SLAVE_STARTUP_RESTORE_DRAIN_TIMEOUT",
+    "gateway_startup_warmup_timeout": "SLAVE_STARTUP_WARMUP_TIMEOUT"}
 # config-authoritative knobs for the session-search index (env stays the cross-process carrier).
-_SESSIONS_ENV_BRIDGE = {"search_slow_ms": "HERMES_SEARCH_SLOW_MS"}
+_SESSIONS_ENV_BRIDGE = {"search_slow_ms": "SLAVE_SEARCH_SLOW_MS"}
 _DISPLAY_ENV_BRIDGE = {
-    "busy_input_mode": "HERMES_GATEWAY_BUSY_INPUT_MODE",
-    "busy_text_mode": "HERMES_GATEWAY_BUSY_TEXT_MODE",
-    "busy_ack_enabled": "HERMES_GATEWAY_BUSY_ACK_ENABLED"}
+    "busy_input_mode": "SLAVE_GATEWAY_BUSY_INPUT_MODE",
+    "busy_text_mode": "SLAVE_GATEWAY_BUSY_TEXT_MODE",
+    "busy_ack_enabled": "SLAVE_GATEWAY_BUSY_ACK_ENABLED"}
 
 
 def _bridge_section_to_env(section: Any, mapping: dict[str, str]) -> None:
@@ -1952,9 +1952,9 @@ def _bridge_max_turns_to_env(agent_cfg: Any) -> None:
         return
     raw = agent_cfg["max_turns"]
     if raw is not None:
-        os.environ["HERMES_MAX_ITERATIONS"] = str(raw)
-    elif "HERMES_MAX_ITERATIONS" in os.environ:
-        del os.environ["HERMES_MAX_ITERATIONS"]
+        os.environ["SLAVE_MAX_ITERATIONS"] = str(raw)
+    elif "SLAVE_MAX_ITERATIONS" in os.environ:
+        del os.environ["SLAVE_MAX_ITERATIONS"]
 
 
 def _bridge_terminal_config_to_env(_terminal_cfg: dict) -> None:
@@ -2014,7 +2014,7 @@ def _bridge_auxiliary_config_to_env(_auxiliary_cfg: dict) -> None:
     """Bridge auxiliary model/endpoint overrides (vision, approval, plugins); compression reads yaml."""
     _aux_bridged_keys = {"vision", "approval"}
     try:
-        from hermes_cli.plugins import get_plugin_auxiliary_tasks
+        from slave_cli.plugins import get_plugin_auxiliary_tasks
         for _entry in get_plugin_auxiliary_tasks():
             _aux_bridged_keys.add(_entry["key"])
     except Exception:
@@ -2044,7 +2044,7 @@ def _bridge_config_to_env(_cfg: dict) -> None:
         _bridge_auxiliary_config_to_env(_auxiliary_cfg)
     # config.yaml is the documented, authoritative source for these settings — it unconditionally wins over
     # .env values. Previously the guards below read `if X not in os.environ` and let stale .env entries
-    # (e.g. HERMES_MAX_ITERATIONS=60 written by an old `hermes setup` run) silently shadow the user's
+    # (e.g. SLAVE_MAX_ITERATIONS=60 written by an old `slave setup` run) silently shadow the user's
     # current config. See PR #18413 / the 60-vs-500 max_turns incident.
     _agent_cfg = _cfg.get("agent", {})
     _bridge_max_turns_to_env(_agent_cfg)
@@ -2054,26 +2054,26 @@ def _bridge_config_to_env(_cfg: dict) -> None:
     _bridge_section_to_env(_display_cfg, _DISPLAY_ENV_BRIDGE)
     # Documented service-manager override: env wins when set (other display bridges stay config-first).
     if (isinstance(_display_cfg, dict) and "busy_steer_ack_enabled" in _display_cfg
-            and "HERMES_GATEWAY_BUSY_STEER_ACK_ENABLED" not in os.environ):
-        os.environ["HERMES_GATEWAY_BUSY_STEER_ACK_ENABLED"] = str(_display_cfg["busy_steer_ack_enabled"])
+            and "SLAVE_GATEWAY_BUSY_STEER_ACK_ENABLED" not in os.environ):
+        os.environ["SLAVE_GATEWAY_BUSY_STEER_ACK_ENABLED"] = str(_display_cfg["busy_steer_ack_enabled"])
     _tz_cfg = _cfg.get("timezone", "")
     if _tz_cfg and isinstance(_tz_cfg, str):
-        os.environ["HERMES_TIMEZONE"] = _tz_cfg.strip()
+        os.environ["SLAVE_TIMEZONE"] = _tz_cfg.strip()
     _security_cfg = _cfg.get("security", {})
     if isinstance(_security_cfg, dict) and _security_cfg.get("redact_secrets") is not None:
-        os.environ["HERMES_REDACT_SECRETS"] = str(_security_cfg["redact_secrets"]).lower()
-    # Media policy uses the shared bridge so standalone entrypoints (`hermes cron run`) match.
+        os.environ["SLAVE_REDACT_SECRETS"] = str(_security_cfg["redact_secrets"]).lower()
+    # Media policy uses the shared bridge so standalone entrypoints (`slave cron run`) match.
     _gateway_cfg = _cfg.get("gateway", {})
     if isinstance(_gateway_cfg, dict):
         from gateway.media_policy import apply_media_policy_env
         apply_media_policy_env(_cfg)
         _trust_recent_seconds = _gateway_cfg.get("trust_recent_files_seconds")
         if _trust_recent_seconds is not None:
-            os.environ["HERMES_MEDIA_TRUST_RECENT_SECONDS"] = str(_trust_recent_seconds)
+            os.environ["SLAVE_MEDIA_TRUST_RECENT_SECONDS"] = str(_trust_recent_seconds)
         # platform_connect_timeout is an escape hatch, unlike the bridges above: env WINS if already set.
         if ("platform_connect_timeout" in _gateway_cfg
-                and not os.environ.get("HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()):
-            os.environ["HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT"] = str(_gateway_cfg["platform_connect_timeout"])
+                and not os.environ.get("SLAVE_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()):
+            os.environ["SLAVE_GATEWAY_PLATFORM_CONNECT_TIMEOUT"] = str(_gateway_cfg["platform_connect_timeout"])
 
 
 def _load_bridge_config(config_path: Path) -> dict:
@@ -2084,11 +2084,11 @@ def _load_bridge_config(config_path: Path) -> dict:
     snapshot = worker_config_snapshot()
     if snapshot is not None:
         return snapshot
-    from hermes_cli.config_effective import load_user_config_effective
+    from slave_cli.config_effective import load_user_config_effective
     return load_user_config_effective(config_path)
 
 
-_config_path = _hermes_home / 'config.yaml'
+_config_path = _slave_home / 'config.yaml'
 _cfg: dict = {}
 if config_exists(_config_path):
     try:
@@ -2101,12 +2101,12 @@ if config_exists(_config_path):
             file=sys.stderr)
         print(
             "  Gateway will fall back to .env values, which may not match "
-            "your current config.yaml. Run `hermes doctor` to investigate.",
+            "your current config.yaml. Run `slave doctor` to investigate.",
             file=sys.stderr)
 
 # IPv4 preference must apply before any HTTP clients are created.
 try:
-    from hermes_constants import apply_ipv4_preference
+    from slave_constants import apply_ipv4_preference
     _network_cfg = _cfg.get("network", {})
     if isinstance(_network_cfg, dict) and _network_cfg.get("force_ipv4"):
         apply_ipv4_preference(force=True)
@@ -2114,20 +2114,20 @@ except Exception as _bootstrap_exc:
     print(f"  Warning: IPv4 preference application failed: {_bootstrap_exc}", file=sys.stderr)
 
 try:
-    from hermes_cli.config import print_config_warnings
+    from slave_cli.config import print_config_warnings
     print_config_warnings()
 except Exception as _bootstrap_exc:
     print(f"  Warning: config validation failed: {_bootstrap_exc}", file=sys.stderr)
 
 try:
-    from hermes_cli.config import warn_deprecated_cwd_env_vars
+    from slave_cli.config import warn_deprecated_cwd_env_vars
     warn_deprecated_cwd_env_vars()
 except Exception as _bootstrap_exc:
     print(f"  Warning: deprecation check failed: {_bootstrap_exc}", file=sys.stderr)
 
-os.environ["HERMES_QUIET"] = "1"  # gateway runs quiet: no debug output, cwd used directly
+os.environ["SLAVE_QUIET"] = "1"  # gateway runs quiet: no debug output, cwd used directly
 
-# HERMES_EXEC_ASK is set in start_gateway(), NOT at import: CLI tools importing this module must not
+# SLAVE_EXEC_ASK is set in start_gateway(), NOT at import: CLI tools importing this module must not
 # flip interactive sessions into ask-mode (approval prompts would become silent pending_approval).
 
 # Terminal cwd: config.yaml terminal.cwd is canonical (bridged above); MESSAGING_CWD is legacy fallback.
@@ -2200,7 +2200,7 @@ _EXECUTOR_QUIESCE_TIMEOUT = 2.0
 def _own_policy_open_startup_violation(config) -> Optional[str]:
     """Return a startup-abort reason when open policy lacks allow-all opt-in."""
     with suppress(Exception):  # idempotent; callers may hand in a config load_gateway_config never built
-        from hermes_cli.plugins import discover_plugins
+        from slave_cli.plugins import discover_plugins
         discover_plugins()
     for platform, platform_config in getattr(config, "platforms", {}).items():
         if not getattr(platform_config, "enabled", False):
@@ -2256,7 +2256,7 @@ def _resolve_runtime_agent_kwargs() -> dict:
     ``resolve_runtime_provider()`` may fall back to env vars; behavioral config is config.yaml only.
     An ``AuthError`` from the primary walks the configured fallback chain through the shared
     ``resolve_runtime_with_fallback`` (the gateway keeps no resolver loop of its own)."""
-    from hermes_cli.runtime_provider import (
+    from slave_cli.runtime_provider import (
         resolve_runtime_with_fallback, format_runtime_provider_error, _get_model_config)
 
     # Capture primary provider/model from config before the try block so we
@@ -2347,7 +2347,7 @@ def _resolve_gateway_model_context(
             configured_provider = provider = model_cfg.get("provider") or None
             configured_base_url = base_url = model_cfg.get("base_url") or None
         try:
-            from hermes_cli.config import get_compatible_custom_providers
+            from slave_cli.config import get_compatible_custom_providers
             custom_providers = get_compatible_custom_providers(data)
         except Exception:
             custom_providers = data.get("custom_providers")
@@ -2369,12 +2369,12 @@ def _resolve_gateway_model_context(
 
     def _pin_still_applies() -> bool:
         # Drop a configured context_length pin when the effective route no longer matches (or on error).
-        from hermes_cli.route_identity import should_clear_context_pin
+        from slave_cli.route_identity import should_clear_context_pin
         return not should_clear_context_pin(
             configured_model, resolved_model, configured_base_url, base_url, configured_provider, provider)
 
     def _custom_ctx() -> Optional[int]:
-        from hermes_cli.config import get_custom_provider_context_length
+        from slave_cli.config import get_custom_provider_context_length
         return get_custom_provider_context_length(
             model=resolved_model, base_url=base_url, custom_providers=custom_providers)
 
@@ -2404,7 +2404,7 @@ def _resolve_runtime_agent_kwargs_for_provider(provider: str, target_model: Opti
     ``target_model`` is the model the override will actually send: the ladder's model-keyed rungs
     (Zen/Go relay + api_mode) must see it rather than config's ``default``, or a Go-only override
     resolves an api_mode/base_url the sent model cannot use (#112600)."""
-    from hermes_cli.runtime_provider import resolve_runtime_provider, format_runtime_provider_error
+    from slave_cli.runtime_provider import resolve_runtime_provider, format_runtime_provider_error
     try:
         runtime = resolve_runtime_provider(requested=provider, target_model=target_model or None)
     except Exception as exc:
@@ -2417,7 +2417,7 @@ def _resolve_runtime_agent_kwargs_for_provider(provider: str, target_model: Opti
 
 def _deep_merge_request_overrides(base: Optional[dict], override: Optional[dict]) -> dict:
     """Merge request_overrides dicts, deep-merging nested dictionaries."""
-    from hermes_cli.config import _deep_merge
+    from slave_cli.config import _deep_merge
     base_dict = dict(base or {})
     override_dict = dict(override or {})
     if not base_dict:
@@ -2668,7 +2668,7 @@ def _abandon_timed_out_gateway_turn(
             request_hard_interrupt(agent, _INTERRUPT_REASON_TIMEOUT, tool_reason=_INTERRUPT_TOOL_REASON_TIMEOUT)
         except Exception:
             logger.debug("Timed-out agent interrupt failed", exc_info=True)
-        from hermes_cli.observability.shared_metrics_process import record_watchdog_turn_abort
+        from slave_cli.observability.shared_metrics_process import record_watchdog_turn_abort
         record_watchdog_turn_abort(agent)
 
     try:
@@ -2793,7 +2793,7 @@ def _check_unavailable_skill(command_name: str) -> str | None:
                     return t("gateway.skills.disabled", name=command_name)
 
         # Check optional skills (shipped with repo but not installed)
-        from hermes_constants import get_optional_skills_dir
+        from slave_constants import get_optional_skills_dir
         repo_root = Path(project_root_str())
         optional_dir = get_optional_skills_dir(repo_root / "optional-skills")
         if optional_dir.exists():
@@ -2824,20 +2824,20 @@ def _teams_pipeline_plugin_enabled() -> bool:
 
 
 def _gateway_config_home() -> Path:
-    """Return the Hermes home that gateway config reads should use."""
-    override = get_hermes_home_override()
-    return Path(override) if override else _hermes_home
+    """Return the slave-agent home that gateway config reads should use."""
+    override = get_slave_home_override()
+    return Path(override) if override else _slave_home
 
 
 def _load_gateway_config(config_path: Path | None = None) -> dict:
     """The effective user config.yaml (managed overlay, ``${VAR}`` expansion, model-key canon; no
     DEFAULT_CONFIG merge) — ``{}`` on any error (fail-open). Defaults to the active gateway home
-    (``_hermes_home`` monkeypatches apply); multiplexers pass a path.
+    (``_slave_home`` monkeypatches apply); multiplexers pass a path.
     """
     if config_path is None:
         config_path = _gateway_config_home() / 'config.yaml'
     try:
-        from hermes_cli.config_effective import load_user_config_effective
+        from slave_cli.config_effective import load_user_config_effective
         return load_user_config_effective(config_path)
     except Exception:
         logger.debug("Could not load gateway config from %s", config_path, exc_info=True)
@@ -2851,7 +2851,7 @@ def _resolve_gateway_model(config: dict | None = None) -> str:
     """The profile's model when nothing else names one: config.yaml (single source of truth), else the
     claimed welcome trial's. Temporary AIAgents (e.g. /compress) otherwise use the hardcoded default,
     which fails under openai-codex."""
-    from hermes_cli.anon_auth import trial_model
+    from slave_cli.anon_auth import trial_model
     model_cfg = (config if config is not None else _load_gateway_config()).get("model", {})
     if isinstance(model_cfg, dict):
         model_cfg = model_cfg.get("default") or model_cfg.get("model")
@@ -2883,21 +2883,21 @@ def _get_channel_override(
     return None
 
 
-def _resolve_hermes_bin() -> Optional[list[str]]:
-    """Hermes update/restart argv: the running interpreter's ``python -m hermes_cli.main``
-    (exactly this install), else ``hermes`` on PATH, else None. The module argv must win: a
-    PATH-first lookup lets an attacker-planted ``hermes`` shadow the running install when
+def _resolve_slave_bin() -> Optional[list[str]]:
+    """slave-agent update/restart argv: the running interpreter's ``python -m slave_cli.main``
+    (exactly this install), else ``slave`` on PATH, else None. The module argv must win: a
+    PATH-first lookup lets an attacker-planted ``slave`` shadow the running install when
     /update or /restart re-execs it (#111569)."""
     try:
         import importlib.util
-        if importlib.util.find_spec("hermes_cli") is not None:
-            return [sys.executable, "-m", "hermes_cli.main"]
+        if importlib.util.find_spec("slave_cli") is not None:
+            return [sys.executable, "-m", "slave_cli.main"]
     except Exception:
         pass
     import shutil
-    hermes_bin = shutil.which("hermes")
-    if hermes_bin:
-        return [hermes_bin]
+    slave_bin = shutil.which("slave")
+    if slave_bin:
+        return [slave_bin]
     return None
 
 
@@ -3196,7 +3196,7 @@ def _reconnect_attention_after_secs() -> float:
     never stops (transient outages must self-heal), this only makes a permanently-failing loop loud.
     Non-positive disables. Read per call, never cached: one process serves many profiles and a config
     edit must not need a gateway restart (#115635)."""
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
     agent_cfg = load_config_readonly().get("agent")
     raw = agent_cfg.get("reconnect_attention_after") if isinstance(agent_cfg, dict) else None
     try:
@@ -3381,7 +3381,7 @@ class GatewayRunner(
         # standalone opt-out: --config must not turn that profile into a host multiplexer.
         self.config = config if config is not None else load_gateway_config_for_runner()
         if config is not None:
-            from hermes_cli.gateway_multiplex_mode import standalone_launcher_decision, log_multiplex_decision
+            from slave_cli.gateway_multiplex_mode import standalone_launcher_decision, log_multiplex_decision
             decision = standalone_launcher_decision(self.config)
             if decision is not None:
                 log_multiplex_decision(decision)
@@ -3414,11 +3414,11 @@ class GatewayRunner(
 
     def _open_session_db_for_active_scope(self, raise_on_error: bool = False) -> Any:
         """Storage interface handle for the active profile scope, resolved per access (not in ``__init__``)
-        since the scope follows the context-local HERMES_HOME; one handle cached per profile. Construction
+        since the scope follows the context-local SLAVE_HOME; one handle cached per profile. Construction
         failure enters bounded backoff; ``raise_on_error=True`` (priming) propagates it.
 
         Same per-profile cache as ``SessionStore._open_persistence_for_active_scope`` (#88532): the scope
-        resolves at call time through the context-local HERMES_HOME override installed by
+        resolves at call time through the context-local SLAVE_HOME override installed by
         ``_profile_runtime_scope``, so resolving per access — instead of once in ``__init__`` — is what lets
         /resume, /title, /history and session search on a multiplexed gateway read the *serving profile's*
         store rather than the root one.
@@ -3542,11 +3542,11 @@ class GatewayRunner(
                 return
         logger.warning(
             "Docker backend is enabled for the messaging gateway but no explicit host-visible "
-            "output mount (for example '/home/user/.hermes/cache/documents:/output') is configured. "
+            "output mount (for example '/home/user/.slave/cache/documents:/output') is configured. "
             "This is fine if the model already emits host-visible paths, but MEDIA file delivery can fail "
             "for container-local paths like '/workspace/...' or '/output/...'.")
 
-    _VOICE_MODE_PATH = _hermes_home / "gateway_voice_mode.json"
+    _VOICE_MODE_PATH = _slave_home / "gateway_voice_mode.json"
 
     should_exit_cleanly = property(lambda self: self._exit_cleanly)
     should_exit_with_failure = property(lambda self: self._exit_with_failure)
@@ -3576,7 +3576,7 @@ class GatewayRunner(
                 _profile = source.profile
             else:
                 try:
-                    from hermes_cli.profiles import get_active_profile_name
+                    from slave_cli.profiles import get_active_profile_name
                     _profile = get_active_profile_name() or "default"
                 except Exception:
                     _profile = None
@@ -3630,7 +3630,7 @@ class GatewayRunner(
     def _update_runtime_status(self, gateway_state: Optional[str] = None, exit_reason: Optional[str] = None) -> None:
         if getattr(self, "_startup_cleanup_only", False):
             return  # cleanup of a start that never ran keeps its startup verdict (startup_failed)
-        # ``active_work`` names each unit only while draining — that is when an observer (``hermes
+        # ``active_work`` names each unit only while draining — that is when an observer (``slave
         # update``) needs to know WHAT holds the gateway open; a per-turn write would be wasted I/O.
         active_work = self._describe_active_work() if gateway_state == "draining" else None
         _write_runtime_status_quiet(
@@ -3697,7 +3697,7 @@ class GatewayRunner(
     def _active_profile_name(self) -> str:
         """Return the profile name this gateway represents."""
         try:
-            from hermes_cli.profiles import get_active_profile_name
+            from slave_cli.profiles import get_active_profile_name
             return get_active_profile_name() or "default"
         except Exception:
             return "default"
@@ -3829,7 +3829,7 @@ class GatewayRunner(
         profile = str(getattr(source, "profile", None) or "").strip()
         if profile and metadata is not None:
             metadata = dict(metadata)
-            metadata["hermes_profile"] = profile
+            metadata["slave_profile"] = profile
         return metadata
 
     def _thread_metadata_for_target(
@@ -3911,7 +3911,7 @@ class GatewayRunner(
             scope_id=str(getattr(source, "scope_id", "") or ""),
             parent_chat_id=str(getattr(source, "parent_chat_id", "") or ""),
             session_key=context.session_key,
-            # A cached agent binds HERMES_SESSION_ID only on the turn that built it; every later turn
+            # A cached agent binds SLAVE_SESSION_ID only on the turn that built it; every later turn
             # (and a command it yields to the background) must still see its own session.
             session_id=context.session_id or "",
             message_id=str(source.message_id) if source.message_id else "",
@@ -3980,14 +3980,14 @@ class GatewayRunner(
         unset by default.
         """
         return GatewayRunner._get_or_create_pool(
-            self, "_executor", lambda: _UnboundedThreadExecutor(thread_name_prefix="hermes-gateway"))
+            self, "_executor", lambda: _UnboundedThreadExecutor(thread_name_prefix="slave-gateway"))
 
     def _get_housekeeping_executor(self) -> concurrent.futures.Executor:
         """Return the gateway-owned executor for best-effort session housekeeping."""
         return GatewayRunner._get_or_create_pool(
             self, "_housekeeping_executor",
             lambda: concurrent.futures.ThreadPoolExecutor(
-                max_workers=_HOUSEKEEPING_MAX_WORKERS, thread_name_prefix="hermes-gateway-hk"))
+                max_workers=_HOUSEKEEPING_MAX_WORKERS, thread_name_prefix="slave-gateway-hk"))
 
     @staticmethod
     def _stop_pool(executor) -> list:
@@ -4125,7 +4125,7 @@ class GatewayRunner(
         return None
 
     def _resolve_profile_home_for_source(self, source: SessionSource) -> Path:
-        """Profile HERMES_HOME serving *source*; see ``gateway.run_profile_home``."""
+        """Profile SLAVE_HOME serving *source*; see ``gateway.run_profile_home``."""
         from gateway.run_profile_home import resolve_profile_home_for_source
         return resolve_profile_home_for_source(self, source)
 
@@ -4169,11 +4169,11 @@ def _run_planned_stop_watcher(
     stop_event: threading.Event, runner, loop: asyncio.AbstractEventLoop, shutdown_handler, *,
     poll_interval: float = 0.5) -> None:
     """Poll for the planned-stop marker and trigger graceful shutdown (Windows lacks
-    ``add_signal_handler``, so ``hermes gateway stop`` would never drain). Runs everywhere; on POSIX
+    ``add_signal_handler``, so ``slave gateway stop`` would never drain). Runs everywhere; on POSIX
     the signal handler consumes the marker first and ``_running``/``_draining`` guard re-triggers.
 
     On Windows, ``asyncio.add_signal_handler`` raises NotImplementedError for SIGTERM/SIGINT, so the
-    standard signal-driven shutdown path never runs when ``hermes gateway stop`` signals the gateway. The
+    standard signal-driven shutdown path never runs when ``slave gateway stop`` signals the gateway. The
     consequence is that the drain loop is skipped — in-flight agent sessions are killed mid-turn and
     ``resume_pending`` is never set, so the next gateway boot has no idea those sessions need to be
     auto-resumed (issue #33778, v0.13.0 session-resume feature broken on native Windows).
@@ -4232,7 +4232,7 @@ def _housekeeping_channel_directory(adapters, loop) -> None:
 
 
 def _housekeeping_paste_sweep() -> None:
-    from hermes_cli.debug import _sweep_expired_pastes
+    from slave_cli.debug import _sweep_expired_pastes
     deleted, remaining = _sweep_expired_pastes()
     if deleted:
         logger.info("Paste sweep: deleted %d expired paste(s), %d pending", deleted, remaining)
@@ -4249,7 +4249,7 @@ def _housekeeping_misfire_catch_up(cron_provider, adapters, loop) -> None:
 
 def _housekeeping_curator(idle_fence=None) -> None:
     """The idle poll: the curator (gated by curator.interval_hours), then plugin idle tasks (their own intervals)."""
-    from hermes_cli.plugins_idle_tasks import run_idle_jobs
+    from slave_cli.plugins_idle_tasks import run_idle_jobs
     run_idle_jobs(idle_for_seconds=float("inf"), on_summary=lambda msg: logger.info("curator: %s", msg), fence=idle_fence)
 
 
@@ -4258,7 +4258,7 @@ def _housekeeping_plugin_update_check() -> None:
     plugins.auto_update_check_hours, read-only, receipt-surfaced; the
     opt-in auto-apply rides the manual update pipeline. A network error
     costs one warning and a stamped marker — never an apply."""
-    from hermes_cli.plugins_cadence import maybe_run_gateway_check
+    from slave_cli.plugins_cadence import maybe_run_gateway_check
 
     maybe_run_gateway_check(log=logger)
 
@@ -4266,13 +4266,13 @@ def _housekeeping_plugin_update_check() -> None:
 def _launch_sessions_dir(config) -> Optional[tuple[Path, Path]]:
     """``(launch home, its configured transcript dir)``, or ``None`` when the gateway carries none.
 
-    MUST be called outside any profile scope — ``get_hermes_home()`` is what identifies the launch
+    MUST be called outside any profile scope — ``get_slave_home()`` is what identifies the launch
     home. Consumed by :func:`_profile_sessions_dir`.
     """
     sessions_dir = getattr(config, "sessions_dir", None)
     if sessions_dir is None:
         return None
-    return get_hermes_home(), Path(sessions_dir)
+    return get_slave_home(), Path(sessions_dir)
 
 
 def _profile_sessions_dir(launch: Optional[tuple[Path, Path]]) -> Path:
@@ -4283,7 +4283,7 @@ def _profile_sessions_dir(launch: Optional[tuple[Path, Path]]) -> Path:
     transcripts to the configured dir while the prune unlinked under the default one, orphaning
     every pruned session's ``.json``/``.jsonl``/``request_dump_*`` forever.
     """
-    home = get_hermes_home()
+    home = get_slave_home()
     if launch is not None and Path(launch[0]) == home:
         return Path(launch[1])
     return home / "sessions"
@@ -4294,13 +4294,13 @@ def _housekeeping_state_db_maintenance(launch: Optional[tuple[Path, Path]] = Non
     by sessions.min_interval_hours (VACUUM additionally by its own throttles). Opens its own handle
     on the profile's store and closes it when done.
 
-    Profile-scoped by its caller: ``profile_scope()``, ``get_hermes_home()`` and ``load_config()`` all
+    Profile-scoped by its caller: ``profile_scope()``, ``get_slave_home()`` and ``load_config()`` all
     resolve through the active scope, so an unscoped run swept only the LAUNCH profile's store with
     the LAUNCH profile's retention settings and a multiplexed secondary was never archived, pruned
     or vacuumed by anyone — the dashboard/serve trigger defers to the gateway for every profile a
     gateway owns (``web_server_sessions``). *launch* carries the launch home's configured transcript
     dir (:func:`_launch_sessions_dir`) so its override still governs its own profile."""
-    from hermes_cli.config import load_config as _load_full_config
+    from slave_cli.config import load_config as _load_full_config
     _sess_cfg = (_load_full_config().get("sessions") or {})
     if not (_sess_cfg.get("auto_archive", False) or _sess_cfg.get("auto_prune", False)):
         return
@@ -4344,7 +4344,7 @@ def _housekeeping_deferred_fts_retry() -> None:
 
 def _housekeeping_memory_trim() -> None:
     """Messaging-gateway counterpart to the TUI idle reaper; timer lane: full GC only once idle (#139763)."""
-    from hermes_cli.mem_trim import trim_memory_when_idle
+    from slave_cli.mem_trim import trim_memory_when_idle
     trim_memory_when_idle(reason="messaging gateway housekeeping")
 
 
@@ -4371,7 +4371,7 @@ def _drain_restart_safe_cron_deliveries(adapters, loop, runner=None) -> None:
                             else getattr(runner, "_profile_adapters", {}).get(profile_name))
         if profile_adapters is None:
             continue
-        with _profile_runtime_scope(profile_home or get_hermes_home()):
+        with _profile_runtime_scope(profile_home or get_slave_home()):
             owned = (getattr(runner, "_profile_bot_platforms", None) or {}).get(profile_name)
             if (profile_name is not None and adapters
                     and not sched_preflight.has_credential_platform(profile_adapters, owned)):
@@ -4391,10 +4391,10 @@ def _start_gateway_housekeeping(
     from gateway.run_delivery_queue_watch import DRAIN_LABEL, DeliveryQueueWatch, wait_for_next_tick
     from gateway.run_profile_reconcile import _mcp_config_reconciler, profile_scoped_chore
     from gateway.run_housekeeping_disk import housekeeping_media_caches, maybe_post_auto_prune_prompt
-    from hermes_cli.plugins_idle_tasks import IdleTaskFence
+    from slave_cli.plugins_idle_tasks import IdleTaskFence
     chores: list[tuple[int, str, Any]] = [
         # First every tick: re-stamp ``updated_at`` in gateway_state.json so it is a real heartbeat.
-        # ``hermes gateway status`` / ``/api/status`` warn when it ages past 2x ``interval`` with the
+        # ``slave gateway status`` / ``/api/status`` warn when it ages past 2x ``interval`` with the
         # PID alive — the thread (or a chore blocked on the loop) wedged (#113372). Runs first so a
         # wedged chore stops the NEXT stamp instead of a slow one delaying this tick's.
         (1, "Runtime heartbeat", _write_runtime_status_quiet)]
@@ -4424,7 +4424,7 @@ def _start_gateway_housekeeping(
                 _housekeeping_state_db_maintenance(_launch))),
         # Due-gated inside: the first tick after startup runs an overdue check, not tick 60.
         # Per served profile: plugins dir, last-run marker and plugins.auto_apply are all the
-        # profile's own (get_hermes_home()/load_config_readonly() bind to the scope).
+        # profile's own (get_slave_home()/load_config_readonly() bind to the scope).
         (1, "Plugin update check", profile_scoped_chore(runner, _housekeeping_plugin_update_check)),
         (1, "Deferred FTS retry tick", _housekeeping_deferred_fts_retry),
         (1, "gateway housekeeping memory trim", _housekeeping_memory_trim),
@@ -4572,11 +4572,11 @@ def _replace_target_belongs_to_other_profile(existing_pid: int) -> bool:
     """Return True when ``--replace`` must refuse to signal ``existing_pid``.
     A poisoned/stale PID record can point at another profile's LIVE gateway (cross-profile SIGTERM
     restart loop). Ownership is decided by the persisted identity record ALONE, bound to the live target
-    by exact PID + start-time; live argv can never PROVE ownership (no HERMES_HOME), it is only a
+    by exact PID + start-time; live argv can never PROVE ownership (no SLAVE_HOME), it is only a
     consistency check. Missing, legacy, conflicting or unprovable identity → refuse (fail closed)."""
     # Multiplex-only: the ONE host gateway serving this profile IS this profile's gateway, whatever
-    # home launched it — `hermes -p X gateway run --replace` means "replace the process serving X".
-    # Argv and HERMES_HOME can never prove that (the host singleton runs one home's argv while
+    # home launched it — `slave -p X gateway run --replace` means "replace the process serving X".
+    # Argv and SLAVE_HOME can never prove that (the host singleton runs one home's argv while
     # serving every profile), so the live served set answers first; everything below stays the
     # fail-closed rule for a host with no usable record.
     try:
@@ -4584,7 +4584,7 @@ def _replace_target_belongs_to_other_profile(existing_pid: int) -> bool:
 
         owner = host_gateway()
         if owner is not None and owner.pid == existing_pid and owner.serves(
-                profile_name_for_home(get_hermes_home())):
+                profile_name_for_home(get_slave_home())):
             logger.warning(
                 "--replace target PID %s is the host gateway serving %d profile(s) (%s); "
                 "replacing it restarts the host process for all of them.",
@@ -4602,7 +4602,7 @@ def _replace_target_belongs_to_other_profile(existing_pid: int) -> bool:
     # Exclusion evidence comes from the RAW registration record, not the liveness-validated probe.
     # ``get_running_pid`` (any flags) returns None whenever a record fails validation — start-time mismatch
     # after PID-reuse checks, argv drift, lock hiccups — which is exactly when a healthy standalone gateway
-    # (no service supervisor — e.g. `hermes gateway run` on Windows) is at risk: its PID never joins the
+    # (no service supervisor — e.g. `slave gateway run` on Windows) is at risk: its PID never joins the
     # exclusion set and the sweep hard-kills it. On Windows SIGTERM is TerminateProcess, so the gateway's
     # planned-stop watcher never gets a chance to drain. Reading the raw pidfile + lock records (no
     # validation, no unlink side effects) is strictly safer for a KILL exclusion list: a stale recorded PID
@@ -4611,9 +4611,9 @@ def _replace_target_belongs_to_other_profile(existing_pid: int) -> bool:
     # pidfile exists.
     try:
         from gateway.status import (
-            _get_pid_path, _get_process_hermes_home, _get_process_start_time, _pid_from_record,
-            _read_pid_record, _record_looks_like_gateway, _read_process_cmdline, _same_hermes_home)
-        our_home = _get_process_hermes_home()
+            _get_pid_path, _get_process_slave_home, _get_process_start_time, _pid_from_record,
+            _read_pid_record, _record_looks_like_gateway, _read_process_cmdline, _same_slave_home)
+        our_home = _get_process_slave_home()
 
         def refuse(msg: str, *args, level=logging.WARNING) -> bool:
             logger.log(level, "Refusing --replace: " + msg, *args)
@@ -4632,19 +4632,19 @@ def _replace_target_belongs_to_other_profile(existing_pid: int) -> bool:
         if _get_process_start_time(existing_pid) != recorded_start:
             return refuse("pid record start-time does not match the live process %s (stale/PID-reuse record).",
                           existing_pid)
-        recorded_home = record.get("hermes_home")
+        recorded_home = record.get("slave_home")
         if not isinstance(recorded_home, str) or not recorded_home.strip():
-            return refuse("pid record predates hermes_home stampings; ownership of PID %s unprovable.",
+            return refuse("pid record predates slave_home stampings; ownership of PID %s unprovable.",
                           existing_pid)
-        if not _same_hermes_home(recorded_home, our_home):
-            return refuse("pid record belongs to a different HERMES_HOME (%s, ours %s). Remove the stale PID "
+        if not _same_slave_home(recorded_home, our_home):
+            return refuse("pid record belongs to a different SLAVE_HOME (%s, ours %s). Remove the stale PID "
                           "record or stop the owning profile explicitly.", recorded_home, our_home,
                           level=logging.ERROR)
-        # Argv never proves ownership; an explicit contradicting --profile / HERMES_HOME= still refuses.
+        # Argv never proves ownership; an explicit contradicting --profile / SLAVE_HOME= still refuses.
         live_cmdline = _best_effort(lambda: _read_process_cmdline(existing_pid))
         if live_cmdline and _looks_like_profile_conflict_from_cmdline(live_cmdline, our_home):
             return refuse("target PID %s command line explicitly advertises a different profile than "
-                          "HERMES_HOME %s.", existing_pid, our_home, level=logging.ERROR)
+                          "SLAVE_HOME %s.", existing_pid, our_home, level=logging.ERROR)
         return False
     except Exception:
         # Destructive action + unknown ownership => fail closed.
@@ -4680,8 +4680,8 @@ def _looks_like_profile_conflict_from_cmdline(command: str, our_home) -> bool:
         return values[-1] if values else None
 
     def _env_home_value() -> Optional[str]:
-        """HERMES_HOME=<path> env-style assignment on the argv, token-exact."""
-        prefix = "HERMES_HOME="
+        """SLAVE_HOME=<path> env-style assignment on the argv, token-exact."""
+        prefix = "SLAVE_HOME="
         for tok in reversed(tokens):
             if tok.startswith(prefix):
                 return tok[len(prefix):]
@@ -4698,7 +4698,7 @@ def _looks_like_profile_conflict_from_cmdline(command: str, our_home) -> bool:
         # profile flags). Default/root home: ANY explicit named-profile flag contradicts it.
         if profile_name is None or profile_name == "default" or value != profile_name:
             return True
-    home_value = _flag_value("--hermes-home") or _env_home_value()
+    home_value = _flag_value("--slave-home") or _env_home_value()
     return bool(home_value is not None and _norm(home_value) != _norm(str(our_home)))
 
 
@@ -4728,7 +4728,7 @@ def _start_gateway_make_restart_signal_handler(runner):
         # systemd's `reload` verb (ExecReload=kill -USR1) lands here too; say so, because operators
         # expect `reload` to mean an in-process config reload, not a drain-and-relaunch (#117267).
         logger.info(
-            "SIGUSR1 received (systemctl reload / hermes gateway restart): performing a graceful "
+            "SIGUSR1 received (systemctl reload / slave gateway restart): performing a graceful "
             "gateway restart — drain active turns, exit, supervisor relaunches. Not an in-process "
             "config reload.")
         runner.request_restart(detached=False, via_service=True)
@@ -4758,7 +4758,7 @@ def _claim_host_gateway_role(force: bool = False) -> None:
     # multiplexer remains live. Its per-home channel still governs our opt-out.
     if not force:
         from gateway.host_attach import REFUSE, standalone_attach_decision
-        decision = standalone_attach_decision(get_hermes_home(), None)
+        decision = standalone_attach_decision(get_slave_home(), None)
         if decision is not None and decision.outcome == REFUSE:
             from gateway.restart import GATEWAY_SERVICE_RESTART_EXIT_CODE
             print(decision.message)
@@ -4771,7 +4771,7 @@ def _claim_host_gateway_role(force: bool = False) -> None:
             # Publishing a guessed set here parked a second profile's supervised unit against
             # profiles this process may never serve; _refresh_host_gateway_record() fills it in
             # once the control socket answers.
-            hr.publish_record(hr.ROLE_GATEWAY, profiles=(), home=str(get_hermes_home()))
+            hr.publish_record(hr.ROLE_GATEWAY, profiles=(), home=str(get_slave_home()))
             # SIGTERM (systemd stop, docker stop, the update relaunch) does not run atexit.
             hr.cleanup_on_exit(hr.ROLE_GATEWAY)
             return
@@ -4799,22 +4799,22 @@ def _claim_host_gateway_role(force: bool = False) -> None:
     from gateway.host_attach import (
         ATTACH_CHANNEL_WAIT_S, START, host_gateway, launched_by_other_tenant, standalone_attach_decision,
     )
-    from hermes_cli.profiles import profile_is_standalone
-    if owner is not None and launched_by_other_tenant(owner.home, get_hermes_home()):
+    from slave_cli.profiles import profile_is_standalone
+    if owner is not None and launched_by_other_tenant(owner.home, get_slave_home()):
         # The lock is per OS user, so a second tenant root can never win it against the first:
         # refusing 75 here would retry forever and its gateway would never start (#121352).
         logger.warning(
-            "Another Hermes home's gateway owns this host (%s); starting this home's gateway beside it.",
+            "Another slave-agent home's gateway owns this host (%s); starting this home's gateway beside it.",
             hr.describe(owner))
         return
-    if profile_is_standalone(get_hermes_home()):
+    if profile_is_standalone(get_slave_home()):
         # Recheck after losing the atomic lock: the pre-lock served set may be stale.
         live_owner = host_gateway(wait_for_channel=ATTACH_CHANNEL_WAIT_S)
         # The rendezvous record proves lock ownership, but the owner's control channel may
         # still be unavailable. Standalone discovery also checks each profile's liveness
         # channel, so it can prove that this profile is unserved even when the host probe
         # cannot construct a HostGateway yet.
-        decision = standalone_attach_decision(get_hermes_home(), live_owner)
+        decision = standalone_attach_decision(get_slave_home(), live_owner)
         if decision is not None:
             if decision.outcome == START:
                 return
@@ -4837,7 +4837,7 @@ def _claim_host_gateway_role(force: bool = False) -> None:
 
 
 def _migrate_command() -> str:
-    from hermes_cli.gateway_migrate import MIGRATE_COMMAND
+    from slave_cli.gateway_migrate import MIGRATE_COMMAND
 
     return MIGRATE_COMMAND
 
@@ -4854,7 +4854,7 @@ def _owner_is_standalone() -> bool:
         owner = host_gateway()
         if owner is None or owner.pid == os.getpid():
             return False
-        answered = request_serve_profile(profile_name_for_home(get_hermes_home()), owner=owner)
+        answered = request_serve_profile(profile_name_for_home(get_slave_home()), owner=owner)
         return bool(answered is not None and answered.standalone)
     except Exception:
         logger.debug("standalone-owner probe failed; keeping the second-gateway refusal",
@@ -4878,7 +4878,7 @@ def _refuse_second_host_gateway(owner) -> None:
         f"   second one (it would double-bind this profile's platforms).\n"
         f"   Fold every profile onto the owner:  {_migrate_command()}\n"
         f"   Or stop the other gateway first, then start this one.\n"
-        f"   Or start one anyway (skips the host-lock check):  hermes gateway run --force\n"
+        f"   Or start one anyway (skips the host-lock check):  slave gateway run --force\n"
         f"   (--replace does not skip this check; it only replaces an owner that serves this profile.)")
     logger.error("Refusing to start a second gateway on this host: %s", who)
     print(message)
@@ -4894,8 +4894,8 @@ def _log_standalone_profiles_at_boot(runner) -> None:
     try:
         if not getattr(runner.config, "multiplex_profiles", False):
             return
-        from hermes_cli.profiles import profiles_to_serve, profile_is_standalone
-        from hermes_cli.gateway_multiplex_mode import STANDALONE_DEPRECATION_NOTICE
+        from slave_cli.profiles import profiles_to_serve, profile_is_standalone
+        from slave_cli.gateway_multiplex_mode import STANDALONE_DEPRECATION_NOTICE
         served = set(runner.served_profile_names())
         for name, home in profiles_to_serve(True, include_standalone=True, include_parked=True):
             if name != "default" and name not in served and profile_is_standalone(home):
@@ -4918,7 +4918,7 @@ def _refresh_host_gateway_record(runner) -> None:
     try:
         if not hr.owns_host_lock(hr.ROLE_GATEWAY):
             return
-        home = get_hermes_home()
+        home = get_slave_home()
         if getattr(runner.config, "multiplex_profiles", False):
             served = tuple(runner.served_profile_names())
         else:
@@ -4954,7 +4954,7 @@ async def _host_attach_or_none(replace: bool, force: bool = False) -> Optional[b
 
     from gateway.host_attach import ATTACH, REFUSE, REPLACE_HOST, decide
 
-    decision = decide(get_hermes_home(), replace=replace)
+    decision = decide(get_slave_home(), replace=replace)
     if decision.outcome == ATTACH:
         logger.info("Attaching to the host gateway instead of starting a second one: %s",
                     decision.owner.describe() if decision.owner else "unknown")
@@ -4982,8 +4982,8 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 def _guard_corrupt_user_config() -> None:
     """Fail closed when the active profile's config.yaml cannot be parsed: nobody can repair it on this
     surface, and defaults would let provider auto-detection adopt ``.env`` credentials the config never
-    named. Same policy and escape hatch (``HERMES_IGNORE_USER_CONFIG=1``) as ``hermes_cli/main.py``."""
-    from hermes_cli.config import InvalidUserConfigError, require_parseable_user_config
+    named. Same policy and escape hatch (``SLAVE_IGNORE_USER_CONFIG=1``) as ``slave_cli/main.py``."""
+    from slave_cli.config import InvalidUserConfigError, require_parseable_user_config
 
     try:
         require_parseable_user_config()
@@ -4996,38 +4996,38 @@ def main():
     """CLI entry point for the gateway."""
     # Before any config-dependent startup (watchdog, DB opens, provider resolution).
     _guard_corrupt_user_config()
-    from hermes_cli.resource_limits import apply_malloc_arena_max  # runs before any thread (glibc latches)
+    from slave_cli.resource_limits import apply_malloc_arena_max  # runs before any thread (glibc latches)
 
-    # Advertise the harness to children (mirrors _advertise_agent_env in hermes_cli/main.py, inlined to
-    # avoid its startup side effects). Value must equal registry id ``hermes-agent`` exactly.
-    os.environ.setdefault("AI_AGENT", "hermes-agent")
-    os.environ.setdefault("HERMES_AGENT", "true")
+    # Advertise the harness to children (mirrors _advertise_agent_env in slave_cli/main.py, inlined to
+    # avoid its startup side effects). Value must equal registry id ``slave-agent`` exactly.
+    os.environ.setdefault("AI_AGENT", "slave-agent")
+    os.environ.setdefault("SLAVE_AGENT", "true")
 
     def _register_identity() -> None:
         # Ledger registration + Windows job-object attach so update-time reapers can identify this gateway.
-        from hermes_cli.process_identity import attach_self_to_kill_on_close_job, register_self
+        from slave_cli.process_identity import attach_self_to_kill_on_close_job, register_self
         register_self("gateway")
         attach_self_to_kill_on_close_job()
 
     def _arm_watchdog() -> None:
         # Armed before config load / DB opens so a pre-loop deadlock is respawned by the supervisor instead
         # of wedging as a live-PID zombie. GatewayRunner disarms it.
-        from hermes_startup_watchdog import arm_startup_watchdog
+        from slave_startup_watchdog import arm_startup_watchdog
         arm_startup_watchdog()
 
     def _utf8_stdio() -> None:
         # Windows: gateway logs and banner would UnicodeEncodeError on cp1252 consoles. No-op on POSIX.
-        from hermes_cli.stdio import configure_windows_stdio
+        from slave_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
 
     for _step in (apply_malloc_arena_max, _register_identity, _arm_watchdog, _utf8_stdio):
         _best_effort(_step)
 
     # pm startup contract (PATH provisioning for the store's tools), then the post-update bootstrap: the
-    # same one-pass record-gated maintenance registry the CLI dispatch path runs (hermes_cli/main.py) —
+    # same one-pass record-gated maintenance registry the CLI dispatch path runs (slave_cli/main.py) —
     # this entrypoint bypasses that dispatch, so run it here too. Never raises.
     try:
-        from hermes_cli.venv_sync import check_runtime
+        from slave_cli.venv_sync import check_runtime
         from pm.paths import install_root
 
         problem = check_runtime(install_root())
@@ -5036,7 +5036,7 @@ def main():
     except Exception:
         logger.debug("pm startup check failed", exc_info=True)
     try:
-        from hermes_cli.boot_bootstrap import maybe_run_boot_bootstrap
+        from slave_cli.boot_bootstrap import maybe_run_boot_bootstrap
         from pm.paths import install_root
 
         maybe_run_boot_bootstrap(install_root())
@@ -5044,7 +5044,7 @@ def main():
         logger.debug("boot bootstrap failed", exc_info=True)
 
     import argparse
-    parser = argparse.ArgumentParser(description="Hermes Gateway - Multi-platform messaging")
+    parser = argparse.ArgumentParser(description="slave-agent Gateway - Multi-platform messaging")
     parser.add_argument("--config", "-c", help="Path to gateway config file")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     args = parser.parse_args()
@@ -5054,7 +5054,7 @@ def main():
         from gateway.config_loader import load_gateway_config_file
         config = load_gateway_config_file(args.config)
         # Same boot-time verdict the loaded config gets when the file leaves the flag unset.
-        from hermes_cli.gateway_multiplex_mode import log_multiplex_decision, resolve_multiplex_mode
+        from slave_cli.gateway_multiplex_mode import log_multiplex_decision, resolve_multiplex_mode
         log_multiplex_decision(resolve_multiplex_mode(config))
 
     # start_gateway() completes teardown before returning/raising SystemExit; force-exit after so a
@@ -5099,23 +5099,23 @@ def _exit_after_graceful_shutdown(exit_code: int) -> None:
     def _mark_exited() -> None:
         # Single funnel every graceful exit passes through, so the next boot's unclean-death detector
         # fires only for genuine SIGKILL/OOM/VM deaths. Ownership-guarded against an old --replace life.
-        from hermes_cli.observability.shared_metrics_process import stamp_exit
+        from slave_cli.observability.shared_metrics_process import stamp_exit
         stamp_exit("clean")  # the exit-metrics marker too: os._exit skips its atexit stamp (never raises)
         from gateway.lifecycle_ledger import mark_exited
         mark_exited(exit_code, reason="graceful_shutdown")
 
     def _flush_metrics() -> None:  # after the clean stamp: a supervisor kill mid-flush is no unclean death
-        from hermes_cli.observability.shared_metrics_process import flush_before_hard_exit
+        from slave_cli.observability.shared_metrics_process import flush_before_hard_exit
         flush_before_hard_exit()  # the runtimes' atexit flush: open sessions + queued opt-in rows (bounded)
 
     def _write_cpu_profile() -> None:  # --cpu-profile's atexit writer never runs past os._exit; no-op when off
-        from hermes_cli.cpu_profile import write_cpu_profile
+        from slave_cli.cpu_profile import write_cpu_profile
         write_cpu_profile()
 
     def _drain_logs() -> None:
         # os._exit bypasses the listener's atexit drain. Bounded, no restart — NOT flush_log_queue():
         # a listener wedged on the rotation lock would re-freeze shutdown in an unbounded stop() join.
-        from hermes_logging import drain_log_queue
+        from slave_logging import drain_log_queue
         drain_log_queue(timeout=1.0)
 
     for _step in (_release_locks, _mark_exited, _flush_metrics, _write_cpu_profile, _drain_logs):

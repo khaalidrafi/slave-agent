@@ -1,7 +1,7 @@
 name: echarts-in-chat
 repo: https://github.com/Tommy00748/hermes-plugin-echarts-in-chat
 sha: 6825178e277604594cd0a9b8f2789208e40ba59b
-description: "Render a chart inline in the Hermes Desktop transcript: the model emits ::echarts{labels=... values=...} and the plugin mounts an interactive SVG chart (dataZoom slider, click-to-filter legend, resize-aware, 280-560px height clamp) in the plugin SDK's transcript-directive slot. Disclosure — no network calls, no shell commands, no stored credentials, no environment variables, no background processes, and nothing read or written outside the message it renders; the chart is drawn locally as inline SVG with no third-party libraries."
+description: "Render a chart inline in the slave-agent Desktop transcript: the model emits ::echarts{labels=... values=...} and the plugin mounts an interactive SVG chart (dataZoom slider, click-to-filter legend, resize-aware, 280-560px height clamp) in the plugin SDK's transcript-directive slot. Disclosure — no network calls, no shell commands, no stored credentials, no environment variables, no background processes, and nothing read or written outside the message it renders; the chart is drawn locally as inline SVG with no third-party libraries."
 maintainer: Tommy00748
 tier: community
 category: desktop

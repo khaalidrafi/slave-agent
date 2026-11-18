@@ -1,6 +1,6 @@
 """Cron Bot Chat delivery creates the profile's canonical Bot Chat when it does not exist yet.
 
-Main's lane was ``hermes chat -c "Bot Chat" --create-if-missing``; the canonical authority
+Main's lane was ``slave chat -c "Bot Chat" --create-if-missing``; the canonical authority
 door must keep that semantics, or a fresh profile's very first ``deliver: bot-chat`` job is
 recorded as failed with nowhere to land.
 """
@@ -34,9 +34,9 @@ def test_cron_bot_chat_delivery_creates_the_missing_bot_chat_and_admits(tmp_path
             'auxiliary': {'title_generation': {'enabled': False}}, 'terminal': {'cwd': str(home)}}),
             encoding='utf-8')
         env = child_env()
-        env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+        env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                    OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
-        monkeypatch.setenv('HERMES_HOME', str(home))
+        monkeypatch.setenv('SLAVE_HOME', str(home))
         monkeypatch.setattr(Path, 'home', lambda: user)
         with daemon(root, home, env, barrier=False):
             from cron.scheduler_delivery import _deliver_to_bot_chat

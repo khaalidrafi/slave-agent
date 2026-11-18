@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -12,7 +12,7 @@ import { useComposerState } from '../app/useComposerState.js'
 
 it('does not restore stale same-session paste results after editing away and back', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-composer-freshness-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'session' })
   let finish!: (value: unknown) => void

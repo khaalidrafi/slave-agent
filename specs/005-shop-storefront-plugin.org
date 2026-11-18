@@ -25,7 +25,7 @@ client data model may enter this tree (purity law).
      shape are all ~plugins.entries.shop.settings~ in the profile's
      ~config.yaml~ — configuration, not code.
    - four tools: ~shop_queue~, ~shop_orders~, ~shop_order~, ~shop_catalog~;
-   - ~hermes shop~ (subcommand) and ~/shop~ (slash command).
+   - ~slave shop~ (subcommand) and ~/shop~ (slash command).
 2. Structural rules (not advisory):
    - *Money never routes through a model.* Every number a tool returns is the
      shop's own API field; the only arithmetic in the plugin is counting

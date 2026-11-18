@@ -1,6 +1,6 @@
 """A run claim the process image before an in-place relaunch took is not held by the relaunched one.
 
-``hermes_cli/relaunch.py`` replaces the process with ``os.execvp``: same pid, same start time. A
+``slave_cli/relaunch.py`` replaces the process with ``os.execvp``: same pid, same start time. A
 claim taken before the exec (a curator pass or a plugin idle task at CLI startup, then ``/update``
 or a session resume) was never released, and its owner looked alive, so every idle job of that home
 stayed suppressed until the relaunched process exited.

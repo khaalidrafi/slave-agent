@@ -7,7 +7,7 @@ description: "For people who work with health clinics of any specialty: estimate
 maintainer: HeyCAi
 tier: community
 category: tools
-docs_url: https://github.com/heycai-ai/skills#hermes-agent
+docs_url: https://github.com/heycai-ai/skills#slave-agent
 requires_hermes: ">=0.22.0"
 readme: true
 platforms: []

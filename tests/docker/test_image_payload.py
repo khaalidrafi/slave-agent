@@ -17,11 +17,11 @@ assert not list(store.glob('fetch-*')), 'completed download archives must not sh
 fact = Facts(store / 'facts.json').get('python')
 expected = get_package('python').binary(store / fact['entry'], current_target())
 assert Path(sys._base_executable).resolve() == expected.resolve()
-import hermes_yaml as yaml
-print('PM interpreter and application dependencies load as hermes')
+import slave_yaml as yaml
+print('PM interpreter and application dependencies load as slave')
 """
     result = subprocess.run(
-        ["docker", "run", "--rm", "--network", "none", "--user", "hermes",
+        ["docker", "run", "--rm", "--network", "none", "--user", "slave",
          "--entrypoint", "/opt/hermes/.venv/bin/python", built_image, "-c", probe],
         capture_output=True, text=True, timeout=60,
         check=False,
@@ -42,7 +42,7 @@ assert not Path('/opt/hermes/node_modules/esbuild').exists()
 assert Path('/opt/hermes/node_modules/typescript/bin/tsc').is_file()
 """
     result = subprocess.run(
-        ["docker", "run", "--rm", "--network", "none", "--user", "hermes",
+        ["docker", "run", "--rm", "--network", "none", "--user", "slave",
          "--entrypoint", "/opt/hermes/.venv/bin/python", built_image, "-c", probe],
         capture_output=True, text=True, timeout=60,
         check=False,

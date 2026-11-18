@@ -16,7 +16,7 @@ description: >-
   standard library only: no network, no credentials, no third-party
   dependencies, no self-update; DOCTYPE and entity declarations are refused.
   Disclosure: reads the local report paths you pass it (read-only), only
-  regular files, and honours Hermes' core read denylist.
+  regular files, and honours slave-agent’ core read denylist.
 maintainer: rodricksz4h5
 tier: community
 category: tools

@@ -16,7 +16,7 @@ from tools.process_registry_env_log import log_delta_command, parse_log_delta_re
 @pytest.fixture()
 def registry(monkeypatch):
     """A fresh ProcessRegistry. Fake Popen pids never reach the owner-death supervisor: a live pgid would start it."""
-    monkeypatch.setattr("hermes_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
+    monkeypatch.setattr("slave_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
     return ProcessRegistry()
 
 

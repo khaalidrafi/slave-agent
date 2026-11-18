@@ -1,4 +1,4 @@
-import { Box, type Key, Text, useInput, useStdout } from '@hermes/ink'
+import { Box, type Key, Text, useInput, useStdout } from '@slave-agent/ink'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { RewindOverlay } from '../app/interfaces.js'

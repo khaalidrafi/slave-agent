@@ -59,7 +59,7 @@ class CanonicalCreateParams(ProfileParams):
     run_budget: float | None = None
     # The classic CLI's `-v`: the session agent's status lines are not quieted.
     verbose: bool = False
-    # A shell-launched client's allowlisted environment (HERMES_* behaviour values, toolchain PATH/venv),
+    # A shell-launched client's allowlisted environment (SLAVE_* behaviour values, toolchain PATH/venv),
     # applied to this session only; never echoed in ``launch_request``.
     client_env: dict[str, str] | None = None
     # The creating client's self-declared label, echoed as ``session.info.client``; no policy reads it.
@@ -121,7 +121,7 @@ class CanonicalPendingPrompt(Result):
 
 
 class CanonicalSnapshotInfo(SessionInventoryFields):
-    desktop_protocol: Literal['hermes-gateway-v1']
+    desktop_protocol: Literal['slave-gateway-v1']
     source: str | None = None
     model: str | None = None
     lazy: bool | None = None
@@ -182,7 +182,7 @@ class CanonicalListParams(ProfileParams):
     title: str | None = None
     include_hidden: bool = False
     # Only conversations of this folder, judged on each conversation's first row by the classic CLI's
-    # ``hermes -c`` rule (``persistence.conversation.sessions.workspace_key``): its git repo root equals this, or
+    # ``slave -c`` rule (``persistence.conversation.sessions.workspace_key``): its git repo root equals this, or
     # (no root recorded) its cwd is this folder or under it. Pass the caller's repo root (else its cwd).
     workspace: str | None = None
     # Each row also carries the picker fields below (off by default: a live-list poll does not pay for them).

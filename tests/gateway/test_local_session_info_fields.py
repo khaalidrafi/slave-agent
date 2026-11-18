@@ -30,7 +30,7 @@ async def test_session_info_carries_the_classic_cli_fields(tmp_path, monkeypatch
     assert info['credential_hint'] == 'sk-a...1234' and 'abcdefgh' not in str(info)
     from tui_gateway.contracts.registry import CANONICAL_METHODS
     CANONICAL_METHODS['session.info'].result.model_validate(
-        {**info, 'profile_name': 'default', 'desktop_protocol': 'hermes-gateway-v1', 'lazy': False})
+        {**info, 'profile_name': 'default', 'desktop_protocol': 'slave-gateway-v1', 'lazy': False})
 
 
 def test_local_viewer_title_republishes_session_info(monkeypatch):

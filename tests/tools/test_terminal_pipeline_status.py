@@ -6,8 +6,8 @@ import pytest
 
 from tools.environments.base_session_env import _split_cwd_marker, _wrap_command_script
 
-CWD_MARKER = "__HERMES_CWD_test__"
-PIPE_MARKER = "__HERMES_PIPE_test__"
+CWD_MARKER = "__SLAVE_CWD_test__"
+PIPE_MARKER = "__SLAVE_PIPE_test__"
 
 
 def _script(command: str, pipe_marker: str = PIPE_MARKER) -> str:

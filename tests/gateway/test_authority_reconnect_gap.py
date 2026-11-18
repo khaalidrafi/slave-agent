@@ -23,7 +23,7 @@ async def test_resume_after_replay_delivers_the_frames_published_in_between(tmp_
     from gateway.session_contract import SessionRef, Submission
     from gateway.session_controls import AuthorityConnection
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
 
     async def answer(event):

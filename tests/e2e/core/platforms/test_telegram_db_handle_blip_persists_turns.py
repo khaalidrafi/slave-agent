@@ -64,7 +64,7 @@ def test_turns_on_an_agent_built_during_a_db_handle_blip_reach_state_db(tmp_path
     cfg = {**drv.gateway_config(), "plugins": {"enabled": ["dbblip"]}}
     gw = GatewayUnderTest(tmp_path / "rig", llm_base_url=llm.base_url, config=cfg,
                           env=drv.gateway_env(), ready=drv.connected)
-    plugin_dir = gw.hermes_home / "plugins" / "dbblip"
+    plugin_dir = gw.slave_home / "plugins" / "dbblip"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text("name: dbblip\nversion: 0.0.1\ndescription: test probe\n")
     (plugin_dir / "__init__.py").write_text(_PLUGIN)

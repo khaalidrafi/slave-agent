@@ -47,7 +47,7 @@ async def probe(mode, peer):
         async def get_chat_info(self, chat_id):
             return {'id': chat_id}
 
-    state = Path(os.environ['HERMES_HOME'])
+    state = Path(os.environ['SLAVE_HOME'])
     runner = GatewayRunner()
     authority = await initialize_session_authority(runner, profile_id='default', instance_id='media-' + mode)
     adapter = Adapter()
@@ -268,9 +268,9 @@ if __name__ == '__main__':
     base_url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='explicit-loopback-fixture', OPENAI_BASE_URL=base_url,
                       TELEGRAM_ALLOWED_USERS='fixture-user')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local-wire-stub\n  provider: custom\n  base_url: {base_url}\n'
-        f'auxiliary:\n  title_generation:\n    enabled: false\nterminal:\n  cwd: {os.environ["HERMES_HOME"]}\n')
+        f'auxiliary:\n  title_generation:\n    enabled: false\nterminal:\n  cwd: {os.environ["SLAVE_HOME"]}\n')
     status = 0
     try:
         asyncio.run(probe(sys.argv[1], peer))

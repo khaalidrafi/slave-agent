@@ -33,7 +33,7 @@ def test_full_agent_worker_rotation_continues_inference_without_canonical_opens(
                       'compression': {'provider': 'custom', 'model': 'worker-model', 'base_url': url}},
         'platform_toolsets': {'cli': []}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
     async def create(desc, key):
         async with websocket(home, desc) as ws:

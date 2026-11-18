@@ -38,7 +38,7 @@ def satellite(tmp_path, monkeypatch):
 
     home = tmp_path / "hh"
     (home / "profiles" / "sec").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     runner = object.__new__(GatewayRunner)
     runner.config = GatewayConfig(multiplex_profiles=True)
     runner.config.platforms = {p: PlatformConfig(enabled=True, extra={}) for p in _PLATFORMS}
@@ -54,7 +54,7 @@ def satellite(tmp_path, monkeypatch):
     runner.adapters = dict(primary)
     runner._profile_adapters = {"sec": {}}  # no bot of its own: borrows the primary's
     with patch("gateway.run._gateway_runner_ref", return_value=runner), \
-            patch("hermes_cli.profiles.get_active_profile_name", return_value="sec"):
+            patch("slave_cli.profiles.get_active_profile_name", return_value="sec"):
         yield SimpleNamespace(runner=runner, primary=primary)
 
 
@@ -301,9 +301,9 @@ def test_cron_shared_view_does_not_reach_a_thread_pinned_to_another_profile(tmp_
                                                                            platform_name):
     """Cron's view (routes read from the primary home, as the ticker builds it): a chat route does not
     lend the shared bot for a thread a more specific route dispatches to another profile."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
     from cron.scheduler_preflight import SharedRouteAdapters, _primary_profile_routes_for_current_home
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     chat, own, pinned = _CHAT_SCOPED[platform_name]
     root = tmp_path / "root"
@@ -311,14 +311,14 @@ def test_cron_shared_view_does_not_reach_a_thread_pinned_to_another_profile(tmp_
     (root / "config.yaml").write_text(yaml.safe_dump({"gateway": {
         "multiplex_profiles": True, "profile_routes": _sibling_pinned_routes(platform_name, chat, pinned)}}),
         encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("slave_constants.get_default_slave_root", lambda: root)
     primary = object()
     platform = Platform(platform_name)
-    token = set_hermes_home_override(str(root / "profiles" / "sec"))
+    token = set_slave_home_override(str(root / "profiles" / "sec"))
     try:
         shared = SharedRouteAdapters({platform: primary}, _primary_profile_routes_for_current_home())
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert shared.get(platform, {"chat_id": chat, "thread_id": pinned}) is None
     assert shared.get(platform, {"chat_id": chat, "thread_id": own}) is primary
     assert shared.get(platform, {"chat_id": chat}) is primary
@@ -328,9 +328,9 @@ def test_cron_shared_view_refuses_every_target_when_the_route_read_fails(tmp_pat
     """A route-read error must not look like "no other profile has routes": cron's view then lends
     the shared bot for nothing, not by the satellite's routes alone (which would admit a topic a
     more specific route pins to another profile)."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
     from cron import scheduler_preflight
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     chat, own, pinned = _CHAT_SCOPED["telegram"]
     root = tmp_path / "root"
@@ -338,7 +338,7 @@ def test_cron_shared_view_refuses_every_target_when_the_route_read_fails(tmp_pat
     (root / "config.yaml").write_text(yaml.safe_dump({"gateway": {
         "multiplex_profiles": True, "profile_routes": _sibling_pinned_routes("telegram", chat, pinned)}}),
         encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("slave_constants.get_default_slave_root", lambda: root)
     real_read, reads = scheduler_preflight._primary_routes, []
 
     def read_once_then_fail(home):
@@ -349,14 +349,14 @@ def test_cron_shared_view_refuses_every_target_when_the_route_read_fails(tmp_pat
 
     monkeypatch.setattr(scheduler_preflight, "_primary_routes", read_once_then_fail)
     primary = object()
-    token = set_hermes_home_override(str(root / "profiles" / "sec"))
+    token = set_slave_home_override(str(root / "profiles" / "sec"))
     try:
         sec_routes = scheduler_preflight._primary_profile_routes_for_current_home()
         assert [r.profile for r in sec_routes] == ["sec"]
         # the satellite's routes came from a read that succeeded; the default dispatch read raises
         shared = scheduler_preflight.SharedRouteAdapters({Platform.TELEGRAM: primary}, sec_routes)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     for thread in (pinned, own, None):
         assert shared.get(Platform.TELEGRAM, {"chat_id": chat, "thread_id": thread}) is None
 
@@ -364,9 +364,9 @@ def test_cron_shared_view_refuses_every_target_when_the_route_read_fails(tmp_pat
 def test_cron_shared_view_is_built_from_one_route_read(tmp_path, monkeypatch):
     """``shared_route_adapters_for_current_home`` reads the routes once: a failing read refuses
     every target, a good one keeps the satellite's chat and refuses the topic pinned elsewhere."""
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
     from cron import scheduler_preflight
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     chat, own, pinned = _CHAT_SCOPED["telegram"]
     root = tmp_path / "root"
@@ -374,12 +374,12 @@ def test_cron_shared_view_is_built_from_one_route_read(tmp_path, monkeypatch):
     (root / "config.yaml").write_text(yaml.safe_dump({"gateway": {
         "multiplex_profiles": True, "profile_routes": _sibling_pinned_routes("telegram", chat, pinned)}}),
         encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("slave_constants.get_default_slave_root", lambda: root)
     real_read, reads = scheduler_preflight._primary_routes, []
     monkeypatch.setattr(scheduler_preflight, "_primary_routes",
                         lambda home: reads.append(home) or real_read(home))
     primary = object()
-    token = set_hermes_home_override(str(root / "profiles" / "sec"))
+    token = set_slave_home_override(str(root / "profiles" / "sec"))
     try:
         good = scheduler_preflight.shared_route_adapters_for_current_home({Platform.TELEGRAM: primary})
         assert len(reads) == 1
@@ -388,7 +388,7 @@ def test_cron_shared_view_is_built_from_one_route_read(tmp_path, monkeypatch):
         failed = scheduler_preflight.shared_route_adapters_for_current_home({Platform.TELEGRAM: primary})
         assert len(reads) == 2  # the failed read is not retried for the dispatch table
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert good.get(Platform.TELEGRAM, {"chat_id": chat, "thread_id": own}) is primary
     assert good.get(Platform.TELEGRAM, {"chat_id": chat, "thread_id": pinned}) is None
     assert not failed

@@ -29,9 +29,9 @@ def _listing_first_line(home, config: str) -> str:
 
 @pytest.fixture
 def deepseek_only_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     for key in [k for k in os.environ if k.endswith("_API_KEY")]:
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test-not-real")
@@ -45,9 +45,9 @@ def test_unset_provider_lists_the_route_the_resolver_picks(deepseek_only_home, p
 
 
 def test_env_requested_provider_is_named_over_auto_detect(deepseek_only_home, monkeypatch):
-    """``HERMES_INFERENCE_PROVIDER`` picks the turn's provider even when another key would auto-detect."""
+    """``SLAVE_INFERENCE_PROVIDER`` picks the turn's provider even when another key would auto-detect."""
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
-    monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "deepseek")
+    monkeypatch.setenv("SLAVE_INFERENCE_PROVIDER", "deepseek")
     line = _listing_first_line(deepseek_only_home, "model:\n  default: deepseek-v4-flash\n")
     assert line.lower() == "current: `deepseek-v4-flash` on deepseek", line
 

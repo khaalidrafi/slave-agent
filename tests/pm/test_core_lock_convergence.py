@@ -16,7 +16,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 import pm.workspace as ws
 from tests.pm import _fixtures
@@ -50,8 +50,8 @@ def update(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "tools"))
     monkeypatch.setattr(pm.paths, "repo_root", lambda: core)
     monkeypatch.setattr(ws.paths, "repo_root", lambda: core)
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)

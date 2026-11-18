@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.sqlite_safe_read as safe_read
+import slave_cli.sqlite_safe_read as safe_read
 from persistence.sqlite.admin._backup import _query_ro_sqlite, _restore_db_pages, _restore_epoch
 
 

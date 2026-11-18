@@ -108,7 +108,7 @@ class _SourceTask:
         from gateway.hosted_room_attachments import HostedRoomAttachmentStore
         from persistence_assembly import open_persistence, profile_scope
         import gateway.run
-        monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+        monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
         self.homes = {'other': str(tmp_path / 'profiles' / 'other')}
         monkeypatch.setattr(gateway.run, '_load_gateway_config', lambda: {'hosted_rooms': {'profiles': self.homes}})
         self.db = db = open_persistence(profile_scope(home=tmp_path))

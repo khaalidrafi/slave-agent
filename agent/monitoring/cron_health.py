@@ -19,7 +19,7 @@ from cron.jobs import (
 from cron.occurrences import get_catch_up_occurrence_count
 from cron.scheduler import get_running_job_ids
 from cron.store_health import degraded_records
-from hermes_time import now as _now
+from slave_time import now as _now
 
 logger = logging.getLogger(__name__)
 # ``cancelled``: an operator stopped the run; ``missed``: the scheduler skipped past its slots.
@@ -131,8 +131,8 @@ def _is_overdue(job: dict[str, Any], now: datetime) -> bool:
 
 def _job_metrics(metrics: list[GatewayMetric]) -> None:
     enabled = [job for job in load_jobs() if job.get("enabled", True)]
-    metrics.append(GatewayMetric("hermes.cron.jobs.enabled", len(enabled), {}))
-    metrics.append(GatewayMetric("hermes.cron.jobs.overdue", sum(1 for job in enabled if _is_overdue(job, _now())), {}))
+    metrics.append(GatewayMetric("slave.cron.jobs.enabled", len(enabled), {}))
+    metrics.append(GatewayMetric("slave.cron.jobs.overdue", sum(1 for job in enabled if _is_overdue(job, _now())), {}))
 
 
 def _freshness_metric(name: str, reader: Callable[[], Optional[float]]) -> Callable[[list[GatewayMetric]], None]:
@@ -151,15 +151,15 @@ def _single_metric(name: str, reader: Callable[[], Any]) -> Callable[[list[Gatew
 # Each group is independently fail-open so one unavailable source never hides the rest.
 # Readers are wrapped in lambdas so monkeypatching this module's names still takes effect.
 _METRIC_GROUPS: tuple[tuple[Callable[[list[GatewayMetric]], None], str], ...] = (
-    (_freshness_metric("hermes.cron.scheduler.heartbeat_age_seconds", lambda: get_ticker_heartbeat_age()), "cron freshness metric unavailable"),
-    (_freshness_metric("hermes.cron.scheduler.last_success_age_seconds", lambda: get_ticker_success_age()), "cron freshness metric unavailable"),
-    (_single_metric("hermes.cron.scheduler.catch_up_occurrences", lambda: get_catch_up_occurrence_count()), "cron catch-up metric unavailable"),
+    (_freshness_metric("slave.cron.scheduler.heartbeat_age_seconds", lambda: get_ticker_heartbeat_age()), "cron freshness metric unavailable"),
+    (_freshness_metric("slave.cron.scheduler.last_success_age_seconds", lambda: get_ticker_success_age()), "cron freshness metric unavailable"),
+    (_single_metric("slave.cron.scheduler.catch_up_occurrences", lambda: get_catch_up_occurrence_count()), "cron catch-up metric unavailable"),
     (_job_metrics, "cron job metrics unavailable"),
-    (_single_metric("hermes.cron.jobs.running", lambda: len(get_running_job_ids())), "cron running-job metric unavailable"),
+    (_single_metric("slave.cron.jobs.running", lambda: len(get_running_job_ids())), "cron running-job metric unavailable"),
     # Host-wide: the exporter runs in the launch profile's scope, but every served profile's ticker
     # shares this process, so a secondary profile's outage must not read as healthy.
-    (_single_metric("hermes.cron.store.writable", lambda: int(not degraded_records())), "cron store metric unavailable"),
-    (_single_metric("hermes.cron.store.skipped_runs", lambda: sum(r.skipped_runs for r in degraded_records())),
+    (_single_metric("slave.cron.store.writable", lambda: int(not degraded_records())), "cron store metric unavailable"),
+    (_single_metric("slave.cron.store.skipped_runs", lambda: sum(r.skipped_runs for r in degraded_records())),
      "cron store metric unavailable"),
 )
 

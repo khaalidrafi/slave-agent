@@ -44,7 +44,7 @@ class _LocalArchives:
 def test_every_target_with_a_pinned_node_can_install_the_js_workspaces():
     """The dashboard, TUI and desktop source builds all install through pnpm on PM's node, so a
     target with a node pin but no pnpm pin cannot build them (Termux: "unavailable on
-    linux-arm64-bionic" from `hermes dashboard`)."""
+    linux-arm64-bionic" from `slave dashboard`)."""
     package = get_package("pnpm")
     lock = Lockfile(paths.lockfile_path())
     version = lock.version("pnpm")
@@ -79,7 +79,7 @@ def test_pm_doctor_on_termux_does_not_fail_on_the_pnpm_it_fetches_on_demand(
     lock["packages"] = {name: lock["packages"][name] for name in locked}
     (tmp_path / "lock.json").write_text(json.dumps(lock), encoding="utf-8")
     monkeypatch.setattr(cli, "_lockfile", lambda: Lockfile(tmp_path / "lock.json"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "runtime"))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "runtime"))
     monkeypatch.setattr(cli, "current_target", lambda: "linux-arm64-bionic")
     monkeypatch.setattr(cli, "_doctor_uv_cache", lambda **_: 0)
 
@@ -120,7 +120,7 @@ def test_pnpm_entry_holds_the_executable_and_the_launchers_dist(tmp_path, target
 
 def test_pnpm_dirs_replace_every_case_twin_of_their_names():
     """Windows hands Python upper-cased env names, and a child given both spellings picks one
-    arbitrarily: the Hermes-owned store must be the only spelling left."""
+    arbitrarily: the Slave-owned store must be the only spelling left."""
     from pm.packages import pnpm_env
 
     env = pnpm_env({"PNPM_CONFIG_STORE_DIR": "/elsewhere/store", "Pnpm_Config_Cache_Dir": "/elsewhere/cache"})

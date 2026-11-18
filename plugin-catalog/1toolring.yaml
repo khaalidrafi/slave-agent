@@ -16,7 +16,7 @@ description: |
   Disclosures
   - Hosted-only connector with no local code: every tool call, with its arguments, goes to mcp.1toolring.com (Streamable HTTP, API key auth).
   - run_tool spends the key owner's prepaid 1ToolRing balance at the price inspect_tool shows; failed runs are not charged and there is no subscription.
-  - The package marks the server untrusted, so Hermes asks before every run_tool call.
+  - The package marks the server untrusted, so slave-agent asks before every run_tool call.
   - The key is read from ONETOOLRING_API_KEY in the profile .env (or the plugin's settings form) and sent as a bearer header.
   - The tool set is served by the remote server at runtime and is not covered by the pinned sha.
 maintainer: khmuhtadin

@@ -7,12 +7,12 @@ from gateway.session import SessionSource, SessionStore
 
 
 def test_nonboundary_repoint_keeps_cwd_but_new_discards_it(tmp_path, monkeypatch):
-    import hermes_state
+    import slave_state
 
     def no_sqlite():
         raise RuntimeError("SQLite disabled in test")
 
-    monkeypatch.setattr(hermes_state, "SessionDB", no_sqlite)
+    monkeypatch.setattr(slave_state, "SessionDB", no_sqlite)
     with patch("gateway.session.SessionStore._ensure_loaded"):
         store = SessionStore(sessions_dir=tmp_path / "sessions", config=GatewayConfig())
     store._loaded = True

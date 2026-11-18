@@ -1,6 +1,6 @@
 """Test seams for the SQLite backend: the fixture hooks the contract suites call on the in-memory reference, given their SQLite meaning.
 
-``ContractSQLiteBackend`` serves any profile the suites name, each at its place under the suites' fake root mirrored under the test's HERMES_HOME, and attaches to every store handle it opens the seeding seams of the reference repositories: ``search.seed_session``, ``search.seed_message``, ``search.seed_deferred_rebuild``, ``usage.seed_session``, ``usage.set_session_archived``, ``sessions.seed_ledger_admission``, ``runtime.seed_local_receipt`` and ``runtime.seed_retirement``. Each seeds the rows main stores, through the contract verbs where one exists and otherwise through direct SQL on the store's holder. Every handle also carries the reference handle's ``owner_profile``, the profile the backend stamps as the store's owner. The seams that need the conversation family's store modules import them on first use. ``session_db(scope)`` is one profile's store holder (the suites' SQL reads), ``scope_store(scope)["sessions"][id]`` writes raw cells of one stored session row, the reference's row-dict seam, ``begin_epoch(scope, instance_id)`` begins an authority epoch with main's runtime epoch write, ``replace_store(scope)`` puts a copy of the store file at its path, and ``close_store_under(scope)`` force-closes the store under its handles as a profile delete's sweep does. ``root`` is the folder every served profile sits under, so a child process re-assembles the same backend with ``ContractSQLiteBackend({}, root=root)``. These are test plumbing; nothing here is product code.
+``ContractSQLiteBackend`` serves any profile the suites name, each at its place under the suites' fake root mirrored under the test's SLAVE_HOME, and attaches to every store handle it opens the seeding seams of the reference repositories: ``search.seed_session``, ``search.seed_message``, ``search.seed_deferred_rebuild``, ``usage.seed_session``, ``usage.set_session_archived``, ``sessions.seed_ledger_admission``, ``runtime.seed_local_receipt`` and ``runtime.seed_retirement``. Each seeds the rows main stores, through the contract verbs where one exists and otherwise through direct SQL on the store's holder. Every handle also carries the reference handle's ``owner_profile``, the profile the backend stamps as the store's owner. The seams that need the conversation family's store modules import them on first use. ``session_db(scope)`` is one profile's store holder (the suites' SQL reads), ``scope_store(scope)["sessions"][id]`` writes raw cells of one stored session row, the reference's row-dict seam, ``begin_epoch(scope, instance_id)`` begins an authority epoch with main's runtime epoch write, ``replace_store(scope)`` puts a copy of the store file at its path, and ``close_store_under(scope)`` force-closes the store under its handles as a profile delete's sweep does. ``root`` is the folder every served profile sits under, so a child process re-assembles the same backend with ``ContractSQLiteBackend({}, root=root)``. These are test plumbing; nothing here is product code.
 """
 
 from __future__ import annotations
@@ -219,11 +219,11 @@ class ContractSQLiteBackend(SQLiteBackend):
 
     def open(self, scope: ProfileScope) -> SQLiteStore:
         # SQLiteBackend has no public hook to serve one more profile, so this fixture class, and nothing else in the suite, registers the store path in its private map.
-        if scope.hermes_home_key not in self._stores:
+        if scope.slave_home_key not in self._stores:
             home = self.root / _contract_place(scope)
             home.mkdir(parents=True, exist_ok=True)
             with self._lock:
-                self._stores.setdefault(scope.hermes_home_key, home / "state.db")
+                self._stores.setdefault(scope.slave_home_key, home / "state.db")
         return _attach_seams(super().open(scope))
 
     def session_db(self, scope: ProfileScope) -> StoreHolder:
@@ -242,11 +242,11 @@ class ContractSQLiteBackend(SQLiteBackend):
         """Force-close ``scope``'s store under its open handles: ``persistence_assembly.close_stores_under`` on its home."""
         from persistence_assembly import close_stores_under
 
-        close_stores_under(self._stores[scope.hermes_home_key].parent)
+        close_stores_under(self._stores[scope.slave_home_key].parent)
 
     def replace_store(self, scope: ProfileScope) -> None:
         """Put a copy of ``scope``'s store file at its path, so the path no longer names the file its open handles opened."""
-        path = self._stores[scope.hermes_home_key]
+        path = self._stores[scope.slave_home_key]
         copy = path.with_name("replacement.db")
         shutil.copyfile(path, copy)
         os.replace(copy, path)

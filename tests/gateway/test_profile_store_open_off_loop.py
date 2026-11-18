@@ -15,7 +15,7 @@ from tests.gateway.test_session_authorities_multiplex import _reserve_homes, _ru
 async def test_secondary_store_opens_run_off_the_loop_in_their_own_scope(tmp_path, monkeypatch):
     from gateway.run_runtime import initialize_gateway_runtime
     from gateway.runtime_ownership import process_ownership
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from persistence_assembly import store_location
 
     root, homes = _reserve_homes(tmp_path, monkeypatch)
@@ -25,7 +25,7 @@ async def test_secondary_store_opens_run_off_the_loop_in_their_own_scope(tmp_pat
     real_open = getattr(registry, open_name)
 
     def spy(path):
-        opens.append((path.parent.resolve(), threading.get_ident(), get_hermes_home().resolve()))
+        opens.append((path.parent.resolve(), threading.get_ident(), get_slave_home().resolve()))
         return real_open(path)
 
     monkeypatch.setattr(registry, open_name, spy)

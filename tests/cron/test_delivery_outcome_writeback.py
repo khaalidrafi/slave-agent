@@ -15,7 +15,7 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 @pytest.mark.parametrize("drain_timing", ["after_run", "before_bookkeeping"])
 @pytest.mark.parametrize("transport_ok", [True, False], ids=["sent", "refused"])
 def test_drained_delivery_outcome_is_written_back(tmp_path, monkeypatch, transport_ok, drain_timing):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     config = GatewayConfig()
     config.platforms[Platform.TELEGRAM] = PlatformConfig(enabled=True)
     monkeypatch.setattr("gateway.config.load_gateway_config", lambda: config)

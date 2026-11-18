@@ -23,12 +23,12 @@ async def held(tmp_path, monkeypatch):
     from gateway.session import SessionStore
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
-    from hermes_cli import gateway_runtime
-    from hermes_cli.active_sessions import release_active_session, try_acquire_active_session
-    from hermes_cli.gateway_client import rpc_error
+    from slave_cli import gateway_runtime
+    from slave_cli.active_sessions import release_active_session, try_acquire_active_session
+    from slave_cli.gateway_client import rpc_error
     from tools import bot_live_delivery, bot_mode_dm
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     db = store.persistence
@@ -99,7 +99,7 @@ async def held(tmp_path, monkeypatch):
 async def _send(held, text):
     """``message_agent``'s local send: pin the intent, then call the owner's door."""
     from tools import bot_mode_dm
-    raw = await asyncio.to_thread(bot_mode_dm._start_delivery, ['hermes', '-p', 'default'], text, '@default',
+    raw = await asyncio.to_thread(bot_mode_dm._start_delivery, ['slave', '-p', 'default'], text, '@default',
                                   stdin_file=False, task_id=None, agent=None, profile_home=held.home)
     return json.loads(raw)
 
@@ -158,7 +158,7 @@ def _resubmit(held, delivery_id, text):
 
 def _runner(held, dm_file):
     from tools import bot_mode_dm
-    return bot_mode_dm._run_delivery(['hermes', '-p', 'default'], dm_file, stdin_file=False, profile_home=held.home)
+    return bot_mode_dm._run_delivery(['slave', '-p', 'default'], dm_file, stdin_file=False, profile_home=held.home)
 
 
 @pytest.mark.asyncio
@@ -243,7 +243,7 @@ async def test_a_retiring_or_retired_owner_refuses_settle_through_a_retained_con
     refused before it writes: receipt files carry no epoch and the mailbox lock is this authority's
     own, so nothing else keeps it from racing the home's next owner."""
     from gateway import run_runtime
-    from hermes_cli.gateway_client import GatewayRPCError
+    from slave_cli.gateway_client import GatewayRPCError
     from tools.bot_live_delivery import find_canonical_live_owner, read_delivery_result, settle_held_delivery
     owner = find_canonical_live_owner(held.home)
     held.authority.retiring = True
@@ -283,7 +283,7 @@ async def test_a_settle_refused_by_a_retired_owner_keeps_the_unknown_outcome(hel
 async def test_a_refusal_alone_leaves_the_id_open_for_a_same_id_retry(held):
     """Only the Bot DM tool's settle records a not-sent disposition. A producer that retries its
     queued record under the same id (the cron drain) after a held refusal still admits it once."""
-    from hermes_cli.gateway_client import GatewayRPCError
+    from slave_cli.gateway_client import GatewayRPCError
     delivery_id = 'c' * 64
     with pytest.raises(GatewayRPCError) as refused:
         await asyncio.to_thread(_resubmit, held, delivery_id, 'cron report')

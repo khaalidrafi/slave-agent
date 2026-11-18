@@ -240,7 +240,7 @@ def _resolve_workspace_hint(parent_agent) -> Optional[str]:
     subdirectory tracker's copy (resolved on this host, and the host process
     cwd when unset), and skip a directory the SSH cwd rewrite changes (the
     official image's ``/opt/data`` and its subprocess home exist only where
-    Hermes runs).
+    slave-agent runs).
     """
     from agent.runtime_cwd import scope_terminal_cwd
     from tools.terminal_scope import terminal_env

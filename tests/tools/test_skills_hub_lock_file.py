@@ -1,6 +1,6 @@
 """skills/.hub/lock.json and taps.json survive concurrent writers from different processes.
 
-The desktop/TUI skill install RPC and the CLI ``hermes skills install/uninstall`` rewrite the same
+The desktop/TUI skill install RPC and the CLI ``slave skills install/uninstall`` rewrite the same
 lock.json from different processes. An in-place rewrite left it empty between truncate and write
 (a torn read: the next ``record_install`` loaded ``EMPTY``); an unlocked load → mutate → save let
 the last writer put back the snapshot it loaded, dropping the provenance of every skill another

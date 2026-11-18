@@ -50,8 +50,8 @@ export function parseRichMarkup(markup: string): Line[] {
 // generator can see (its JS engine rewrites quoted regions), which is why this
 // file hand-writes the word instead of importing it: TypeScript cannot import
 // `brand.py`, and the fork's rule is that branding is generated, not hand-carried.
-// `hermes_cli/banner.py` renders the same plate from `brand.PRODUCT`.
-const BRAND_NAME = 'Hermes Agent'
+// `slave_cli/banner.py` renders the same plate from `brand.PRODUCT`.
+const BRAND_NAME = 'slave-agent'
 
 // ╔═╗/║/╚═╝ around the name, so the plate is one box the theme colours in rows.
 const nameplate = (name: string): string[] => {

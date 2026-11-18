@@ -64,13 +64,13 @@ class LongLivedProcessMixin:
             # the pid goes its start time (field 22 of /proc/<pid>/stat, the 20th after the last ``)``
             # since the command name may hold both; exec keeps it), so the stop never signals a process
             # that reused the pid. The fields are split inside ``$( )``, so ``"$@"`` stays the service's.
-            pidfile = f"{sandbox_temp_dir(self)}/hermes_llp_{uuid.uuid4().hex[:16]}.pid"  # type: ignore[arg-type]
+            pidfile = f"{sandbox_temp_dir(self)}/slave_llp_{uuid.uuid4().hex[:16]}.pid"  # type: ignore[arg-type]
             record = ("echo $$ $({ read -r s < /proc/$$/stat; } 2>/dev/null; s=${s##*\\)}; set -- $s; echo \"${20:-}\")"
                       f" > {shlex.quote(pidfile)} 2>/dev/null")
             wrapper = ["/bin/sh", "-c", f"{record}; exec \"$@\"", "sh", *(str(word) for word in argv)]
             exports = {key: str(value) for key, value in (child_env or {}).items()}
             proc = open_stream(self, wrapper, child_env=exports)  # type: ignore[arg-type]
-            proc._hermes_remote_pidfile = pidfile  # type: ignore[attr-defined]  # teardown metadata, not a pipe
+            proc._slave_remote_pidfile = pidfile  # type: ignore[attr-defined]  # teardown metadata, not a pipe
             return proc
         except RuntimeError as exc:
             raise NotImplementedError(str(exc)) from exc
@@ -134,7 +134,7 @@ class LongLivedProcessMixin:
         (a sandbox with no /proc) is signalled as is. Only a plain decimal pid above 1 is ever signalled
         (never a group, 0 or init). POSIX sh: it runs in the backend's shell, with errexit turned off
         so a ``set -e`` there cannot skip the pidfile's removal."""
-        pidfile = getattr(proc, "_hermes_remote_pidfile", None)
+        pidfile = getattr(proc, "_slave_remote_pidfile", None)
         execute = getattr(self, "execute", None)
         if pidfile is None or not callable(execute):
             return
@@ -160,7 +160,7 @@ class LongLivedProcessMixin:
         service (pid recorded in the sandbox at spawn) is stopped there first: the local client's
         death need not stop it."""
         self._stop_remote_service(proc, scope)
-        owned_pgid = getattr(proc, "_hermes_owned_pgid", None)
+        owned_pgid = getattr(proc, "_slave_owned_pgid", None)
         if proc.poll() is None or owned_pgid is not None:
             self._kill_process(proc)  # type: ignore[attr-defined]  # signals the group even with the leader gone
         try:
@@ -174,8 +174,8 @@ class LongLivedProcessMixin:
                     pipe.close()
         if owned_pgid is not None:
             # A host-owned group (``spawn_owned``): stopped, so the owner-death supervisor stops covering it
-            # once it is empty (a member that survived both signals stays covered and dies with Hermes).
-            from hermes_cli.process_identity import release_process_group_once_empty
+            # once it is empty (a member that survived both signals stays covered and dies with Slave).
+            from slave_cli.process_identity import release_process_group_once_empty
             release_process_group_once_empty(owned_pgid, proc=proc)
 
     @staticmethod

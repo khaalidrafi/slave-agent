@@ -1,4 +1,4 @@
-"""Windows: every spelling of a protected Hermes path is denied, not just the plain one (#154282).
+"""Windows: every spelling of a protected slave-agent path is denied, not just the plain one (#154282).
 
 ``\\\\?\\C:\\...`` and the local machine's administrative share (``\\\\localhost\\C$\\...``,
 ``\\\\127.0.0.1\\C$\\...``, ``\\\\<this computer>\\C$\\...``) open the same file as ``C:\\...``; the
@@ -37,13 +37,13 @@ def _spellings(path: str) -> dict[str, str]:
 
 @pytest.fixture
 def home(tmp_path):
-    home = tmp_path.resolve() / "hermes"
+    home = tmp_path.resolve() / "slave"
     for rel in ("mcp-tokens/server/token.json", "vault/vault.key", "auth.json"):
         target = home / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps({"secret": "DUMMY"}), encoding="utf-8")
-    with patch.object(fs, "_hermes_home_path", return_value=home), \
-            patch.object(fs, "_hermes_root_path", return_value=home):
+    with patch.object(fs, "_slave_home_path", return_value=home), \
+            patch.object(fs, "_slave_root_path", return_value=home):
         yield home
 
 

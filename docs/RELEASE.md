@@ -32,7 +32,7 @@ rule stays the canonical one.)
 ## The lean-vs-compat token table
 
 "Lighter" as a number, generated from the overlay itself
-(`hermes_cli/lean_defaults.py`, 2026-11-17 — the table is the code's
+(`slave_cli/lean_defaults.py`, 2026-11-17 — the table is the code's
 answer, so it cannot drift from the code):
 
 | knob | upstream default | lean default |
@@ -54,7 +54,7 @@ What that buys, per turn, in the worst case where every cap binds:
 - MCP config changes no longer trigger an automatic reload cycle.
 
 Every knob reverts with `slave_compat: true` (the overlay's single
-switch; `hermes_compat` still reads as the old spelling). Live-run
+switch; `slave_compat` still reads as the old spelling). Live-run
 means (tokens per real conversation, both modes) land with the first
 release's soak, recorded here; the caps above are the structural
 guarantee, not a measurement claim.

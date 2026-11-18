@@ -160,7 +160,7 @@ async def _get_me_through_adapter(edge: _HelloSizeEdge, monkeypatch, extra: dict
     for key in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy", "TELEGRAM_PROXY"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("SSL_CERT_FILE", str(edge.cert_path))  # trusted on top of the platform store
-    monkeypatch.setenv("HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT", "3")
+    monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_CONNECT_TIMEOUT", "3")
     base_url = f"https://127.0.0.1:{edge.port}/bot"
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="123:abc", extra={
         "base_url": base_url, "base_file_url": f"https://127.0.0.1:{edge.port}/file/bot",

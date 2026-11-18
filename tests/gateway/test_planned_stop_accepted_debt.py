@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from gateway import status
-from hermes_cli import update_pause_record as pause_record
+from slave_cli import update_pause_record as pause_record
 
 pytestmark = [
     pytest.mark.skipif(sys.platform == "win32", reason="POSIX modes stand in for Windows refusals"),
@@ -29,7 +29,7 @@ pytestmark = [
 def _home(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
     root, home = tmp_path / "root", tmp_path / "root" / "profiles" / "p"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     return root, home
 
 
@@ -101,7 +101,7 @@ def test_accepted_stop_evidence_is_removed_once_its_pause_is_settled_and_never_b
 
 
 def test_with_no_pause_on_disk_the_consumer_never_waits_on_the_pause_lock(tmp_path, monkeypatch):
-    """No pause record (every non-Windows host, or a settled pause): a plain ``hermes gateway stop`` is
+    """No pause record (every non-Windows host, or a settled pause): a plain ``slave gateway stop`` is
     consumed without the pause lock, so another holder costs it no wait and leaves no request or
     ``.accepted`` receipt behind."""
     _home(tmp_path, monkeypatch)

@@ -9,13 +9,13 @@ process under ``host`` exactly as under ``in_process``. Keeping hooks out of the
 import sys
 from unittest.mock import patch
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from gateway.hooks import HookRegistry
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
-MODULE = "hermes_hook_isoprobe"
+MODULE = "slave_hook_isoprobe"
 # Module body records whether it ran registered in sys.modules (forward references need that).
 HANDLER = (
     "import sys\n"
@@ -29,7 +29,7 @@ HANDLER = (
 @pytest.mark.asyncio
 @pytest.mark.parametrize("isolation", ["host", "in_process"])
 async def test_user_hook_handler_loads_in_the_gateway_under_every_isolation_mode(tmp_path, isolation):
-    (get_hermes_home() / "config.yaml").write_text(
+    (get_slave_home() / "config.yaml").write_text(
         yaml.safe_dump({"plugins": {"isolation": isolation}}), encoding="utf-8")
     hook_dir = tmp_path / "hooks" / "isoprobe"
     hook_dir.mkdir(parents=True)

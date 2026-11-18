@@ -29,7 +29,7 @@ def test_a_profile_sweep_during_a_lease_write_never_deadlocks_it(backend, scope_
     store.sessions.create(NewSession(session_id=sid, source="cli"))
     assert store.coordination.try_acquire_turn_lease(session_id=sid, holder="h", ttl_seconds=300.0)
     holder = store.holder()
-    home = backend._stores[scope_a.hermes_home_key].parent
+    home = backend._stores[scope_a.slave_home_key].parent
     swept = threading.Event()
     real_write = holder._execute_write
 

@@ -15,9 +15,9 @@
   (rc.<N>-vX.Y.Z) for the next patch version, builds with it, and deletes it
   when the build ends. It never pushes the tag. Each architecture builds on its
   own native host. The script prints the claim tag's timestamp as
-  HERMES_RELEASE_EPOCH. To combine the x64 and arm64 Store packages, copy both
+  SLAVE_RELEASE_EPOCH. To combine the x64 and arm64 Store packages, copy both
   Store-*.msix files into one apps\desktop\release, set the same
-  HERMES_RELEASE_EPOCH on that host, and run
+  SLAVE_RELEASE_EPOCH on that host, and run
   node scripts\bundle-store-msixbundle.mjs --tag vX.Y.Z.
   Both hosts must use the epoch from ONE claim, or the package versions differ.
 
@@ -113,8 +113,8 @@ if ($Repo.Length -gt 40) {
 
 # Release settings and signing credentials exist only for this build. Save the caller's
 # values and put them back, so a later direct build command sees an untouched session.
-$buildVariables = @('PYTHONUTF8', 'RELEASE_CLAIM_TAG', 'RELEASE_CLAIM_OBJECT', 'HERMES_PAYLOAD_TAG',
-  'HERMES_PAYLOAD_VERSION', 'HERMES_DESKTOP_VARIANT') +
+$buildVariables = @('PYTHONUTF8', 'RELEASE_CLAIM_TAG', 'RELEASE_CLAIM_OBJECT', 'SLAVE_PAYLOAD_TAG',
+  'SLAVE_PAYLOAD_VERSION', 'SLAVE_DESKTOP_VARIANT') +
   @(Get-ChildItem Env: | Where-Object { $_.Name -like 'AZURE_*' } | ForEach-Object { $_.Name })
 $savedEnvironment = @{}
 foreach ($name in $buildVariables) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
@@ -126,7 +126,7 @@ try {
     $version = Get-ClaimVersion
     $claim = "rc.$(Get-ClaimAttempt $version)-v$version"
     # Pass -c for identity and signing so a machine without a git identity, or with signed tags on, still works.
-    & git -c user.name=hermes-local-build -c user.email=local-build@invalid -c tag.gpgSign=false `
+    & git -c user.name=slave-local-build -c user.email=local-build@invalid -c tag.gpgSign=false `
       tag -a $claim -m 'local build claim' $sha
     if ($LASTEXITCODE) { Fail "could not create claim tag $claim" }
     $claimObject = @(Git-Lines rev-parse "refs/tags/$claim")[0]
@@ -136,9 +136,9 @@ try {
     $claimEpoch = [int64]$Matches[1]
     $env:RELEASE_CLAIM_TAG = $claim
     $env:RELEASE_CLAIM_OBJECT = $claimObject
-    $env:HERMES_PAYLOAD_TAG = "v$version"
-    $env:HERMES_PAYLOAD_VERSION = $version
-    $env:HERMES_DESKTOP_VARIANT = 'bundled'
+    $env:SLAVE_PAYLOAD_TAG = "v$version"
+    $env:SLAVE_PAYLOAD_VERSION = $version
+    $env:SLAVE_DESKTOP_VARIANT = 'bundled'
     Write-Host "build-bundle: building $sha as Store v$version (local claim $claim)"
     # Prepare as bundled, then package as store from that preparation, as CI does.
     $work = Join-Path $Repo '.build\desktop-job'
@@ -164,7 +164,7 @@ try {
 
 Write-Host "build-bundle: done. Unsigned packages in $Repo\apps\desktop\release:"
 if ($Store) {
-  Write-Host "build-bundle: claim timestamp for combining architectures: HERMES_RELEASE_EPOCH=$claimEpoch (version v$version)"
+  Write-Host "build-bundle: claim timestamp for combining architectures: SLAVE_RELEASE_EPOCH=$claimEpoch (version v$version)"
 }
 Get-ChildItem (Join-Path $Repo 'apps\desktop\release') -Filter '*.msix*' |
   ForEach-Object { '  {0}  {1:N0} MB' -f $_.Name, ($_.Length / 1MB) }

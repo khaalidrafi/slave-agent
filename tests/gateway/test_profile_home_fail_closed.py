@@ -1,6 +1,6 @@
 """A multiplexed gateway refuses a source naming a profile it does not serve (#154610).
 
-Real profile predicates under a temporary HERMES_HOME: an explicit ``source.profile`` (webhook
+Real profile predicates under a temporary SLAVE_HOME: an explicit ``source.profile`` (webhook
 prefix, goal wakeup, local recovery, API notification) or a route that names a missing, parked or
 invalid profile must never resolve to the launch profile's home.
 """
@@ -17,7 +17,7 @@ from gateway.session_identity import identity_of, restore_identity, resolve_iden
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".slave"
     served = default_home / "profiles" / "served"
     parked = default_home / "profiles" / "parked"
     for home in (served, parked):
@@ -25,7 +25,7 @@ def homes(tmp_path, monkeypatch):
         (home / "config.yaml").write_text("{}\n", encoding="utf-8")
     (parked / "gateway.parked").write_text("", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("SLAVE_HOME", str(default_home))
     return default_home, served, parked
 
 
@@ -44,7 +44,7 @@ def _src(profile=None):
 
 
 def test_parked_fixture_is_installed_but_not_served(homes):
-    from hermes_cli.profiles import profile_exists, profiles_to_serve
+    from slave_cli.profiles import profile_exists, profiles_to_serve
     assert profile_exists("parked")
     assert "parked" not in {name for name, _ in profiles_to_serve(True)}
 

@@ -4,8 +4,8 @@ import os
 
 from agent import kanban_turn_recovery as rec
 from gateway import session_kanban
-from hermes_cli import kanban_db as kb
-from hermes_cli.kanban_db_connect import connect_closing
+from slave_cli import kanban_db as kb
+from slave_cli.kanban_db_connect import connect_closing
 
 FAILED = {"failed": True, "failure_retryable": True, "failure_reason": "timeout",
           "error": "stream died", "messages": [{"role": "user", "content": "first"}]}
@@ -28,11 +28,11 @@ class _Agent:
 
 
 def _claimed_frame(tmp_path, monkeypatch, *, expired=False, goal_mode=False):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_KANBAN_TURN_RECOVERY", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.delenv("SLAVE_KANBAN_TURN_RECOVERY", raising=False)
     # The owner/gateway process carries a FOREIGN (stale) env carrier: the proof must ignore it.
-    for key, value in (("HERMES_KANBAN_TASK", "t_foreign"), ("HERMES_KANBAN_DB", str(tmp_path / "nope.db")),
-                       ("HERMES_KANBAN_RUN_ID", "999"), ("HERMES_KANBAN_CLAIM_LOCK", "foreign")):
+    for key, value in (("SLAVE_KANBAN_TASK", "t_foreign"), ("SLAVE_KANBAN_DB", str(tmp_path / "nope.db")),
+                       ("SLAVE_KANBAN_RUN_ID", "999"), ("SLAVE_KANBAN_CLAIM_LOCK", "foreign")):
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(rec, "RECOVERY_DELAYS_SECONDS", (0.0,))
     monkeypatch.setattr("agent.skill_commands.build_preloaded_skills_prompt", lambda *a, **k: ("", [], []))
@@ -71,7 +71,7 @@ def test_failed_turn_retries_in_place_from_frame_carrier(tmp_path, monkeypatch):
 def test_unprovable_claim_denies_retry_and_goal_continuation(tmp_path, monkeypatch):
     path, context, frame = _claimed_frame(tmp_path, monkeypatch, expired=True, goal_mode=True)
     goal_calls = []
-    monkeypatch.setattr("hermes_cli.goals.run_kanban_goal_loop", lambda **kw: goal_calls.append(kw))
+    monkeypatch.setattr("slave_cli.goals.run_kanban_goal_loop", lambda **kw: goal_calls.append(kw))
     agent = _Agent([dict(FAILED)])
 
     result = session_kanban.run_worker_turns(agent, frame, [])

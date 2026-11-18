@@ -31,7 +31,7 @@ THREE_DAYS_S = 3 * 86400
 def _home(tmp_path, monkeypatch):
     """One scratch home per test: state.db at the root, spillover under cache/ — the same
     layout ``referenced_spillover_names`` derives from the spill dir."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     import tools.tool_result_storage as trs
     monkeypatch.setattr(trs, "_spillover_pruned_homes", set())
     return tmp_path
@@ -218,7 +218,7 @@ def test_nonfinite_retention_falls_back_and_still_sweeps(_home):
     """YAML ``.inf`` / ``.nan`` used to raise out of ``_spillover_retention_hours`` after the
     once-per-home flag was set — every later sweep silently skipped. Fallback cleanup must
     actually remove a stale file."""
-    import hermes_yaml as yaml  # the repo's YAML seam; PyYAML is not a pinned test dep
+    import slave_yaml as yaml  # the repo's YAML seam; PyYAML is not a pinned test dep
 
     with (_home / "config.yaml").open("w", encoding="utf-8") as fh:
         yaml.safe_dump({"sessions": {"retention_days": float("inf")}}, fh)

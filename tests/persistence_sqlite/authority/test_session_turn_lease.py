@@ -426,7 +426,7 @@ def test_acquire_turn_lease_retries_sqlite_lock(store, monkeypatch):
     create_session(db, "shared", "test")
     holder = f"pid={os.getpid()}:turn=waiter"
     attempts = _fail_first_writes(monkeypatch, db, sqlite3.OperationalError(
-        "database is locked (another Hermes process held the "
+        "database is locked (another slave-agent process held the "
         "state.db write lock for over 20s)"
     ))
     notices, contended = [], []

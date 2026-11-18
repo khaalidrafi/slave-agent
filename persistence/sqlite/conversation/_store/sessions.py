@@ -28,7 +28,7 @@ from persistence.sqlite.conversation._store.portability import _compact_session_
 from persistence.sqlite.conversation._store.write_guards import _guarded_ids
 
 
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 
 def _delegate_from_json(col: str = "model_config") -> str:
@@ -327,8 +327,8 @@ def _own_profile_name(holder: StoreHolder) -> Optional[str]:
     ``<root>/profiles/<name>/state.db`` → name): a gateway serving a NON-launch profile opens that
     profile's store. None outside the profile tree — NULL beats a fabricated owner."""
     try:
-        from hermes_constants import get_default_hermes_root
-        root = get_default_hermes_root().resolve()
+        from slave_constants import get_default_slave_root
+        root = get_default_slave_root().resolve()
         parent = Path(holder.db_path).resolve().parent
         if parent == root:
             return "default"
@@ -1278,7 +1278,7 @@ def list_sessions_rich(
     ``include_pinned`` back-fills pins the page missed, still obeying the other
     filters except archived: a pin is an explicit keep, so a pinned row stamped
     archived must still return. ``local_created_sources`` restricts ``source='local'``
-    rows to those surfaces before LIMIT/OFFSET. ``workspace_key``: the ``hermes -c`` folder rule."""
+    rows to those surfaces before LIMIT/OFFSET. ``workspace_key``: the ``slave -c`` folder rule."""
     holder.flush_for_read()  # rows carry token/cost totals
     where_clauses, params = _session_filter_where(
         exclude_children=not include_children, source=source, sources=sources, session_key=session_key,
@@ -1295,7 +1295,7 @@ def list_sessions_rich(
     heads = {}
     from persistence.sqlite.conversation._store.local import exclude_superseded_segments
     if not include_children:
-        # A local reset lineage is one conversation (hermes_state_local.local_lineage_index):
+        # A local reset lineage is one conversation (slave_state_local.local_lineage_index):
         # earlier segments leave the page in SQL, before LIMIT/OFFSET, not after it.
         heads = exclude_superseded_segments(holder, where_clauses, params)
     where_sql = _where_sql(where_clauses)
@@ -1512,7 +1512,7 @@ def search_sessions(
     skip_launch_stubs: bool = False,
 ) -> list[dict[str, Any]]:
     """Sessions MRU-first with a computed ``last_active``; ``workspace_key`` scopes to one workspace
-    so ``hermes -c``/``--resume`` picks its last session. ``source`` may be one label or several.
+    so ``slave -c``/``--resume`` picks its last session. ``source`` may be one label or several.
     ``local_created_sources`` restricts ``source='local'`` rows before LIMIT/OFFSET, and
     ``skip_launch_stubs`` drops empty launch stubs (launch_stub_filter_sql) before it too."""
     where_clauses = [launch_stub_filter_sql(holder)] if skip_launch_stubs else []

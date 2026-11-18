@@ -14,7 +14,7 @@ import ast
 import re
 from pathlib import Path
 
-import hermes_yaml
+import slave_yaml
 
 from scripts.releases.desktop_targets import TARGETS
 from scripts.releases.job_groups import JOB_GROUPS
@@ -35,7 +35,7 @@ _MODE_BY_CACHE = {"write": "release", "read": "commit"}
 
 
 def load(path: Path = WORKFLOW) -> dict:
-    return hermes_yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    return slave_yaml.safe_load(path.read_text(encoding="utf-8-sig"))
 
 
 def needs_of(job: dict) -> list[str]:

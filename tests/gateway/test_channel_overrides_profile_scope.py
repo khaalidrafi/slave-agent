@@ -23,10 +23,10 @@ from gateway.session_identity import RoutingIdentity
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     b2 = launch / "profiles" / "b2"
     b2.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     route = {"provider": "custom", "base_url": "http://127.0.0.1:9/v1"}
     (launch / "config.yaml").write_text(json.dumps({

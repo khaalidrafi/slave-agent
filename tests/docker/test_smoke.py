@@ -15,7 +15,7 @@ from __future__ import annotations
 import subprocess
 
 
-def test_hermes_help(built_image: str) -> None:
+def test_slave_help(built_image: str) -> None:
     """``docker run --rm <image> --help`` must exit 0.
 
     Uses the image's real ENTRYPOINT (``/init`` + ``main-wrapper.sh``)
@@ -31,11 +31,11 @@ def test_hermes_help(built_image: str) -> None:
         check=False,
     )
     assert r.returncode == 0, (
-        f"hermes --help failed (exit {r.returncode}): "
+        f"slave --help failed (exit {r.returncode}): "
         f"stdout={r.stdout[-2000:]!r} stderr={r.stderr[-2000:]!r}"
     )
     assert "Traceback" not in r.stderr, (
-        f"hermes --help produced a traceback: {r.stderr[-2000:]!r}"
+        f"slave --help produced a traceback: {r.stderr[-2000:]!r}"
     )
 
 
@@ -53,7 +53,7 @@ def test_dashboard_subcommand_present(built_image: str) -> None:
         check=False,
     )
     assert r.returncode == 0, (
-        f"hermes dashboard --help failed (exit {r.returncode}): "
+        f"slave dashboard --help failed (exit {r.returncode}): "
         f"stdout={r.stdout[-2000:]!r} stderr={r.stderr[-2000:]!r}"
     )
     combined = (r.stdout + r.stderr).lower()
@@ -62,7 +62,7 @@ def test_dashboard_subcommand_present(built_image: str) -> None:
     )
 
 
-def test_hermes_help_under_wrapped_init(built_image: str) -> None:
+def test_slave_help_under_wrapped_init(built_image: str) -> None:
     """``docker run --init --rm <image> --help`` must exit 0.
 
     Regression guard for #38349: platforms whose own init owns PID 1
@@ -82,9 +82,9 @@ def test_hermes_help_under_wrapped_init(built_image: str) -> None:
         f"stderr={r.stderr[-2000:]!r}"
     )
     assert r.returncode == 0, (
-        f"hermes --help failed under `docker run --init` (exit {r.returncode}): "
+        f"slave --help failed under `docker run --init` (exit {r.returncode}): "
         f"stdout={r.stdout[-2000:]!r} stderr={r.stderr[-2000:]!r}"
     )
     assert "Traceback" not in r.stderr, (
-        f"hermes --help produced a traceback under --init: {r.stderr[-2000:]!r}"
+        f"slave --help produced a traceback under --init: {r.stderr[-2000:]!r}"
     )

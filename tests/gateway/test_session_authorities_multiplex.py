@@ -10,10 +10,10 @@ from persistence_assembly import close_stores_under, store_location
 
 
 def _reserve_homes(tmp_path, monkeypatch, names=('alpha', 'beta')):
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.slave'
     root.mkdir(mode=0o700)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     homes = [('default', root)]
     for name in names:
         home = root / 'profiles' / name
@@ -37,7 +37,7 @@ def _runner(root, homes):
 async def test_multiplex_builds_one_authority_per_reserved_home(tmp_path, monkeypatch):
     from gateway.run_runtime import initialize_gateway_runtime
     from gateway.runtime_ownership import process_ownership
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     root, homes = _reserve_homes(tmp_path, monkeypatch)
     process_ownership.reserve([home for _, home in homes])
     try:
@@ -52,7 +52,7 @@ async def test_multiplex_builds_one_authority_per_reserved_home(tmp_path, monkey
             assert authority is not None
             assert Path(store_location(authority.persistence.scope)).resolve().parent == home.resolve()
             assert (home / 'state.db').exists()
-        epochs = {hermes_home_key(h): registry.for_home(h).epoch for _, h in homes}
+        epochs = {slave_home_key(h): registry.for_home(h).epoch for _, h in homes}
         assert all(epoch >= 1 for epoch in epochs.values())
         # Descriptor + ticket store carry the whole served set.
         served = {entry['home'] for entry in runner.session_runtime_descriptor['served_profiles']}

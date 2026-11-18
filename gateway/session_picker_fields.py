@@ -1,7 +1,7 @@
 """What a session picker shows for each ``session.list`` row (``picker: true``), and the folder filter (#150091).
 
 Location (``cwd``, ``workspace``) comes from the conversation's first row: the row ``workspace`` filters
-by (the listing filters root rows, as ``hermes -c`` does), and the row a workspace move rewrites with every
+by (the listing filters root rows, as ``slave -c`` does), and the row a workspace move rewrites with every
 other one. The rest comes from its current segment (a local receipt's entry, else the compression tip), as
 the listing projects a compressed chain onto its tip: the first prompt there (``preview``), its branch,
 pin, newest activity and newest reply. The stored feed passes the listing entry it already read; the live
@@ -17,7 +17,7 @@ from gateway.session_persistence import authority_persistence
 
 def workspace_members(store, session_ids, workspace):
     """The ids among *session_ids* whose row is in *workspace* (``sessions.sessions_in_workspace``: the rule
-    the listing filters the stored feed by, ``hermes -c``'s)."""
+    the listing filters the stored feed by, ``slave -c``'s)."""
     return store.sessions.sessions_in_workspace(session_ids, workspace)
 
 

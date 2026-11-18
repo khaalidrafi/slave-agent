@@ -32,7 +32,7 @@ def test_renewed_local_member_turn_defers_when_its_owner_socket_disappears(
     source.mkdir(mode=0o700)
     target.mkdir(mode=0o700, parents=True)
     target_authority.profile_id = str(target)
-    monkeypatch.setenv('HERMES_HOME', str(source))
+    monkeypatch.setenv('SLAVE_HOME', str(source))
     config = run._load_gateway_config()
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {
         **config, 'hosted_rooms': {'profiles': {'other': str(target)}}})

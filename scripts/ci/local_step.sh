@@ -16,8 +16,8 @@ set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=scripts/_activation.sh
 . "$repo/scripts/_activation.sh"
-python="$(hermes_bootstrap_python "$repo")" || {
-    echo "no bootstrap Python found; run setup-hermes.sh" >&2
+python="$(slave_bootstrap_python "$repo")" || {
+    echo "no bootstrap Python found; run setup-slave.sh" >&2
     exit 1
 }
 bin="${python%[/\\]*}"
@@ -32,9 +32,9 @@ git rev-parse -q --verify origin/main >/dev/null || {
     exit 1
 }
 # No merge base: check_common_ancestor.py fails and says why; the scans then diff nothing.
-_HERMES_PR_BASE_SHA="$(git merge-base origin/main HEAD || :)"
-_HERMES_PR_HEAD_SHA="$(git rev-parse HEAD)"
-export _HERMES_PR_BASE_SHA _HERMES_PR_HEAD_SHA
+_SLAVE_PR_BASE_SHA="$(git merge-base origin/main HEAD || :)"
+_SLAVE_PR_HEAD_SHA="$(git rev-parse HEAD)"
+export _SLAVE_PR_BASE_SHA _SLAVE_PR_HEAD_SHA
 
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT

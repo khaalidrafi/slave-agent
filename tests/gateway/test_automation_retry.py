@@ -26,8 +26,8 @@ async def test_coalesced_siblings_survive_lost_ack_and_owner_restart(tmp_path, m
     source = adapter.build_source(chat_id='42', chat_type='dm', user_id='42')
     monkeypatch.setenv('DISCORD_ALLOWED_USERS', '42')
     human = MessageEvent(text='human', source=source, message_id='human')
-    from hermes_constants import get_hermes_home
-    with native_callback(runner, human, get_hermes_home()):
+    from slave_constants import get_slave_home
+    with native_callback(runner, human, get_slave_home()):
         await authority.admit_native(human)
     key = runner.session_store._generate_session_key(source)
     sid = runner.session_store.peek_session_id(key)
@@ -62,7 +62,7 @@ async def test_unowned_completion_refunds_every_sibling_without_consuming_budget
     from gateway.run import GatewayRunner
     from gateway.session_authority import initialize_session_authority, SessionAuthority
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.fixtures.storage_seed import seed_session
     from tests.gateway.test_completion_admission import pending
     from plugins.platforms.discord.adapter import DiscordAdapter
@@ -77,7 +77,7 @@ async def test_unowned_completion_refunds_every_sibling_without_consuming_budget
     runner._wire_adapter_handlers(adapter)
     source = adapter.build_source(chat_id='42', chat_type='dm', user_id='42')
     event = MessageEvent(text='human', source=source, message_id='human')
-    with native_callback(runner, event, get_hermes_home()):
+    with native_callback(runner, event, get_slave_home()):
         await authority.admit_native(event)
     key = runner.session_store._generate_session_key(source)
     sid = runner.session_store.peek_session_id(key)

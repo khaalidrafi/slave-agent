@@ -100,8 +100,8 @@ async def probe(release, started):
     from gateway.run import GatewayRunner
     from gateway.run_api import start_gateway_api, stop_gateway_api
     from gateway.session_authority import initialize_session_authority
-    from hermes_cli import web_server
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from slave_cli import web_server
+    from slave_cli.dashboard_auth.ws_tickets import mint_ticket
 
     runner = GatewayRunner()
     await initialize_session_authority(runner, profile_id='fixture', instance_id='subagent-live')
@@ -150,11 +150,11 @@ async def probe(release, started):
         for v in viewers:
             await v.ws.close()
         await stop_gateway_api(api)
-    Path(os.environ['HERMES_HOME'], 'receipt.json').write_text(json.dumps(receipt))
+    Path(os.environ['SLAVE_HOME'], 'receipt.json').write_text(json.dumps(receipt))
 
 
 def main():
-    home = Path(os.environ['HERMES_HOME'])
+    home = Path(os.environ['SLAVE_HOME'])
     release, started = home / 'release', home / 'leaf-started'
     peer = ThreadingHTTPServer(('127.0.0.1', 0), Peer)
     peer.command = (f'touch {shlex.quote(str(started))}; '

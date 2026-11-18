@@ -22,7 +22,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agent.runtime_scope import bind_state
-from hermes_scope import Principal, Scope
+from slave_scope import Principal, Scope
 from tests.tools.test_sandbox_scope_conformance import A, B
 from tests.tools.test_sandbox_scope_conformance import provider as _conformance_provider
 from tools.environments import sandbox_conformance as c
@@ -31,10 +31,10 @@ from tools.environments.sandbox_scope import sandbox_identity
 provider = _conformance_provider  # the recording-sandbox fixture, by its name
 
 def _local_scope() -> Scope:
-    """The local install's scope, homed at the test's HERMES_HOME (a relative agent path would
+    """The local install's scope, homed at the test's SLAVE_HOME (a relative agent path would
     make ``bind_state`` stamp a home under the working directory)."""
-    from hermes_constants import get_hermes_home
-    return Scope("local", str(get_hermes_home()), Principal("local"))
+    from slave_constants import get_slave_home
+    return Scope("local", str(get_slave_home()), Principal("local"))
 
 
 def _png() -> bytes:
@@ -118,7 +118,7 @@ def _make_agent(tmp_path: Path):
         patch("model_tools.get_tool_definitions", return_value=[]),
         patch("model_tools.check_toolset_requirements", return_value={}),
         patch("agent.process_bootstrap.OpenAI"),
-        patch("run_agent._hermes_home", tmp_path),
+        patch("run_agent._slave_home", tmp_path),
         patch("agent.model_metadata.fetch_model_metadata", return_value={}),
     ):
         agent = AIAgent(api_key="test-key", base_url="https://openrouter.ai/api/v1", quiet_mode=True,
@@ -258,11 +258,11 @@ def test_the_memory_store_itself_never_touches_the_host_file_in_a_hosted_scope()
 
 
 def test_session_search_reads_no_host_history():
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_messages, seed_session
     from tools.registry import registry
-    db = open_persistence(profile_scope(home=get_hermes_home()))
+    db = open_persistence(profile_scope(home=get_slave_home()))
     seed_session(db, "private-host-history", "cli")
     seed_messages(db, "private-host-history", {"role": "user", "content": "HOST-HISTORY-PRIVATE"})
     try:
@@ -286,7 +286,7 @@ def test_recall_never_opens_the_profile_state_db(monkeypatch):
 
 def test_web_extract_never_spills_to_host(provider, monkeypatch):
     import tools.web_tools as web
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.registry import registry
 
     async def safe(url):
@@ -301,7 +301,7 @@ def test_web_extract_never_spills_to_host(provider, monkeypatch):
     monkeypatch.setattr(web, "_extract_safe_urls", extract)
     with bind_state(A):
         result = registry.dispatch("web_extract", {"urls": ["https://example.org/round2-private"], "char_limit": 2000})
-    paths = list((get_hermes_home() / "cache" / "web").glob("*.md"))
+    paths = list((get_slave_home() / "cache" / "web").glob("*.md"))
     leaked = [str(p) for p in paths if "WEB-TENANT-CONTENT" in p.read_text()]
     assert not leaked, f"host web spill {leaked}; response={result[-500:]}"
     assert "not available to a hosted agent" in result
@@ -337,9 +337,9 @@ def test_video_is_not_materialized_on_host():
 
 def test_startup_context_reads_no_host_file(tmp_path, monkeypatch):
     from agent.prompt_builder import build_context_files_prompt, load_soul_md
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     (tmp_path / "AGENTS.md").write_text("HOST-STARTUP-PRIVATE")
-    (get_hermes_home() / "SOUL.md").write_text("HOST-SOUL-PRIVATE")
+    (get_slave_home() / "SOUL.md").write_text("HOST-SOUL-PRIVATE")
     with c._watch_host(tmp_path) as touched, bind_state(A):
         assert build_context_files_prompt(cwd=str(tmp_path), skip_soul=False) == ""
         assert load_soul_md() is None

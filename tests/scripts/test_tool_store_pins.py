@@ -2,7 +2,7 @@
 
 A store whose facts match the checkout's pins must still not be shared when
 running from it would write to it: a missing or non-executable binary sends
-setup-hermes.sh (uv) or `pm install` into an unlocked re-stage, and an env that
+setup-slave.sh (uv) or `pm install` into an unlocked re-stage, and an env that
 differs from what this checkout's package code records makes `pm install`
 re-record the shared facts.json.
 """
@@ -32,9 +32,9 @@ def _executable(path: Path) -> Path:
 
 def _matching_store(store: Path) -> Path:
     """A store recording every walked tool at the lock's pins with the env PM
-    would record, each entry holding an executable binary, plus setup-hermes.sh's
+    would record, each entry holding an executable binary, plus setup-slave.sh's
     own uv copy. PM's entries are named so none is the setup path, which keeps
-    the two uv checks apart. Returns setup-hermes.sh's uv path."""
+    the two uv checks apart. Returns setup-slave.sh's uv path."""
     lock = Lockfile(ROOT / "pm" / "lock.json")
     names, target = lock.names(), current_target()
     facts = Facts(store / "facts.json")
@@ -48,7 +48,7 @@ def _matching_store(store: Path) -> Path:
         _executable(binary if binary is not None else entry / "chrome")  # chromium's is discovered
         facts.record(package.name, version, entry.name, package.env(entry, target), store,
                      target=target, artifacts=[a["sha256"] for a in lock.artifacts(package.name, target)])
-    # setup-hermes.sh: entry="$store/uv-$uv_version-$os-$arch"
+    # setup-slave.sh: entry="$store/uv-$uv_version-$os-$arch"
     return _executable(store / f"uv-{lock.version('uv')}-{'-'.join(target.split('-')[:2])}" / "uv")
 
 

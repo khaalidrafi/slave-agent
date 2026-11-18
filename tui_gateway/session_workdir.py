@@ -99,7 +99,7 @@ def _policy_backend(policy: dict) -> str:
 
 def _bound_terminal_backend(profile_home) -> str:
     """Terminal backend of the profile a session/RPC is bound to. A named profile reads ITS policy: at
-    ``session.create`` the multiplex gateway has not rebound HERMES_HOME yet, so ``_effective_terminal_backend()``
+    ``session.create`` the multiplex gateway has not rebound SLAVE_HOME yet, so ``_effective_terminal_backend()``
     would report the LAUNCH profile's backend, which must never leak into a named one."""
     return _policy_backend(_profile_terminal_policy(profile_home)) if profile_home else _effective_terminal_backend()
 
@@ -124,7 +124,7 @@ def _declared_remote_profile_cwd(profile_home) -> str | None:
 def _is_remote_cwd_shape(raw: str) -> bool:
     """An ssh working directory the remote shell can resolve: ``~``, ``~/…`` or absolute (a relative one would be
     stored and git-probed relative to the gateway's own cwd)."""
-    from hermes_cli.config import _is_ssh_remote_tilde_cwd
+    from slave_cli.config import _is_ssh_remote_tilde_cwd
 
     return _is_ssh_remote_tilde_cwd("ssh", raw) or os.path.isabs(raw)
 
@@ -305,38 +305,38 @@ def _host_cwd_is_terminal_cwd(profile_home) -> bool:
                 or provider_flag(backend, "is_container", True, scope=scope))
 
 
-def _is_hermes_owned_cwd(cwd: str, profile_home) -> bool:
-    """Whether ``cwd`` is inside Hermes's own host tree: the Hermes root (``/opt/data`` and its ``/opt/data/home``
+def _is_slave_owned_cwd(cwd: str, profile_home) -> bool:
+    """Whether ``cwd`` is inside slave-agent’s own host tree: the slave-agent root (``/opt/data`` and its ``/opt/data/home``
     subprocess home in the Docker image, which also holds every named profile) or the install tree
     (``/opt/hermes``). A ``~`` path is the remote's home, never this host's."""
     from agent.runtime_cwd import _is_install_tree
-    from hermes_constants import get_default_hermes_root
+    from slave_constants import get_default_slave_root
 
     if not os.path.isabs(cwd):
         return False
     try:
         path = Path(cwd).resolve()
-        home = Path(profile_home or get_hermes_home()).expanduser()
-        roots = {home.resolve(), get_default_hermes_root(home=home).resolve()}
+        home = Path(profile_home or get_slave_home()).expanduser()
+        roots = {home.resolve(), get_default_slave_root(home=home).resolve()}
     except (OSError, RuntimeError):
         return False
     return any(path == root or root in path.parents for root in roots) or _is_install_tree(path)
 
 
 def _is_launch_dir(cwd: str, profile_home) -> bool:
-    """Whether ``cwd`` IS a directory a Hermes process is launched from rather than a folder someone picked: the
-    Hermes root (``/opt/data`` in the Docker image), a subprocess home (``/opt/data/home``), the bound profile's
+    """Whether ``cwd`` IS a directory a slave-agent process is launched from rather than a folder someone picked: the
+    slave-agent root (``/opt/data`` in the Docker image), a subprocess home (``/opt/data/home``), the bound profile's
     home, the install tree, the OS user's home or ``/`` (the desktop's launch dirs). Folders below them are not: a
     user may keep a workspace there."""
     from agent.runtime_cwd import _is_install_tree
-    from hermes_constants import get_default_hermes_root, get_real_home
+    from slave_constants import get_default_slave_root, get_real_home
 
     if not os.path.isabs(cwd):
         return False
     try:
         path = Path(cwd).resolve()
-        home = Path(profile_home or get_hermes_home()).expanduser().resolve()
-        root = get_default_hermes_root(home=home).resolve()
+        home = Path(profile_home or get_slave_home()).expanduser().resolve()
+        root = get_default_slave_root(home=home).resolve()
         launch = {home, home / "home", root, root / "home", Path(path.anchor),
                   Path(get_real_home()).resolve(), Path.home().resolve()}
     except (OSError, RuntimeError):
@@ -345,18 +345,18 @@ def _is_launch_dir(cwd: str, profile_home) -> bool:
 
 
 def _is_other_profiles_cwd(cwd: str, profile_home) -> bool:
-    """Whether a NAMED local profile's stored cwd is a directory that belongs to another profile or to Hermes itself:
+    """Whether a NAMED local profile's stored cwd is a directory that belongs to another profile or to slave-agent itself:
     the root (``/opt/data``), its subprocess home (``/opt/data/home``), a sibling profile's tree, or the install tree.
     Those are launch-profile workspaces that leaked into this profile's row before #87584, never a folder chosen for
     it. Other folders under the root stay: a user may keep a workspace there."""
     if profile_home is None or _cwd_is_remote(profile_home) or not os.path.isabs(cwd):
         return False
     from agent.runtime_cwd import _is_install_tree
-    from hermes_constants import get_default_hermes_root
+    from slave_constants import get_default_slave_root
 
     try:
         path, own = Path(cwd).resolve(), Path(profile_home).expanduser().resolve()
-        root = get_default_hermes_root(home=own).resolve()
+        root = get_default_slave_root(home=own).resolve()
     except (OSError, RuntimeError):
         return False
     if path == own or own in path.parents:
@@ -365,14 +365,14 @@ def _is_other_profiles_cwd(cwd: str, profile_home) -> bool:
 
 
 def _resumable_stored_cwd(cwd, profile_home) -> str:
-    """A session row's stored cwd as a resume may adopt it: empty when an ssh session's row holds a path in Hermes's
+    """A session row's stored cwd as a resume may adopt it: empty when an ssh session's row holds a path in slave-agent’s
     own host tree (a host launch directory, never a remote workspace), when a sandbox session's row holds a launch
     directory itself (:func:`_is_launch_dir`: rows written before launch dirs stopped being persisted), or when a
     named profile's row holds another profile's (the resume then lands in :func:`_profile_default_cwd` and
     re-persists it). Hydration and ``session.resume`` both adopt through here, then treat the result as the
-    session's workspace. A folder a sandbox user picked (even under the Hermes root or ``$HOME``) stays."""
+    session's workspace. A folder a sandbox user picked (even under the slave-agent root or ``$HOME``) stays."""
     cwd = str(cwd or "")
-    if cwd and _cwd_is_remote(profile_home) and _is_hermes_owned_cwd(cwd, profile_home):
+    if cwd and _cwd_is_remote(profile_home) and _is_slave_owned_cwd(cwd, profile_home):
         return ""
     if cwd and not _cwd_is_remote(profile_home) and not _host_cwd_is_terminal_cwd(profile_home) \
             and _is_launch_dir(cwd, profile_home):
@@ -407,7 +407,7 @@ def _heal_dead_cwd(cwd: str) -> str:
 def _session_is_local_backend(session: dict | None) -> bool:
     """Whether THIS session's cwd can be stat'ed / git-probed here. A session bound to a named ssh profile never can,
     whatever the launch process runs (one multiplexed gateway serves many profiles), and a per-profile gateway
-    (``hermes -p x``) may set ``terminal.backend: ssh`` in config without ``TERMINAL_ENV``: an env-only check would
+    (``slave -p x``) may set ``terminal.backend: ssh`` in config without ``TERMINAL_ENV``: an env-only check would
     heal a live remote cwd to its nearest host ancestor (``/home``) and persist that."""
     if session and session.get("profile_home") and _bound_terminal_backend(session["profile_home"]) != "local":
         return False
@@ -517,13 +517,13 @@ def _register_session_cwd(session: dict | None) -> None:
         # @method, so bind the session's own profile home here or the record lands under the raw key
         # and the scoped turn (`profile:<p>:<key>`) misses it until the first `cd`. Callers already
         # inside the session's scope (the turn) bind nothing: the routed home is theirs already.
-        import hermes_constants as hc
+        import slave_constants as hc
         from tools.terminal_scope import TerminalPolicyUnavailable, install_and_reset_profile_terminal_scope
 
         with contextlib.ExitStack() as stack:
             profile_home = session.get("profile_home")
-            if profile_home and hc.hermes_home_key(hc.get_hermes_home()) != hc.hermes_home_key(profile_home):
-                stack.callback(hc.reset_hermes_home_override, hc.set_hermes_home_override(str(profile_home)))
+            if profile_home and hc.slave_home_key(hc.get_slave_home()) != hc.slave_home_key(profile_home):
+                stack.callback(hc.reset_slave_home_override, hc.set_slave_home_override(str(profile_home)))
                 stack.enter_context(install_and_reset_profile_terminal_scope(profile_home))
             overrides = {"cwd": cwd, "cwd_source": cwd_source}
             _ensure_terminal_env_bridged()
@@ -558,7 +558,7 @@ def _workdir_row_model_config(session: dict) -> tuple[str, dict]:
     # ``custom:<name>`` identity (matches _runtime_model_config).
     if str(model_config.get("provider") or "").strip().lower() == "custom":
         try:
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from slave_cli.runtime_provider import canonical_custom_identity
             healed = canonical_custom_identity(
                 base_url=model_config.get("base_url") or None, model=model_config.get("model") or row_model or None)
             if healed:
@@ -1004,7 +1004,7 @@ def _persist_session_cwd_and_schedule_git_meta(session: dict, cwd: str, *, db=No
 
 
 def _set_session_cwd(session: dict, cwd: str) -> str:
-    from hermes_constants import translate_cwd_for_wsl_backend
+    from slave_constants import translate_cwd_for_wsl_backend
     cwd = translate_cwd_for_wsl_backend(str(cwd))
     resolved = _workspace_cwd(session.get("profile_home"), cwd)
     # An explicit user choice: persisted as the workspace (not the launch-dir fallback), superseding a settle-adopted

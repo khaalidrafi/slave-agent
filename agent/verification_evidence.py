@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 _DB_LOCK = threading.Lock()
@@ -23,7 +23,7 @@ _MAX_OUTPUT_SUMMARY_CHARS = 2000
 _MAX_EVIDENCE_AGE_DAYS = 30
 _MAX_EVENTS_PER_SESSION_ROOT = 100
 _MAX_TOTAL_UNREFERENCED_EVENTS = 10_000
-_AD_HOC_SCRIPT_NAME_PREFIXES = ("hermes-verify-", "hermes-ad-hoc-")
+_AD_HOC_SCRIPT_NAME_PREFIXES = ("slave-verify-", "slave-ad-hoc-")
 _VERIFY_SCHEMA_VERSION = 1
 # Latest verify-command run per (session, root) whose own exit status the shell hid, with the
 # time it ran. Read by the stop nudge in this same process, so it stays in memory; bounded for
@@ -121,7 +121,7 @@ def _utc_now() -> str:
 
 
 def _db_path() -> Path:
-    return get_hermes_home() / "verification_evidence.db"
+    return get_slave_home() / "verification_evidence.db"
 
 
 def _ledger_enabled() -> bool:
@@ -135,13 +135,13 @@ def _ledger_enabled() -> bool:
 
 
 def _connect() -> sqlite3.Connection:
-    from hermes_cli.sqlite_util import open_db
+    from slave_cli.sqlite_util import open_db
 
     return open_db(_db_path(), db_label="verification_evidence.db", initialize=_ensure_schema)
 
 
 def _transaction():
-    from hermes_cli.sqlite_util import transaction
+    from slave_cli.sqlite_util import transaction
 
     return transaction(_connect())
 
@@ -632,7 +632,7 @@ def last_unattributed_run(
     *, session_id: str | None, root: str | None, since: str | None = None,
 ) -> Optional[str]:
     """The latest verify-command run in ``root`` whose own exit status could not be read,
-    unless evidence recorded at ``since`` came after it. ``hermes verify`` usually records
+    unless evidence recorded at ``since`` came after it. ``slave verify`` usually records
     from its own process, so this process's memory alone cannot know about that run.
     """
     run = _UNATTRIBUTED_RUNS.get((str(session_id or "default"), str(root)))
@@ -642,10 +642,10 @@ def last_unattributed_run(
 
 
 def record_verify_run(
-    *, root: str | Path, session_id: str | None = None, ok: bool, command: str = "hermes verify",
+    *, root: str | Path, session_id: str | None = None, ok: bool, command: str = "slave verify",
     scope: str = "full", output: str = "",
 ) -> Optional[dict[str, Any]]:
-    """Record a completed ``hermes verify`` run as verification evidence.
+    """Record a completed ``slave verify`` run as verification evidence.
 
     A pass marks the workspace ``passed`` for the verify-on-stop guard like a
     canonical test command would. ``root`` is re-resolved through project facts
@@ -655,7 +655,7 @@ def record_verify_run(
         return None
     resolved = str(Path(root).resolve())
     return _insert_evidence(VerificationEvidence(
-        command=command, canonical_command="hermes verify", kind="verify",
+        command=command, canonical_command="slave verify", kind="verify",
         scope=scope if scope in {"full", "targeted"} else "full",
         status="passed" if ok else "failed", exit_code=0 if ok else 1, cwd=resolved,
         root=str((_project_facts(root) or {}).get("root") or resolved),
@@ -690,7 +690,7 @@ def _insert_evidence(evidence: VerificationEvidence) -> dict[str, Any]:
             " changed_paths_json = '[]'",
             (e.session_id, e.root, event_id),
         )
-        # A full passing ``hermes verify`` proves the workspace. Partial or
+        # A full passing ``slave verify`` proves the workspace. Partial or
         # failed runs must not wipe another session's edit record (#103650).
         if e.kind == "verify" and e.status == "passed" and e.scope == "full":
             conn.execute(
@@ -745,7 +745,7 @@ def mark_workspace_edited(
 def _newest_workspace_verify(
     conn: sqlite3.Connection, *, root: str, since: str | None
 ) -> Optional[sqlite3.Row]:
-    """Latest full passing ``hermes verify`` for ``root``, optionally not older than ``since``."""
+    """Latest full passing ``slave verify`` for ``root``, optionally not older than ``since``."""
     if since:
         return conn.execute(
             "SELECT * FROM verification_events"
@@ -766,7 +766,7 @@ def verification_status(*, session_id: str | None, cwd: str | Path | None) -> di
     """Return the best known verification state for a session/workspace.
 
     Evidence recorded before the latest edit is reported as ``stale``. A
-    ``hermes verify`` event for the same ``root`` that is at least as new as
+    ``slave verify`` event for the same ``root`` that is at least as new as
     that edit satisfies the guard even if another session recorded it.
     """
     if not _ledger_enabled():

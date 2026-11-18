@@ -51,7 +51,7 @@ class _Kernel32:
 @pytest.fixture()
 def pipe(monkeypatch):
     """Install one pipe server's facts as the Win32 layer reports them to this client."""
-    import hermes_dir_acl
+    import slave_dir_acl
 
     def install(*, process_sid, owner=OWN, aces=((0, OWN),), readable=True, own_elevated=False,
                 own_session=1, server_session=1, client_pid=None, server_elevated=None):
@@ -73,13 +73,13 @@ def pipe(monkeypatch):
                 raise PermissionError("cannot read named-pipe owner")
             return owner, tuple(aces)
         monkeypatch.setattr(native, "_pipe_security", security, raising=False)
-        monkeypatch.setattr(hermes_dir_acl, "process_is_elevated", lambda: own_elevated)
+        monkeypatch.setattr(slave_dir_acl, "process_is_elevated", lambda: own_elevated)
 
         def elevation(pid=None):
             # TokenElevation of the server's token; None (the probe failed) unless a test says otherwise.
             assert pid == SERVER_PID and process_sid is not None, "elevation probed for an unreadable server"
             return server_elevated
-        monkeypatch.setattr(hermes_dir_acl, "process_elevation", elevation)
+        monkeypatch.setattr(slave_dir_acl, "process_elevation", elevation)
     return install
 
 
@@ -142,9 +142,9 @@ def test_discovery_reports_the_named_refusal_without_any_owner_record(pipe, monk
     """The real discovery path: the pipe check raising inside ``query_identify`` reaches
     ``discover_gateway_endpoint``, which reports the pipe-proven reason; no ``gateway.pid`` or
     ``gateway.lock`` record is needed to name it."""
-    from hermes_cli import gateway_runtime as runtime
-    from hermes_cli import gateway_runtime_discovery as discovery
-    from hermes_cli.gateway_runtime_cli import ensure_exit_code
+    from slave_cli import gateway_runtime as runtime
+    from slave_cli import gateway_runtime_discovery as discovery
+    from slave_cli.gateway_runtime_cli import ensure_exit_code
     pipe(process_sid=None, owner=ADMINS)
     home = tmp_path / "home"
     home.mkdir()
@@ -161,10 +161,10 @@ def served_secondary(pipe, monkeypatch, tmp_path):
     """A named profile the default multiplexer serves: no pipe of its own, so discovery asks the
     multiplexer's pipe. *root_refusal* is what that query raises. Every way ensure could start a
     gateway is recorded instead of run."""
-    from hermes_cli import gateway_runtime_discovery as discovery
-    from hermes_cli import gateway_runtime_multiplex as multiplex
-    from hermes_cli import gateway_runtime_service as service
-    from hermes_cli import gateway_runtime_start as start
+    from slave_cli import gateway_runtime_discovery as discovery
+    from slave_cli import gateway_runtime_multiplex as multiplex
+    from slave_cli import gateway_runtime_service as service
+    from slave_cli import gateway_runtime_start as start
     root = tmp_path / "root"
     home = root / "profiles" / "work"
     home.mkdir(parents=True)
@@ -194,7 +194,7 @@ def served_secondary(pipe, monkeypatch, tmp_path):
 def test_a_served_secondary_discovers_its_elevated_multiplexer_by_name(served_secondary):
     """The refusal from the multiplexer's pipe is the secondary's discovery verdict, with the
     same reason and remedy direct discovery reports."""
-    from hermes_cli import gateway_runtime as runtime
+    from slave_cli import gateway_runtime as runtime
     home, _starts = served_secondary(lambda: native._peer_subject(HANDLE, server=True))
     found = runtime.discover_gateway_endpoint(home, timeout=1)
     assert (found.state, found.reason_code, found.detail) == (
@@ -204,7 +204,7 @@ def test_a_served_secondary_discovers_its_elevated_multiplexer_by_name(served_se
 def test_ensuring_a_served_secondary_returns_the_named_refusal_and_starts_nothing(served_secondary):
     """Ensure answers at once instead of waiting out the deadline, and never starts a gateway."""
     import time
-    from hermes_cli import gateway_runtime as runtime
+    from slave_cli import gateway_runtime as runtime
     home, starts = served_secondary(lambda: native._peer_subject(HANDLE, server=True))
     began = time.monotonic()
     ensured = runtime.ensure_gateway_runtime(home, timeout=5)
@@ -217,7 +217,7 @@ def test_ensuring_a_served_secondary_returns_the_named_refusal_and_starts_nothin
 def test_a_served_secondary_keeps_ignoring_any_other_multiplexer_refusal(served_secondary):
     """Unchanged: a generic refusal from the multiplexer is not service, so the secondary's own
     (absent) state answers."""
-    from hermes_cli import gateway_runtime as runtime
+    from slave_cli import gateway_runtime as runtime
     home, _starts = served_secondary(lambda: (_ for _ in ()).throw(PermissionError("no token")))
     assert runtime.discover_gateway_endpoint(home, timeout=1).state == "absent"
 
@@ -225,7 +225,7 @@ def test_a_served_secondary_keeps_ignoring_any_other_multiplexer_refusal(served_
 def test_a_generic_multiplexer_refusal_never_reads_the_profile_configs(served_secondary):
     """A plain PermissionError (POSIX too, where no pipe proves anything) is "not served" before any
     config is read, so an unparseable default ``config.yaml`` still leaves the secondary ``absent``."""
-    from hermes_cli import gateway_runtime as runtime
+    from slave_cli import gateway_runtime as runtime
     home, _starts = served_secondary(lambda: (_ for _ in ()).throw(PermissionError("no token")))
     (home.parent.parent / "config.yaml").write_text("gateway: [unclosed\n  multiplex_profiles: {\n",
                                                      encoding="utf-8")
@@ -235,7 +235,7 @@ def test_a_generic_multiplexer_refusal_never_reads_the_profile_configs(served_se
 def test_a_standalone_secondary_is_not_refused_for_its_elevated_default_gateway(served_secondary):
     """``gateway.standalone: true`` opts the profile out of the multiplexer, so the default gateway's
     refusal is not its verdict: discovery stays its own ``absent`` and ensure starts its own gateway."""
-    from hermes_cli import gateway_runtime as runtime
+    from slave_cli import gateway_runtime as runtime
     home, starts = served_secondary(lambda: native._peer_subject(HANDLE, server=True))
     (home / "config.yaml").write_text("gateway:\n  standalone: true\n", encoding="utf-8")
     assert runtime.discover_gateway_endpoint(home, timeout=1).state == "absent"

@@ -38,7 +38,7 @@ def test_locked_session_chat_does_not_fall_back_to_the_profile_chain(tmp_path):
                                       'api_key': 'loopback-only'}]}
     (home / 'config.yaml').write_text(json.dumps(config))
     env = {**child_env(), **{k: os.environ[k] for k in ('TIRITH_ENABLED',) if k in os.environ}}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=purl, API_SERVER_KEY='lock-owned-secret',
                API_SERVER_ENABLED='true', API_SERVER_PORT=str(api_port), PYTHONUNBUFFERED='1')
 
@@ -73,7 +73,7 @@ def test_locked_turn_served_by_another_runtime_settles_failed(api):
     from gateway.run_turn_runner import _settle_api_runtime_lock
     from gateway.session_api_turn import api_execution
 
-    agent = SimpleNamespace(provider='custom', model='backup-model', _hermes_api_runtime={'provider': 'custom'})
+    agent = SimpleNamespace(provider='custom', model='backup-model', _slave_api_runtime={'provider': 'custom'})
     result, captured = {'final_response': 'BACKUP_OK', 'completed': True}, {'usage': {}}
     token = api_execution.set({'adapter': api, 'settings': {
         'confirmed_runtime_lock': True, 'route': {'provider': 'custom', 'model': 'primary-model'},

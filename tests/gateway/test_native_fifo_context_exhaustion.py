@@ -15,7 +15,7 @@ from gateway.run import GatewayRunner
 from gateway.session_authority import SessionAuthority, admission_row, initialize_session_authority
 from gateway.session_contract import SessionRef
 from gateway.session_ingress_context import native_callback
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from plugins.platforms.discord.adapter import DiscordAdapter
 from persistence_assembly import close_stores_under
 
@@ -47,7 +47,7 @@ async def native(monkeypatch):
 
 async def _admit(native, text, event=None):
     event = event or MessageEvent(text=text, source=native.source, message_id=text)
-    with native_callback(native.runner, event, get_hermes_home()):
+    with native_callback(native.runner, event, get_slave_home()):
         return event, await native.authority.admit_native(event)
 
 

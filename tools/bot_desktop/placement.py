@@ -37,7 +37,7 @@ class Placement:
 
 
 def _setting() -> str:
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
     cfg = load_config_readonly().get("bot_desktop") or {}
     value = str(cfg.get("placement") or "auto").strip().lower()
     return value if value in ("auto", TERMINAL, GATEWAY) else "auto"
@@ -54,10 +54,10 @@ def _plugin_streams(backend: str) -> bool:
 
 
 def _plugin_host_isolated() -> bool:
-    # Under host isolation a plugin's environment object reaches Hermes as an opaque placeholder, so its
+    # Under host isolation a plugin's environment object reaches Slave as an opaque placeholder, so its
     # exec_prefix() is unreachable. (No bundled plugin backend declares supports_streams, so bundled
     # plugins, which stay in-process, are not a case here.)
-    from hermes_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
+    from slave_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
     return isolation_mode() == ISOLATION_HOST
 
 
@@ -77,7 +77,7 @@ def resolve() -> Placement:
             return Placement(TERMINAL, backend)
         return Placement(REFUSED, backend, (
             f"terminal.backend is {backend}, a plugin that runs in the plugin host (plugins.isolation: host), "
-            f"and the host cannot hand its sandbox's exec channel to Hermes, so the screen cannot follow it. "
+            f"and the host cannot hand its sandbox's exec channel to slave-agent, so the screen cannot follow it. "
             f"Set plugins.isolation: in_process, or bot_desktop.placement: gateway to run the desktop on the "
             f"gateway host."))
     reason = (f"terminal.backend is {backend}, which cannot host a screen yet, and running the desktop on the "

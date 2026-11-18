@@ -9,10 +9,10 @@ description: >-
   adds device listing, pairing, and removal. Setup can connect an existing
   server or explicitly install pinned GOWA v9.9.0 as a loopback-only
   authenticated native user service on Linux x86_64, macOS x86_64/arm64, or
-  Windows x86_64; credentials are read from the active Hermes profile. Disclosure
+  Windows x86_64; credentials are read from the active slave-agent profile. Disclosure
   — agents can send messages and mutate WhatsApp state through the linked
   account; session databases grant account access. An opt-in, direct-text watch
-  injects one selected account/chat into its existing Hermes session, with
+  injects one selected account/chat into its existing slave-agent session, with
   WAIT/REPLY/REPORT guidance and a best-effort five-minute inactivity follow-up.
   Requires a signed route, separate injection permission, and in-process
   execution. Listening does not authorize replies. No webhook configuration.

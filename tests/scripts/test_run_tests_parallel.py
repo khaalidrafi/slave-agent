@@ -858,8 +858,8 @@ _FORK_PROBE = textwrap.dedent("""
             "path0": sys.path[0],
             "sys_path": sys.path,
             "argv0": sys.argv[0],
-            "product_preloaded": sorted(m for m in ("hermes_cli", "agent", "gateway", "tools") if m in sys.modules),
-            "forkserver_env": os.environ.get("HERMES_TEST_FORKSERVER"),
+            "product_preloaded": sorted(m for m in ("slave_cli", "agent", "gateway", "tools") if m in sys.modules),
+            "forkserver_env": os.environ.get("SLAVE_TEST_FORKSERVER"),
             "mp_process": multiprocessing.current_process().name,
             "mp_parent": multiprocessing.parent_process(),
             "main_module": sys.modules["__main__"].__spec__.name,
@@ -875,7 +875,7 @@ _FORK_PROBE = textwrap.dedent("""
 
 @pytest.mark.platforms("linux")
 def test_fork_server_child_matches_a_fresh_pytest_subprocess(tmp_path: Path, monkeypatch) -> None:
-    """HERMES_TEST_FORKSERVER=1 must hand each file the state a fresh ``python -m pytest`` has."""
+    """SLAVE_TEST_FORKSERVER=1 must hand each file the state a fresh ``python -m pytest`` has."""
     seen = {}
     for fork in ("", "1"):
         probe_dir = tmp_path / f"probe{fork}"
@@ -886,9 +886,9 @@ def test_fork_server_child_matches_a_fresh_pytest_subprocess(tmp_path: Path, mon
         # which inherits less runner state than every later one. The first file copies
         # the runner's environment before the knob is consumed, so it checks that.
         (probe_dir / "test_a_first.py").write_text(
-            "import os\n\ndef test_first():\n    assert 'HERMES_TEST_FORKSERVER' not in os.environ\n",
+            "import os\n\ndef test_first():\n    assert 'SLAVE_TEST_FORKSERVER' not in os.environ\n",
             encoding="utf-8")
-        monkeypatch.setenv("HERMES_TEST_FORKSERVER", fork)
+        monkeypatch.setenv("SLAVE_TEST_FORKSERVER", fork)
         # No retries: a retried first file runs after the knob is consumed and passes anyway.
         proc = _run_runner(probe_dir, "--file-retries", "0")
         assert proc.returncode == 0, proc.stdout
@@ -915,10 +915,10 @@ def test_no_file_in_the_opening_wave_sees_the_fork_server_knob(tmp_path: Path, m
     """Files that copy the runner's env before the first one starts the server must not see the knob."""
     probe_dir = tmp_path / "probe"
     probe_dir.mkdir()
-    check = "import os\n\ndef test_knob_absent():\n    assert 'HERMES_TEST_FORKSERVER' not in os.environ\n"
+    check = "import os\n\ndef test_knob_absent():\n    assert 'SLAVE_TEST_FORKSERVER' not in os.environ\n"
     for i in range(24):
         (probe_dir / f"test_wave_{i:02d}.py").write_text(check, encoding="utf-8")
-    monkeypatch.setenv("HERMES_TEST_FORKSERVER", "1")
+    monkeypatch.setenv("SLAVE_TEST_FORKSERVER", "1")
     proc = _run_runner(probe_dir, "-j", "12", "--file-retries", "0")
     assert proc.returncode == 0, proc.stdout
     assert "fork server: on" in proc.stdout and "24 tests passed" in proc.stdout, proc.stdout
@@ -941,7 +941,7 @@ def test_fork_server_reports_failures_and_kills_stragglers(tmp_path: Path, monke
         f"    open({str(grandchild)!r}, 'w').write(str(child.pid))\n"
         "    time.sleep(600)\n",
         encoding="utf-8")
-    monkeypatch.setenv("HERMES_TEST_FORKSERVER", "1")
+    monkeypatch.setenv("SLAVE_TEST_FORKSERVER", "1")
     proc = _run_runner(probe_dir, "-j", "2", "--file-timeout", "5", "--file-retries", "0")
     assert proc.returncode != 0, proc.stdout
     assert "test_probe_red.py" in proc.stdout and "1 failed" in proc.stdout, proc.stdout
@@ -961,7 +961,7 @@ def test_fork_child_drops_the_servers_env_and_cached_tempdir(tmp_path: Path) -> 
     probe.write_text(
         "import os, tempfile\n\n"
         "def test_sees_only_its_own_state():\n"
-        "    assert 'HERMES_FORK_SERVER_ONLY' not in os.environ\n"
+        "    assert 'SLAVE_FORK_SERVER_ONLY' not in os.environ\n"
         "    assert tempfile.gettempdir() == os.environ['TMPDIR']\n",
         encoding="utf-8",
     )
@@ -973,7 +973,7 @@ def test_fork_child_drops_the_servers_env_and_cached_tempdir(tmp_path: Path) -> 
     # Stand-in for the fork server: it has its own variable and has already asked gettempdir().
     server = (
         "import json, os, sys, tempfile\n"
-        "os.environ['HERMES_FORK_SERVER_ONLY'] = '1'\n"
+        "os.environ['SLAVE_FORK_SERVER_ONLY'] = '1'\n"
         "tempfile.tempdir = sys.argv[1]\n"
         "sys.path.insert(0, sys.argv[2])\n"
         "from scripts import run_tests_fork_child\n"

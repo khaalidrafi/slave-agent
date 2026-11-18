@@ -8,7 +8,7 @@ description: >-
   truth by read-only scanners. Registers two tools — inventory_where(term) answers "do I
   already have X?" across every section with a ready detail line, and inventory_summary()
   returns a one-line digest for session bootstrap. Both read a cached digest file
-  ($INVENTORY_JSON, else ~/.hermes/inventory.json); no live rescan per turn, no network, no
+  ($INVENTORY_JSON, else ~/.slave/inventory.json); no live rescan per turn, no network, no
   writes. Disclosure — the digest describes the host (repo names, skill names, CLI paths,
   model names, service names) and that text is returned to the model.
 maintainer: ether-btc

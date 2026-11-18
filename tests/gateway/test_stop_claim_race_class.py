@@ -40,7 +40,7 @@ def _cron(hosted_owner, tmp_path, monkeypatch):
     from gateway import session_cron
     from gateway.session_authority import LiveSession, SessionAuthority
     from gateway.session_contract import SessionActor
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     (home := tmp_path / 'cron').mkdir()
     db = storage_handle(home)
     seed_session(db, 's', 'cron')

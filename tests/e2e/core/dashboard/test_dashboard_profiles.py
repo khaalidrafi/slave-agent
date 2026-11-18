@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 from . import _helpers as H
 

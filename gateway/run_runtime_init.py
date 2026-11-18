@@ -180,7 +180,7 @@ class GatewayRuntimeInitMixin:
         try:
             self._open_session_db_for_active_scope(raise_on_error=True)
         except Exception as e:
-            # WARNING (not DEBUG) so it lands in errors.log; else an NFS HERMES_HOME silently loses /resume etc.
+            # WARNING (not DEBUG) so it lands in errors.log; else an NFS SLAVE_HOME silently loses /resume etc.
             logger.warning("SQLite session store not available: %s", e, exc_info=True)
             self._session_db_init_error = str(e)  # surfaced on the home channel(s) once connected
 
@@ -204,7 +204,7 @@ class GatewayRuntimeInitMixin:
         # Checkpoint store pruning is a housekeeping chore (``_housekeeping_checkpoint_prune``), not a
         # constructor step: its ``git gc`` repacks the whole store (tens of seconds on a GB store) and
         # here it ran before the control socket, adapters and the code_sha stamp — so the first
-        # restart of the day (the ``hermes update`` one) looked hung and failed fleet verification.
+        # restart of the day (the ``slave update`` one) looked hung and failed fleet verification.
 
     @property
     def persistence(self):

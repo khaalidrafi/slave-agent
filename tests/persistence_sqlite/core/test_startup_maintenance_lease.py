@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time
 
-import hermes_startup_watchdog as sw
+import slave_startup_watchdog as sw
 from persistence.housekeeping.maintenance import PruneResult
 from persistence.sqlite import _registry
 from persistence.sqlite.admin import SQLiteStoreAdmin
@@ -21,7 +21,7 @@ MEDIA_ROOT = "/nonexistent/native-inputs"
 
 
 def test_maintenance_steps_renew_the_armed_watchdog_lease(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     sw._reset_for_tests()
     handle = sw.arm_startup_watchdog(timeout_s=300.0)
     db = _registry.acquire(tmp_path / "state.db")  # the admin's writer, so this handle never blocks VACUUM

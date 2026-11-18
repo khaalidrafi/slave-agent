@@ -60,7 +60,7 @@ def test_native_room_service_local_member_and_restart(tmp_path):
     # opt-out (`multiplex_profiles: false` is retired and rewritten to true at boot).
     (target / 'config.yaml').write_text(json.dumps(json.loads((home / 'config.yaml').read_text())
                                                    | {'gateway': {'standalone': True}}))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
         PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, PYTHONUNBUFFERED='1')
     members = [{'member_id': 'one', 'profile': 'default', 'handle': 'one'},
                {'member_id': 'two', 'profile': 'two', 'handle': 'two'}]
@@ -107,7 +107,7 @@ def test_native_room_service_local_member_and_restart(tmp_path):
                 assert base64.b64decode(images[0]['image_url']['url'].split(',')[1]) == image
     try:
         for restart in (False, True):
-            with daemon(root, target, env | {'HERMES_HOME': str(target)}, barrier=False), daemon(root, home, env, barrier=False) as (_, desc):
+            with daemon(root, target, env | {'SLAVE_HOME': str(target)}, barrier=False), daemon(root, home, env, barrier=False) as (_, desc):
                 asyncio.run(probe(desc, restart))
     finally:
         model.shutdown(); model.server_close()
@@ -164,10 +164,10 @@ def test_existing_room_member_switches_off_exhausted_provider(tmp_path):
             }), encoding='utf-8')
             (profile / '.env').write_text(
                 f'NOUS_INFERENCE_BASE_URL={nous.base_url}\n'
-                f'HERMES_PORTAL_BASE_URL={nous.base_url.removesuffix("/v1")}\n', encoding='utf-8')
+                f'SLAVE_PORTAL_BASE_URL={nous.base_url.removesuffix("/v1")}\n', encoding='utf-8')
         env = child_env() | dict(
-            HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
-            HERMES_SHARED_AUTH_DIR=str(tmp_path / 'shared-auth'),
+            HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
+            SLAVE_SHARED_AUTH_DIR=str(tmp_path / 'shared-auth'),
             HTTP_PROXY='http://127.0.0.1:1', HTTPS_PROXY='http://127.0.0.1:1',
             NO_PROXY='127.0.0.1,localhost',
         )
@@ -257,7 +257,7 @@ def test_room_unknown_discard_releases_only_its_followers(tmp_path):
     # opt-out (`multiplex_profiles: false` is retired and rewritten to true at boot).
     (target / 'config.yaml').write_text(json.dumps(json.loads((home / 'config.yaml').read_text())
                                                    | {'gateway': {'standalone': True}}))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
         PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, PYTHONUNBUFFERED='1')
     members = [{'member_id': 'one', 'profile': 'default', 'handle': 'one'},
                {'member_id': 'two', 'profile': 'two', 'handle': 'two'}]
@@ -327,10 +327,10 @@ def test_room_unknown_discard_releases_only_its_followers(tmp_path):
             assert snapshot['counts'].get('cancelled') == 1, snapshot
             assert len(model.requests) == 3, model.requests
     try:
-        with daemon(root, target, env | {'HERMES_HOME': str(target)}, barrier=False), daemon(root, home, env, barrier=False) as (proc, desc):
+        with daemon(root, target, env | {'SLAVE_HOME': str(target)}, barrier=False), daemon(root, home, env, barrier=False) as (proc, desc):
             asyncio.run(first(proc, desc))
         model.release.set()
-        with daemon(root, target, env | {'HERMES_HOME': str(target)}, barrier=False), daemon(root, home, env, barrier=False) as (_, desc):
+        with daemon(root, target, env | {'SLAVE_HOME': str(target)}, barrier=False), daemon(root, home, env, barrier=False) as (_, desc):
             asyncio.run(recovered(desc))
     finally:
         model.release.set()

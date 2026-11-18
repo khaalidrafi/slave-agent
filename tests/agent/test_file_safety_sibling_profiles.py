@@ -1,6 +1,6 @@
 """A sibling profile's credential stores get the same read/write denial as the active one's.
 
-The guards used to cover only the active HERMES_HOME and the global root, so from the
+The guards used to cover only the active SLAVE_HOME and the global root, so from the
 default profile ``<root>/profiles/<other>/auth.json`` was readable (#46411) and
 ``<root>/profiles/<other>/mcp-tokens/`` writable (#37617) through the file tools.
 """
@@ -27,12 +27,12 @@ WRITABLE_CONTROL_FILES = ("auth.json", "config.yaml", "webhook_subscriptions.jso
 
 @pytest.fixture()
 def default_profile_with_sibling(tmp_path, monkeypatch):
-    """Session runs in the default profile (HERMES_HOME == root); ``other`` is a sibling."""
-    root = tmp_path / "hermes_root"
+    """Session runs in the default profile (SLAVE_HOME == root); ``other`` is a sibling."""
+    root = tmp_path / "slave_root"
     sibling = root / "profiles" / "other"
     sibling.mkdir(parents=True)
-    monkeypatch.setattr(fs, "_hermes_home_path", lambda: root)
-    monkeypatch.setattr(fs, "_hermes_root_path", lambda: root)
+    monkeypatch.setattr(fs, "_slave_home_path", lambda: root)
+    monkeypatch.setattr(fs, "_slave_root_path", lambda: root)
     return sibling
 
 

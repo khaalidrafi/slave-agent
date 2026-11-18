@@ -3,7 +3,7 @@ repo: https://github.com/supa-thibaud/hermes-progression
 sha: eb57d3c441236ae9a55decd634b9bd5f9bdf8435
 title: Progression
 description: >-
-  Right-side Hermes Desktop panel showing, live, what the focused chat's agent
+  Right-side slave-agent Desktop panel showing, live, what the focused chat's agent
   and its subagents are doing: the task in progress (with the tool running now),
   subagents (queued, running, done, failed), the tasks up next and the done ones,
   color-coded, with a completion % and an ETA (finish clock time) recomputed every

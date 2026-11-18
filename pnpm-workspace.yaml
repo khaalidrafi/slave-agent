@@ -28,7 +28,7 @@ strictDepBuilds: true
 # already-checked lockfile (--trust-lockfile).
 minimumReleaseAge: 20160
 # Exemptions are exact `name@version` entries, one per line with the reason it cannot wait as an
-# inline comment (`- name@1.2.3  # why`). `hermes pm update --pnpm` drops an entry once the lockfile
+# inline comment (`- name@1.2.3  # why`). `slave pm update --pnpm` drops an entry once the lockfile
 # no longer holds that version, so none needs a removal date. pnpm's own
 # minimumReleaseAgeExcludePrune stays off: it would run on every install and rewrite this tracked
 # file on users' machines.

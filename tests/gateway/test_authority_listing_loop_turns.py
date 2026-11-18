@@ -30,7 +30,7 @@ async def owner(tmp_path, monkeypatch):
     from gateway.session_authority import LiveSession, initialize_session_authority
     from gateway.session_controls import AuthorityConnection
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(_session_db=store.persistence, session_store=store, _draining=False,
                              _handle_message=None, _adapter_for_source=lambda source: None)

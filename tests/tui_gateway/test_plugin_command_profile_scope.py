@@ -24,13 +24,13 @@ def _plugin_pkg(home, slug: str, command: str) -> None:
     (pkg / "__init__.py").write_text(
         "def register(ctx):\n"
         "    def _handler(args):\n"
-        "        import hermes_constants\n"
+        "        import slave_constants\n"
         "        from agent.secret_scope import get_secret\n"
         "        try:\n"
         "            key = get_secret('PROBE_KEY')\n"
         "        except Exception as exc:\n"
         "            key = 'ERR:' + type(exc).__name__\n"
-        "        return 'probe@' + hermes_constants.get_hermes_home().name + ':' + str(key)\n"
+        "        return 'probe@' + slave_constants.get_slave_home().name + ':' + str(key)\n"
         f"    ctx.register_command({command!r}, handler=_handler, description='probe')\n",
         encoding="utf-8",
     )
@@ -39,7 +39,7 @@ def _plugin_pkg(home, slug: str, command: str) -> None:
 @pytest.fixture
 def plugin_homes(tmp_path, monkeypatch):
     """Launch home with a launch-only plugin; secondary profile with its own plugin + secret."""
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     launch.mkdir()
     (launch / "config.yaml").write_text(
         "plugins:\n  enabled:\n    - probe-launch\n", encoding="utf-8"
@@ -55,10 +55,10 @@ def plugin_homes(tmp_path, monkeypatch):
     (secondary / ".env").write_text("PROBE_KEY=infra-key\n", encoding="utf-8")
     _plugin_pkg(secondary, "probe-infra", "infraonly")
 
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setenv("PROBE_KEY", "launch-key")
 
-    from hermes_cli import plugins as plugins_mod
+    from slave_cli import plugins as plugins_mod
 
     plugins_mod._reset_plugin_managers_for_tests()
     yield {"launch": launch, "secondary": secondary}
@@ -144,7 +144,7 @@ def test_launch_profile_chat_reads_its_own_secret_once_multiplexed(plugin_homes)
 def test_builtin_slash_exec_runs_when_the_profile_secret_bind_fails(plugin_homes, monkeypatch):
     """Only a plugin command needs the profile's secrets: a secret source that fails to load must
     not turn every built-in reaching slash.exec into ``Plugin command error`` (review of #153538)."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
 
     from tui_gateway import server
 
@@ -219,7 +219,7 @@ def test_absent_command_probe_reads_the_registry_under_the_discovery_lock(plugin
     probe must read it under that lock, never between the loaded check and the read."""
     import threading
 
-    from hermes_cli import plugins as plugins_mod
+    from slave_cli import plugins as plugins_mod
 
     manager = plugins_mod.get_plugin_manager()
     manager.discover_and_load()

@@ -83,7 +83,7 @@ describe("sidebar control target sizes (WCAG 2.5.8, issue #70983)", () => {
     // runtime can leave localStorage undefined while ThemeProvider reads it
     // on mount. Stub it, as ChatPage.test.tsx does.
     vi.stubGlobal("localStorage", memoryStorage());
-    Object.defineProperty(window, "__HERMES_AUTH_REQUIRED__", {
+    Object.defineProperty(window, "__SLAVE_AUTH_REQUIRED__", {
       configurable: true,
       value: true,
     });

@@ -1,18 +1,18 @@
-"""Guard: Hermes-owned subprocesses must not resolve managed runtimes by bare PATH.
+"""Guard: Slave-owned subprocesses must not resolve managed runtimes by bare PATH.
 
-Hermes installs runtimes for itself — ``uv`` at ``$HERMES_HOME/bin/uv``, Node at
-``$HERMES_HOME/node``. Neither directory is on the ambient PATH of an arbitrary
-process, so ``shutil.which("uv")`` / ``shutil.which("node")`` in Hermes's own
+slave-agent installs runtimes for itself — ``uv`` at ``$SLAVE_HOME/bin/uv``, Node at
+``$SLAVE_HOME/node``. Neither directory is on the ambient PATH of an arbitrary
+process, so ``shutil.which("uv")`` / ``shutil.which("node")`` in slave-agent’s own
 code has two failure modes:
 
 * the managed runtime is invisible, so the caller reports "not installed" or
   degrades to a slower tier on a machine that has exactly what it needed; and
-* when a system copy also exists, the one Hermes does not own wins — which is
+* when a system copy also exists, the one slave-agent does not own wins — which is
   how a generated systemd unit or launchd plist can bake a system Node in and
   keep resolving it across reboots.
 
 The fix per call site is ``find_node_executable()``,
-``iter_hermes_node_dirs()``, or a PM-composed environment (``pm.ensure("uv")``);
+``iter_slave_node_dirs()``, or a PM-composed environment (``pm.ensure("uv")``);
 managed uv helpers retired with the self-update subsystem (FORK.org P0).
 This test is
 the ratchet that stops a new bare lookup from being added back.
@@ -35,7 +35,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_agent.compat.paths import original_path
+from slave_agent.compat.paths import original_path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODULE_MARKER = "<module>"
@@ -49,11 +49,11 @@ _KNOWN_PATH_FRAGMENTS = (
     "WinGet",
 )
 
-# Runtimes Hermes provisions into HERMES_HOME and must therefore resolve
+# Runtimes Slave provisions into SLAVE_HOME and must therefore resolve
 # through a managed-aware helper rather than PATH.
 _MANAGED_COMMANDS = frozenset({"uv", "node", "npm", "npx", "pnpm"})
 
-# Directories that are not Hermes-owned subprocess code: plugins ship their own
+# Directories that are not Slave-owned subprocess code: plugins ship their own
 # resolution policy, tests assert against PATH deliberately, and skills/scripts/
 # evals run as standalone user-invoked programs.
 _EXEMPT_DIRS = (
@@ -82,21 +82,21 @@ _ALLOWED: dict[tuple[str, str], str] = {
         "can only run what is on that subshell's PATH, which local.py populates "
         "with the managed dirs — so PATH is the correct question to ask here."
     ),
-    ("hermes_cli/main_tui_launch.py", "node"): (
+    ("slave_cli/main_tui_launch.py", "node"): (
         "PM-composed launch context: `which(node)` runs against the PATH "
         "pm.ensure('node'|'pnpm') just composed (store dirs first), not the ambient one."
     ),
-    ("hermes_cli/main_tui_launch.py", "pnpm"): (
+    ("slave_cli/main_tui_launch.py", "pnpm"): (
         "Same PM-composed launch context as the node lookup above."
     ),
-    ("hermes_cli/source_build.py", "node"): (
+    ("slave_cli/source_build.py", "node"): (
         "PM-composed build context: `which(node)` runs against the PATH pm's "
         "ensure('pnpm')/env_for('node') just composed, not the ambient one."
     ),
-    ("hermes_cli/source_build.py", "pnpm"): (
+    ("slave_cli/source_build.py", "pnpm"): (
         "Same PM-composed build context as the node lookup above."
     ),
-    ("hermes_cli/main_desktop.py", "pnpm"): (
+    ("slave_cli/main_desktop.py", "pnpm"): (
         "Desktop build resolves pnpm inside the PM-prepared build_env PATH."
     ),
     ("pm/workspace.py", "npm"): (
@@ -109,7 +109,7 @@ _ALLOWED: dict[tuple[str, str], str] = {
     ),
     ("apps/desktop/electron/fixtures/source-backend.py", "uv"): (
         "Test fixture drives the real uv deliberately placed on the test "
-        "runner's PATH; it is not Hermes-owned subprocess resolution."
+        "runner's PATH; it is not Slave-owned subprocess resolution."
     ),
 }
 
@@ -217,7 +217,7 @@ def _source_files() -> list[Path]:
     files: list[Path] = []
     # os.walk instead of Path.rglob: rglob raises FileNotFoundError when a
     # directory vanishes mid-scan — a sibling CI job's sdist extraction
-    # (hermes_agent-<version>/) gets created and deleted concurrently, and
+    # (slave_agent-<version>/) gets created and deleted concurrently, and
     # that TOCTOU failed this guard on runs 33531869442/33455779041-era
     # workspaces. os.walk tolerates vanishing dirs (onerror=None), and
     # pruning exempt/packaging dirs at the top level also skips their
@@ -272,7 +272,7 @@ def _resolution_sites() -> set[tuple[str, str, str]]:
     sites: set[tuple[str, str, str]] = set()
     for path in _source_files():
         rel = original_path(path.relative_to(REPO_ROOT).as_posix())
-        if rel == "hermes_platform" or rel.startswith("hermes_platform/"):
+        if rel == "slave_platform" or rel.startswith("slave_platform/"):
             continue
         try:
             source = path.read_text(encoding="utf-8")
@@ -305,12 +305,12 @@ def test_bare_which_and_known_path_tables_are_allowlisted():
     assert not unlisted, (
         "Unreviewed command resolution sites:\n"
         + _format_resolution_sites(unlisted)
-        + "\nuse a hermes_platform resolver or add a justified allowlist row"
+        + "\nuse a slave_platform resolver or add a justified allowlist row"
     )
 
 
 def test_resolution_allowlist_has_no_stale_rows():
-    """Remove bootstrap rows as their call sites move to hermes_platform."""
+    """Remove bootstrap rows as their call sites move to slave_platform."""
     stale = _resolution_allowlist() - _resolution_sites()
 
     assert not stale, (
@@ -328,16 +328,16 @@ def test_no_unreviewed_bare_managed_runtime_lookups():
     ]
 
     assert not unexpected, (
-        "Bare PATH lookup for a Hermes-managed runtime.\n\n"
+        "Bare PATH lookup for a Slave-managed runtime.\n\n"
         + "\n".join(f"  {rel}:{lineno}  which({cmd!r})" for rel, cmd, lineno in unexpected)
-        + "\n\n$HERMES_HOME/bin (uv) and $HERMES_HOME/node are not on an "
+        + "\n\n$SLAVE_HOME/bin (uv) and $SLAVE_HOME/node are not on an "
         "arbitrary process's PATH, so this resolves a system copy — or nothing "
         "— on an install that has a managed one.\n"
         "Use instead:\n"
         "  uv       -> PM owns managed uv (see pm/_uv.py); a bare lookup here "
         "needs an explicit exemption\n"
-        "  node/npm -> hermes_constants.find_node_executable()\n"
-        "  PATH env -> hermes_constants.iter_hermes_node_dirs()\n"
+        "  node/npm -> slave_constants.find_node_executable()\n"
+        "  PATH env -> slave_constants.iter_slave_node_dirs()\n"
         "If PATH really is the right question, add the site to _ALLOWED with a "
         "reason."
     )
@@ -359,12 +359,12 @@ def test_allowlist_has_no_stale_entries():
     "helper",
     [
         "find_node_executable",
-        "iter_hermes_node_dirs",
-        "with_hermes_node_path",
+        "iter_slave_node_dirs",
+        "with_slave_node_path",
     ],
 )
 def test_managed_node_helpers_exist(helper):
     """The alternatives this guard points contributors at must be importable."""
-    import hermes_constants
+    import slave_constants
 
-    assert callable(getattr(hermes_constants, helper))
+    assert callable(getattr(slave_constants, helper))

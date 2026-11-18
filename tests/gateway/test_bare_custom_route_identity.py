@@ -25,10 +25,10 @@ SIBLINGS = {'providers': {
 @pytest.fixture
 def home(monkeypatch):
     from gateway import run
-    from hermes_constants import get_hermes_home
-    profile = get_hermes_home()
+    from slave_constants import get_slave_home
+    profile = get_slave_home()
     profile.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', profile)
+    monkeypatch.setattr(run, '_slave_home', profile)
     return profile
 
 
@@ -46,7 +46,7 @@ def test_a_bare_custom_launch_pick_freezes_the_configured_entry(tmp_path, pick, 
 
 
 def test_a_disabled_entry_on_the_url_never_names_the_route(home):
-    from hermes_cli.runtime_provider_custom import session_provider_identity
+    from slave_cli.runtime_provider_custom import session_provider_identity
     (home / 'config.yaml').write_text(json.dumps({'providers': {
         'glm': {**SIBLINGS['providers']['glm'], 'enabled': False}, 'deepseek': SIBLINGS['providers']['deepseek']}}))
     assert session_provider_identity('custom', 'custom', RELAY, 'deepseek-v4.1-flash') == 'custom:deepseek'
@@ -60,7 +60,7 @@ async def test_the_model_picker_marks_the_entry_a_session_runs_on_current(home, 
     agent = SimpleNamespace(model='glm-5.3', provider='custom', requested_provider='custom:deepseek', base_url=RELAY)
     connection = SimpleNamespace(authority=SimpleNamespace(profile_id=str(home), agent=lambda ref: agent))
     monkeypatch.setattr(session_config, '_authorize', lambda connection, ref, params: None)
-    monkeypatch.setattr('hermes_cli.inventory.build_model_options_payload',
+    monkeypatch.setattr('slave_cli.inventory.build_model_options_payload',
                         lambda ctx, **kwargs: {'provider': ctx.current_provider})
     result = await session_config.model_options(connection, SimpleNamespace(session_id='s'), {})
     assert result == {'provider': 'custom:deepseek'}
@@ -92,10 +92,10 @@ async def test_a_following_session_switches_model_with_an_inline_secret_outside_
 
 
 def test_source_desktop_is_sent_as_the_gui_surface_the_create_contract_lists(monkeypatch):
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from slave_cli.gateway_session_store import GatewaySessionStore
     from tui_gateway.contracts.registry import CANONICAL_METHODS, canonical_param_problems
-    monkeypatch.setenv('HERMES_SESSION_SOURCE', 'desktop')
-    monkeypatch.setenv('HERMES_SESSION_SOURCE_EXPLICIT', '1')
+    monkeypatch.setenv('SLAVE_SESSION_SOURCE', 'desktop')
+    monkeypatch.setenv('SLAVE_SESSION_SOURCE_EXPLICIT', '1')
     sent = {}
 
     def call(method, **params):

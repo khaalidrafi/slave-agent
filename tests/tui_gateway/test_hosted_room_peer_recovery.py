@@ -86,7 +86,7 @@ def _peer_room(db, peer: _FakePeerClient) -> HostedRoomService:
         room_id="room-1",
         name="Peer room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {
                 "member_id": "member-peer",
                 "profile": "reviewer",

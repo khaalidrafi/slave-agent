@@ -5,7 +5,7 @@
  * renders wrong or dies on it:
  *
  *  - Safari's WebGL texture atlas mangles Unicode box-drawing glyphs
- *    (╔╗║╚╝, the HERMES banner) — the DOM renderer draws them fine (#18773).
+ *    (╔╗║╚╝, the SLAVE banner) — the DOM renderer draws them fine (#18773).
  *  - Software rasterizers (llvmpipe, SwiftShader, softpipe) succeed at
  *    `getContext("webgl")` but regl then throws
  *    "(regl) webgl not supported" from inside the addon (#45520).

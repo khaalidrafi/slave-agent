@@ -4,7 +4,7 @@ A receipt says ``status: ambiguous`` or ``queued`` and a delivery id; models rea
 delivered" and offer to resend, or as "still coming" and wait forever. Every runner that ends a
 request's wait (the live lane, the fan-out join) leads its output with ``outcome``: the teammate
 answered, or "<who> never answered: <why>", plus whether resending is safe. Stdlib only: the fan-out
-runner imports it before Hermes boots.
+runner imports it before slave-agent boots.
 """
 
 from __future__ import annotations

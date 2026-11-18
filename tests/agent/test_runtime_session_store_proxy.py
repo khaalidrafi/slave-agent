@@ -28,16 +28,16 @@ def _refusing_proxy():
 def test_worker_rpc_reaches_loopback_owner_with_proxy_env(monkeypatch, tmp_path):
     from websockets.sync.server import serve
     from agent import runtime_session_store as store
-    from hermes_cli import gateway_client
-    from hermes_cli import gateway_runtime
-    import hermes_cli.gateway_runtime_discovery as discovery
+    from slave_cli import gateway_client
+    from slave_cli import gateway_runtime
+    import slave_cli.gateway_runtime_discovery as discovery
 
     def owner(ws):
         request = json.loads(ws.recv())
         ws.send(json.dumps({'jsonrpc': '2.0', 'id': request['id'], 'result': {'method': request['method']}}))
 
     proxy, seen = _refusing_proxy()
-    with serve(owner, '127.0.0.1', 0, subprotocols=['hermes-gateway-v1']) as server:
+    with serve(owner, '127.0.0.1', 0, subprotocols=['slave-gateway-v1']) as server:
         threading.Thread(target=server.serve_forever, daemon=True).start()
         origin = f'http://127.0.0.1:{server.socket.getsockname()[1]}'
         endpoint = SimpleNamespace(api_origin=origin, control_home=None)

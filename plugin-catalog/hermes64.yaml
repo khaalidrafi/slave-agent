@@ -28,7 +28,7 @@ known_issues:
   - "Image audits can fail on some style packs even when bots complete; agent-designed games may need iteration."
   - "Godot setup is a human-confirmed download from official hosts; the optional export templates are about 1.25 GB."
   - "macOS apps are ad-hoc signed, not notarized; Gatekeeper acceptance on other Macs is not established."
-  - "Validation (hermes plugins validate --install-deps) passes with one warning, a guarded hermes_cli import used for older-version discovery, and an in-process isolation note for one proof tool."
+  - "Validation (slave plugins validate --install-deps) passes with one warning, a guarded slave_cli import used for older-version discovery, and an in-process isolation note for one proof tool."
 capabilities:
   provides_tools:
     - hermes64_scaffold

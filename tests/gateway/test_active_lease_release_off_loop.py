@@ -8,11 +8,11 @@ import threading
 import time
 
 from gateway.active_lease_io import release_soon
-from hermes_cli import active_sessions
+from slave_cli import active_sessions
 
 
 def test_a_queued_release_returns_while_the_registry_is_locked_and_lands_after(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     lease, refusal = active_sessions.try_acquire_active_session(
         session_id='s1', surface='gateway:local', config={}, registry_home=tmp_path)
     assert refusal is None and lease is not None

@@ -357,7 +357,7 @@ function Read-MarkerLocked($Ctx) {
 . (Join-Path $PSScriptRoot 'marker-claim.ps1')
 
 function Get-CheckoutLockPath {
-    # hermes_cli/update_lock.py::checkout_lock_path: <git common dir>/hermes-update.lock,
+    # slave_cli/update_lock.py::checkout_lock_path: <git common dir>/hermes-update.lock,
     # else <root>/.hermes-update.lock.
     $root = Get-Variable -Name InstallRoot -ValueOnly -ErrorAction SilentlyContinue
     if (-not $root) { return $null }
@@ -380,7 +380,7 @@ function Get-CheckoutLockPath {
             $gitDir = if ([System.IO.Path]::IsPathRooted($common)) { $common } else { Join-Path $gitDir $common }
         }
     }
-    return (Join-Path $gitDir 'hermes-update.lock')
+    return (Join-Path $gitDir 'slave-update.lock')
 }
 
 function Test-CheckoutLockHeld {

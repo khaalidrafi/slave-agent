@@ -1,6 +1,6 @@
 """The Webapp is the machine owner: a signed-in tab and native Desktop share Group Chats and history.
 
-Hermes is single-user. Sign-in only decides whether a browser may open the Webapp; it never names a
+slave-agent is single-user. Sign-in only decides whether a browser may open the Webapp; it never names a
 second owner. So a Webapp tab's Group Chats are native Desktop's (and the reverse), and the rooms an
 older build stored under the tab's ``auth:v1`` login subject are still the owner's, while another OS
 user's subject or a messaging identity stays foreign (gateway.owner_identity).
@@ -25,7 +25,7 @@ NATIVE = {'provider': 'local', 'user_id': host_owner_subject(), 'profile_id': No
 
 @pytest.fixture
 def authority(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     (tmp_path / 'profiles' / 'two').mkdir(parents=True)
     (tmp_path / 'config.yaml').write_text(
         'hosted_rooms:\n  profiles:\n    two: ' + str((tmp_path / 'profiles' / 'two').resolve()) + '\n')
@@ -89,7 +89,7 @@ def test_only_sign_in_stamps_and_this_machines_account_read_as_the_owners(stamp,
 
 @pytest.fixture
 def store(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         yield SimpleNamespace(persistence=db, profile_id=str(tmp_path), sessions={},
                               _require_admission_open=lambda: None)

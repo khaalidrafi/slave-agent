@@ -16,7 +16,7 @@ from tests.persistence_sqlite.conftest import store_for
 def store(tmp_path):
     """A backend store outside the profile tree, so it has no owning profile."""
     scope = ProfileScope(profile_dir=tmp_path, name="test")
-    backend = SQLiteBackend({scope.hermes_home_key: tmp_path / "test_state.db"})
+    backend = SQLiteBackend({scope.slave_home_key: tmp_path / "test_state.db"})
     try:
         yield backend.open(scope)
     finally:
@@ -99,11 +99,11 @@ def test_peer_fallback_never_adopts_a_sibling_profiles_row(tmp_path, monkeypatch
     before the per-profile partition — must lose to the older own row, and
     with no own row recovery must return nothing rather than the sibling's.
     """
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     scope = ProfileScope(profile_dir=root, name="default")
-    backend = SQLiteBackend({scope.hermes_home_key: root / "state.db"})  # owner: default
+    backend = SQLiteBackend({scope.slave_home_key: root / "state.db"})  # owner: default
     try:
         routing = backend.open(scope).routing
         store = backend.open(scope).holder()
@@ -136,11 +136,11 @@ def test_peer_fallback_reset_boundary_is_profile_fenced(tmp_path, monkeypatch):
     newer session_reset row used to suppress THIS profile's recoverable session.
     The profile's own reset must still fence.
     """
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     scope = ProfileScope(profile_dir=root, name="default")
-    backend = SQLiteBackend({scope.hermes_home_key: root / "state.db"})  # owner: default
+    backend = SQLiteBackend({scope.slave_home_key: root / "state.db"})  # owner: default
     try:
         routing = backend.open(scope).routing
         store = backend.open(scope).holder()
@@ -275,13 +275,13 @@ class TestGatewayRoutingPkHeal:
 
     def test_legacy_pk_rebuilt_to_composite(self, backend, scope_a):
         self._make_legacy_db(
-            store_for(scope_a), rows=[("/home/u/.hermes/sessions", "agent:main:telegram:dm:1", "{}", 1.0)]
+            store_for(scope_a), rows=[("/home/u/.slave/sessions", "agent:main:telegram:dm:1", "{}", 1.0)]
         )
         store = backend.open(scope_a)
         db = store.holder()
         assert self._pk_cols(db) == ["scope", "session_key"]
         # Existing rows survive the rebuild.
-        entries = store.routing.load_routing_entries(routing_scope="/home/u/.hermes/sessions")
+        entries = store.routing.load_routing_entries(routing_scope="/home/u/.slave/sessions")
         assert entries == {"agent:main:telegram:dm:1": "{}"}
 
     def test_current_shape_left_untouched(self, db, store):

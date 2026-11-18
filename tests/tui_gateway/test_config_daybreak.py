@@ -1,6 +1,6 @@
 """The standalone backend serves the Desktop Daybreak switch (`agent.daybreak`) like the native owner.
 
-Desktop shows the switch on catalog-eligible models from any backend, including `hermes serve` over
+Desktop shows the switch on catalog-eligible models from any backend, including `slave serve` over
 SSH, so `config.get` / `config.set` must know the key here too, and a flip must reach this profile's
 live agents (requests check eligibility themselves: agent/codex_service_tiers.py).
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from tui_gateway import server
@@ -20,8 +20,8 @@ def homes(tmp_path, monkeypatch):
     launch, worker = tmp_path / "launch", tmp_path / "profiles" / "code"
     launch.mkdir(parents=True)
     worker.mkdir(parents=True)
-    monkeypatch.setattr(server, "_hermes_home", launch)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setattr(server, "_slave_home", launch)
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setattr(server, "_profile_home", lambda name: worker if (name or "").strip() == "code" else None)
     server._cfg_cache = server._cfg_sig = server._cfg_path = None
     yield launch, worker

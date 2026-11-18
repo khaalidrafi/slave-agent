@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from run_agent import AIAgent
-from tests.fakes.fake_llm_provider import FakeLLMServer, Text, write_hermes_home
+from tests.fakes.fake_llm_provider import FakeLLMServer, Text, write_slave_home
 
 
 def _agent(home: Path, main_url: str):
@@ -27,13 +27,13 @@ def test_voice_turn_routes_then_restores(tmp_path, monkeypatch, voice_window_ok)
     with FakeLLMServer([Text("main one"), Text("main two")]) as main, \
             FakeLLMServer([Text("voice reply")]) as voice:
         context = "128000" if voice_window_ok else "1000"
-        home = write_hermes_home(tmp_path / ".hermes", main.base_url, extra_config=(
+        home = write_slave_home(tmp_path / ".slave", main.base_url, extra_config=(
             "auxiliary:\n  voice_chat:\n    provider: custom\n"
             f"    base_url: {voice.base_url}\n    model: voice-model\n    api_key: sk-fake-voice\n"
             "custom_providers:\n  - name: voice\n"
             f"    base_url: {voice.base_url}\n    models:\n      voice-model:\n        context_length: {context}\n"
         ))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("SLAVE_HOME", str(home))
         agent = _agent(home, main.base_url)
 
         first = agent.run_conversation("typed question")
@@ -131,8 +131,8 @@ def test_mid_voice_turn_reports_the_sessions_own_route(tmp_path, monkeypatch, se
         extra = ("auxiliary:\n  voice_chat:\n    provider: custom\n"
                  f"    base_url: {voice.base_url}\n    model: voice-model\n    api_key: sk-fake-voice\n"
                  if separate_voice_model else "")
-        home = write_hermes_home(tmp_path / ".hermes", main.base_url, extra_config=extra)
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        home = write_slave_home(tmp_path / ".slave", main.base_url, extra_config=extra)
+        monkeypatch.setenv("SLAVE_HOME", str(home))
         agent = _agent(home, main.base_url)
         agent.reasoning_config = {"enabled": True, "effort": "low"}
         agent._voice_turn_pending = True

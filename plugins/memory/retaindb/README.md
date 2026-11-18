@@ -5,18 +5,18 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking) and 7 memory typ
 ## Requirements
 
 - RetainDB account ($20/month) from [retaindb.com](https://www.retaindb.com)
-- `requests` is part of Hermes's core dependencies; no separate SDK install is needed. For damaged dependencies, use `hermes pm repair` and restart Hermes.
+- `requests` is part of slave-agent’s core dependencies; no separate SDK install is needed. For damaged dependencies, use `slave pm repair` and restart Slave.
 
 ## Setup
 
 ```bash
-hermes memory setup    # select "retaindb"
+slave memory setup    # select "retaindb"
 ```
 
 Or manually:
 ```bash
-hermes config set memory.provider retaindb
-echo "RETAINDB_API_KEY=your-key" >> ~/.hermes/.env
+slave config set memory.provider retaindb
+echo "RETAINDB_API_KEY=your-key" >> ~/.slave/.env
 ```
 
 ## Config

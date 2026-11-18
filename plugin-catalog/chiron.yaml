@@ -19,5 +19,5 @@ capabilities:
   requires_env: []
 known_issues:
   - "Level reading is keyword-based (English only). It can misread a level; /chiron level <topic> <level> pins the right one."
-  - "The floor is guidance to the model, not a tool gate. It changes how the agent asks; it does not block tool calls. Pair it with Hermes approvals for hard stops."
+  - "The floor is guidance to the model, not a tool gate. It changes how the agent asks; it does not block tool calls. Pair it with slave-agent approvals for hard stops."
   - "Evals are a small number of runs on one model (see EVALS.md); with Chiron on, pro answers ran about 12% longer than plugin-off, mostly the confirm-before-acting lines."

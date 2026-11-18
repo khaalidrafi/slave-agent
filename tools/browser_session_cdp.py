@@ -12,7 +12,7 @@ from agent.redact import redact_cdp_url
 
 logger = logging.getLogger(__name__)
 
-# Live ``/browser connect`` endpoints, one per profile home (``hermes_home_key()``): a multiplexed
+# Live ``/browser connect`` endpoints, one per profile home (``slave_home_key()``): a multiplexed
 # gateway serves every profile from this process, so a process-wide value would reach them all.
 _live_overrides: dict[str, str] = {}
 _live_overrides_lock = threading.Lock()
@@ -63,17 +63,17 @@ def live_cdp_override() -> str:
     On a multiplexed gateway a context with no profile bound answers "" rather than the launch
     profile's endpoint, the way ``get_secret`` fails closed."""
     from agent.secret_scope import is_multiplex_active
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None and is_multiplex_active():
+    from slave_constants import get_slave_home_override, slave_home_key
+    if get_slave_home_override() is None and is_multiplex_active():
         return ""
     with _live_overrides_lock:
-        return _live_overrides.get(hermes_home_key(), "")
+        return _live_overrides.get(slave_home_key(), "")
 
 
 def set_live_cdp_override(url: Optional[str]) -> None:
     """Set (or with a falsy ``url`` clear) the current profile's live endpoint and bump its generation."""
-    from hermes_constants import hermes_home_key
-    key = hermes_home_key()
+    from slave_constants import slave_home_key
+    key = slave_home_key()
     with _live_overrides_lock:
         if url:
             _live_overrides[key] = url
@@ -84,9 +84,9 @@ def set_live_cdp_override(url: Optional[str]) -> None:
 
 def live_cdp_generation(home_key: Optional[str] = None) -> int:
     """The current (or ``home_key``'s) profile's live-endpoint generation."""
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     with _live_overrides_lock:
-        return _live_generations.get(home_key or hermes_home_key(), 0)
+        return _live_generations.get(home_key or slave_home_key(), 0)
 
 
 def env_cdp_url() -> str:

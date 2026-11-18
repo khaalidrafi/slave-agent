@@ -23,7 +23,7 @@ ROUTE = "mcp-ambush-0123456789ab"
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     route = {"secret": SECRET, "prompt": "Event {eventId}: {data.feed_id}", "deliver": "log", "profile": "default",
              "mcp_event": {"server": "ambush", "name": "feed.emission.created", "arguments": {}}}
     (tmp_path / "webhook_subscriptions.json").write_text(json.dumps({ROUTE: route}))

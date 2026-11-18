@@ -66,7 +66,7 @@ def test_status_names_the_member_answering_while_its_turn_runs(tmp_path: Path, s
         room_id="room-1",
         name="Release room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )

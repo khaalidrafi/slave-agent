@@ -615,7 +615,7 @@ const RECEIPT_TIMESTAMP_STATUS = [
 ];
 
 /**
- * Delivery/read status of a message Hermes sent, as a queue event for the adapter to log.
+ * Delivery/read status of a message Slave sent, as a queue event for the adapter to log.
  * `messages.update` carries `update.status` for 1:1 chats; `message-receipt.update` carries a
  * per-recipient `receipt` for groups. Returns null for anything that is not a status change of
  * one of our own sends (`isOwnSend(id)`), so human messages on the linked phone are never logged.

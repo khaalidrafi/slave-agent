@@ -16,7 +16,7 @@ platforms: [linux]
 known_issues:
   - "Needs an NVIDIA GPU with nvidia-smi and a built llama.cpp llama-server; only llama.cpp is managed (Ollama, vLLM and LM Studio are detection-only)."
   - "On WSL2, GGUFs on a Windows drive (/mnt/<drive>, 9p) load ~10x slower than from the Linux filesystem."
-  - "Keep the same -c on every model: Hermes caches one context length per model id (the editor enforces it)."
+  - "Keep the same -c on every model: slave-agent caches one context length per model id (the editor enforces it)."
 capabilities:
   provides_tools:
     - sms_status

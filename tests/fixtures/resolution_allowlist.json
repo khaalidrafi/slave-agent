@@ -86,7 +86,7 @@
   },
   {
     "path": "gateway/run.py",
-    "symbol": "_resolve_hermes_bin",
+    "symbol": "_resolve_slave_bin",
     "kind": "bare_which"
   },
   {
@@ -105,271 +105,271 @@
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/_early_recovery.py",
+    "path": "slave_cli/_early_recovery.py",
     "symbol": "_git_executable",
     "kind": "bare_which",
-    "reason": "stdlib-only launch-time repair (runs from hermes_bootstrap before hermes_platform or app deps import); falls back to PM's staged git"
+    "reason": "stdlib-only launch-time repair (runs from slave_bootstrap before slave_platform or app deps import); falls back to PM's staged git"
   },
   {
-    "path": "hermes_cli/_early_recovery.py",
+    "path": "slave_cli/_early_recovery.py",
     "symbol": "_held_open_lsof",
     "kind": "bare_which",
     "reason": "stdlib-only launch-time repair asks the OS's own lsof (macOS/BSD) whether a dead git's index.lock is still open; absent lsof means unknown and the lock is kept"
   },
   {
-    "path": "hermes_cli/_early_recovery.py",
+    "path": "slave_cli/_early_recovery.py",
     "symbol": "_ps_git_holder",
     "kind": "bare_which",
     "reason": "stdlib-only launch-time repair asks the OS's own ps (macOS/BSD) for lock-keeping gits whose fd is closed; falls back to /bin/ps because the launcher's PATH may hold neither git nor ps; absent ps means unknown and the lock is kept"
   },
   {
-    "path": "hermes_cli/_subprocess_compat.py",
+    "path": "slave_cli/_subprocess_compat.py",
     "symbol": "resolve_node_command",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/boot_bootstrap.py",
+    "path": "slave_cli/boot_bootstrap.py",
     "symbol": "_git_binary",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/cli_session_mixin.py",
+    "path": "slave_cli/cli_session_mixin.py",
     "symbol": "CLISessionMixin._clear_terminal_on_exit",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/commands_completion.py",
+    "path": "slave_cli/commands_completion.py",
     "symbol": "SlashCommandCompleter._get_project_files",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/config.py",
+    "path": "slave_cli/config.py",
     "symbol": "edit_config",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/doctor_platform.py",
+    "path": "slave_cli/doctor_platform.py",
     "symbol": "_check_command_installation",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/doctor_platform.py",
+    "path": "slave_cli/doctor_platform.py",
     "symbol": "_macos_desktop_dr",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/doctor_tools.py",
+    "path": "slave_cli/doctor_tools.py",
     "symbol": "_safe_which",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "_build_wsl_interop_paths",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "_ensure_linger_enabled",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "_get_parent_pid",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "_preflight_user_systemd",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "_windows_process_listing",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "_windows_scheduled_task_state",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "get_systemd_linger_status",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway.py",
+    "path": "slave_cli/gateway.py",
     "symbol": "supports_systemd_services",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/gateway_windows.py",
+    "path": "slave_cli/gateway_windows.py",
     "symbol": "_exec_schtasks",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/git_credentials.py",
+    "path": "slave_cli/git_credentials.py",
     "symbol": "_credential_fill",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/git_credentials.py",
+    "path": "slave_cli/git_credentials.py",
     "symbol": "_gh_cli_token",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/kanban_db_dispatch.py",
-    "symbol": "_resolve_hermes_argv",
+    "path": "slave_cli/kanban_db_dispatch.py",
+    "symbol": "_resolve_slave_argv",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/linux_desktop_entry.py",
+    "path": "slave_cli/linux_desktop_entry.py",
     "symbol": "_refresh_hicolor_cache",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/linux_desktop_entry.py",
+    "path": "slave_cli/linux_desktop_entry.py",
     "symbol": "refresh_desktop_databases",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/local_runtime/hardware.py",
+    "path": "slave_cli/local_runtime/hardware.py",
     "symbol": "_nvidia_smi_path",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/macos_signing.py",
+    "path": "slave_cli/macos_signing.py",
     "symbol": "sign_managed_python",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_container.py",
+    "path": "slave_cli/main_container.py",
     "symbol": "exec_in_container",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop.py",
+    "path": "slave_cli/main_desktop.py",
     "symbol": "_desktop_linux_sandbox_fixup",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop.py",
+    "path": "slave_cli/main_desktop.py",
     "symbol": "_desktop_linux_userns_sandbox_available",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop.py",
+    "path": "slave_cli/main_desktop.py",
     "symbol": "_desktop_macos_has_valid_real_signature",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop.py",
+    "path": "slave_cli/main_desktop.py",
     "symbol": "_desktop_macos_local_codesign",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop.py",
+    "path": "slave_cli/main_desktop.py",
     "symbol": "_desktop_macos_relaunchable_fixup",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop_tcc.py",
+    "path": "slave_cli/main_desktop_tcc.py",
     "symbol": "_desktop_macos_setup_tcc_identity",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop.py",
+    "path": "slave_cli/main_desktop.py",
     "symbol": "_install_rebuilt_macos_bundles",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_desktop.py",
+    "path": "slave_cli/main_desktop.py",
     "symbol": "cmd_gui",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_tui_launch.py",
+    "path": "slave_cli/main_tui_launch.py",
     "symbol": "_make_tui_argv",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_tui_launch.py",
+    "path": "slave_cli/main_tui_launch.py",
     "symbol": "_restore_tui_workspace",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/main_tui_launch.py",
+    "path": "slave_cli/main_tui_launch.py",
     "symbol": "_tui_node_bin",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/mcp_catalog.py",
+    "path": "slave_cli/mcp_catalog.py",
     "symbol": "_do_git_install",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/profiles.py",
+    "path": "slave_cli/profiles.py",
     "symbol": "create_wrapper_script",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/relaunch.py",
-    "symbol": "resolve_hermes_bin",
+    "path": "slave_cli/relaunch.py",
+    "symbol": "resolve_slave_bin",
     "kind": "bare_which"
   },
   {
     "path": "persistence/sqlite/admin/_lost_and_found.py",
     "symbol": "find_sqlite3_cli",
     "kind": "bare_which",
-    "reason": "the SQLite backend's salvage resolves the sqlite3 CLI the way hermes_cli/session_lost_and_found.py::find_sqlite3_cli does"
+    "reason": "the SQLite backend's salvage resolves the sqlite3 CLI the way slave_cli/session_lost_and_found.py::find_sqlite3_cli does"
   },
   {
-    "path": "hermes_cli/setup_tts.py",
+    "path": "slave_cli/setup_tts.py",
     "symbol": "_install_neutts_deps",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/source_build.py",
+    "path": "slave_cli/source_build.py",
     "symbol": "_build_desktop_product",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/source_build.py",
+    "path": "slave_cli/source_build.py",
     "symbol": "run_source_script",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/stdio.py",
+    "path": "slave_cli/stdio.py",
     "symbol": "_default_windows_editor",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/tools_config_cua.py",
+    "path": "slave_cli/tools_config_cua.py",
     "symbol": "_repair_cua_driver_autostart_windows",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/tools_config_post_setup.py",
+    "path": "slave_cli/tools_config_post_setup.py",
     "symbol": "_post_setup_chromium",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/web_git.py",
+    "path": "slave_cli/web_git.py",
     "symbol": "_gh",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/web_routers/audio.py",
+    "path": "slave_cli/web_routers/audio.py",
     "symbol": "_ffmpeg_s16le_mono",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/web_routers/git.py",
+    "path": "slave_cli/web_routers/git.py",
     "symbol": "_probe_gh_auth",
     "kind": "bare_which"
   },
   {
-    "path": "hermes_constants.py",
+    "path": "slave_constants.py",
     "symbol": "find_node_executable",
     "kind": "bare_which"
   },
@@ -410,7 +410,7 @@
   },
   {
     "path": "tools/bot_relay.py",
-    "symbol": "_hermes_cli",
+    "symbol": "_slave_cli",
     "kind": "bare_which"
   },
   {
@@ -465,7 +465,7 @@
   },
   {
     "path": "tools/environments/local.py",
-    "symbol": "_resolve_hermes_bin_dir",
+    "symbol": "_resolve_slave_bin_dir",
     "kind": "bare_which"
   },
   {
@@ -619,13 +619,13 @@
     "kind": "bare_which"
   },
   {
-    "path": "hermes_cli/update_pause_record.py",
+    "path": "slave_cli/update_pause_record.py",
     "symbol": "_git_executable",
     "kind": "bare_which",
-    "reason": "gate reads of the paused gateways' checkout run outside the updater, where install.ps1's PM-staged git is not on PATH; falls back to that staged git (moves to hermes_cli._early_recovery._git_executable when #132361 lands)"
+    "reason": "gate reads of the paused gateways' checkout run outside the updater, where install.ps1's PM-staged git is not on PATH; falls back to that staged git (moves to slave_cli._early_recovery._git_executable when #132361 lands)"
   },
   {
-    "path": "hermes_cli/source_check.py",
+    "path": "slave_cli/source_check.py",
     "symbol": "_installed_git",
     "kind": "bare_which",
     "reason": "only asks whether the caller's bare git is on PATH; when it is not (Desktop on a Windows install whose only git is install.ps1's PM-staged copy) it defers to update_pause_record._git_executable, the updater's own resolution"

@@ -21,8 +21,8 @@ def _owner(home, monkeypatch, config):
     from gateway.session_controls import AuthorityConnection
     home.mkdir(parents=True, exist_ok=True)
     (home / 'config.yaml').write_text(json.dumps(config))
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     store = SessionStore(home / 'sessions', GatewayConfig())
     db = store.persistence
     runner = SimpleNamespace(session_store=store, _session_db=db, adapters={}, _draining=False,

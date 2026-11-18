@@ -71,12 +71,12 @@ def test_discovered_process_provider_delivers_progress_before_completion(tmp_pat
     then cross the normal dispatch and streaming accumulator with a fixture client.
     Only native I/O is replaced, not routing, callbacks, accumulation or cleanup.
     """
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from providers import get_provider_profile
     from run_agent import AIAgent
     from agent.turn_api_call import perform_api_call
 
-    plugin = get_hermes_home() / "plugins" / "streaming-fixture"
+    plugin = get_slave_home() / "plugins" / "streaming-fixture"
     plugin.mkdir(parents=True)
     (plugin / "plugin.yaml").write_text(
         "name: streaming-fixture\nkind: model-provider\nversion: 0.1.0\ndescription: test fixture\n")
@@ -109,8 +109,8 @@ def test_discovered_process_provider_delivers_progress_before_completion(tmp_pat
         yield chunk(usage=SimpleNamespace(prompt_tokens=7, completion_tokens=3, total_tokens=10))
 
     class FixtureClient:
-        HERMES_SKIP_TRANSPORT_WRAP = True
-        HERMES_SKIP_ASYNC_WRAP = True
+        SLAVE_SKIP_TRANSPORT_WRAP = True
+        SLAVE_SKIP_ASYNC_WRAP = True
 
         def __init__(self):
             self.chat = SimpleNamespace(completions=self)

@@ -103,7 +103,7 @@ class TestResolveCommandProviderConfig:
 
 class TestCommandTtsEnv:
     def test_command_provider_uses_sanitized_child_env(self, monkeypatch):
-        """Salvage of #56332: command TTS must not inherit Hermes secrets."""
+        """Salvage of #56332: command TTS must not inherit slave-agent secrets."""
         monkeypatch.setenv("AUXILIARY_VISION_API_KEY", "sk-vision")
         monkeypatch.setenv("GATEWAY_RELAY_SECRET", "relay-secret")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-openai")
@@ -452,7 +452,7 @@ class TestGenerateCommandTts:
     def test_model_chosen_output_path_never_reaches_the_shell(self, tmp_path, template):
         """A template that re-parses its placeholders (``sh -c '...'``) cannot be protected by
         quoting, so the caller's ``output_path`` is never put in the command: the command writes
-        a Hermes-named file that is moved to the requested path afterwards."""
+        a Slave-named file that is moved to the requested path afterwards."""
         marker = tmp_path / "pwned"
         out = tmp_path / f"x$(touch {marker}).mp3"
         result = _generate_command_tts("hello world", str(out), "nested-sh", {"command": template}, {})
@@ -621,8 +621,8 @@ class TestCommandTtsEnvPassthrough:
         assert _command_provider_env_passthrough({}) == []
         assert _command_provider_env_passthrough({"env_passthrough": "A_KEY"}) == []
 
-    def test_allowlist_refuses_hermes_provider_credentials(self):
-        """Provider config cannot smuggle Hermes-managed credentials back into the
+    def test_allowlist_refuses_slave_provider_credentials(self):
+        """Provider config cannot smuggle Slave-managed credentials back into the
         scrubbed command child env (#138361, GHSA-rhgp-j443-p4rf policy)."""
         from tools.tts_command_provider import command_env_passthrough as _command_provider_env_passthrough
 
@@ -643,7 +643,7 @@ class TestCommandProviderSpawnGroupKwargs:
     """
 
     def test_nt_branch_hides_the_console_window(self, monkeypatch):
-        from hermes_cli import _subprocess_compat
+        from slave_cli import _subprocess_compat
         from tools.tts_command_provider import provider_popen_group_kwargs
 
         # Pin the compat module's host probe so the nt data branch is assertable
@@ -657,7 +657,7 @@ class TestCommandProviderSpawnGroupKwargs:
         assert "start_new_session" not in kwargs
 
     def test_nt_branch_matches_the_shared_detach_bundle(self, monkeypatch):
-        from hermes_cli import _subprocess_compat
+        from slave_cli import _subprocess_compat
         from tools.tts_command_provider import provider_popen_group_kwargs
 
         monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", True)

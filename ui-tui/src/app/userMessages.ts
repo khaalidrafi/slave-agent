@@ -4,7 +4,7 @@
 // (namespace `userMessages`); every exported message is a function so it is
 // resolved against the active locale at call time, never at import time.
 
-import type { ErrorSurface } from '@hermes/shared/gateway-events'
+import type { ErrorSurface } from '@slave-agent/shared/gateway-events'
 
 import { messages, t } from '../i18n/runtime.js'
 import type { Translations } from '../i18n/types.js'
@@ -41,7 +41,7 @@ export const backendRestarting = (): string => t('userMessages.backend.restartin
 
 export const backendRestartingActivity = (): string => t('userMessages.backend.restartingActivity')
 
-// Attached (dashboard / embedded) mode: only the socket dropped; Hermes and any
+// Attached (dashboard / embedded) mode: only the socket dropped; Slave and any
 // reply in progress are still alive on the backend and come back on reconnect.
 export const connectionLost = (): string => t('userMessages.backend.connectionLost')
 
@@ -87,7 +87,7 @@ export const backendSlowStartStatus = (): string => t('userMessages.backend.slow
 // Only real failures: a traceback, a CRITICAL log line, an `XxxError:` / `XxxException:`
 // head, the gateway's own turn/exit markers, or the canonical bootstrap's verdict lines
 // (`gateway incompatible: runtime_protocol`, `gateway inaccessible: …` and their remedy, see
-// hermes_cli/gateway_runtime_attach.py failure_message). Dependency `DeprecationWarning` /
+// slave_cli/gateway_runtime_attach.py failure_message). Dependency `DeprecationWarning` /
 // `UserWarning` lines are noise and stay in /logs only.
 const STDERR_PROBLEM_RE =
   /Traceback|\b[A-Z][A-Za-z]*(?:Error|Exception)\b:|CRITICAL|\[gateway-turn\]|\[gateway-exit\]|^gateway (?:absent|conflict|draining|inaccessible|incompatible|starting|unavailable): /
@@ -106,7 +106,7 @@ export const stderrProblemActivity = (line: string): string => {
 const VERSION_SKEW_RE = /Extra inputs are not permitted|^unknown method:/
 // Both server routes' answer for a method they do not serve (tui_gateway/contracts/registry.py
 // unknown_method_message). A JSON-RPC client sends no version, so this is not proof of skew.
-const UNAVAILABLE_METHOD_RE = /^unknown method: (\S+) — not available on this Hermes backend$/
+const UNAVAILABLE_METHOD_RE = /^unknown method: (\S+) — not available on this Slave backend$/
 
 /** The Ink bundle and the Python backend disagree on the wire: stale dist or an older attached backend. */
 export const isVersionSkewError = (err: unknown): boolean => {

@@ -61,7 +61,7 @@ def _bridge_skipping_wrapper_policy(**extra):
 
 
 def test_unwrapped_tool_runs_its_own_pre_tool_call_hook(monkeypatch, deferred_tool):
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
     seen = []
 
@@ -81,7 +81,7 @@ def test_unwrapped_tool_runs_its_own_pre_tool_call_hook(monkeypatch, deferred_to
 
 
 def test_a_guardrail_matched_on_the_underlying_tool_blocks_it(monkeypatch, deferred_tool):
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
     def _hook(name, args, **kw):
         return ("blocked by policy", None) if name == TOOL else (None, None)
@@ -95,7 +95,7 @@ def test_a_guardrail_matched_on_the_underlying_tool_blocks_it(monkeypatch, defer
 
 
 def test_unwrapped_tool_runs_its_own_request_and_execution_middleware(monkeypatch, deferred_tool):
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
     events = []
 

@@ -37,14 +37,14 @@ def _commit(repo: Path, content: str) -> str:
 
 def _run(tmp_path: Path, body: str, *, env: dict | None = None, **kwargs) -> subprocess.CompletedProcess:
     script = f"source {shlex.quote(INSTALL_SH.as_posix())} --manifest\nsleep() {{ :; }}\n{body}\n"
-    full_env = dict(os.environ, HOME=tmp_path.as_posix(), HERMES_HOME=(tmp_path / "home").as_posix(),
-                    HERMES_INSTALL_DIR=(tmp_path / "install").as_posix(), **(env or {}))
+    full_env = dict(os.environ, HOME=tmp_path.as_posix(), SLAVE_HOME=(tmp_path / "home").as_posix(),
+                    SLAVE_INSTALL_DIR=(tmp_path / "install").as_posix(), **(env or {}))
     return subprocess.run(["bash", "-c", script], env=full_env, capture_output=True, text=True, timeout=60, **kwargs)  # noqa: PLW1510 -- forwarding wrapper: callers pass subprocess kwargs via **kwargs (check may arrive through it); an explicit check=False would raise TypeError
 
 
 def _stage(tmp_path: Path, origin: Path, *, commit: str = "", extra_env: dict | None = None,
            prelude: str = "") -> subprocess.CompletedProcess:
-    env = {"HERMES_REPO_URL": origin.as_posix(), **(extra_env or {})}
+    env = {"SLAVE_REPO_URL": origin.as_posix(), **(extra_env or {})}
     return _run(tmp_path, f"{prelude}\nINSTALL_COMMIT={shlex.quote(commit)}\nstage_repository", env=env)
 
 
@@ -148,7 +148,7 @@ def test_pinned_fresh_clone_publishes_nothing_when_the_pin_fails(tmp_path):
 
 @pytest.mark.parametrize("damage", ["commitless", "lost_head", "dangling_gitdir_file", "dangling_symlink"])
 def test_unusable_checkout_is_moved_aside_and_recloned(tmp_path, damage):
-    """An interrupted clone, or a .git a killed update left unreadable (the state `hermes update`
+    """An interrupted clone, or a .git a killed update left unreadable (the state `slave update`
     tells the user to repair by rerunning the installer): moved aside, never deleted, then cloned."""
     origin = _origin(tmp_path / "origin")
     install = tmp_path / "install"
@@ -260,11 +260,11 @@ def test_path_uv_is_never_used_even_when_newer_than_the_pin(tmp_path):
 
 def test_interactive_stages_skip_without_a_terminal(tmp_path):
     install = tmp_path / "install"
-    (install / ".hermes" / "bin").mkdir(parents=True)
+    (install / ".slave" / "bin").mkdir(parents=True)
     marker = tmp_path / "ran"
-    hermes = install / ".hermes" / "bin" / "hermes"
-    hermes.write_text(f"#!/bin/sh\ntouch {shlex.quote(marker.as_posix())}\n")
-    hermes.chmod(0o755)
+    slave = install / ".slave" / "bin" / "slave"
+    slave.write_text(f"#!/bin/sh\ntouch {shlex.quote(marker.as_posix())}\n")
+    slave.chmod(0o755)
     # A new session has no controlling terminal, so opening /dev/tty fails.
     result = _run(tmp_path, "NON_INTERACTIVE=false\nstage_setup\nstage_gateway", start_new_session=True,
                   stdin=subprocess.DEVNULL)

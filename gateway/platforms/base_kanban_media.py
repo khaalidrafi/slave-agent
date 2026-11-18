@@ -8,8 +8,8 @@ from pathlib import Path
 
 def _kanban_root() -> Path:
     """Kanban is root-shared across profiles by design (``kanban_db.kanban_home``)."""
-    from gateway.platforms import base  # late: tests repoint the facade's _HERMES_ROOT
-    return Path(os.environ.get("HERMES_KANBAN_HOME", "").strip() or base._HERMES_ROOT).expanduser()
+    from gateway.platforms import base  # late: tests repoint the facade's _SLAVE_ROOT
+    return Path(os.environ.get("SLAVE_KANBAN_HOME", "").strip() or base._SLAVE_ROOT).expanduser()
 
 
 def _kanban_board_dirs() -> list[Path]:
@@ -22,7 +22,7 @@ def _kanban_board_dirs() -> list[Path]:
 
 def _kanban_attachment_roots() -> list[Path]:
     """Return durable Kanban attachment roots without importing kanban_db."""
-    override = os.environ.get("HERMES_KANBAN_ATTACHMENTS_ROOT", "").strip()
+    override = os.environ.get("SLAVE_KANBAN_ATTACHMENTS_ROOT", "").strip()
     if override:
         return [Path(override).expanduser()]
     roots = [_kanban_root() / "kanban" / "attachments"]

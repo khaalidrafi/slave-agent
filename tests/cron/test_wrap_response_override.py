@@ -62,7 +62,7 @@ def test_string_false_is_not_stored_as_wrap_on():
 
 
 def test_cli_edit_inherit_flag_parses_to_reset():
-    from hermes_cli.subcommands.cron import build_cron_parser
+    from slave_cli.subcommands.cron import build_cron_parser
 
     parser = argparse.ArgumentParser()
     build_cron_parser(parser.add_subparsers(dest="command"), cmd_cron=lambda a: None)

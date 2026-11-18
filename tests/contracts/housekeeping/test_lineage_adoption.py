@@ -25,7 +25,7 @@ def _payload(sid, started, ended=None, end_reason=None, parent=None):
 @pytest.fixture
 def stores(backend, scope_a, scope_b, monkeypatch):
     hooks: list = []
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", lambda name, **payload: hooks.append(payload))
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", lambda name, **payload: hooks.append(payload))
     local, donor = backend.open(scope_a), backend.open(scope_b)
     assert donor.maintenance.import_sessions([_payload("s-aroot", NOW - 2 * DAY, NOW - 2 * DAY + 10, "compression"),
                                               _payload("s-atip", NOW - 2 * DAY + 20, parent="s-aroot")]).ok
@@ -68,11 +68,11 @@ def test_a_donor_ahead_of_the_local_copy_is_not_retired(stores, caplog):
     local, donor = stores
     adopt_session_lineage(local, donor, "s-atip")
     donor.messages.append(SessionId("s-atip"), NewMessage(role="user", content="more"))
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     assert adopt_session_lineage(local, donor, "s-atip") == {
         "ok": True, "imported": 0, "skipped": 1, "detached": 0, "imported_ids": [], "skipped_ids": ["s-atip"], "errors": [],
         "adopted": True, "donor_retired": False}
-    assert [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "hermes_state" and r.levelname != "DEBUG"] == [
+    assert [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "slave_state" and r.levelname != "DEBUG"] == [
         ("WARNING", "adoption divergence: donor segment s-atip has 3 messages, local copy has 2 — donor will NOT be retired")]
 
 

@@ -155,7 +155,7 @@ class ComputerUseProvider(ProviderBase):
 
     @abstractmethod
     def create_backend(self, *, permission_mode: str) -> ComputerUseBackend:
-        """A fresh, unstarted backend for one Hermes session (the tool calls ``start()``/``stop()``).
+        """A fresh, unstarted backend for one slave-agent session (the tool calls ``start()``/``stop()``).
         ``permission_mode`` is ``standard`` | ``bounded`` | ``unrestricted`` (approval bypass active)."""
 
     def is_available(self) -> bool:
@@ -163,6 +163,6 @@ class ComputerUseProvider(ProviderBase):
         return True
 
     def doctor(self) -> Optional[int]:
-        """``hermes computer-use doctor`` for this backend: print findings, return the exit code.
+        """``slave computer-use doctor`` for this backend: print findings, return the exit code.
         ``None`` (default) means the backend ships no doctor."""
         return None

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -17,13 +17,13 @@ import { loadPendingInputs } from '../lib/pendingInputs.js'
 
 async function coldResume(legacy: boolean) {
   const home = mkdtempSync(join(tmpdir(), 'ink-cold-native-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   // A separate interpreter writes the real fsync/rename journal; no shared UI or successor map.
   execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
     import { randomUUID } from 'node:crypto';
     import { savePendingInput } from './src/lib/pendingInputs.ts';
-    const destination = { sid: 'R1', storedSid: 'S', profile: 'default', profileHome: process.env.HERMES_HOME };
+    const destination = { sid: 'R1', storedSid: 'S', profile: 'default', profileHome: process.env.SLAVE_HOME };
     for (const [i, text] of ['ambiguous', 'waiting'].entries()) savePendingInput({
       submissionId: randomUUID(), destination, text, display: text, createdAt: i,
       inFlight: i === 0, preparedText: i === 0 ? 'frozen payload' : undefined,
@@ -31,7 +31,7 @@ async function coldResume(legacy: boolean) {
     });
     savePendingInput({ submissionId: randomUUID(), destination: { ...destination, profile: 'foreign' }, text: 'foreign', display: 'foreign' });
     savePendingInput({ submissionId: randomUUID(), destination: { ...destination, storedSid: 'other' }, text: 'other', display: 'other' });
-  `], { cwd: process.cwd(), env: { ...process.env, HERMES_HOME: home }, stdio: 'pipe' })
+  `], { cwd: process.cwd(), env: { ...process.env, SLAVE_HOME: home }, stdio: 'pipe' })
   let queue!: ReturnType<typeof useQueue>
   let lifecycle!: ReturnType<typeof useSessionLifecycle>
 

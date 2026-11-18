@@ -17,9 +17,9 @@ from gateway.config import Platform
 from gateway.session import SessionSource, build_session_context_prompt
 from gateway.session_prompt_pin import PROMPT_PIN_VERSION, sanitize_prompt_pin
 from gateway.run_shutdown import _log_suppressed
-from hermes_cli.config import DEFAULT_CONFIG, cfg_get
-from hermes_cli.local_runtime.endpoint import LLAMACPP_ALIASES
-from hermes_cli.observability.shared_metrics_busy import observe_running_chats
+from slave_cli.config import DEFAULT_CONFIG, cfg_get
+from slave_cli.local_runtime.endpoint import LLAMACPP_ALIASES
+from slave_cli.observability.shared_metrics_busy import observe_running_chats
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
     from gateway.run import GatewayRunner
@@ -163,7 +163,7 @@ class GatewayAgentCacheMixin:
             return
         override: dict[str, Any] = {k: persisted.get(k) for k in ("model", "provider", "base_url")}
         provider = persisted.get("provider")
-        from hermes_cli.runtime_provider import is_foreign_provider_endpoint
+        from slave_cli.runtime_provider import is_foreign_provider_endpoint
         if is_foreign_provider_endpoint(provider, override.get("base_url")):
             override["base_url"] = None  # left over from a switch that kept the previous provider's URL
         if provider:
@@ -180,7 +180,7 @@ class GatewayAgentCacheMixin:
                     # The managed llama.cpp supervisor owns its live port; a persisted loopback URL from a
                     # boot that fell back to an ephemeral port would strand the session on a dead endpoint.
                     override["base_url"] = runtime.get("base_url")
-                from hermes_cli.models import normalize_opencode_base_url, opencode_provider_family
+                from slave_cli.models import normalize_opencode_base_url, opencode_provider_family
                 if opencode_provider_family(provider) is not None and override.get("base_url"):
                     # api_mode was just re-derived from the target model; a relay URL persisted by an older
                     # build for another wire (/v1-stripped) or the other family is healed to match (#96066).
@@ -286,12 +286,12 @@ class GatewayAgentCacheMixin:
         # Vendor prefix stripped on native providers, else the cached agent is evicted every turn,
         # destroying prompt caching.
         with suppress(Exception):
-            from hermes_cli.model_normalize import _AGGREGATOR_PROVIDERS, normalize_model_for_provider
+            from slave_cli.model_normalize import _AGGREGATOR_PROVIDERS, normalize_model_for_provider
             if provider and provider not in _AGGREGATOR_PROVIDERS:
                 model = normalize_model_for_provider(model, provider)
         # The Nous welcome host runs its one model whatever the chat configured (pin_model_for_route).
         with suppress(Exception):
-            from hermes_cli.anon_auth import pin_model_for_route
+            from slave_cli.anon_auth import pin_model_for_route
             model = pin_model_for_route(provider, primary.get("base_url", getattr(agent, "base_url", None)), model)
         return model
 
@@ -502,7 +502,7 @@ class GatewayAgentCacheMixin:
         with suppress(Exception):
             interrupt_event = getattr(adapter, "_active_sessions", {}).get(session_key)
             if interrupt_event is not None:
-                interrupt_event._hermes_run_generation = int(generation)
+                interrupt_event._slave_run_generation = int(generation)
 
     def _interrupt_running_turn(
         self, session_key: str, *, interrupt_reason: str, invalidation_reason: str, tool_reason: str | None = None,
@@ -574,7 +574,7 @@ class GatewayAgentCacheMixin:
             # running-agent fast path; the pending-sentinel /stop has no in-flight work, so it stays
             # silent. Dispatch failures are swallowed so a misbehaving plugin cannot break an interrupt.
             try:
-                from hermes_cli.plugins import invoke_hook as _invoke_hook
+                from slave_cli.plugins import invoke_hook as _invoke_hook
 
                 _invoke_hook(
                     "agent_loop_stopped",
@@ -817,8 +817,8 @@ class GatewayAgentCacheMixin:
             from gateway.session import _slack_tools_loaded
             slack_tools = "1" if _slack_tools_loaded() else "0"
         try:
-            from hermes_constants import display_hermes_home
-            home_display = str(display_hermes_home())
+            from slave_constants import display_slave_home
+            home_display = str(display_slave_home())
         except Exception:
             home_display = ""
         key_tuple = (
@@ -914,13 +914,13 @@ class GatewayAgentCacheMixin:
         And the LRU-cap eviction runs inside the REQUESTING turn, whose agent may belong to another
         profile — so "some scope is present" is not enough either. The owner comes from the session
         key: a named profile's home, else the DEFAULT profile (``agent:main:`` keys), which is the
-        root Hermes dir even when the gateway was launched under a named profile. Its scope is
+        root slave-agent dir even when the gateway was launched under a named profile. Its scope is
         entered unless the current one already is the owner's."""
         from agent.secret_scope import current_secret_scope, is_multiplex_active
         scope = nullcontext()
         if is_multiplex_active():
             from gateway.run import _profile_runtime_scope
-            from hermes_constants import get_default_hermes_root, get_hermes_home, hermes_home_key
+            from slave_constants import get_default_slave_root, get_slave_home, slave_home_key
             owner = None
             store = getattr(self, "session_store", None)
             if session_key and store is not None:
@@ -935,9 +935,9 @@ class GatewayAgentCacheMixin:
                     if named:  # a profile whose home is gone: the memory guard refuses its hooks under root
                         logger.warning("Profile %r owning %s has no home; releasing under the default profile, "
                                        "so its end-of-session memory is not saved", named, session_key)
-            owner_home = Path(owner) if owner else get_default_hermes_root()
+            owner_home = Path(owner) if owner else get_default_slave_root()
             # No key names no owner: an in-turn caller's own scope is the owner's, never swap it for the default.
-            if current_secret_scope() is None or (session_key and hermes_home_key(get_hermes_home()) != hermes_home_key(owner_home)):
+            if current_secret_scope() is None or (session_key and slave_home_key(get_slave_home()) != slave_home_key(owner_home)):
                 scope = _profile_runtime_scope(owner_home)
         with scope:
             target(*args)
@@ -1105,7 +1105,7 @@ class GatewayAgentCacheMixin:
                 logger.debug("Pressure release failed for %s: %s", key, _e)
             del agent
         with suppress(Exception):
-            from hermes_cli.mem_trim import trim_memory
+            from slave_cli.mem_trim import trim_memory
             trim_memory(force=True, reason="agent_cache_pressure")
 
     def _enforce_agent_cache_cap(self) -> None:

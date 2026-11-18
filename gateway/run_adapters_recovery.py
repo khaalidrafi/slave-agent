@@ -29,7 +29,7 @@ _MAX_PLUGIN_LOAD_REARMS = 3  # per queued platform: transient load failures heal
 
 def _adapter_unavailable_message(platform: Platform, *, retrying: bool = True) -> str:
     """Actionable ``adapter_unavailable`` status text, shared by startup and the reconnect watchers so
-    ``hermes status`` keeps the plugin/deps/credentials hint after the first retry."""
+    ``slave status`` keeps the plugin/deps/credentials hint after the first retry."""
     message = (
         f"No adapter available for enabled {platform.value}; check the plugin, dependencies, and credentials."
     )
@@ -102,7 +102,7 @@ class GatewaySecondaryReconnectMixin:
         strikes.pop(status_key, None)
         message = (f"{adapter.platform.value} bot token is in use elsewhere: another process (another machine or a "
                    f"leftover gateway) kept polling it through {len(_TOKEN_CONTENTION_RECONNECT_DELAYS)} reconnects. "
-                   "Stop that poller, then run 'hermes gateway restart'.")
+                   "Stop that poller, then run 'slave gateway restart'.")
         logger.error("%s: %s", status_key, message)
         adapter._set_fatal_error("token_in_use_elsewhere", message, retryable=False)
         self._update_platform_runtime_status(status_key, platform_state="fatal", error_code="token_in_use_elsewhere",
@@ -131,7 +131,7 @@ class GatewaySecondaryReconnectMixin:
         """Re-arm a failed plugin load for a queued platform, capped per queue entry, so the next attempt's
         import can succeed. The CALLER's runtime scope picks the plugin manager (one per profile home).
         Off the loop: the re-arm takes the manager's discovery lock, which a sweep or deferred load holds."""
-        from hermes_cli.plugins import get_plugin_manager
+        from slave_cli.plugins import get_plugin_manager
         rearms = info.get("load_rearms", 0)
         if rearms < _MAX_PLUGIN_LOAD_REARMS and await self._run_in_executor_with_context(
                 get_plugin_manager().rearm_failed_platform, platform.value):
@@ -242,8 +242,8 @@ class GatewaySecondaryReconnectMixin:
         from gateway.platform_registry import platform_registry
         from gateway.run import _platform_has_bot_credential, _profile_runtime_scope
         # Lazy + per-attempt: keeps test monkeypatches on these modules live.
-        from hermes_cli.profiles import get_profile_dir
-        from hermes_cli.env_loader import hydrate_profile_secret_sources
+        from slave_cli.profiles import get_profile_dir
+        from slave_cli.env_loader import hydrate_profile_secret_sources
         from gateway.config import load_gateway_config
         profile_home = get_profile_dir(profile_name)
         # Hydrate external secret sources off-loop so they cannot starve heartbeats.

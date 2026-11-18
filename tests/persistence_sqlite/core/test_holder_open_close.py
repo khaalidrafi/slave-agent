@@ -102,7 +102,7 @@ class TestConnectionLifecycle:
         self, tmp_path, monkeypatch
     ):
         """A failed schema init must close the connection opened before it."""
-        from hermes_cli.sqlite_safe_read import has_live_connection
+        from slave_cli.sqlite_safe_read import has_live_connection
 
         db_path = tmp_path / "state.db"
         opened = []
@@ -135,7 +135,7 @@ class TestConnectionLifecycle:
         self, tmp_path, monkeypatch
     ):
         """A post-open read setup failure must close its unregistered conn."""
-        from hermes_cli import sqlite_safe_read
+        from slave_cli import sqlite_safe_read
 
         db_path = tmp_path / "state.db"
         db = StoreHolder(db_path=db_path)
@@ -237,7 +237,7 @@ class TestConnectionLifecycle:
         forensic backup."""
         import sqlite3
 
-        from hermes_cli.sqlite_safe_read import has_live_connection
+        from slave_cli.sqlite_safe_read import has_live_connection
 
         db_path = tmp_path / "state.db"
         writable = StoreHolder(db_path=db_path)
@@ -286,7 +286,7 @@ class TestConnectionLifecycle:
         """
         import sqlite3
 
-        from hermes_cli.sqlite_safe_read import has_live_connection
+        from slave_cli.sqlite_safe_read import has_live_connection
 
         db_path = tmp_path / "state.db"
         writable = StoreHolder(db_path=db_path)

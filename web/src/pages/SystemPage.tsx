@@ -42,7 +42,7 @@ import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
 import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { HermesConsoleModal } from "@/components/HermesConsoleModal";
+import { SlaveConsoleModal } from "@/components/SlaveConsoleModal";
 import { cn, themedBody } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
@@ -246,7 +246,7 @@ function DebugShareButton({
       <ConfirmDialog
         open={open}
         title="Upload debug report to a public paste?"
-        description="Uploads a summary to a public paste service: Hermes, Python and OS versions, connected platform and toolset names, config key names (no values) and warning/error counts. It contains no log lines or message text. Pastes auto-delete after 6 hours; if paste.rs is unreachable, the dpaste.com fallback keeps them public for 1 day and they cannot be deleted early."
+        description="Uploads a summary to a public paste service: slave-agent, Python and OS versions, connected platform and toolset names, config key names (no values) and warning/error counts. It contains no log lines or message text. Pastes auto-delete after 6 hours; if paste.rs is unreachable, the dpaste.com fallback keeps them public for 1 day and they cannot be deleted early."
         destructive
         confirmLabel="Upload"
         cancelLabel="Cancel"
@@ -296,7 +296,7 @@ export default function SystemPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPath, setImportPath] = useState("");
   // Restore-from-backup is destructive (overwrites the live config) and the
-  // spawned `hermes import` runs non-interactively (stdin is /dev/null), so
+  // spawned `slave import` runs non-interactively (stdin is /dev/null), so
   // its CLI "Continue? [y/N]" prompt would auto-abort. The dashboard owns the
   // consent: confirm here, then call the endpoint with force=true.
   const [importingBackup, setImportingBackup] = useState(false);
@@ -336,7 +336,7 @@ export default function SystemPage() {
       api.getPortal(),
       // Cached (non-forced) check so the version row shows update status on
       // load without a separate effect / a forced network round-trip.
-      api.checkHermesUpdate(false),
+      api.checkSlaveUpdate(false),
       api.getGatewayMigratePlan(),
     ])
       .then(([s, st, m, p, c, h, cur, prt, upd, mig]) => {
@@ -638,7 +638,7 @@ export default function SystemPage() {
       if (status?.can_update_hermes === false) return;
       setCheckingUpdate(true);
       try {
-        const info = await api.checkHermesUpdate(force);
+        const info = await api.checkSlaveUpdate(force);
         setUpdateInfo(info);
         if (force) {
           if (info.update_available) {
@@ -664,7 +664,7 @@ export default function SystemPage() {
     setUpdateConfirmOpen(false);
     if (status?.can_update_hermes === false) {
       showToast(
-        "Hermes updates are managed outside this dashboard.",
+        "slave-agent updates are managed outside this dashboard.",
         "success",
       );
       return;
@@ -679,7 +679,7 @@ export default function SystemPage() {
         );
         return;
       }
-      setActiveAction(resp.name ?? "hermes-update");
+      setActiveAction(resp.name ?? "slave-update");
       showToast("Update started", "success");
     } catch (e) {
       showToast(`Update failed: ${errorMessage(e)}`, "error");
@@ -789,11 +789,11 @@ export default function SystemPage() {
         open={canUpdateHermes && updateConfirmOpen}
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={() => void applyUpdate()}
-        title="Update Hermes?"
+        title="Update slave-agent?"
         description={
           updateInfo && updateInfo.behind && updateInfo.behind > 0
-            ? `This will run 'hermes update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
-            : `This will run 'hermes update' (${updateInfo?.update_command ?? "hermes update"}) and restart the gateway when it finishes.`
+            ? `This will run 'slave update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
+            : `This will run 'slave update' (${updateInfo?.update_command ?? "slave update"}) and restart the gateway when it finishes.`
         }
         confirmLabel="Update now"
       />
@@ -830,7 +830,7 @@ export default function SystemPage() {
         description="Remove this hook from config and revoke its consent? It stops firing on the next restart."
         loading={hookDelete.isDeleting}
       />
-      <HermesConsoleModal
+      <SlaveConsoleModal
         open={consoleOpen}
         onClose={() => setConsoleOpen(false)}
       />
@@ -973,9 +973,9 @@ export default function SystemPage() {
                 <div>{stats?.python_impl} {stats?.python_version}</div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Hermes</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Slave</div>
                 <div className="flex items-center gap-2">
-                  <span>v{stats?.hermes_version}</span>
+                  <span>v{stats?.slave_version}</span>
                   {canUpdateHermes &&
                     updateInfo &&
                     (updateInfo.update_available ? (
@@ -1120,7 +1120,7 @@ export default function SystemPage() {
             )}
             {!portal?.logged_in && (
               <p className="text-xs text-muted-foreground">
-                Log in with <span className="font-mono">hermes portal</span>.
+                Log in with <span className="font-mono">slave portal</span>.
               </p>
             )}
           </CardContent>
@@ -1410,7 +1410,7 @@ export default function SystemPage() {
                   id="import-path"
                   value={importPath}
                   onChange={(e) => setImportPath(e.target.value)}
-                  placeholder="$HERMES_HOME/backups/hermes-backup.zip"
+                  placeholder="$SLAVE_HOME/backups/hermes-backup.zip"
                 />
               </div>
               <Button
@@ -1429,8 +1429,8 @@ export default function SystemPage() {
             </div>
             <ConfirmDialog
               open={!!importConfirmTarget}
-              title="Restore full Hermes backup?"
-              description={`This will overwrite your current Hermes configuration, skills, sessions, and data with the contents of ${backupImportLabel(importConfirmTarget)}. This cannot be undone.`}
+              title="Restore full slave-agent backup?"
+              description={`This will overwrite your current slave-agent configuration, skills, sessions, and data with the contents of ${backupImportLabel(importConfirmTarget)}. This cannot be undone.`}
               destructive
               confirmLabel="Restore"
               cancelLabel="Cancel"
@@ -1456,8 +1456,8 @@ export default function SystemPage() {
                   <span className="text-sm font-medium">Share debug report</span>
                   <span className="text-xs text-muted-foreground max-w-prose">
                     Uploads a summary (versions, config key names, error counts; no log lines or message text)
-                    to a public paste and returns a link for the Hermes team. Pastes auto-delete after 6 hours.
-                    Full logs go only to private storage via <code>hermes debug share --nous</code>.
+                    to a public paste and returns a link for the Slave team. Pastes auto-delete after 6 hours.
+                    Full logs go only to private storage via <code>slave debug share --nous</code>.
                   </span>
                 </div>
               </div>

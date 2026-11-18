@@ -173,7 +173,7 @@ def _install_fakes(
     cleanup_platform: Platform = Platform.TELEGRAM,
 ):
     """Wire up the module stubs every _run_agent test needs."""
-    monkeypatch.setenv("HERMES_TOOL_PROGRESS_MODE", "all")
+    monkeypatch.setenv("SLAVE_TOOL_PROGRESS_MODE", "all")
 
     fake_dotenv = types.ModuleType("dotenv")
     fake_dotenv.load_dotenv = lambda *a, **k: None
@@ -220,7 +220,7 @@ async def test_messaging_agent_forwards_checkpoint_config(monkeypatch, tmp_path)
     gateway_run = _install_fakes(
         monkeypatch, CheckpointCaptureAgent, cleanup_on=False,
     )
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     monkeypatch.setattr(
         gateway_run,
         "_load_gateway_config",
@@ -258,7 +258,7 @@ async def test_cleanup_chains_with_existing_callback(monkeypatch, tmp_path):
     adapter = CleanupCaptureAdapter()
     runner = _make_runner(adapter)
     gateway_run = _install_fakes(monkeypatch, ProgressAgent, cleanup_on=True)
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
 
     source = SessionSource(platform=Platform.TELEGRAM, chat_id="-1001")
     session_key = "agent:main:telegram:group:-1001"
@@ -328,7 +328,7 @@ async def test_queued_followup_starts_after_prior_turn_bubbles_are_deleted(monke
     adapter = CleanupCaptureAdapter()
     runner = _make_runner(adapter)
     gateway_run = _install_fakes(monkeypatch, QueuedFollowupAgent, cleanup_on=True)
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     session_key = "agent:main:telegram:group:-1001"
     QueuedFollowupAgent.adapter, QueuedFollowupAgent.session_key = adapter, session_key
     QueuedFollowupAgent.deleted_at_turn2_start = None
@@ -385,7 +385,7 @@ async def test_progress_send_in_flight_at_handoff_never_leaves_a_bubble(monkeypa
     adapter.loop, adapter.release = asyncio.get_running_loop(), asyncio.Event()
     runner = _make_runner(adapter)
     gateway_run = _install_fakes(monkeypatch, HeldSendAgent, cleanup_on=True)
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     session_key = "agent:main:telegram:group:-1001"
     HeldSendAgent.adapter, HeldSendAgent.session_key = adapter, session_key
 

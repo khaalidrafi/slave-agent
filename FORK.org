@@ -35,7 +35,7 @@ personalizable agent built out of this one. That splits upstream's bulk two ways
   Businesses customize from there: the plugin surface is the product they build on, so
   keeping it generic is worth more than shipping every feature by default.
 
-** Optimizations are on; stock Hermes is one setting away
+** Optimizations are on; stock slave-agent is one setting away
 
 Borrow OpenHuman's /direction/ -- light, fast, token-efficient -- not its code: different
 licence (GPL-3.0 against MIT), different language, and the merge model above depends on
@@ -43,12 +43,12 @@ carrying upstream rather than forking away from it. So every optimization lands 
 *config default*, never as a second code path:
 
 - they are on by default;
-- ~hermes_compat: true~ pins every one of those knobs back to upstream's value, so the fork
-  can behave exactly like Hermes.
+- ~slave_compat: true~ pins every one of those knobs back to upstream's value, so the fork
+  can behave exactly like Slave.
 
-Backwards compatibility with Hermes is a requirement, not a courtesy: turning the
+Backwards compatibility with slave-agent is a requirement, not a courtesy: turning the
 optimizations off must reproduce stock behaviour, knob for knob. An explicit per-knob
-setting always beats both switches -- ~hermes_compat~ rewrites defaults, it never overrides
+setting always beats both switches -- ~slave_compat~ rewrites defaults, it never overrides
 a choice the user made.
 
 ** Emacs is a first-class surface, not a client we happen to support
@@ -212,14 +212,14 @@ still speak upstream's names.
       P0 first. Which of P1 (desktop), P7 (dashboard) and P8 (meetings/voice) the master
       actually wants installed is his call -- removal is the default, keeping costs a merge
       conflict on a path we no longer defend.
-- [X] ~hermes_compat~ landed as code, not just doctrine: ~hermes_cli/lean_defaults.py~ holds
+- [X] ~slave_compat~ landed as code, not just doctrine: ~slave_cli/lean_defaults.py~ holds
       the lean values (~tool_output~ caps, tool-search listing budget, MCP auto-reload off) and
-      ~hermes_compat: true~ restores upstream's value for every one of them. ~config_defaults.py~
+      ~slave_compat: true~ restores upstream's value for every one of them. ~config_defaults.py~
       is still untouched, so the compat story stays a subtraction. Tests are knob-for-knob A/B
       against ~DEFAULT_CONFIG~, never a snapshot of the lean numbers. More knobs join the table
       in ~LEAN_DEFAULTS~; each one is then covered by the compat test automatically, because it
       iterates the table.
-- [ ] The PM tool store assumes an FHS host. ~setup-hermes.sh~ stages vendored uv,
+- [ ] The PM tool store assumes an FHS host. ~setup-slave.sh~ stages vendored uv,
       python-build-standalone CPython and BtbN ffmpeg -- all dynamic glibc binaries whose
       PT_INTERP is ~/lib64/ld-linux-x86-64.so.2~, which Guix and Nix have no such path for. The
       failure reads as "cannot execute: required file not found" and, for ffmpeg, as a staging
@@ -248,7 +248,7 @@ Measured on ~ai/light-core~ (Oct 2026) with ~scripts/ci/kernel_floor.py --record
 | ~tests/~           | 52.4 MB | 5,709 | Pytest suite -- shrinks in step with each removal    |
 | ~apps/~            | 44.2 MB | 3,792 | Electron desktop + Tauri bootstrap installer         |
 | ~website/~         | 27.3 MB |   828 | Docusaurus docs portal                               |
-| ~hermes_cli/~      | 12.3 MB |   639 | CLI, incl. updater, dashboard routers, kanban, skins |
+| ~slave_cli/~      | 12.3 MB |   639 | CLI, incl. updater, dashboard routers, kanban, skins |
 | ~optional-skills/~ | 10.3 MB |   790 | Shipped-but-inactive skill catalogue                 |
 | ~plugins/~         | 7.7 MB  |   363 | 18 in-tree plugin dirs                               |
 | ~tools/~           | 6.9 MB  |   349 | Model-facing tool implementations                    |
@@ -287,7 +287,7 @@ Order is doctrine-fit x cost paid, cheapest review first. Each item is ONE commi
 | P4 | ~optional-skills/~ | delete | DONE 2026-11-17 (9b9a7287d4) |
 | P5 | 42 platform adapters -> opt-in | gate + move | LARGELY DONE upstream of the fork point: ~gateway/platforms/~ carries the shared surfaces, the channels live in ~plugins/platforms/<name>/~ (telegram, discord, slack, ...) — audit the survivors (api_server, webhook, signal, qqbot, weixin, whatsapp_cloud, yuanbao, bluebubbles, msgraph) for the same move |
 | P6 | ~tools/~ 342 files | gate | OPEN — ~check_fn~-gate the long tail or move it to plugins |
-| P7 | dashboard: ~web/~ SPA + ~hermes_cli/web_routers~ | gate + delete | OPEN |
+| P7 | dashboard: ~web/~ SPA + ~slave_cli/web_routers~ | gate + delete | OPEN |
 | P8 | meetings, voice, wake-word, ~image_gen~, ~video_gen~ | gate | OPEN — plugin-shaped already; make them off-by-default |
 | P9 | ~evals/~ | delete | DONE 2026-11-17 (5bc4eb1b84) |
 

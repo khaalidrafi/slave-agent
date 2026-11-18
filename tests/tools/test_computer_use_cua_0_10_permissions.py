@@ -20,7 +20,7 @@ def _reset_computer_use_state():
     reset_backend()
 
 
-def test_normal_hermes_session_maps_to_standard_mode():
+def test_normal_slave_session_maps_to_standard_mode():
     from tools.computer_use import tool as computer_use
 
     with patch(
@@ -30,7 +30,7 @@ def test_normal_hermes_session_maps_to_standard_mode():
         assert computer_use._cua_permission_mode("session-a") == "standard"
 
 
-def test_any_explicit_hermes_bypass_maps_to_unrestricted_mode():
+def test_any_explicit_slave_bypass_maps_to_unrestricted_mode():
     from tools.computer_use import tool as computer_use
 
     with patch(
@@ -160,9 +160,9 @@ def test_unrestricted_embedded_daemon_uses_private_socket_and_two_part_ack():
         cua_backend, "_cua_no_overlay", return_value=False,
     ), patch.object(cua_backend.subprocess, "Popen", return_value=process) as popen, patch.object(
         cua_backend.subprocess, "run", side_effect=[status, stopped]
-    ), patch("hermes_cli.process_identity._update_supervised_pgids") as supervise, patch(
+    ), patch("slave_cli.process_identity._update_supervised_pgids") as supervise, patch(
         # A Mock pid must never reach the real owner-death supervisor or the spawn ledger.
-        "hermes_cli.process_identity.register_child"
+        "slave_cli.process_identity.register_child"
     ), patch.object(
         # stop() releases the group once it is empty; the Mock process has no real group to probe.
         cua_backend_daemon, "release_process_group_once_empty",
@@ -205,7 +205,7 @@ def test_retired_browser_grant_cannot_change_standard_runtime(tmp_path, monkeypa
         "computer_use:\n  grant_existing_profile: true\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     session = _CuaDriverSession(_AsyncBridge())
     captured = {}
 

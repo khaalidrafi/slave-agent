@@ -3,7 +3,7 @@ title: MapDesk
 repo: https://github.com/mackydubzz/hermes-mapdesk
 sha: eaaea7102e5d6396840850ee968fe46aea025f41
 description: >-
-  A GIS workspace inside Hermes Desktop. Import GeoJSON, CSV, KML/KMZ, GPX,
+  A GIS workspace inside slave-agent Desktop. Import GeoJSON, CSV, KML/KMZ, GPX,
   XLSX, zipped shapefiles and bounded public ArcGIS layers; style, query and
   select layers; run geodesic buffer, dissolve, clip, centroid, hull and
   points-in-polygon analysis; export GeoPackage, shapefile, KMZ, GeoJSON, CSV
@@ -29,7 +29,7 @@ screenshots:
   - https://raw.githubusercontent.com/mackydubzz/hermes-mapdesk/eaaea7102e5d6396840850ee968fe46aea025f41/docs/screenshots/02-corridor-analysis.jpg
   - https://raw.githubusercontent.com/mackydubzz/hermes-mapdesk/eaaea7102e5d6396840850ee968fe46aea025f41/docs/screenshots/03-radius-selection.jpg
 known_issues:
-  - Requires Hermes Desktop for the map pane; enable the Desktop component after installation.
+  - Requires slave-agent Desktop for the map pane; enable the Desktop component after installation.
 capabilities:
   provides_tools:
     - mapdesk_status

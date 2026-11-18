@@ -22,14 +22,14 @@ def homes(tmp_path, monkeypatch):
     launch = tmp_path / "root"
     bee = launch / "profiles" / "bee"
     bee.mkdir(parents=True)
-    (launch / ".env").write_text(f"HERMES_PORTAL_BASE_URL={LAUNCH_PORTAL}\n")
-    (bee / ".env").write_text(f"HERMES_PORTAL_BASE_URL={BEE_PORTAL}\n")
+    (launch / ".env").write_text(f"SLAVE_PORTAL_BASE_URL={LAUNCH_PORTAL}\n")
+    (bee / ".env").write_text(f"SLAVE_PORTAL_BASE_URL={BEE_PORTAL}\n")
     for home in (launch, bee):
         (home / "config.yaml").write_text("{}\n")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", LAUNCH_PORTAL)  # the launch process loaded its own .env
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_PORTAL_BASE_URL", LAUNCH_PORTAL)  # the launch process loaded its own .env
     monkeypatch.setenv("LAUNCH_ENV_ONLY_KEY", "from-process-env")  # systemd / Docker / ``op run`` only
-    monkeypatch.setattr(server, "_hermes_home", launch)
+    monkeypatch.setattr(server, "_slave_home", launch)
     monkeypatch.setattr(server, "_served_profile_homes", set())
     monkeypatch.setattr(launch_profile_policy, "_snapshot", None)
     previous = secret_scope.is_multiplex_active()
@@ -38,8 +38,8 @@ def homes(tmp_path, monkeypatch):
 
     def unwrapped_secret_read(rid, params):
         from agent.secret_scope import get_secret
-        from hermes_constants import get_hermes_home
-        seen.append((get_hermes_home().resolve(), get_secret("HERMES_PORTAL_BASE_URL")))
+        from slave_constants import get_slave_home
+        seen.append((get_slave_home().resolve(), get_secret("SLAVE_PORTAL_BASE_URL")))
         return server._ok(rid, {})
     monkeypatch.setitem(server._methods, "probe.portal", unwrapped_secret_read)
     yield server, launch, bee, seen

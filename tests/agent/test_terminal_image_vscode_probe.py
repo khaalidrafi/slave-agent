@@ -25,7 +25,7 @@ _REPO = str(Path(__file__).resolve().parents[2])
 _CHILD = textwrap.dedent("""
     import os, select, sys, termios, tty
     from agent import terminal_image
-    from hermes_cli.pt_input_extras import install_ignored_terminal_sequences
+    from slave_cli.pt_input_extras import install_ignored_terminal_sequences
     from prompt_toolkit.input.vt100_parser import Vt100Parser
     from prompt_toolkit.keys import Keys
     result = terminal_image.probe_vscode_images()

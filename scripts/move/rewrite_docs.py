@@ -12,7 +12,7 @@ Text it reads: ``*.md``, ``*.mdx``, ``*.txt`` whole; ``*.yaml``/``*.yml``/``*.ya
 1. Path tokens: a moved file (``tui_gateway/entry.py``), a moved directory with a trailing slash
    (``tui_gateway/``), a bare stem (``tools/cronjob_tools``), a ``.symbol`` or sentence-final ``.`` after
    either, a glob under a moved directory (``agent/turn_*.py``), a unique root file (``run_agent.py``),
-   and the same path behind ``github.com/<org>/hermes-agent/blob/<ref>/``. ``::symbol`` and ``:line`` stay.
+   and the same path behind ``github.com/<org>/slave-agent/blob/<ref>/``. ``::symbol`` and ``:line`` stay.
 2. Dotted module names (``tui_gateway.entry``). A dotted name is a module reference only when it resolves: a
    moved module, or a moved module plus an attribute that module defines. A config key (``DEFAULT_CONFIG`` path,
    ``plugins.enabled``, ``providers.<id>.api_key``), an i18n key and a name whose root is ambiguous stay.
@@ -21,8 +21,8 @@ Text it reads: ``*.md``, ``*.mdx``, ``*.txt`` whole; ``*.yaml``/``*.yml``/``*.ya
    an import statement that parses as Python and starts its line. ``from providers like Daloopa`` is English:
    it does not parse, so it stays. A bare word alone (backticked or not) is never rewritten.
 
-Left alone, and counted as ``skip-*``: a path behind any ``/`` (``~/.hermes/cron/``, ``$HERMES_HOME/...``,
-``./x``); bare directories that also name HERMES_HOME dirs or other projects' dirs (``tools/``, ``cron/``), and a
+Left alone, and counted as ``skip-*``: a path behind any ``/`` (``~/.slave/cron/``, ``$SLAVE_HOME/...``,
+``./x``); bare directories that also name SLAVE_HOME dirs or other projects' dirs (``tools/``, ``cron/``), and a
 glob that takes every file of one (``cron/*``, ``plugins/**``); a glob that also matches a file that stayed,
 or whose files were renamed or went to different folders (``tools/*.py`` when three files left ``tools/``);
 a name whose root is a moved *file* that other projects share (``utils.x``, ``cli.x``); config keys
@@ -57,17 +57,17 @@ from renames import config_keys, current_name, emptied_folders, git, module_rena
 
 #: Files and trees the rewrite never touches. Frozen surfaces keep the old names on purpose, generated pages
 #: are regenerated, third-party docs name other projects' modules, locale values are runtime strings
-#: (by hand), and ``hermes_agent/compat`` and the move scripts hold the old names as data.
+#: (by hand), and ``slave_agent/compat`` and the move scripts hold the old names as data.
 EXCLUDED = (
-    "tests/compat/**", "hermes_agent/compat/**", "plugin-catalog/**", "evals/**/results/**", "**/SCORECARD*",
-    "tests/install/KNOWN_FAILURES.md", "scripts/update-test/HANDOFF.md", "hermes_cli/observability/schemas/**",
+    "tests/compat/**", "slave_agent/compat/**", "plugin-catalog/**", "evals/**/results/**", "**/SCORECARD*",
+    "tests/install/KNOWN_FAILURES.md", "scripts/update-test/HANDOFF.md", "slave_cli/observability/schemas/**",
     "**/vendor/conformance/**", "website/docs/user-guide/skills/bundled/**",
     "website/docs/user-guide/skills/optional/**", "website/docs/reference/*skills-catalog.md",
     "website/docs/developer-guide/plugins/public-api.md", "website/docs/developer-guide/gateway-command-parity.md",
     "optional-skills/mlops/**", "skills/mlops/**", "locales/**", "contributors/**",
     "scripts/move/**", "tests/scripts/test_move_*", "node_modules/**", "**/node_modules/**",
 )
-#: Root names that also mean something else (HERMES_HOME dirs, MCP methods, other projects' packages).
+#: Root names that also mean something else (SLAVE_HOME dirs, MCP methods, other projects' packages).
 #: A bare ``name/`` or ``name.attr`` on one of them is by hand; it needs a second segment that is a module.
 AMBIGUOUS_ROOTS = frozenset({
     "agent", "tools", "plugins", "cron", "gateway", "providers", "skills", "cli", "utils", "config",
@@ -90,7 +90,7 @@ FILE_EXT = {"py", "md", "mdx", "txt", "yaml", "yml", "json", "toml", "ts", "tsx"
 TEXT_SUFFIXES = (".md", ".mdx", ".txt")
 YAML_SUFFIXES = (".yaml", ".yml", ".yaml.example", ".yml.example")
 _TOKEN = re.compile(r"(?<![\w.\-~$@%#])[A-Za-z_][\w.\-]*(?:/[\w.\-*<>{}\[\]]*)*")
-_BLOB = re.compile(r"github\.com/[\w.\-]+/hermes-agent/blob/main/")  # a commit or tag permalink keeps its old path
+_BLOB = re.compile(r"github\.com/[\w.\-]+/slave-agent/blob/main/")  # a commit or tag permalink keeps its old path
 _DOTTED = re.compile(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*")
 _IMPORT = re.compile(r"(?:^|(?<=[\s`'\"(]))(from\s+|import\s+|-m\s+|-m[\"'],\s*[\"'])([A-Za-z_][\w.]*)(?![\w/\-])")
 _CODE_SPAN = re.compile(r"(`+)(?!`).+?(?<!`)\1(?!`)")
@@ -587,15 +587,15 @@ def locale_keys(root: Path) -> frozenset[str]:
 
 
 def synthetic_plan(root: Path, moves: list[str]) -> Plan:
-    """A rename table for a move that has not happened: each path goes under ``hermes_agent/``."""
+    """A rename table for a move that has not happened: each path goes under ``slave_agent/``."""
     tree = git(root, "ls-files").splitlines()
     paths, renames = [], {}
     for move in moves:
         move = move.rstrip("/")
         hit = [p for p in tree if p == move or p.startswith(move + "/")]
-        paths += [(p, f"hermes_agent/{p}") for p in hit]
+        paths += [(p, f"slave_agent/{p}") for p in hit]
         module = move.removesuffix(".py")
-        renames[module.replace("/", ".")] = "hermes_agent." + module.replace("/", ".")
+        renames[module.replace("/", ".")] = "slave_agent." + module.replace("/", ".")
     return Plan(renames, paths, tree, config_keys(root), locale_keys(root), root)
 
 
@@ -638,7 +638,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     parser.add_argument("--root", default=".", type=Path)
     parser.add_argument("--from-commit", help="the move commit (git mv only)")
-    parser.add_argument("--synthetic-move", nargs="*", default=[], help="rehearse moving these paths under hermes_agent/")
+    parser.add_argument("--synthetic-move", nargs="*", default=[], help="rehearse moving these paths under slave_agent/")
     parser.add_argument("--paths", nargs="*", default=[], help="limit to these files or directories")
     parser.add_argument("--check", action="store_true", help="write nothing; fail when anything would change")
     parser.add_argument("--samples", type=int, default=0, help="print this many evenly spaced changed lines")

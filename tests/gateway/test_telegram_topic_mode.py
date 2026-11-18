@@ -1,7 +1,7 @@
 """Tests for Telegram private-chat topic-mode routing.
 
 Topic mode makes the root Telegram DM a system lobby while user-created
-Telegram topics act as independent Hermes session lanes.
+Telegram topics act as independent slave-agent session lanes.
 """
 
 from datetime import datetime
@@ -237,7 +237,7 @@ async def test_topic_restore_quote_never_exposes_compaction_scaffolding(tmp_path
         "restorable",
     )
 
-    assert "Last Hermes message:\nreal completed answer" in result
+    assert "Last slave-agent message:\nreal completed answer" in result
     assert "CONTEXT COMPACTION" not in result
     assert "Historical Task Snapshot" not in result
 
@@ -266,7 +266,7 @@ async def test_topic_restore_quote_unwraps_merged_assistant_carrier(tmp_path):
         "restorable",
     )
 
-    assert "Last Hermes message:\nreal completed answer" in result
+    assert "Last slave-agent message:\nreal completed answer" in result
     assert "PRIOR CONTEXT" not in result
     assert "CONTEXT COMPACTION" not in result
 
@@ -412,16 +412,16 @@ async def test_group_new_keeps_existing_reset_semantics_when_dm_topic_mode_enabl
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
     )
-    # /new appends a random tip from hermes_cli.tips; one tip's text contains
+    # /new appends a random tip from slave_cli.tips; one tip's text contains
     # the phrase "parallel work", which collides with the negative assertion
     # below (observed as a 1-in-N CI flake). Pin the tip.
     monkeypatch.setattr(
-        "hermes_cli.tips.get_random_tip", lambda: "pinned tip for test"
+        "slave_cli.tips.get_random_tip", lambda: "pinned tip for test"
     )
 
     result = await runner._handle_message(_make_group_event("/new", thread_id="555"))
 
-    assert "Started a new Hermes session in this topic" not in result
+    assert "Started a new slave-agent session in this topic" not in result
     assert "parallel work" not in result
     runner.session_store.reset_session.assert_called_once_with(group_key)
 

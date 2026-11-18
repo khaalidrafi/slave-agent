@@ -1,7 +1,7 @@
 """Telegram observe mode: an agent-producing command exports the shared route, not the sender.
 
 ``/queue`` in an observed group keeps ``source.user_id`` for slash access checks and keys the
-shared group session, but its tools exported ``HERMES_SESSION_USER_ID=<sender>``; a Kanban
+shared group session, but its tools exported ``SLAVE_SESSION_USER_ID=<sender>``; a Kanban
 subscription saved that id and the completion wake rebuilt the per-user key, waking a different
 conversation than the one that created the task.
 """
@@ -35,9 +35,9 @@ def test_observed_group_queue_command_wake_returns_to_the_shared_session():
     adapter.handle_message = AsyncMock(side_effect=seen.append)
     adapter._enqueue_text_event = seen.append
     adapter._ensure_forum_commands = AsyncMock()
-    text = "/queue@hermes_bot make a task"
+    text = "/queue@slave_bot make a task"
     asyncio.run(adapter._handle_command(SimpleNamespace(
-        update_id=1, message=_group_message(text, entities=[_bot_command_entity(text, "/queue@hermes_bot")]),
+        update_id=1, message=_group_message(text, entities=[_bot_command_entity(text, "/queue@slave_bot")]),
         effective_message=None), None))
     (event,) = seen
     creator_key = build_session_key(event.source)
@@ -45,7 +45,7 @@ def test_observed_group_queue_command_wake_returns_to_the_shared_session():
     runner = object.__new__(GatewayRunner)
     tokens = runner._set_session_env(build_session_context(event.source, GatewayConfig(), event=event))
     try:
-        assert get_session_env("HERMES_SESSION_ACTOR_ID") == "111"
+        assert get_session_env("SLAVE_SESSION_ACTOR_ID") == "111"
         target = _resolve_notify_target()
     finally:
         runner._clear_session_env(tokens)

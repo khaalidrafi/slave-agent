@@ -1,5 +1,5 @@
 """Every desktop bundle that carries an agent payload plants the prebuilt Webapp beside the TUI and
-the dashboard: the payload has no sources to build one from, so `hermes webapp` in the app serves it."""
+the dashboard: the payload has no sources to build one from, so `slave webapp` in the app serves it."""
 from __future__ import annotations
 
 import contextlib
@@ -33,7 +33,7 @@ def test_every_payload_bundle_plants_the_prebuilt_webapp(tmp_path, monkeypatch, 
     from scripts.build.agent import plant_surfaces
     from scripts.bundles import desktop_inputs, desktop_prepare, native
 
-    payload = tmp_path / "payload" / "hermes-agent"
+    payload = tmp_path / "payload" / "slave-agent"
     request = SimpleNamespace(source=tmp_path / "checkout", target="host", channel_request=None,
                               release_epoch=None, version="1.2.3", commit="c" * 40, tag=None, workspaces=list)
     prepared = SimpleNamespace(request=request, validate=lambda: None, node=Path("node"), icon_python=Path("python"),
@@ -57,8 +57,8 @@ def test_every_payload_bundle_plants_the_prebuilt_webapp(tmp_path, monkeypatch, 
     desktop._build_prepared(prepared, [], variant)
 
     assert (payload / "apps/desktop/dist-webapp/index.html").read_text(encoding="utf-8") == "webapp.mjs"
-    assert (payload / "hermes_cli/web_dist/index.html").read_text(encoding="utf-8") == "web.mjs"
-    assert (payload / "hermes_cli/tui_dist/entry.js").read_text(encoding="utf-8") == "tui.mjs"
+    assert (payload / "slave_cli/web_dist/index.html").read_text(encoding="utf-8") == "web.mjs"
+    assert (payload / "slave_cli/tui_dist/entry.js").read_text(encoding="utf-8") == "tui.mjs"
 
 
 def test_source_bundle_staging_plants_the_prebuilt_webapp(tmp_path, monkeypatch):
@@ -66,7 +66,7 @@ def test_source_bundle_staging_plants_the_prebuilt_webapp(tmp_path, monkeypatch)
     from scripts.build.agent import plant_surfaces
     from scripts.bundles import native, stage
 
-    payload = tmp_path / "out" / "hermes-agent"
+    payload = tmp_path / "out" / "slave-agent"
 
     def staged(args):
         plant_surfaces(payload, args.frontends)
@@ -88,4 +88,4 @@ def test_source_bundle_staging_plants_the_prebuilt_webapp(tmp_path, monkeypatch)
     assert stage.main(["--out", str(tmp_path / "out")]) == 0
 
     assert (payload / "apps/desktop/dist-webapp/index.html").read_text(encoding="utf-8") == "webapp.mjs"
-    assert (payload / "hermes_cli/web_dist/index.html").read_text(encoding="utf-8") == "web.mjs"
+    assert (payload / "slave_cli/web_dist/index.html").read_text(encoding="utf-8") == "web.mjs"

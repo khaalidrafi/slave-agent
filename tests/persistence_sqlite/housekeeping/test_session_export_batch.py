@@ -1,4 +1,4 @@
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.housekeeping.maintenance import SessionExport
 from persistence.sqlite.conversation._store.messages import append_messages_batch, get_messages
 from persistence.sqlite.conversation._store.sessions import create_session, search_sessions

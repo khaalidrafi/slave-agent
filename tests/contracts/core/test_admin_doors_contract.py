@@ -9,7 +9,7 @@ from persistence.core.admin import PHYSICAL_ADMIN, AdminUnsupported, HealthCheck
 
 def test_both_doors_answer_by_the_declared_capability(backend, scope_a):
     store_answers = [backend.open_store_admin(scope_a), backend.open_store_admin(scope_a, read_only=False),
-                     backend.open_store_admin(Path(scope_a.hermes_home_key) / "state.db")]
+                     backend.open_store_admin(Path(scope_a.slave_home_key) / "state.db")]
     repair_answers = [backend.open_profile_repair(scope_a, read_only=True), backend.open_profile_repair(scope_a, read_only=False)]
     if backend.capabilities.physical_admin:
         # CONTRACT: a declaring backend answers every target form with a handle, never unsupported.

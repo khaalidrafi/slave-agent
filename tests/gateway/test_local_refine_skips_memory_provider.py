@@ -19,7 +19,7 @@ async def test_cold_refine_builds_no_memory_provider(tmp_path, monkeypatch):
     from agent import agent_init, background_review, safe_worker_policy
     import plugins.memory
     from run_agent import AIAgent
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(safe_worker_policy, 'safe_worker_enabled', lambda: False)
     loaded = []
 

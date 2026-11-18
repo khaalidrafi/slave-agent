@@ -7,7 +7,7 @@ title: tirith
 description: >-
   Check every terminal command with your installed tirith before it runs: lookalike and homograph
   URLs, pipe-to-shell, obfuscated execution, credential and .env exfiltration, malicious packages and
-  terminal injection. tirith blocks and required policy approvals go to Hermes's approval prompt,
+  terminal injection. tirith blocks and required policy approvals go to slave-agent’s approval prompt,
   critical findings are refused, warnings run with the warning added to the result; unattended runs
   follow approvals.*_mode.
   Disclosure — runs the user-installed tirith binary (0.5.0 or later; never downloaded, installed or
@@ -26,9 +26,9 @@ readme: true
 platforms: []
 known_issues:
   - >-
-    Hermes 0.21.5 still runs a built-in tirith check before plugins; run
-    `hermes config set security.tirith_enabled false` so each command is not checked twice.
-    Hermes 0.21.6 and later do not have it.
+    slave-agent 0.21.5 still runs a built-in tirith check before plugins; run
+    `slave config set security.tirith_enabled false` so each command is not checked twice.
+    slave-agent 0.21.6 and later do not have it.
 capabilities:
   provides_tools: []
   provides_hooks:

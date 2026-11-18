@@ -1,7 +1,7 @@
 """/model and /footer report the chat's channel_overrides model, the one its next turn runs."""
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 from gateway.config import ChannelOverride, GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent, MessageType
@@ -27,14 +27,14 @@ def _event(text, thread_id):
 
 @pytest.fixture()
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    slave_home = tmp_path / ".slave"
+    slave_home.mkdir()
+    (slave_home / "config.yaml").write_text(
         yaml.safe_dump({"model": {"default": "global/default-model", "provider": "openrouter"}}), encoding="utf-8")
     import gateway.run as gateway_run
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    monkeypatch.setattr(gateway_run, "_slave_home", slave_home)
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
+    return slave_home
 
 
 @pytest.mark.asyncio
@@ -43,7 +43,7 @@ def home(tmp_path, monkeypatch):
     ("888", "global/default-model", "pinned/lane-model"),
 ])
 async def test_model_header_reports_channel_override(home, monkeypatch, thread_id, expected, absent):
-    monkeypatch.setattr("hermes_cli.model_switch.list_authenticated_providers", lambda **kw: [])
+    monkeypatch.setattr("slave_cli.model_switch.list_authenticated_providers", lambda **kw: [])
     reply = await _runner()._handle_model_command(_event("/model", thread_id))
     header = reply.splitlines()[0]
     assert expected in header and absent not in header

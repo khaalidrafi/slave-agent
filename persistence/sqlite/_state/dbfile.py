@@ -30,8 +30,8 @@ from persistence.sqlite._state.common import (
 from persistence.sqlite._state.lockguard import own_descriptors
 from sqlite_support import is_zeroed_sqlite_file
 
-# Tests pin the "hermes_state" logger name.
-logger = logging.getLogger("hermes_state")
+# Tests pin the "slave_state" logger name.
+logger = logging.getLogger("slave_state")
 
 
 def _prepare_connection_retirement():
@@ -64,7 +64,7 @@ def _prepare_connection_retirement():
 # _read_sqlite_application_id runs on EVERY write (_raise_if_db_replaced) against the LIVE
 # state.db.  A bare open()/read()/close() there is the howtocorrupt §2.2 bug: close() cancels
 # every POSIX advisory lock this process holds on the file, dropping the writer's WAL-mode DMS
-# shared lock (see hermes_cli/sqlite_safe_read.py) so another process can treat this writer as
+# shared lock (see slave_cli/sqlite_safe_read.py) so another process can treat this writer as
 # dead and rerun WAL-index recovery underneath it.  So the probe preads through a per-path fd
 # cached for the life of the process (opening never cancels locks).  When the path is re-pointed
 # at a new inode (the very replacement this probe detects) the stale fd is RETIRED, never closed
@@ -265,7 +265,7 @@ def _watched_sqlite_sidecar_paths(db_path) -> dict[str, str]:
     literal = (literal_base + "-wal", literal_base + "-shm")
     watched = {canonical_sqlite_path(path): path for path in literal}
     # /proc reports the kernel-resolved dentry, so the watched canonicals must also resolve
-    # symlinks -- with abspath alone a symlinked HERMES_HOME makes every deleted sidecar
+    # symlinks -- with abspath alone a symlinked SLAVE_HOME makes every deleted sidecar
     # invisible to the scan. Both spellings are watched: the fully resolved path, which is
     # where current SQLite places -wal/-shm when the database file itself is a symlink, and
     # the realpath'd parent with the literal basename, which is where they land when SQLite
@@ -531,7 +531,7 @@ RETIRED_GENERATION_DIR_SUFFIX = ".retired-wal-"
 RETIRED_GENERATION_MANIFEST = "manifest.json"
 RETIRED_GENERATION_MANIFEST_VERSION = 1
 # Up to this size the main image is copied whole, so the artifact is a self-contained state.db + -wal
-# pair that `hermes sessions recover --source <dir>/state.db` can open. Above it only the 100-byte
+# pair that `slave sessions recover --source <dir>/state.db` can open. Above it only the 100-byte
 # header is kept (the manifest says so): unlike the WAL inode, the main file survives process exit at
 # its path, and a multi-GB copy inside a shutdown path is a worse failure than a header-only artifact.
 RETIRED_GENERATION_MAIN_IMAGE_MAX_BYTES = 512 * 1024 * 1024
@@ -671,7 +671,7 @@ def capture_retired_wal_generation(
                 suffix: list(ident) for suffix, ident in _stat_sqlite_sidecar_identity(db_path).items()},
             "note": ("Frames in the captured WAL were committed by the retired generation. Whether they "
                      "belong on top of the main file now at the path is an operator decision; inspect "
-                     "the copied image with `hermes sessions recover --inspect-only` first."),
+                     "the copied image with `slave sessions recover --inspect-only` first."),
         }
         shm_identity = tuple(sidecar_identity.get("-shm") or ())
         shm_fd = _own_descriptor_for_identity(shm_identity) if shm_identity else None
@@ -713,12 +713,12 @@ def _connect_tracked_db(path, tracking_path=None, **kwargs):
     """``sqlite3.connect`` that registers the open fd so byte-level probes of a live file are
     refused (an ``open()``/``close()`` would cancel every POSIX lock, even a running VACUUM's
     EXCLUSIVE).  The ONLY tolerated fallback is the helper being absent (scaffold/embed installs
-    without hermes_cli); a real connection failure must propagate — a silent untracked retry
+    without slave_cli); a real connection failure must propagate — a silent untracked retry
     would disable the guard for that connection."""
     try:
-        from hermes_cli.sqlite_safe_read import connect_tracked
+        from slave_cli.sqlite_safe_read import connect_tracked
     except ImportError:
-        logger.debug("hermes_cli.sqlite_safe_read unavailable; opening %s untracked "
+        logger.debug("slave_cli.sqlite_safe_read unavailable; opening %s untracked "
                      "(byte-probe guard inactive in this install)", path)
         return sqlite3.connect(str(path), **kwargs)
     # Open through THIS module's sqlite3.connect so tests patching this module's sqlite3.connect keep control.
@@ -734,7 +734,7 @@ def _preopen_header(path: Path, probe_bytes: int, force: bool) -> Optional[bytes
         if not path.is_file():
             return None
         path.stat()
-        from hermes_cli.sqlite_safe_read import has_live_connection, read_header_bytes_preopen
+        from slave_cli.sqlite_safe_read import has_live_connection, read_header_bytes_preopen
         if not force and has_live_connection(path):
             return None
         return read_header_bytes_preopen(path, length=max(16, probe_bytes), force=force)
@@ -841,9 +841,9 @@ def quarantine_invalid_state_db(path: Path, *, already_locked: bool = False) -> 
         if not acquired:
             logger.error("quarantine lock for %s not acquired within 5s — refusing to "
                          "quarantine without the cross-process lock. The invalid file "
-                         "is left in place. If sessions fail to load, run `hermes sessions recover "
+                         "is left in place. If sessions fail to load, run `slave sessions recover "
                          "--source <state.db> --inspect-only`, or restore a snapshot with "
-                         "`/snapshot list` / `/snapshot restore <id>` (terminal `hermes` chat only).",
+                         "`/snapshot list` / `/snapshot restore <id>` (terminal `slave` chat only).",
                          path)
             return None
         return _do_quarantine()

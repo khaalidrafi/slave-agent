@@ -5,8 +5,8 @@ from __future__ import annotations
 from .method_ctx import bind_module
 
 def _env_model_seed() -> str:
-    """The launch-scoped model seed (``hermes --tui -m``, hosted provisioning); "" when unset."""
-    return (os.environ.get("HERMES_MODEL", "") or os.environ.get("HERMES_INFERENCE_MODEL", "")).strip()
+    """The launch-scoped model seed (``slave --tui -m``, hosted provisioning); "" when unset."""
+    return (os.environ.get("SLAVE_MODEL", "") or os.environ.get("SLAVE_INFERENCE_MODEL", "")).strip()
 
 
 def _resolve_model() -> str:
@@ -19,18 +19,18 @@ def _resolve_model() -> str:
         return m.strip()
     # No env seed / config preference: the cost-safe silent default (cache-only read), never an unpicked flagship.
     with contextlib.suppress(Exception):
-        from hermes_cli.models import get_preferred_silent_default_model
+        from slave_cli.models import get_preferred_silent_default_model
         return get_preferred_silent_default_model()
     # Data-only module (no heavy imports), so this holds when the lookup above fails.
-    from hermes_cli.models_catalog_static import PREFERRED_SILENT_DEFAULT_MODEL
+    from slave_cli.models_catalog_static import PREFERRED_SILENT_DEFAULT_MODEL
     return PREFERRED_SILENT_DEFAULT_MODEL
 
 
 def _resolve_session_platform() -> str:
-    """``HERMES_DESKTOP=1`` without ``HERMES_DESKTOP_TERMINAL`` → "desktop" (chat panel; the agent then
-    suggests TUI-only slash commands), else "tui" (embedded terminal pane or standalone ``hermes --tui``)."""
-    desktop = is_truthy_value(os.environ.get("HERMES_DESKTOP"))
-    return "desktop" if desktop and not is_truthy_value(os.environ.get("HERMES_DESKTOP_TERMINAL")) else "tui"
+    """``SLAVE_DESKTOP=1`` without ``SLAVE_DESKTOP_TERMINAL`` → "desktop" (chat panel; the agent then
+    suggests TUI-only slash commands), else "tui" (embedded terminal pane or standalone ``slave --tui``)."""
+    desktop = is_truthy_value(os.environ.get("SLAVE_DESKTOP"))
+    return "desktop" if desktop and not is_truthy_value(os.environ.get("SLAVE_DESKTOP_TERMINAL")) else "tui"
 
 
 def _resolve_session_source(explicit: str | None) -> str:
@@ -44,7 +44,7 @@ def _resolve_agent_platform(source: str | None) -> str:
 
 
 def _config_model_target() -> tuple[str, str]:
-    """(model, provider) selected by config.yaml — and ONLY config: the HERMES_MODEL launch seed fed into
+    """(model, provider) selected by config.yaml — and ONLY config: the SLAVE_MODEL launch seed fed into
     the per-turn sync would be replayed as a /model switch and persisted globally, or pin the session so
     dashboard/CLI model changes never reach an open chat. Empty model = "no preference" → no-op sync."""
     cfg_model = _load_cfg().get("model")
@@ -56,18 +56,18 @@ def _config_model_target() -> tuple[str, str]:
 
 def _resolve_startup_runtime() -> tuple[str, str | None]:
     model = _resolve_model()
-    if explicit_provider := os.environ.get("HERMES_TUI_PROVIDER", "").strip():
+    if explicit_provider := os.environ.get("SLAVE_TUI_PROVIDER", "").strip():
         return model, explicit_provider
     if not (explicit_model := _env_model_seed()):
         return model, None
     with contextlib.suppress(Exception):
-        from hermes_cli.model_switch import resolve_startup_model_route
-        from hermes_cli.models import detect_static_provider_for_model
+        from slave_cli.model_switch import resolve_startup_model_route
+        from slave_cli.models import detect_static_provider_for_model
         full_cfg = _load_cfg()
         cfg = full_cfg.get("model") or {}
         current_provider = ((str(cfg.get("provider") or "").strip().lower() if isinstance(cfg, dict) else "")
-                            or os.environ.get("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto")
-        # Same owner as HermesCLI/oneshot: ``custom:<name>:<model>`` selects that provider (#73943).
+                            or os.environ.get("SLAVE_INFERENCE_PROVIDER", "").strip().lower() or "auto")
+        # Same owner as SlaveCLI/oneshot: ``custom:<name>:<model>`` selects that provider (#73943).
         if route := resolve_startup_model_route(
                 explicit_model, current_provider=current_provider,
                 user_providers=full_cfg.get("providers"), custom_providers=full_cfg.get("custom_providers")):
@@ -80,7 +80,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
 
 def _is_routable_provider(provider: str) -> bool:
     with contextlib.suppress(Exception):
-        from hermes_cli.runtime_provider import is_routable_provider
+        from slave_cli.runtime_provider import is_routable_provider
         return is_routable_provider(provider)
     return False
 
@@ -147,7 +147,7 @@ def _stored_session_runtime_overrides(row: dict | None) -> dict:
     provider, base_url, api_mode = (str(value or "").strip() for value in (route.provider, route.base_url, route.api_mode))
     service_tier = str(model_config.get("service_tier") or "").strip()
     reasoning_config = model_config.get("reasoning_config")
-    from hermes_cli.runtime_provider import is_foreign_provider_endpoint
+    from slave_cli.runtime_provider import is_foreign_provider_endpoint
     if is_foreign_provider_endpoint(provider, base_url):
         # The endpoint and its wire belong to the provider this chat left; resolve the stored one's own.
         base_url = api_mode = ""
@@ -156,7 +156,7 @@ def _stored_session_runtime_overrides(row: dict | None) -> dict:
     if provider and not _is_routable_provider(provider):
         healed = None
         try:
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from slave_cli.runtime_provider import canonical_custom_identity
             healed = canonical_custom_identity(base_url=base_url or None, model=model or None)
         except Exception:
             logger.debug("custom provider identity recovery failed", exc_info=True)
@@ -185,7 +185,7 @@ def _stored_session_runtime_overrides(row: dict | None) -> dict:
 def _scoped_session_provider(agent, session: dict) -> str:
     """The entry an agent on the ``custom`` adapter runs, resolved in the session's own profile: clients
     reuse this identity for new chats without the endpoint or key, and callers need not be bound to it."""
-    with _profile_build_scope(session.get("profile_home") or _hermes_home):
+    with _profile_build_scope(session.get("profile_home") or _slave_home):
         return _runtime_model_config(agent).get("provider") or "custom"
 
 
@@ -209,7 +209,7 @@ def _runtime_model_config(agent, existing: dict | None = None) -> dict:
     agent = _session_route_view(agent)
     attr = lambda k: str(getattr(agent, k, "") or "").strip()
     model, base_url = attr("model"), attr("base_url")
-    from hermes_cli.runtime_provider_custom import session_provider_identity
+    from slave_cli.runtime_provider_custom import session_provider_identity
     provider = session_provider_identity(attr("provider"), attr("requested_provider"), base_url, model)
     reasoning_config = getattr(agent, "reasoning_config", None)
     live = {
@@ -287,12 +287,12 @@ def _display_mouse_tracking(display: dict) -> str:
 
 
 def _load_reasoning_config(model: str = "") -> dict | None:
-    """Via the shared chokepoint :func:`hermes_constants.resolve_reasoning_config` (per-model override >
+    """Via the shared chokepoint :func:`slave_constants.resolve_reasoning_config` (per-model override >
     global ``agent.reasoning_effort``; YAML False = disabled).
 
     Closes #21256.
     """
-    from hermes_constants import resolve_reasoning_config
+    from slave_constants import resolve_reasoning_config
     return resolve_reasoning_config(_load_cfg(), model)
 
 
@@ -327,7 +327,7 @@ _TOOL_PROGRESS_MODES = frozenset({"off", "new", "all", "verbose"})
 
 
 def _load_tool_progress_mode() -> str:
-    env = os.environ.get("HERMES_TUI_TOOL_PROGRESS", "").strip().lower()
+    env = os.environ.get("SLAVE_TUI_TOOL_PROGRESS", "").strip().lower()
     if env in _TOOL_PROGRESS_MODES:
         return env
     raw = _display_cfg().get("tool_progress", "all")
@@ -338,9 +338,9 @@ def _load_tool_progress_mode() -> str:
 
 
 def _gui_surface_toolsets(platform: str) -> set[str]:
-    """Toolsets that exist because of the CLIENT (off ``_HERMES_CORE_TOOLS``; this is the one gate).
+    """Toolsets that exist because of the CLIENT (off ``_SLAVE_CORE_TOOLS``; this is the one gate).
     ``platform`` is the SESSION's source, never a process env var: the desktop may drive a URL/cloud
-    backend where ``HERMES_DESKTOP`` is unset (AGENTS.md surface rule)."""
+    backend where ``SLAVE_DESKTOP`` is unset (AGENTS.md surface rule)."""
     from toolsets import CLIENT_SURFACE_TOOLSETS
     return set(CLIENT_SURFACE_TOOLSETS) if platform == "desktop" else {"project"}
 
@@ -365,12 +365,12 @@ def _tui_notice(text: str) -> None:
 
 
 def _resolve_explicit_toolsets(explicit: list[str], validate_toolset) -> list[str] | None | bool:
-    """Resolve a HERMES_TUI_TOOLSETS pin: list, None for "all", False when nothing was valid."""
+    """Resolve a SLAVE_TUI_TOOLSETS pin: list, None for "all", False when nothing was valid."""
     built_in = [name for name in explicit if validate_toolset(name)]
     unresolved = [name for name in explicit if name not in built_in]
     if unresolved:
         try:
-            from hermes_cli.plugins import discover_plugins
+            from slave_cli.plugins import discover_plugins
             discover_plugins()
             plugin_valid = [name for name in unresolved if validate_toolset(name)]
         except Exception:
@@ -379,12 +379,12 @@ def _resolve_explicit_toolsets(explicit: list[str], validate_toolset) -> list[st
         unresolved = [name for name in unresolved if name not in plugin_valid]
     if any(name in {"all", "*"} for name in built_in):
         if ignored := [name for name in explicit if name not in {"all", "*"}]:
-            _tui_notice(f"[tui] HERMES_TUI_TOOLSETS=all enables every toolset; ignoring additional entries: {', '.join(ignored)}")
+            _tui_notice(f"[tui] SLAVE_TUI_TOOLSETS=all enables every toolset; ignoring additional entries: {', '.join(ignored)}")
         return None
     if not unresolved:
         return built_in
     try:  # (enabled, disabled) MCP server names from raw config; both empty on any failure
-        from hermes_cli.config import read_raw_config
+        from slave_cli.config import read_raw_config
         from tools.mcp_tool_common import mcp_server_enabled
         raw_cfg = read_raw_config()
         mcp_servers = raw_cfg.get("mcp_servers") if isinstance(raw_cfg.get("mcp_servers"), dict) else {}
@@ -399,21 +399,21 @@ def _resolve_explicit_toolsets(explicit: list[str], validate_toolset) -> list[st
     disabled = [name for name in unresolved if name in mcp_disabled]
     unknown = [name for name in unresolved if name not in mcp_names and name not in mcp_disabled]
     if unknown:
-        _tui_notice(f"[tui] ignoring unknown HERMES_TUI_TOOLSETS entries: {', '.join(unknown)}")
+        _tui_notice(f"[tui] ignoring unknown SLAVE_TUI_TOOLSETS entries: {', '.join(unknown)}")
     if disabled:
-        _tui_notice("[tui] ignoring disabled MCP servers in HERMES_TUI_TOOLSETS "
+        _tui_notice("[tui] ignoring disabled MCP servers in SLAVE_TUI_TOOLSETS "
                     f"(set enabled: true in config.yaml to use): {', '.join(disabled)}")
     return (built_in + mcp_valid) or False
 
 
 def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
-    """The agent's toolsets for this session (None = all): an explicit HERMES_TUI_TOOLSETS pin; else the
+    """The agent's toolsets for this session (None = all): an explicit SLAVE_TUI_TOOLSETS pin; else the
     coding posture (coding_context collapses to coding toolset + enabled MCP servers in a code workspace);
     else the configured CLI toolsets. Client-surface toolsets fold in here — only this surface can answer them.
     An explicitly saved EMPTY list (``platform_toolsets.cli: []`` that resolves to nothing) is a
     zero-tool state and returns [] — never None, which would mean unrestricted (#82010)."""
     session_platform = platform or _resolve_session_platform()
-    explicit = [item.strip() for item in os.environ.get("HERMES_TUI_TOOLSETS", "").split(",") if item.strip()]
+    explicit = [item.strip() for item in os.environ.get("SLAVE_TUI_TOOLSETS", "").split(",") if item.strip()]
     fallback_notice = None
     if not explicit:
         with contextlib.suppress(Exception):
@@ -430,10 +430,10 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
         if resolved is not False:
             # An operator pin replaces the surface fold-in.
             return resolved
-        fallback_notice = "[tui] no valid HERMES_TUI_TOOLSETS entries; using configured CLI toolsets"
+        fallback_notice = "[tui] no valid SLAVE_TUI_TOOLSETS entries; using configured CLI toolsets"
     try:
-        from hermes_cli.config import load_config
-        from hermes_cli.tools_config import _get_platform_tools, _platform_toolsets_explicitly_saved
+        from slave_cli.config import load_config
+        from slave_cli.tools_config import _get_platform_tools, _platform_toolsets_explicitly_saved
         cfg = load_config()
         # include_default_mcp_servers=True is the runtime variant (the agent must be able to call
         # default MCP servers); the config-editing variant would silently drop MCP tools from the TUI.
@@ -455,7 +455,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
         return None
     except Exception:
         if fallback_notice is not None:
-            _tui_notice("[tui] no valid HERMES_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets")
+            _tui_notice("[tui] no valid SLAVE_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets")
         return None
 
 
@@ -464,7 +464,7 @@ def _load_disabled_toolsets() -> list[str] | None:
 
     The classic CLI (``cli_init_mixin``) and the messaging gateway both forward this list to
     AIAgent, where ``get_tool_definitions`` strips the named toolsets even out of composite
-    defaults like ``hermes-cli`` (#17309). The desktop/TUI gateway historically dropped it, so
+    defaults like ``slave-cli`` (#17309). The desktop/TUI gateway historically dropped it, so
     e.g. ``disabled_toolsets: [browser]`` silently had no effect on Desktop — the only consumer
     was ``_get_platform_tools``'s name-level subtraction, which can't reach inside a composite
     default toolset (#44499).
@@ -472,7 +472,7 @@ def _load_disabled_toolsets() -> list[str] | None:
     try:
         from agent.skill_utils import parse_config_string_list
 
-        from hermes_cli.config import load_config
+        from slave_cli.config import load_config
 
         agent_cfg = load_config().get("agent") or {}
         disabled = parse_config_string_list(agent_cfg.get("disabled_toolsets"))
@@ -526,8 +526,8 @@ def _tool_lifecycle_required_for_ui(name: str) -> bool:
 def _resolve_runtime_with_fallback(resolve_kwargs: dict | None = None) -> _RuntimeFallbackResolution:
     """Resolve the primary runtime or one complete provider/model fallback. Provider-only fallback entries
     are skipped so the unavailable primary model can never leak into a different runtime."""
-    from hermes_cli.auth import AuthError
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from slave_cli.auth import AuthError
+    from slave_cli.runtime_provider import resolve_runtime_provider
     try:
         return _RuntimeFallbackResolution(resolve_runtime_provider(**(resolve_kwargs or {})), None, False)
     except AuthError as primary_exc:
@@ -537,12 +537,12 @@ def _resolve_runtime_with_fallback(resolve_kwargs: dict | None = None) -> _Runti
             if not fb_provider or not fb_model:
                 continue
             try:
-                from hermes_cli.fallback_config import effective_runtime_provider, fallback_entry_runtime_kwargs
+                from slave_cli.fallback_config import effective_runtime_provider, fallback_entry_runtime_kwargs
                 runtime = resolve_runtime_provider(**fallback_entry_runtime_kwargs(entry))
                 # Named custom entries resolve to the bare "custom" billing class; keep the configured
                 # identity so the session/UI shows the provider name, matching the manual-switch path (#98739).
                 runtime["provider"] = effective_runtime_provider(entry, runtime)
-                from hermes_cli.auth import primary_failure_wording
+                from slave_cli.auth import primary_failure_wording
                 logging.getLogger(__name__).warning(
                     "Primary %s (%s), falling back to %s model %s",
                     primary_failure_wording(primary_exc)[0], primary_exc, fb_provider, fb_model)
@@ -565,11 +565,11 @@ def _resolve_agent_model_runtime(model_override, provider_override) -> tuple[str
         provider_norm = str(requested_provider or "").strip().lower()
         # An empty provider names no route either; once the main slot targets another model it 404s (#132648).
         if provider_norm == "custom":
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from slave_cli.runtime_provider import canonical_custom_identity
             if recovered := canonical_custom_identity(base_url=override_base_url or None, model=model or None):
                 requested_provider = recovered
         elif not provider_norm and _config_model_target()[0] != model:
-            from hermes_cli.runtime_provider_custom import empty_provider_identity
+            from slave_cli.runtime_provider_custom import empty_provider_identity
             requested_provider = empty_provider_identity(override_base_url, model) or requested_provider
         if provider_norm == "custom" and override_base_url:
             # Failing identity recovery, still hand base_url to the direct-alias branch so pool/env credentials resolve.
@@ -593,7 +593,7 @@ def _resolve_agent_model_runtime(model_override, provider_override) -> tuple[str
             raise RuntimeError("Auth fallback resolved without a model")
         # Same pre-agent switch the messaging gateway surfaces (#74349); _make_agent pops it onto the
         # agent's one-shot notice so the TUI/Desktop user sees which provider actually answered.
-        from hermes_cli.fallback_config import pre_agent_fallback_notice
+        from slave_cli.fallback_config import pre_agent_fallback_notice
         # requested_provider=None means resolve_runtime_provider read the persisted config provider;
         # ``model: <id>`` (string shorthand) names no provider.
         cfg_model = _load_cfg().get("model")
@@ -615,8 +615,8 @@ def _rederive_per_model_route(model: str, runtime: dict) -> None:
     that pick the wire per model (OpenCode Zen/Go, Nous, profiles with api_mode_for_model) must re-derive both from the target model,
     or a resumed opencode-go session keeps a MiniMax-era anthropic_messages route (and its /v1-stripped or
     other-family relay URL) for a chat_completions model like deepseek-v4-flash-vision-exp (#96066)."""
-    from hermes_cli.model_switch import model_derived_api_mode
-    from hermes_cli.models import normalize_opencode_base_url
+    from slave_cli.model_switch import model_derived_api_mode
+    from slave_cli.models import normalize_opencode_base_url
     provider = str(runtime.get("requested_provider") or runtime.get("provider") or "")
     api_mode = model_derived_api_mode(provider, model)
     if api_mode is None:
@@ -626,9 +626,9 @@ def _rederive_per_model_route(model: str, runtime: dict) -> None:
 
 
 def _startup_system_prompt(cfg: dict, task_id: str) -> str:
-    """Config ephemeral system prompt + HERMES_TUI_SKILLS preload block. Hard-fails only when EVERY requested
+    """Config ephemeral system prompt + SLAVE_TUI_SKILLS preload block. Hard-fails only when EVERY requested
     skill is missing (cli.py parity): a typo'd name must not auto-block the Kanban task."""
-    from hermes_cli.config import resolve_ephemeral_system_prompt_from_config
+    from slave_cli.config import resolve_ephemeral_system_prompt_from_config
     system_prompt = resolve_ephemeral_system_prompt_from_config(cfg)
     startup_skills = _parse_tui_skills_env()
     if not startup_skills:
@@ -638,7 +638,7 @@ def _startup_system_prompt(cfg: dict, task_id: str) -> str:
     if missing_skills:
         if not loaded_skills:
             raise ValueError(format_missing_skills(missing_skills))
-        logger.warning("Skipping %s. Continuing with: %s. List available skills with `hermes skills list`.",
+        logger.warning("Skipping %s. Continuing with: %s. List available skills with `slave skills list`.",
                        format_missing_skills(missing_skills), ", ".join(loaded_skills))
     if skills_prompt:
         system_prompt = "\n\n".join(part for part in (system_prompt, skills_prompt) if part).strip()
@@ -660,7 +660,7 @@ def _make_agent(
     from run_agent import AIAgent
     # MCP discovery runs in a daemon thread (a dead server can't freeze the shell); the agent snapshots its tool
     # list once, so briefly wait for in-flight discovery. Dashboard /api/ws uses mcp_startup; TUI stdio uses entry.
-    for _mod in ("hermes_cli.mcp_startup", "tui_gateway.entry"):
+    for _mod in ("slave_cli.mcp_startup", "tui_gateway.entry"):
         with contextlib.suppress(Exception):
             importlib.import_module(_mod).wait_for_mcp_discovery()
     cfg = _load_cfg()
@@ -672,7 +672,7 @@ def _make_agent(
     fallback_notice = runtime.pop("_fallback_notice", None)
     _pr = _load_provider_routing()
     platform = _resolve_agent_platform(platform_override)
-    ignore_rules = is_truthy_value(os.environ.get("HERMES_IGNORE_RULES"))
+    ignore_rules = is_truthy_value(os.environ.get("SLAVE_IGNORE_RULES"))
     with _sessions_lock:
         session = _sessions.get(sid)
     agent = AIAgent(
@@ -701,7 +701,7 @@ def _make_agent(
         persistence=persistence if session_db is not None else _launch_persistence(),
         ephemeral_system_prompt=system_prompt or None,
         checkpoints_enabled=_resolve_checkpoints_enabled(cfg),
-        pass_session_id=is_truthy_value(os.environ.get("HERMES_TUI_PASS_SESSION_ID")),
+        pass_session_id=is_truthy_value(os.environ.get("SLAVE_TUI_PASS_SESSION_ID")),
         skip_context_files=ignore_rules, skip_memory=ignore_rules, fallback_model=_load_fallback_model(),
         # The resolved provider's request body (a custom entry's extra_body), as the CLI/cron/gateway pass it.
         request_overrides=runtime.get("request_overrides"),

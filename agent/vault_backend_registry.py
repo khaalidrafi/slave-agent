@@ -2,7 +2,7 @@
 
 Registration (``ctx.register_login_backend``) is refused for: a name that is not a lowercase
 identifier, a handle prefix other than ``<name>:``, a name or prefix in a built-in backend's namespace,
-a name another plugin already holds in this profile, a backend that wants Hermes' master-password
+a name another plugin already holds in this profile, a backend that wants slave-agent’ master-password
 prompt (``needs_unlock``), and ``name``/``prefix`` computed by a descriptor or an attribute-access hook
 (they could change after validation, and reading them would run plugin code; :func:`static_name` judges
 them before anything reads them). ``enabled_plugin_backends`` re-checks every stored key and wraps each backend in
@@ -60,7 +60,7 @@ def static_name(provider) -> str:
     if error:
         raise ValueError(error)
     if inspect.getattr_static(provider, "needs_unlock", False) is not False:
-        raise ValueError("plugin login backends cannot use the Hermes master-password prompt (needs_unlock)")
+        raise ValueError("plugin login backends cannot use the slave-agent master-password prompt (needs_unlock)")
     return name
 
 

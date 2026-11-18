@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from hermes_dir_acl import unusable_dir_remedy
+from slave_dir_acl import unusable_dir_remedy
 
 log = logging.getLogger("gateway.status")
 
@@ -31,7 +31,7 @@ def unusable_lock_dir(lock_dir: Path, exc: PermissionError) -> ScopedLockDirUnus
     level = logging.DEBUG if lock_dir in _warned else logging.WARNING
     _warned.add(lock_dir)
     log.log(level, "Gateway lock directory %s is not usable by this process (%s); it was likely created "
-               "by an elevated (administrator) Hermes. Platforms that need a token lock stay down until it "
+               "by an elevated (administrator) Slave. Platforms that need a token lock stay down until it "
                "is repaired. To repair, %s", lock_dir, exc, unusable_dir_remedy(lock_dir))
     return ScopedLockDirUnusable(exc.errno, f"gateway lock directory is not usable: {exc}", str(lock_dir))
 

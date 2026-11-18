@@ -30,8 +30,8 @@ COMMAND = 'sleep 2; echo FIRST_$((40+2)); sleep 1; echo SECOND_$((6*7)); (exit 7
 def test_worker_spawned_process_output_and_exit_survive_the_spawner(tmp_path):
     home = tmp_path / 'home'
     home.mkdir()
-    env = {k: v for k, v in os.environ.items() if k not in ('HERMES_HOME', 'PYTHONPATH')}
-    env.update(HERMES_HOME=str(home), PYTHONPATH=str(ROOT))
+    env = {k: v for k, v in os.environ.items() if k not in ('SLAVE_HOME', 'PYTHONPATH')}
+    env.update(SLAVE_HOME=str(home), PYTHONPATH=str(ROOT))
     # The spawner marks itself a registered worker, starts the process and dies at once.
     spawner = textwrap.dedent(f'''
         import json, os
@@ -109,7 +109,7 @@ def test_next_managed_turn_reads_the_previous_workers_background_output(tmp_path
         'auxiliary': {'title_generation': {'enabled': False}}, 'approvals': {'mode': 'off'},
         'platform_toolsets': {'cli': ['terminal']}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(ROOT),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(ROOT),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     def settled(request_id):

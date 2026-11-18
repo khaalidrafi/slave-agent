@@ -10,7 +10,7 @@ from gateway.session import SessionSource, SessionStore
 
 
 def _runner(tmp_path, monkeypatch, extra):
-    monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+    monkeypatch.setattr("gateway.run._slave_home", tmp_path)
     monkeypatch.delenv("WHATSAPP_HOME_CHANNEL", raising=False)
     (tmp_path / "config.yaml").write_text("model: test\n", encoding="utf-8")
     runner = GatewayRunner.__new__(GatewayRunner)

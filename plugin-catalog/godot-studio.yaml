@@ -17,7 +17,7 @@ description: >-
   off. Tools register only when a Godot 4 binary is present (check_fn).
   Disclosure — runs shell commands (godot --headless against the
   caller-targeted project; read-only godot --version in the desktop backend;
-  read-only hermes mcp list in godot_setup); godot_headless_check and
+  read-only slave mcp list in godot_setup); godot_headless_check and
   godot_export execute the target project's own GDScript (autoloads, main
   scene, export plugins) with no approval prompt — point them only at
   projects you trust; no network calls, no credentials, no telemetry, no

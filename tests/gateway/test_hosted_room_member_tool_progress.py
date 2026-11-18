@@ -96,7 +96,7 @@ def test_groups_state_names_the_tool_a_member_transport_reports(tmp_path: Path, 
     service.rpc = service.runtime.rpc = _ToolRPC()
     service.local_profiles = lambda: ("default", "scout")
     service.create_room(room_id="room-1", name="Release room", members=[
-        {"member_id": "default", "profile": "default", "handle": "hermes"},
+        {"member_id": "default", "profile": "default", "handle": "slave"},
         {"member_id": "scout", "profile": "scout", "handle": "scout"}])
     service.start()
     try:

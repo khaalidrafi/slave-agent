@@ -2,7 +2,7 @@
 
 A sandbox that hides credential stores by path can hide a file safely only at the top of the
 profile home: a writable folder above a hidden file can be renamed to expose it, and the
-sandboxed backend has to write ``cache/``. Earlier releases kept these caches in ``cache/``; Hermes
+sandboxed backend has to write ``cache/``. Earlier releases kept these caches in ``cache/``; slave-agent
 deletes such a copy on first use without reading it, since the agent could have written it.
 """
 

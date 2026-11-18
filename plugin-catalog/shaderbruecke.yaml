@@ -3,9 +3,9 @@ title: Shaderbrücke
 repo: https://github.com/studioluftbruecke/hermes-shaderbruecke
 sha: 51fd3176aa0fa35a1f4ae9c7f31335813a33d3ea
 description: >-
-  Make GLSL shaders with your Hermes agent, see them render, tune them by hand, and take them into
+  Make GLSL shaders with your slave-agent, see them render, tune them by hand, and take them into
   the tool you ship in, with a frame-by-frame proof on every export. Disclosure: each render starts
-  a headless Chromium child on the Hermes host with the network blocked; no network calls, no
+  a headless Chromium child on the slave-agent host with the network blocked; no network calls, no
   telemetry, no credentials.
 maintainer: studioluftbruecke
 tier: community
@@ -23,8 +23,8 @@ screenshots:
 readme: true
 platforms: [linux, macos]
 known_issues:
-  - "Renders need a Chromium on the Hermes host (the Hermes container image ships one); without it every render answers no_browser."
-  - "With Hermes on a server, install the plugin on the Desktop computer too, on the same version: Desktop loads the card from its own computer."
+  - "Renders need a Chromium on the slave-agent host (the slave-agent container image ships one); without it every render answers no_browser."
+  - "With slave-agent on a server, install the plugin on the Desktop computer too, on the same version: Desktop loads the card from its own computer."
 capabilities:
   provides_tools:
     - shader_render

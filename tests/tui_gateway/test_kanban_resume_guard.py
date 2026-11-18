@@ -27,10 +27,10 @@ def server():
     import tui_gateway.server_requests
     import tui_gateway.transport
     with patch.dict("sys.modules", {
-        "hermes_constants": MagicMock(get_hermes_home=MagicMock(return_value="/tmp/hermes_test")),
-        "hermes_cli.env_loader": MagicMock(),
-        "hermes_cli.banner": MagicMock(),
-        "hermes_state": MagicMock(),
+        "slave_constants": MagicMock(get_slave_home=MagicMock(return_value="/tmp/hermes_test")),
+        "slave_cli.env_loader": MagicMock(),
+        "slave_cli.banner": MagicMock(),
+        "slave_state": MagicMock(),
     }):
         import importlib
         mod = importlib.import_module("tui_gateway.server")

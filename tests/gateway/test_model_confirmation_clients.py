@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_client import GatewayClientError
 from tests.fixtures.storage_read import session_row
 
 pytestmark = pytest.mark.usefixtures("authority_cwd_in_tmp")  # symbolic profile ids are relative homes
@@ -24,7 +24,7 @@ class _Owner:
         from gateway.session_authority import SessionAuthority
         from gateway.session_controls import AuthorityConnection
         from gateway.session_local import create_local_session
-        from hermes_cli import model_cost_guard, model_switch
+        from slave_cli import model_cost_guard, model_switch
         monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {})
         monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
             success=True, new_model=k['raw_input'], target_provider='custom', base_url='http://127.0.0.1:9/v1'))
@@ -63,7 +63,7 @@ class _Owner:
 
 @pytest.mark.asyncio
 async def test_cli_chat_view_asks_and_applies_a_guarded_model_once_with_the_token(tmp_path, monkeypatch, capsys):
-    from hermes_cli.gateway_chat_view import GatewayChatView
+    from slave_cli.gateway_chat_view import GatewayChatView
     owner = _Owner(tmp_path, monkeypatch)
 
     class Composer:

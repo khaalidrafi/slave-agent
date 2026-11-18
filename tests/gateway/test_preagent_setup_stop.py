@@ -39,7 +39,7 @@ class _Adapter(BasePlatformAdapter):
 
 
 def _wedged_turn(monkeypatch, timeout: str, step: str = "_hmwa_resolve_session"):
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", timeout)
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", timeout)
     adapter = _Adapter()
     runner = GatewayRunner(config=GatewayConfig(platforms={Platform.TELEGRAM: PlatformConfig(enabled=True, token="x")}))
     runner.adapters = {Platform.TELEGRAM: adapter}

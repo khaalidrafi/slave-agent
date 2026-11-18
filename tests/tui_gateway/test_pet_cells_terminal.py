@@ -12,7 +12,7 @@ def boba(tmp_path, monkeypatch):
     from agent.pet import store
     from agent.pet.constants import FRAME_H, FRAME_W
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     pet_dir = store.pets_dir() / "boba"
     pet_dir.mkdir(parents=True)
     PIL.new("RGBA", (FRAME_W * 8, FRAME_H * 9), (40, 60, 120, 255)).save(pet_dir / "spritesheet.webp")

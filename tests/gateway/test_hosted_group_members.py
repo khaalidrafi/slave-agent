@@ -114,12 +114,12 @@ def _members(*profiles):
 
 def test_desktop_group_of_served_bots_is_created_and_runs(tmp_path, monkeypatch):
     from gateway import hosted_rooms, session_finite
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     ran = []
 
     async def execute(authority, ref, row):
-        ran.append((authority.profile_id, str(get_hermes_home())))
+        ran.append((authority.profile_id, str(get_slave_home())))
         return 'member reply'
     monkeypatch.setattr(session_finite, 'execute_finite_admission', execute)
     with _gateway(tmp_path, monkeypatch, served=('alpha', 'beta')) as (runner, homes, call):

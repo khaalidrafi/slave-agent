@@ -5,17 +5,17 @@ subdir: camofox
 description: 'Camofox browser backend: browse with a self-hosted anti-detection Firefox (Camoufox, C++
   fingerprint spoofing) through the camofox-browser REST server. Registers the browser_* tools (navigate,
   snapshot with clickable refs, click, type, scroll, back, press, get_images, vision, JavaScript console,
-  plus cookie import when CAMOFOX_API_KEY is set) in the `camofox` toolset, with `hermes camofox
+  plus cookie import when CAMOFOX_API_KEY is set) in the `camofox` toolset, with `slave camofox
   setup|status`; existing CAMOFOX_* variables and browser.camofox settings carry over. Formerly built
-  into Hermes core; existing users are migrated automatically. Disclosure: one Python dependency
+  into slave-agent core; existing users are migrated automatically. Disclosure: one Python dependency
   (requests). It talks only to the Camofox server at CAMOFOX_URL (e.g. http://localhost:9377, which you
   run yourself: Docker or `npm start`), sending CAMOFOX_API_KEY as a bearer token when set. Page text
   reaches only your model as tool output; browser_vision sends the screenshot to your configured
   auxiliary vision model. Snapshots mask values that look like secrets (API keys, tokens), but text typed
   into form fields, passwords included, shows up in snapshots. Oversized snapshots and screenshots are
-  written under the Hermes home (cache/web, browser_screenshots). Cookie import reads Netscape
+  written under the slave-agent home (cache/web, browser_screenshots). Cookie import reads Netscape
   cookies.txt files only from browser.camofox.cookies_dir (default ~/.camofox/cookies). browser_vault fills
-  saved passwords on the Camofox tab (sent only to a loopback or HTTPS CAMOFOX_URL). Inert on Hermes
+  saved passwords on the Camofox tab (sent only to a loopback or HTTPS CAMOFOX_URL). Inert on slave-agent
   cores that still bundle Camofox.'
 maintainer: NousResearch
 tier: official

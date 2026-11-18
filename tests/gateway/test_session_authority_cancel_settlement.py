@@ -16,7 +16,7 @@ REF = SessionRef('owned', 's')
 
 
 def _authority(tmp_path, monkeypatch, platform=None):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     persistence = storage_handle(tmp_path)
     seed_session(persistence, 's', 'test')
     epoch = persistence.runtime.begin_epoch(instance_id='current')

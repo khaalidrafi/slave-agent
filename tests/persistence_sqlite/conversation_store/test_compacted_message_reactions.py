@@ -19,7 +19,7 @@ from persistence.sqlite.conversation._store.sessions import create_session
 def test_compacted_reactions_are_delivered_once_without_reviving_rewound_rows(
     tmp_path, monkeypatch, react_before_compaction,
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db_path = tmp_path / "state.db"
     db = StoreHolder(db_path=db_path)
     try:

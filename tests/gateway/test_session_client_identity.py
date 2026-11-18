@@ -12,7 +12,7 @@ from persistence_assembly import close_stores_under
 
 from tests.gateway.test_session_client_env import _home, _owner
 
-TERN = {'name': 'hermes-tern', 'version': '0.4.1+g1a2b'}
+TERN = {'name': 'slave-tern', 'version': '0.4.1+g1a2b'}
 
 
 def _create(owner, actor, home, request_id, source='tui', **extra):
@@ -69,8 +69,8 @@ async def test_a_create_without_client_keeps_its_request_and_info_shape(tmp_path
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('bad', [
-    'hermes-tern', None, [], {}, {'version': '1'}, {'name': 'x', 'extra': 1}, {'name': ''},
-    {'name': 'Hermes'}, {'name': '-x'}, {'name': 'a b'}, {'name': 'x' * 65}, {'name': 7},
+    'slave-tern', None, [], {}, {'version': '1'}, {'name': 'x', 'extra': 1}, {'name': ''},
+    {'name': 'slave-agent'}, {'name': '-x'}, {'name': 'a b'}, {'name': 'x' * 65}, {'name': 7},
     {'name': 'x', 'version': ''}, {'name': 'x', 'version': 'v 1'}, {'name': 'x', 'version': 'v' * 65},
     {'name': 'x', 'version': None}, {'name': 'x', 'version': 1}, {'name': 'x', 'version': 'caf\u00e9'},
 ])
@@ -92,7 +92,7 @@ def test_the_client_label_changes_no_policy_decision(tmp_path, monkeypatch, sour
     from gateway.local_viewer_events import launch_shows_reasoning
     from gateway.session_policy import DAYBREAK_LABELS, build_policy
     from tools.approval_context import _LOCAL_INTERACTIVE_SOURCES
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     config = {'model': {'default': 'm', 'provider': 'custom', 'base_url': 'http://x.invalid/v1'},
               'platform_toolsets': {'cli': ['terminal', 'file'], 'acp': ['file']}}
     params = {'source': source, 'cwd': str(tmp_path)}
@@ -154,7 +154,7 @@ async def test_runtime_describe_advertises_the_client_parameter(tmp_path, monkey
     from gateway.session_controls import AuthorityConnection
     from tests.gateway.test_local_source_labels import _authority
     authority, _store = await _authority(tmp_path, monkeypatch)
-    monkeypatch.setenv('HERMES_HOME', authority.profile_id)
+    monkeypatch.setenv('SLAVE_HOME', authority.profile_id)
     conn = AuthorityConnection(authority, SimpleNamespace(write=lambda frame: None), {'user_id': 'owner'})
     try:
         described = (await conn.dispatch({'id': 0, 'method': 'runtime.describe', 'params': {}}))['result']
@@ -175,7 +175,7 @@ async def test_a_named_create_and_resume_return_snapshots_that_match_their_contr
     from tests.gateway.test_local_source_labels import _authority
     from tui_gateway.contracts.registry import CANONICAL_METHODS
     authority, _store = await _authority(tmp_path, monkeypatch)
-    monkeypatch.setenv('HERMES_HOME', authority.profile_id)
+    monkeypatch.setenv('SLAVE_HOME', authority.profile_id)
     conn = AuthorityConnection(authority, SimpleNamespace(write=lambda frame: None), {'user_id': 'owner'})
     try:
         created = await conn.dispatch({'id': 1, 'method': 'session.create', 'params': {
@@ -193,7 +193,7 @@ async def test_a_named_create_and_resume_return_snapshots_that_match_their_contr
 def test_the_classic_clis_new_does_not_repeat_another_clients_name():
     """``/new`` copies the frozen launch request; the creating client's label is not the terminal's."""
     import asyncio
-    from hermes_cli import gateway_chat_commands
+    from slave_cli import gateway_chat_commands
     sent = {}
 
     async def rpc(method, **params):
@@ -216,7 +216,7 @@ async def test_each_profile_home_sees_only_its_own_sessions_client(tmp_path, mon
     """Multiplexed homes: two owners' turns run side by side; each plugin read answers for its own."""
     from agent.system_prompt import _plugin_session_info
     from gateway.session_policy import policy_scope
-    from hermes_cli.plugin_session import session_client
+    from slave_cli.plugin_session import session_client
     (tmp_path / 'a').mkdir()
     (tmp_path / 'b').mkdir()
     home_a, home_b = _home(tmp_path / 'a'), _home(tmp_path / 'b')
@@ -238,7 +238,7 @@ async def test_each_profile_home_sees_only_its_own_sessions_client(tmp_path, mon
             thread.start()
         for thread in threads:
             thread.join()
-        assert seen == {'a': (TERN, 'hermes-tern', '0.4.1+g1a2b'), 'b': (None, '', '')}
+        assert seen == {'a': (TERN, 'slave-tern', '0.4.1+g1a2b'), 'b': (None, '', '')}
         assert session_client() is None  # outside any turn
     finally:
         for conn, owner in ((conn_a, owner_a), (conn_b, owner_b)):

@@ -7,7 +7,7 @@ description: Mem0 memory provider — server-side LLM fact extraction with seman
   deduplication and opt-in reranking, in platform, self-hosted or local OSS mode. Maintained by Mem0;
   the same provider that shipped in-tree. Disclosure — conversation turns and recall queries go to the
   configured Mem0 backend (api.mem0.ai in platform mode); at this pin the mem0ai library's anonymous
-  PostHog usage telemetry stays on unless MEM0_TELEMETRY=false is set; `hermes memory setup` can start
+  PostHog usage telemetry stays on unless MEM0_TELEMETRY=false is set; `slave memory setup` can start
   Docker (pgvector) and Ollama containers for local mode.
 maintainer: mem0ai
 tier: community

@@ -1,9 +1,9 @@
 """A ready pinned-Git store for the install.ps1 stage tests.
 
-install.ps1 keeps its tool store under HERMES_RUNTIME_DIR, else under HERMES_HOME. run_tests.sh
-never forwards HERMES_RUNTIME_DIR, so a stage started with a temporary HERMES_HOME found no Git
+install.ps1 keeps its tool store under SLAVE_RUNTIME_DIR, else under SLAVE_HOME. run_tests.sh
+never forwards SLAVE_RUNTIME_DIR, so a stage started with a temporary SLAVE_HOME found no Git
 and downloaded and extracted PortableGit from GitHub, once per home. Tests whose subject is not
-that download point HERMES_RUNTIME_DIR here: install.ps1 then finds a ready Git and writes nothing.
+that download point SLAVE_RUNTIME_DIR here: install.ps1 then finds a ready Git and writes nothing.
 """
 import json
 import os
@@ -40,5 +40,5 @@ def pinned_git_store(tmp_path_factory) -> Path:
     assert powershell, "Windows PowerShell 5.1 is part of every supported Windows"
     script = f". '{INSTALLER}'; if (-not (Get-PinnedGit)) {{ exit 9 }}"
     subprocess.run([powershell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-                   env=dict(os.environ, HERMES_RUNTIME_DIR=str(store)), check=True, capture_output=True, timeout=900)
+                   env=dict(os.environ, SLAVE_RUNTIME_DIR=str(store)), check=True, capture_output=True, timeout=900)
     return store

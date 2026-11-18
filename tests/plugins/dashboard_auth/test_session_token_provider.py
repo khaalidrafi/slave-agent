@@ -2,7 +2,7 @@
 gated-mode credential).
 
 Loads the bundled session_token plugin module directly and exercises:
-  * registration — registers when HERMES_DASHBOARD_SESSION_TOKEN is provisioned
+  * registration — registers when SLAVE_DASHBOARD_SESSION_TOKEN is provisioned
     (literal or file:<path>, BOM-tolerant), skips when it is absent, when the
     dashboard.session_token_auth.enabled knob opts out, and when the token file
     is unreadable (the file resolver's SystemExit mapped to a skip, never a
@@ -20,8 +20,8 @@ from unittest.mock import MagicMock
 import pytest
 
 import plugins.dashboard_auth.session_token as session_token_plugin
-from hermes_cli.dashboard_auth import RefreshExpiredError, assert_protocol_compliance
-from hermes_cli.dashboard_auth import registry
+from slave_cli.dashboard_auth import RefreshExpiredError, assert_protocol_compliance
+from slave_cli.dashboard_auth import registry
 
 
 @pytest.fixture(scope="module")
@@ -31,7 +31,7 @@ def plugin():
 
 @pytest.fixture(autouse=True)
 def _clean_env_and_registry(monkeypatch):
-    monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
+    monkeypatch.delenv("SLAVE_DASHBOARD_SESSION_TOKEN", raising=False)
     registry.clear_providers()
     yield
     registry.clear_providers()
@@ -100,11 +100,11 @@ class TestRegister:
         ctx = MagicMock()
         plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
-        assert "HERMES_DASHBOARD_SESSION_TOKEN" in plugin.LAST_SKIP_REASON
+        assert "SLAVE_DASHBOARD_SESSION_TOKEN" in plugin.LAST_SKIP_REASON
 
     def test_registers_with_env_token(self, plugin, monkeypatch):
         token = _token()
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", token)
+        monkeypatch.setenv("SLAVE_DASHBOARD_SESSION_TOKEN", token)
         monkeypatch.setattr(plugin, "_load_session_token_auth_section", dict)
         ctx = MagicMock()
         plugin.register(ctx)
@@ -116,9 +116,9 @@ class TestRegister:
 
     def test_resolves_file_prefix(self, plugin, monkeypatch, tmp_path):
         token = _token()
-        token_file = tmp_path / "hermes-gateway-token"
+        token_file = tmp_path / "slave-gateway-token"
         token_file.write_text(f"\ufeff{token}\n", encoding="utf-8")  # BOM + newline
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", f"file:{token_file}")
+        monkeypatch.setenv("SLAVE_DASHBOARD_SESSION_TOKEN", f"file:{token_file}")
         monkeypatch.setattr(plugin, "_load_session_token_auth_section", dict)
         ctx = MagicMock()
         plugin.register(ctx)
@@ -128,7 +128,7 @@ class TestRegister:
 
     def test_skip_on_unreadable_token_file(self, plugin, monkeypatch, tmp_path):
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_SESSION_TOKEN", f"file:{tmp_path / 'missing'}")
+            "SLAVE_DASHBOARD_SESSION_TOKEN", f"file:{tmp_path / 'missing'}")
         monkeypatch.setattr(plugin, "_load_session_token_auth_section", dict)
         ctx = MagicMock()
         plugin.register(ctx)
@@ -136,7 +136,7 @@ class TestRegister:
         assert plugin.LAST_SKIP_REASON
 
     def test_config_opt_out(self, plugin, monkeypatch):
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", _token())
+        monkeypatch.setenv("SLAVE_DASHBOARD_SESSION_TOKEN", _token())
         monkeypatch.setattr(
             plugin, "_load_session_token_auth_section", lambda: {"enabled": False})
         ctx = MagicMock()
@@ -147,7 +147,7 @@ class TestRegister:
     def test_short_token_still_registers_with_warning(
             self, plugin, monkeypatch, caplog):
         token = "short-but-mine"
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", token)
+        monkeypatch.setenv("SLAVE_DASHBOARD_SESSION_TOKEN", token)
         monkeypatch.setattr(plugin, "_load_session_token_auth_section", dict)
         ctx = MagicMock()
         with caplog.at_level("WARNING"):
@@ -162,16 +162,16 @@ class TestRegister:
 
 
 class TestRealConfigLoader:
-    """The opt-out key is read from an actual config.yaml under a temp HERMES_HOME via the same
+    """The opt-out key is read from an actual config.yaml under a temp SLAVE_HOME via the same
     ``load_config_section`` path the plugin uses — no loader patch, so a misspelled section or
     key path fails here."""
 
     @pytest.fixture
     def home(self, monkeypatch, tmp_path):
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".slave"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", _token())
+        monkeypatch.setenv("SLAVE_HOME", str(home))
+        monkeypatch.setenv("SLAVE_DASHBOARD_SESSION_TOKEN", _token())
         return home
 
     def _register(self, plugin):
@@ -214,7 +214,7 @@ class TestInteractiveSurfaces:
         return cls(token=_token())
 
     def test_login_page_shows_token_mode_notice_not_a_button(self, plugin):
-        from hermes_cli.dashboard_auth.login_page import render_login_html
+        from slave_cli.dashboard_auth.login_page import render_login_html
 
         registry.register_global_provider(plugin.SessionTokenProvider(token=_token()))
         html = render_login_html(next_path="", prefix="")
@@ -224,7 +224,7 @@ class TestInteractiveSurfaces:
         assert "/auth/login?provider=" not in html
 
     def test_login_page_keeps_interactive_providers_clickable(self, plugin):
-        from hermes_cli.dashboard_auth.login_page import render_login_html
+        from slave_cli.dashboard_auth.login_page import render_login_html
 
         registry.register_global_provider(plugin.SessionTokenProvider(token=_token()))
         registry.register_global_provider(
@@ -237,7 +237,7 @@ class TestInteractiveSurfaces:
     def test_api_auth_providers_filters_non_interactive(self, plugin):
         import asyncio
 
-        from hermes_cli.dashboard_auth.routes import api_auth_providers
+        from slave_cli.dashboard_auth.routes import api_auth_providers
 
         registry.register_global_provider(plugin.SessionTokenProvider(token=_token()))
         providers = asyncio.run(api_auth_providers())

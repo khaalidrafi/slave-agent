@@ -1,7 +1,7 @@
 """Journey: client `/new` while the earlier session still holds durable queued work.
 
 One ordinary daemon (real authority, SQLite, in-process agent loop, loopback model). The classic CLI
-view's own `/new` handler (``hermes_cli.gateway_chat_commands``) runs over a real ``GatewayClient``
+view's own `/new` handler (``slave_cli.gateway_chat_commands``) runs over a real ``GatewayClient``
 while session A has a turn in flight and two followers queued. Documented contract (PR behaviour
 change 3): `/new` rebinds only the invoking view; A keeps its FIFO. Asserted:
 - B is a fresh canonical session: its own FIFO (it runs while A is blocked), and no A input ever
@@ -30,9 +30,9 @@ A_FOLLOWERS = ('A_FOLLOWER_1', 'A_FOLLOWER_2')
 @pytest.mark.platforms('linux')
 @pytest.mark.parametrize('restart', [False, True], ids=['live', 'restart'])
 def test_new_session_never_absorbs_or_drops_earlier_queued_work(tmp_path, restart):
-    from hermes_cli.gateway_chat_commands import run_command
-    from hermes_cli.gateway_chat_view import GatewayChatView
-    from hermes_cli.gateway_client import GatewayClient
+    from slave_cli.gateway_chat_commands import run_command
+    from slave_cli.gateway_chat_view import GatewayChatView
+    from slave_cli.gateway_client import GatewayClient
 
     root = Path(__file__).resolve().parents[2]
     home, user = tmp_path / 'state', tmp_path / 'user'
@@ -48,7 +48,7 @@ def test_new_session_never_absorbs_or_drops_earlier_queued_work(tmp_path, restar
         'gateway': {'multiplex_profiles': False},
         'model': {'provider': 'custom', 'default': 'view-model', 'base_url': url},
         'auxiliary': {'title_generation': {'enabled': False}}, 'platform_toolsets': {'cli': []}}))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                              OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
 
     def admissions():

@@ -27,7 +27,7 @@ def test_session_history_preserves_codex_message_items(tmp_path, monkeypatch):
         "reasoning": "Thinking before the tool",
         "tool_calls": [{"id": "call-1", "type": "function", "function": {"name": "terminal", "arguments": "{}"}}],
     })
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_slave_home", tmp_path)
     previous_db = server._db
     server._db = db
     server._sessions["runtime-session"] = {

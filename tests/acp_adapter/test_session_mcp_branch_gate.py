@@ -33,7 +33,7 @@ def owner(tmp_path, monkeypatch, server_spec):
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'acp': []}})
     discovered = []
     real = session_local_mcp.rebind_editor_mcp

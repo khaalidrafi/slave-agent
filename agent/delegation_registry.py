@@ -53,7 +53,7 @@ class _BundledRegistrar:
 
 
 def _bundled_disabled(name: str) -> bool:
-    from hermes_cli.plugins_discovery import _get_disabled_plugins
+    from slave_cli.plugins_discovery import _get_disabled_plugins
     return bool({name, f"delegation/{name}"} & _get_disabled_plugins())
 
 
@@ -62,7 +62,7 @@ def _load_bundled(name: str) -> Optional[DelegationProvider]:
     registered it (a runtime that never ran discovery, or pinned it with zero plugins): delegation is a
     core tool and must not depend on the sweep. ``plugins.disabled`` wins on every call, so a later
     disable takes effect without a restart."""
-    from hermes_cli.plugins import get_bundled_plugins_dir
+    from slave_cli.plugins import get_bundled_plugins_dir
     from plugins import plugin_loader
     if not _BUNDLED_NAME_RE.match(name) or _bundled_disabled(name):  # the name comes from config.yaml: never a path
         return None
@@ -97,7 +97,7 @@ def _usable(name: str) -> Optional[DelegationProvider]:
     if _available(bundled):
         return bundled
     if registered is None and bundled is None:
-        from hermes_cli.plugins import discover_plugins
+        from slave_cli.plugins import discover_plugins
         discover_plugins()
         registered = _registry.get_provider(name)
         if _available(registered):
@@ -118,12 +118,12 @@ def backend_status(name: str) -> tuple[Optional[DelegationProvider], str]:
     if registered is None:
         return None, (
             f"Delegation backend '{name}' is not installed: no enabled plugin provides it. Install or enable the "
-            f"plugin that does (`hermes plugins list`), or switch back to the default backend "
-            f"(`hermes config set delegation.backend default`).")
+            f"plugin that does (`slave plugins list`), or switch back to the default backend "
+            f"(`slave config set delegation.backend default`).")
     return registered, (
         f"Delegation backend '{name}' is unavailable here (its plugin reports it cannot run). Fix its setup, or "
         f"switch back to the default backend: `/delegation default` for this session, or "
-        f"`hermes config set delegation.backend default`.")
+        f"`slave config set delegation.backend default`.")
 
 
 def get_active_provider(config: Mapping[str, Any]) -> DelegationProvider:

@@ -170,7 +170,7 @@ class TestSessionLifecycle:
         """A later /model switch must replace, not compete with, a Browser lock."""
         create_session(db,
             session_id="s1",
-            source="hermes_browser",
+            source="slave_browser",
             model="x-ai/grok-4.5",
             model_config={
                 "_branched_from": "parent-session",

@@ -190,7 +190,7 @@ importers:
       '@dnd-kit/utilities':
         specifier: 3.2.2
         version: 3.2.2(react@19.3.0)
-      '@hermes/shared':
+      '@slave-agent/shared':
         specifier: workspace:*
         version: link:../shared
       '@icons-pack/react-simple-icons':
@@ -585,10 +585,10 @@ importers:
 
   ui-tui:
     dependencies:
-      '@hermes/ink':
+      '@slave-agent/ink':
         specifier: workspace:*
-        version: link:packages/hermes-ink
-      '@hermes/shared':
+        version: link:packages/slave-ink
+      '@slave-agent/shared':
         specifier: workspace:*
         version: link:../apps/shared
       '@nanostores/react':
@@ -638,7 +638,7 @@ importers:
         specifier: 4.1.12
         version: 4.1.12(@types/node@22.20.5)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
-  ui-tui/packages/hermes-ink:
+  ui-tui/packages/slave-ink:
     dependencies:
       '@alcalzone/ansi-tokenize':
         specifier: 0.1.3
@@ -719,7 +719,7 @@ importers:
 
   web:
     dependencies:
-      '@hermes/shared':
+      '@slave-agent/shared':
         specifier: workspace:*
         version: link:../apps/shared
       '@nous-research/ui':

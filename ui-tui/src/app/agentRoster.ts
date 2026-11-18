@@ -1,4 +1,4 @@
-import type { SubagentListResponse } from '@hermes/shared/gateway-types'
+import type { SubagentListResponse } from '@slave-agent/shared/gateway-types'
 import { useStore } from '@nanostores/react'
 import { atom } from 'nanostores'
 import { useMemo } from 'react'

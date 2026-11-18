@@ -62,12 +62,12 @@ def test_a_promised_stop_delivers_nothing_and_list_shows_it_waiting(tmp_path):
 
 
 def test_past_the_deadline_the_parent_gets_exactly_one_failure(tmp_path):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.delegate_tool_auto_resume import tick
     _enable()
     parent, dispatched = _parent(), []
     sid, unit = _silent_stop(tmp_path, parent)
-    (get_hermes_home() / "config.yaml").write_text(json.dumps(
+    (get_slave_home() / "config.yaml").write_text(json.dumps(
         {"delegation": {"auto_resume": True, "worktree_isolation": True, "auto_resume_deadline_minutes": 1}}))
     later = time.time() + 120
     for _ in range(3):
@@ -82,8 +82,8 @@ def test_past_the_deadline_the_parent_gets_exactly_one_failure(tmp_path):
 
 
 def _deadline(minutes):
-    from hermes_constants import get_hermes_home
-    (get_hermes_home() / "config.yaml").write_text(json.dumps(
+    from slave_constants import get_slave_home
+    (get_slave_home() / "config.yaml").write_text(json.dumps(
         {"delegation": {"auto_resume": True, "worktree_isolation": True, "auto_resume_deadline_minutes": minutes}}))
 
 
@@ -141,13 +141,13 @@ def test_a_spawn_with_a_waiting_childs_exact_goal_is_refused_until_it_is_stopped
 
 
 def test_the_duplicate_guard_is_off_without_auto_resume(tmp_path):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.tools.test_delegate_continue import _ScriptedModel
     from tools.delegate_tool import delegate_task
     _enable()
     parent = _parent()
     _sid, _unit = _silent_stop(tmp_path, parent)
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"delegation": {"auto_resume": False}}))
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"delegation": {"auto_resume": False}}))
     with patch("run_agent.AIAgent", side_effect=_ScriptedModel()):
         out = json.loads(delegate_task(goal="write the parser", background=True, parent_agent=parent))
     assert out.get("status") == "dispatched", out
@@ -253,7 +253,7 @@ def _sql(parent, sql, params=()):
 
 
 def test_turning_auto_resume_off_still_reports_a_promised_child_once_and_the_guard_follows_its_deadline(tmp_path):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.delegate_tool import delegate_task
     from tools.delegate_tool_auto_resume import tick
     _enable()
@@ -264,7 +264,7 @@ def test_turning_auto_resume_off_still_reports_a_promised_child_once_and_the_gua
     with patch("run_agent.AIAgent", side_effect=_ScriptedModel()):  # past its deadline, before any tick settled it
         again = json.loads(delegate_task(goal="write the parser", background=True, parent_agent=parent))
     assert again.get("status") == "dispatched", again
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"delegation": {"auto_resume": False}}))
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"delegation": {"auto_resume": False}}))
     dispatched = []
     for _ in range(3):
         assert tick(_scheduler(parent, dispatched), capacity=3) == []
@@ -274,12 +274,12 @@ def test_turning_auto_resume_off_still_reports_a_promised_child_once_and_the_gua
 
 
 def test_a_stop_while_auto_resume_is_off_still_cancels_a_promised_child(tmp_path):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.delegate_tool_auto_resume import supersede_for_session, tick
     _enable()
     parent = _parent()
     sid, unit = _silent_stop(tmp_path, parent)
-    cfg = get_hermes_home() / "config.yaml"
+    cfg = get_slave_home() / "config.yaml"
     on = cfg.read_text()
     cfg.write_text(json.dumps({"delegation": {"auto_resume": False}}))
     assert supersede_for_session(parent_session_id=parent.session_id, reason="/stop") == 1
@@ -332,7 +332,7 @@ def _expire(parent, sid):
 
 
 def _cancelled_then_expired(tmp_path, cancel, *, expire_first):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.delegate_tool_auto_resume import tick
     _enable()
     parent = _parent()
@@ -340,7 +340,7 @@ def _cancelled_then_expired(tmp_path, cancel, *, expire_first):
     if expire_first:
         _expire(parent, sid)
     cancel(parent, sid)
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"delegation": {"auto_resume": False}}))
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"delegation": {"auto_resume": False}}))
     if not expire_first:
         _expire(parent, sid)
     for _ in range(3):
@@ -372,8 +372,8 @@ def test_a_child_its_parent_cancelled_never_reports_even_when_its_record_expires
 
 
 def _home():
-    from hermes_constants import get_hermes_home
-    return get_hermes_home()
+    from slave_constants import get_slave_home
+    return get_slave_home()
 
 
 def _turn_off():

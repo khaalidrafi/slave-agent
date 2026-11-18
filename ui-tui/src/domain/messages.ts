@@ -1,4 +1,4 @@
-import type { SessionInfo } from '@hermes/shared/gateway-types'
+import type { SessionInfo } from '@slave-agent/shared/gateway-types'
 
 import { storedClarifyRows } from '../app/clarifyTranscript.js'
 import { LONG_MSG } from '../config/limits.js'

@@ -1,11 +1,11 @@
-"""E2E: ``hermes peer dm`` against a REAL api_server gateway whose canonical
+"""E2E: ``slave peer dm`` against a REAL api_server gateway whose canonical
 Bot Chat session is HIDDEN (issue #91583).
 
-Two real HERMES homes in spirit: the "peer" side is a real
+Two real SLAVE-AGENT homes in spirit: the "peer" side is a real
 :class:`APIServerAdapter` bound to a real loopback TCP socket over a real
-SQLite ``state.db`` (its own tmp HERMES_HOME) containing a hidden
+SQLite ``state.db`` (its own tmp SLAVE_HOME) containing a hidden
 ``Bot Chat`` row — exactly what Bot Mode leaves behind. The "local" side is
-the stock ``hermes peer dm`` client code (``hermes_cli.subcommands.peer``),
+the stock ``slave peer dm`` client code (``slave_cli.subcommands.peer``),
 untouched, talking real HTTP with the real API key auth.
 
 Only the model turn itself is stubbed (``_run_agent``); every HTTP handler,
@@ -22,8 +22,8 @@ from aiohttp import web
 
 from gateway.config import PlatformConfig
 from gateway.platforms.api_server import APIServerAdapter
-from hermes_cli.subcommands import peer as peer_cmd
-from hermes_constants import get_hermes_home
+from slave_cli.subcommands import peer as peer_cmd
+from slave_constants import get_slave_home
 from persistence.conversation.sessions import SessionQuery, SessionWindow
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_seed import seed_session
@@ -41,7 +41,7 @@ def _build_app(adapter: APIServerAdapter) -> web.Application:
 
 @pytest.fixture()
 def peer_gateway(tmp_path, monkeypatch, api_store):
-    """A real api_server gateway (own HERMES_HOME + state.db) on a real socket."""
+    """A real api_server gateway (own SLAVE_HOME + state.db) on a real socket."""
     peer_home = tmp_path / "peer_home"
     peer_home.mkdir()
     db = open_persistence(profile_scope(home=peer_home))
@@ -55,7 +55,7 @@ def peer_gateway(tmp_path, monkeypatch, api_store):
     db.sessions.set_title(other_id, "Ordinary Chat")
 
     adapter = APIServerAdapter(PlatformConfig(enabled=True, extra={"key": API_KEY}))
-    adapter._home_stores[str(get_hermes_home())] = db
+    adapter._home_stores[str(get_slave_home())] = db
     api_store(db)
 
     async def fake_run_agent(user_message, **kwargs):

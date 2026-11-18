@@ -95,8 +95,8 @@ def _run_prerequisites(tmp_path: Path, *, git: str = "stub", interactive: bool =
 @pytest.mark.platforms("macos")
 @pytest.mark.parametrize("opts", [
     pytest.param({"interactive": True}, id="terminal"),
-    # Hermes-Setup runs stages with --non-interactive --json and no terminal.
-    pytest.param({"json": True}, id="hermes-setup-json"),
+    # Slave-Setup runs stages with --non-interactive --json and no terminal.
+    pytest.param({"json": True}, id="slave-setup-json"),
     # After a macOS upgrade `-p` names a folder that exists but holds no git.
     pytest.param({"dev": "damaged", "interactive": True}, id="upgrade-leftover-folder"),
 ])

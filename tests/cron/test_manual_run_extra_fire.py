@@ -29,7 +29,7 @@ def clock(tmp_path, monkeypatch):
     monkeypatch.setattr("cron.jobs.JOBS_FILE", tmp_path / "cron" / "jobs.json")
     monkeypatch.setattr("cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
     state = {"now": datetime.fromisoformat("2026-10-28T09:00:00-07:00")}
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: state["now"])
+    monkeypatch.setattr("cron.jobs._slave_now", lambda: state["now"])
     return state
 
 
@@ -44,7 +44,7 @@ def test_manual_run_keeps_the_scheduled_oneshot_and_it_still_fires(clock):
     job = create_job("remind me", "in 30m", name="reminder")
     slot = job["next_run_at"]
 
-    _fire(job["id"], manual=True)  # cronjob(action="run") / hermes cron run
+    _fire(job["id"], manual=True)  # cronjob(action="run") / slave cron run
 
     after = get_job(job["id"])
     assert (after["state"], after["enabled"], after["next_run_at"]) == ("scheduled", True, slot)
@@ -181,7 +181,7 @@ def test_quota_hold_on_a_manual_run_delays_a_queued_run_now_without_spending_the
     """A manual run hits a provider quota window while another run-now is queued: the hold delays
     that queued run-now to the window boundary, where it still fires as an extra run. It spends no
     repeat run and the scheduled slot after the window stays put."""
-    monkeypatch.setattr("cron.quota_hold._hermes_now", lambda: clock["now"])
+    monkeypatch.setattr("cron.quota_hold._slave_now", lambda: clock["now"])
     job = create_job("digest", "every 60m", name="digest", repeat=3)
     slot = job["next_run_at"]  # 10:00
     clock["now"] += timedelta(minutes=20)

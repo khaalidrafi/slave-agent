@@ -120,7 +120,7 @@ def _search_stdout_and_limit(result: ExecuteResult) -> tuple[str, Optional[str]]
 
 
 def _bundled_rg() -> Optional[str]:
-    """Hermes's pinned ripgrep, forward-slashed for the shell transports, or None."""
+    """slave-agent’s pinned ripgrep, forward-slashed for the shell transports, or None."""
     import pm
 
     try:
@@ -534,7 +534,7 @@ class SearchMixin:
         from tools.environments.base import env_uses_host_filesystem
         from tools.environments.local import _IS_WINDOWS
 
-        # A host search is Hermes's own work, so it runs the pinned ripgrep, never the
+        # A host search is Slave's own work, so it runs the pinned ripgrep, never the
         # first rg on the terminal PATH, where the user's tools come first.
         on_host = env_uses_host_filesystem(self.env)
         bundled = _bundled_rg() if on_host else None
@@ -620,8 +620,8 @@ class SearchMixin:
         # poll and the kill below, and on macOS a not-yet-reaped child has no pgid any more. It is
         # rg's pid by construction (start_new_session), never a getpgid read-back that same race loses.
         from gateway.status import get_process_start_time
-        proc._hermes_pgid = proc.pid
-        proc._hermes_pgid_start = get_process_start_time(proc.pid)
+        proc._slave_pgid = proc.pid
+        proc._slave_pgid_start = get_process_start_time(proc.pid)
 
         # Drain on a thread so a silent rg (huge tree, no hits yet) cannot pin the
         # caller past the deadline or past a /stop; the waiter below owns both.
@@ -767,7 +767,7 @@ class SearchMixin:
         return f"\\( {terms} \\) -prune"
 
     def _root_under_hidden_dir(self, path: str) -> bool:
-        """True when the search root or any ancestor is dot-named (``~/.hermes/skills``)."""
+        """True when the search root or any ancestor is dot-named (``~/.slave/skills``)."""
         root = _normalized_filename_search_root(self.env, path or ".", self.cwd)
         return any(part.startswith(".") and part not in (".", "..") for part in root.replace("\\", "/").split("/"))
 
@@ -1392,7 +1392,7 @@ class SearchMixin:
         protected_paths = self._protected_prune_paths(path)
         # grep applies --exclude-dir='.*' to the command-line root too (GNU grep: to
         # every component of it), so a search rooted under a hidden dir such as
-        # ~/.hermes returns nothing (#18473); find's -prune only sees descendants.
+        # ~/.slave returns nothing (#18473); find's -prune only sees descendants.
         if protected_paths or self._root_under_hidden_dir(path):
             return self._search_with_grep_pruned(
                 pattern, path, file_glob, limit, offset, output_mode, context, protected_paths)

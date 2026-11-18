@@ -18,14 +18,14 @@ from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Optional, Union
 
 from agent.redact import redact_derived_text
-from hermes_time import safe_strftime
+from slave_time import safe_strftime
 from persistence import RowVisibility
 from persistence.conversation.messages import MessageRecord, MessageStorageState, TranscriptRow
 from persistence.conversation.search import SearchHit, SearchSort
 from persistence.conversation.sessions import BOUNDARY_END_REASONS, RecentBrowseQuery, SessionRecord
 from persistence.sqlite._state.common import _PREVIEW_MAX_CHARS
 
-# Hidden from browsing/searching — integrations (HERMES_SESSION_SOURCE=tool), delegate
+# Hidden from browsing/searching — integrations (SLAVE_SESSION_SOURCE=tool), delegate
 # subagent runs, kanban workers are not the user's history.
 _HIDDEN_SESSION_SOURCES = ("kanban", "subagent", "tool")
 # Searchable but DEMOTED below interactive sessions: cron vocabulary dominates bare
@@ -304,7 +304,7 @@ def _session_link(session_id: str, profile: str | None = None) -> str:
     emits, so it renders as a titled link. The profile segment is omitted when it
     can't be named confidently (a bare id still resolves, just not across profiles)."""
     def _active():
-        from hermes_cli.profiles import get_active_profile_name
+        from slave_cli.profiles import get_active_profile_name
         resolved = get_active_profile_name()
         return "" if resolved == "custom" else resolved
     name = (profile or "").strip() or _quiet(_active, "", "get_active_profile_name failed for session link")
@@ -560,29 +560,29 @@ def _cross_profile_reads_confined() -> bool:
     standalone process for one profile has no such boundary, and neither does the operator's own
     CLI/TUI/Desktop/ACP session (its frozen launch policy), whose All-profiles sidebar offers
     ``@session:`` chips from every profile; A2A peers, hosted rooms, cron and messaging stay confined.
-    The caller is the active scope (``get_hermes_home()``), never ``os.environ``, which holds the
+    The caller is the active scope (``get_slave_home()``), never ``os.environ``, which holds the
     launch profile's home.
     """
     from agent.secret_scope import serves_routed_profile
-    from hermes_cli.profiles import get_profile_dir
-    from hermes_constants import get_hermes_home, hermes_home_key
+    from slave_cli.profiles import get_profile_dir
+    from slave_constants import get_slave_home, slave_home_key
     from tools.approval_context import is_local_interactive_session
     if not serves_routed_profile() or is_local_interactive_session():
         return False
-    return hermes_home_key(get_hermes_home()) != hermes_home_key(get_profile_dir("default"))
+    return slave_home_key(get_slave_home()) != slave_home_key(get_profile_dir("default"))
 
 
 def _resolve_profile_db(profile: str, handles: ExitStack):
     """Another profile's store opened read-only (safe on a live DB) and closed with *handles*; None = current."""
     if profile is None or not str(profile).strip():
         return None
-    from hermes_cli import profiles as profiles_mod
-    from hermes_constants import get_hermes_home, hermes_home_key
+    from slave_cli import profiles as profiles_mod
+    from slave_constants import get_slave_home, slave_home_key
     from persistence_assembly import open_persistence_reader
     canon = profiles_mod.normalize_profile_name(profile)
     profiles_mod.validate_profile_name(canon)
     target = profiles_mod.get_profile_dir(canon)
-    if hermes_home_key(target) != hermes_home_key(get_hermes_home()) and _cross_profile_reads_confined():
+    if slave_home_key(target) != slave_home_key(get_slave_home()) and _cross_profile_reads_confined():
         raise PermissionError("this profile may only search its own sessions; reading another "
                               "profile's sessions is limited to the default profile")
     if not profiles_mod.profile_exists(canon):
@@ -764,7 +764,7 @@ def session_search(query: str = "", role_filter: str | None = None, limit: int |
                    persistence=None) -> str:
     """Run session search through the ``persistence`` handle, or a reader over ``db``'s file without one, closing
     stores opened here. Positional order is frozen for old callers; new parameters are appended after ``detail``."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from storage_user_copy import format_session_db_unavailable
     from persistence_assembly import open_persistence_reader
     # A raw `@session:<profile>/<id>` link as session_id: ids never contain "/", so
@@ -791,7 +791,7 @@ def session_search(query: str = "", role_filter: str | None = None, limit: int |
         # RPC without the FTS read API, #141705).
         if persistence is None:
             db_path = getattr(db, "db_path", None)
-            target = Path(db_path) if isinstance(db_path, (str, Path)) else get_hermes_home()
+            target = Path(db_path) if isinstance(db_path, (str, Path)) else get_slave_home()
 
             def _open_own():
                 reader = handles.enter_context(open_persistence_reader(target))
@@ -819,7 +819,7 @@ def check_session_search_requirements() -> bool:
 SESSION_SEARCH_SCHEMA = {
     "name": "session_search",
     "description": (
-        "Search or read past Hermes conversations (FTS5), or scroll inside one. Four shapes, picked by args: `query` = discovery "
+        "Search or read past slave-agent conversations (FTS5), or scroll inside one. Four shapes, picked by args: `query` = discovery "
         "(top-N matching sessions, top result fully hydrated); `session_id` + "
         "`around_message_id` = scroll (window of messages around an anchor); "
         "`session_id` alone = read a whole session — how you resolve an "
@@ -936,7 +936,7 @@ SESSION_SEARCH_SCHEMA = {
             "profile": {
                 "type": "string",
                 "description": (
-                    "Optional. Read sessions from another Hermes profile's database "
+                    "Optional. Read sessions from another slave-agent profile's database "
                     "(read-only). Use when resolving an `@session:<profile>/<id>` link: "
                     "pass the profile segment here with session_id as the id segment. "
                     "Omit to use the current profile."

@@ -42,7 +42,7 @@ async def handshake(home, descriptor):
     binding = {'profile_id': str(home.resolve()), 'instance_id': descriptor['instance_id'],
                'purpose': 'interactive'}
     grant = control(home, 'session-ticket', binding)
-    protocols = ['hermes-gateway-v1', 'hermes-gateway-ticket.' + grant['ticket']]
+    protocols = ['slave-gateway-v1', 'slave-gateway-ticket.' + grant['ticket']]
     async with connect(url, subprotocols=protocols) as ws:
         await ws.send(json.dumps({'jsonrpc': '2.0', 'id': 7, 'method': 'session.resume',
                                   'params': {'session_id': 'not-registered'}}))
@@ -51,7 +51,7 @@ async def handshake(home, descriptor):
             if reply.get('id') == 7:
                 break
         assert reply['error']['message'] == 'not_found', reply
-        assert ws.subprotocol == 'hermes-gateway-v1'
+        assert ws.subprotocol == 'slave-gateway-v1'
         async def rpc(socket, method, expected_error=None, **params):
             await socket.send(json.dumps({'jsonrpc': '2.0', 'id': method, 'method': method, 'params': params}))
             async with asyncio.timeout(15):
@@ -78,8 +78,8 @@ async def handshake(home, descriptor):
         assert admitted['status'] == 'queued', admitted
     # A fresh control ticket and socket must see the same committed execution.
     fresh = control(home, 'session-ticket', binding)
-    async with connect(url, subprotocols=['hermes-gateway-v1',
-                                        'hermes-gateway-ticket.' + fresh['ticket']]) as viewer:
+    async with connect(url, subprotocols=['slave-gateway-v1',
+                                        'slave-gateway-ticket.' + fresh['ticket']]) as viewer:
         deadline = time.monotonic() + 25
         while True:
             snapshot = await rpc(viewer, 'session.resume', session_id=sid)
@@ -111,8 +111,8 @@ async def handshake(home, descriptor):
         renamed = await rpc(viewer, 'session.mutate', **edit)
         assert renamed['title'] == edit['payload']['title'], renamed
     reconnect = control(home, 'session-ticket', binding)
-    async with connect(url, subprotocols=['hermes-gateway-v1',
-                                        'hermes-gateway-ticket.' + reconnect['ticket']]) as viewer:
+    async with connect(url, subprotocols=['slave-gateway-v1',
+                                        'slave-gateway-ticket.' + reconnect['ticket']]) as viewer:
         assert await rpc(viewer, 'session.mutate', **edit) == renamed
         await rpc(viewer, 'session.mutate', expected_error='revision_conflict',
                   **{**edit, 'request_id': 'stale-rename', 'payload': {'title': 'Stale overwrite'}})
@@ -139,7 +139,7 @@ def test_normal_entrypoint_earns_authenticated_authority_readiness(tmp_path, mod
     }))
     root = Path(__file__).resolve().parents[2]
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED='1',
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=model_url)
     with (tmp_path / 'gateway.log').open('w+') as log:
@@ -190,10 +190,10 @@ async def test_api_bind_failure_unwinds_control_db_and_reservation(tmp_path, mon
     from gateway.run import start_gateway
     from gateway.config import GatewayConfig
     from gateway.runtime_ownership import process_ownership
-    from hermes_cli import web_server as web
-    from hermes_constants import get_hermes_home
+    from slave_cli import web_server as web
+    from slave_constants import get_slave_home
 
-    home = get_hermes_home()
+    home = get_slave_home()
     with socket.socket() as blocker:
         blocker.bind(('127.0.0.1', 0))
         blocker.listen()

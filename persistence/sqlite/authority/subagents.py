@@ -20,7 +20,7 @@ import time
 from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Literal, Optional, TypeVar, cast
 
-from hermes_cli.sqlite_safe_read import connect_tracked
+from slave_cli.sqlite_safe_read import connect_tracked
 from persistence.sqlite._state.holders import read_only_db_uri
 from persistence import DelegationId, JsonValue, SessionId
 from persistence.authority.subagents import (

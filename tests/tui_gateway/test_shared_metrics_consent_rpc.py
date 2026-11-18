@@ -7,7 +7,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 from tui_gateway import server
 
@@ -17,8 +17,8 @@ def _bind_homes(monkeypatch, tmp_path: Path) -> tuple[Path, Path]:
     for home in (launch, worker):
         home.mkdir(parents=True)
         (home / "config.yaml").write_text(yaml.safe_dump({"model": {"provider": "nous"}}), encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", launch)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setattr(server, "_slave_home", launch)
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setattr(server, "_profile_home", lambda name: worker if (name or "").strip() == "code" else None)
     server._cfg_cache = server._cfg_sig = server._cfg_path = None
     return launch, worker
@@ -81,7 +81,7 @@ def test_status_is_undecided_until_a_key_is_written(tmp_path, monkeypatch):
 
 def test_only_the_first_run_answer_records_desktop_setup_completed(tmp_path, monkeypatch):
     _launch, _worker = _bind_homes(monkeypatch, tmp_path)
-    import hermes_cli.observability.shared_metrics_events as events
+    import slave_cli.observability.shared_metrics_events as events
 
     calls: list[dict] = []
     monkeypatch.setattr(events, "record_setup_completed", lambda **kw: calls.append(kw))

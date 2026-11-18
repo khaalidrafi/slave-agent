@@ -1,14 +1,14 @@
 # Terminal-backend sandbox image WITH a desktop: the default sandbox base every
 # docker/modal/daytona/singularity user already runs (nikolaik/python-nodejs), plus
-# the tools that base was missing, plus the same display stack the -desktop Hermes
+# the tools that base was missing, plus the same display stack the -desktop slave-agent
 # image carries (TigerVNC + Xfce components + headed Chromium) and cua-driver, so
 # Bot Screen, computer_use and the browser can live INSIDE the sandbox instead of
-# on the gateway host. No Hermes runtime in here; the gateway shells in.
+# on the gateway host. No slave-agent runtime in here; the gateway shells in.
 #
 #   docker build -f docker/sandbox-desktop.Dockerfile -t nousresearch/hermes-sandbox:desktop .
 #
 # Published as nousresearch/hermes-sandbox:desktop by .github/workflows/sandbox-image.yml
-# after each stable release, weekly, and on manual dispatch: it carries no Hermes code, so it
+# after each stable release, weekly, and on manual dispatch: it carries no slave-agent code, so it
 # does not track main, but the weekly rebuild picks up base-image and apt security fixes.
 # The tag lives in the ARG so CI and a local build read one place; hadolint cannot
 # see through the substitution, hence the inline ignore.
@@ -39,8 +39,8 @@ RUN apt-get -o Acquire::Retries=3 update && \
     ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
     rm -rf /var/lib/apt/lists/*
 
-# Display stack: identical package set to the Hermes -desktop image (Dockerfile,
-# HERMES_BOT_DESKTOP=1) so tools/bot_desktop/launcher.sh finds the same binaries.
+# Display stack: identical package set to the slave-agent -desktop image (Dockerfile,
+# SLAVE_BOT_DESKTOP=1) so tools/bot_desktop/launcher.sh finds the same binaries.
 # Components are launched individually by the launcher, never xfce4-session.
 RUN apt-get -o Acquire::Retries=3 update && \
     apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
@@ -49,7 +49,7 @@ RUN apt-get -o Acquire::Retries=3 update && \
         at-spi2-core libgtk-3-0 libnss3 libasound2 libxss1 && \
     rm -rf /var/lib/apt/lists/*
 
-# Headed Chromium through Playwright (the same build the Hermes -desktop image
+# Headed Chromium through Playwright (the same build the slave-agent -desktop image
 # uses), so the agent's browser and the dock's Browser icon share one binary and
 # one --user-data-dir: tools/bot_desktop/sandbox_host.py finds it under
 # /opt/playwright. --with-deps pulls the Chromium runtime libraries.

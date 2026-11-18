@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, expect, test } from 'vitest'
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const python = process.env.HERMES_PYTHON || 'python3'
+const python = process.env.SLAVE_PYTHON || 'python3'
 const roots = []
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
 
@@ -68,7 +68,7 @@ function sourceTree(modules) {
 function inputKey({ base, source }) {
   const output = execFileSync(python, [join(repo, 'scripts/ci/desktop_build_cache.py'), 'describe',
     '--source', source, '--cache', join(base, 'cache'), '--producer', 'desktop-production'], {
-    cwd: base, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '', HERMES_HOME: join(base, 'home') },
+    cwd: base, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '', SLAVE_HOME: join(base, 'home') },
   })
   return JSON.parse(output).restore_keys[0]
 }

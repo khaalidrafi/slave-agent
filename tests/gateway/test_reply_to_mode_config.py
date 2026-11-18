@@ -1,6 +1,6 @@
 """``reply_to_mode: off`` reaches the adapter as ``off`` however it was written.
 
-YAML 1.1 reads a bare ``off`` as ``False`` and ``hermes config set ... off`` writes ``false``. The
+YAML 1.1 reads a bare ``off`` as ``False`` and ``slave config set ... off`` writes ``false``. The
 single-profile env bridge maps that back to ``off``, but a multiplexed secondary profile skips the
 bridge and reads ``PlatformConfig.reply_to_mode`` directly, so ``False`` fell to the adapters'
 ``or 'first'`` default and every reply kept quoting the user's message.
@@ -12,8 +12,8 @@ import pytest
 
 from agent.secret_scope import set_multiplex_active
 from gateway.config import Platform, PlatformConfig, load_gateway_config
-from hermes_cli import config as cli_config
-from hermes_cli.plugins import discover_plugins
+from slave_cli import config as cli_config
+from slave_cli.plugins import discover_plugins
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def secondary(tmp_path, monkeypatch):
     launch = tmp_path / "launch"
     home = launch / "profiles" / "b2"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     discover_plugins()
     yield home
@@ -37,7 +37,7 @@ def _load_in_scope(home):
 
 def test_config_set_off_disables_reply_threading_for_a_secondary_profile(secondary, monkeypatch):
     (secondary / "config.yaml").write_text("platforms:\n  telegram:\n    enabled: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(secondary))
+    monkeypatch.setenv("SLAVE_HOME", str(secondary))
     cli_config.set_config_value("platforms.telegram.reply_to_mode", "off")
     from plugins.platforms.telegram.adapter import TelegramAdapter
 

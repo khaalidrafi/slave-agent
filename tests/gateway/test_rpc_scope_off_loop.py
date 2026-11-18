@@ -20,11 +20,11 @@ def _authority(home, multiplex=True):
 
 def _bound():
     from agent.secret_scope import current_secret_scope, current_secret_scope_home
-    from hermes_constants import get_hermes_home_override
+    from slave_constants import get_slave_home_override
     from tools.terminal_scope import get_terminal_scope
     secrets = current_secret_scope()
     terminal = get_terminal_scope()
-    return {"home": get_hermes_home_override(),
+    return {"home": get_slave_home_override(),
             "secrets": dict(secrets) if secrets is not None else None,
             "secret_home": current_secret_scope_home(),
             "terminal": dict(terminal) if terminal is not None else None,

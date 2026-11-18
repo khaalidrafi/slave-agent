@@ -2,7 +2,7 @@
 
 from unittest.mock import AsyncMock
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from gateway.config import GatewayConfig, Platform
@@ -11,7 +11,7 @@ from gateway.session import SessionSource, SessionStore
 
 
 def _runner(tmp_path, monkeypatch):
-    monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+    monkeypatch.setattr("gateway.run._slave_home", tmp_path)
     monkeypatch.setenv("TELEGRAM_HOME_CHANNEL", "home")
     runner = GatewayRunner.__new__(GatewayRunner)
     runner.config = GatewayConfig()

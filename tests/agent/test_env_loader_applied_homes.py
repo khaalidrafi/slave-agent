@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import env_loader
-from hermes_constants import hermes_home_key
+from slave_cli import env_loader
+from slave_constants import slave_home_key
 
 
 @pytest.fixture(autouse=True)
@@ -31,12 +31,12 @@ def _write_enabled_config(home: Path):
 
 def test_malformed_config_does_not_permanently_skip(tmp_path, monkeypatch):
     """Config error on first call → fixed config on second call must apply."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     (home / "config.yaml").write_text("secrets: [unclosed")  # malformed YAML
 
     env_loader._apply_external_secret_sources(home)
-    assert hermes_home_key(home) not in env_loader._APPLIED_HOMES
+    assert slave_home_key(home) not in env_loader._APPLIED_HOMES
 
     # User fixes the config; same process must now attempt the fetch.
     _write_enabled_config(home)
@@ -58,20 +58,20 @@ def test_malformed_config_does_not_permanently_skip(tmp_path, monkeypatch):
 
     env_loader._apply_external_secret_sources(home)
     assert calls["n"] == 1
-    assert hermes_home_key(home) in env_loader._APPLIED_HOMES
+    assert slave_home_key(home) in env_loader._APPLIED_HOMES
     monkeypatch.delenv("NEW_KEY_40597", raising=False)
 
 
 def test_no_secrets_section_does_not_mark_applied(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     (home / "config.yaml").write_text("model:\n  provider: openrouter\n")
     env_loader._apply_external_secret_sources(home)
-    assert hermes_home_key(home) not in env_loader._APPLIED_HOMES
+    assert slave_home_key(home) not in env_loader._APPLIED_HOMES
 
 
 def test_disabled_sources_do_not_mark_applied(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     (home / "config.yaml").write_text(
         "secrets:\n  bitwarden:\n    enabled: false\n    project_id: p\n"
@@ -79,14 +79,14 @@ def test_disabled_sources_do_not_mark_applied(tmp_path):
     from agent.secret_sources import registry
     registry._reset_registry_for_tests()
     env_loader._apply_external_secret_sources(home)
-    assert hermes_home_key(home) not in env_loader._APPLIED_HOMES
+    assert slave_home_key(home) not in env_loader._APPLIED_HOMES
 
 
 def test_fetch_error_still_marks_applied(tmp_path, monkeypatch):
     """A real fetch attempt that FAILS still marks the home — otherwise every
-    import-time load_hermes_dotenv() would re-fetch and re-print the same
+    import-time load_slave_dotenv() would re-fetch and re-print the same
     error 3-5x per startup."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _write_enabled_config(home)
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.dead")
@@ -107,11 +107,11 @@ def test_fetch_error_still_marks_applied(tmp_path, monkeypatch):
     env_loader._apply_external_secret_sources(home)
     env_loader._apply_external_secret_sources(home)  # second call = no-op
     assert calls["n"] == 1
-    assert hermes_home_key(home) in env_loader._APPLIED_HOMES
+    assert slave_home_key(home) in env_loader._APPLIED_HOMES
 
 
 def test_success_marks_applied_and_second_call_noop(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _write_enabled_config(home)
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.t")

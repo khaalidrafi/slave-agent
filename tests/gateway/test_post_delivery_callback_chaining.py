@@ -94,7 +94,7 @@ async def test_queued_handoff_fires_each_generation(adapter):
     async def handler(event):
         guard = adapter._active_sessions[key]
         generation = 1 if event.text == "first" else 2
-        guard._hermes_run_generation = generation
+        guard._slave_run_generation = generation
         adapter.register_post_delivery_callback(
             key, lambda: fired.append(event.text), generation=generation,
         )

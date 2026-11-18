@@ -250,7 +250,7 @@ class TestRuntimeMode:
         home = tmp_path / "home"
         home.mkdir()
         (home / "config.yaml").write_text(json.dumps({"agent": {"coding_context": "auto"}}))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("SLAVE_HOME", str(home))
         mode = cc.resolve_runtime_mode(platform="cli", cwd=tmp_path, config={"agent": {"coding_context": "focus"}})
         assert mode.toolset_selection() == [cc.CODING_TOOLSET]
 

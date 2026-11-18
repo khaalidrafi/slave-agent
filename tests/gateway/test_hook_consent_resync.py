@@ -13,33 +13,33 @@ from tests.waiting import async_wait_until
 
 
 def _hooks_in(home: Path) -> list:
-    from hermes_cli.plugins import get_plugin_manager
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(str(home))
+    from slave_cli.plugins import get_plugin_manager
+    from slave_constants import reset_slave_home_override, set_slave_home_override
+    token = set_slave_home_override(str(home))
     try:
         return [cb for cb in get_plugin_manager()._hooks.get("pre_tool_call", [])
                 if getattr(cb, "shell_hook_key", None)]
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _approve(home: Path, command: str, approve: bool) -> None:
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(str(home))
+    from slave_constants import reset_slave_home_override, set_slave_home_override
+    token = set_slave_home_override(str(home))
     try:
         shell_hooks._record_approval("pre_tool_call", command) if approve else shell_hooks.revoke(command)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("multiplex", [False, True])
 async def test_consent_change_registers_and_revokes_hook_without_restart(tmp_path, monkeypatch, multiplex):
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     profile = launch / "profiles" / "guarded"
     profile.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    monkeypatch.delenv("HERMES_ACCEPT_HOOKS", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
+    monkeypatch.delenv("SLAVE_ACCEPT_HOOKS", raising=False)
     shell_hooks.reset_for_tests()
     command = str(tmp_path / "guard.sh")
     hook_cfg = f"hooks:\n  pre_tool_call:\n    - command: {command}\n      fail_closed: true\n"

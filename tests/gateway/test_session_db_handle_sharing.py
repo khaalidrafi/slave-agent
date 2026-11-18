@@ -30,7 +30,7 @@ from tests.fixtures.storage_seed import seed_session
 
 def _live_count(path) -> int:
     """Live-connection count the tracking registry holds for *path*."""
-    import hermes_cli.sqlite_safe_read as mod
+    import slave_cli.sqlite_safe_read as mod
 
     with mod._live_lock:
         return mod._live_connections.get(mod._key(path), 0)
@@ -39,9 +39,9 @@ def _live_count(path) -> int:
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     """A gateway home under tmp_path, with path resolution going through it."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     root.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     return root
 
 

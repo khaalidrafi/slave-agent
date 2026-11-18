@@ -44,7 +44,7 @@ def test_an_enabled_webapp_binds_its_configured_address(tmp_path):
     "webapp:\n  enabled: true\n  host: ''\n",
     "webapp:\n  enabled: 'true'\n",
     "webapp:\n  enabled: true\n  host: 192.168.1.20\n",
-    "webapp:\n  enabled: true\n  host: hermes.example.net\n",
+    "webapp:\n  enabled: true\n  host: slave.example.net\n",
 ])
 def test_a_malformed_webapp_block_keeps_the_listener_private(tmp_path, block):
     settings = webapp.webapp_settings(_home(tmp_path, block))
@@ -103,7 +103,7 @@ def _start_runtime_api(monkeypatch, tmp_path, config, *, busy=False, refuse=None
     (a list) records what each Webapp verb answers while the Webapp's listener starts."""
     from gateway import run_api, run_runtime
     home = _home(tmp_path, config)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     calls = []
 
     async def start(runner, *, host="127.0.0.1", port=0, webapp=None):
@@ -153,7 +153,7 @@ def test_the_gateway_registers_the_webapp_verbs_before_its_control_socket_answer
     from that moment too (``starting`` until the listener settles), not only once the listener is up."""
     from gateway import control_socket, run_bootstrap
     home = _home(tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     seen = {}
 
     async def start(server):
@@ -232,7 +232,7 @@ def test_where_one_use_links_cannot_be_checked_the_launcher_gets_one_to_open_by_
     page, fragment = result["url"].split("#", 1)
     assert page == "http://127.0.0.1:9555/webapp/launch"
     assert (result["private"], result["expires_in_seconds"]) == (True, 60)
-    assert "s" * 43 not in result["url"] and "hermes-session" not in result["url"]
+    assert "s" * 43 not in result["url"] and "slave-session" not in result["url"]
     [ticket] = parse_qs(fragment)["ticket"]
     _expires, _token, peer_checked = web.app.state.webapp_window_tickets[ticket]
     assert peer_checked is False
@@ -257,7 +257,7 @@ def _lan_webapp(monkeypatch, tmp_path, *, registered=None, address=LAN, public_u
     """A gateway serving the Webapp on every interface (``webapp.host: 0.0.0.0``) behind the sign-in
     gate, this machine's LAN address being *address*, after Web Access Start registered Nous sign-in
     for the callback *registered* (None: never)."""
-    from hermes_cli import webapp_access
+    from slave_cli import webapp_access
 
     config = "webapp:\n  enabled: true\n  host: 0.0.0.0\n  port: 9555\n"
     runner, _, home = _start_runtime_api(monkeypatch, tmp_path, config)

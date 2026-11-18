@@ -3,9 +3,9 @@ repo: https://github.com/teckedd-code2save/hermes-groundcontrol
 sha: d2905e9cdd710aaa20217e1c24a8091cdf8b9dcc
 version: "0.2.0"
 requires_hermes: ">=0.17.0"
-title: "GroundControl for Hermes"
+title: "GroundControl for slave-agent"
 category: tools
-description: "Inspect deployment health, investigate deployment evidence and guide approved GroundControl operations from Hermes."
+description: "Inspect deployment health, investigate deployment evidence and guide approved GroundControl operations from Slave."
 maintainer: teckedd-code2save
 tier: community
 screenshots:

@@ -29,7 +29,7 @@ async def test_cold_restore_keeps_the_persisted_yolo_toggle_and_untoggled_follow
     untouched_route = authority.sessions[untouched.session_id].route
     assert first.session_store.set_session_yolo(revoked_route, False)  # owner `/yolo off` on a --yolo launch
 
-    second = runner()  # idle exit, then `hermes -c`: a fresh owner over the same state.db
+    second = runner()  # idle exit, then `slave -c`: a fresh owner over the same state.db
     cold = await initialize_session_authority(second, profile_id='fixture', instance_id='second')
     assert {revoked.session_id, untouched.session_id} <= set(cold.sessions)
     launch = SimpleNamespace(yolo=True)

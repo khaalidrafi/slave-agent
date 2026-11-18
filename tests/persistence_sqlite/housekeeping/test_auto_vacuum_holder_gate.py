@@ -1,6 +1,6 @@
 """Automatic maintenance of a SQLite backend store never VACUUMs under a foreign writer (#110054).
 
-``session_retention.run_auto_prune_and_vacuum`` runs the SAME store rewrite as ``hermes sessions optimize``
+``session_retention.run_auto_prune_and_vacuum`` runs the SAME store rewrite as ``slave sessions optimize``
 (VACUUM + TRUNCATE checkpoint) from CLI and gateway startup. The manual command refuses while a
 sibling writer holds the store; the automatic producer must skip for the same reason: a rewritten
 generation under a live holder is what leaves every agent refusing turns. It only ever skips.

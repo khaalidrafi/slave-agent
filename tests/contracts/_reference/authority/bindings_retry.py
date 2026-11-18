@@ -41,7 +41,7 @@ def _same_create_request(saved_json: str, retry_json: str) -> bool:
 
 
 def _kept(name: str, rules: Mapping[str, Any]) -> bool:
-    travels = not any(s in name.upper() for s in rules["secret"]) and not name.startswith("HERMES_")
+    travels = not any(s in name.upper() for s in rules["secret"]) and not name.startswith("SLAVE_")
     return name in rules["behaviour"] or (travels and (name in rules["names"] or name.startswith(tuple(rules["prefixes"]))))
 
 

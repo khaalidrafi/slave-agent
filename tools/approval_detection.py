@@ -18,7 +18,7 @@ from tools import approval_parser_budget as _parser_budget
 from tools.approval_parser_budget import _scan_backtick_end, _scan_dollar_paren_end, _scan_shell
 from tools.approval_ansi_c import _is_shell_comment_start, expand_ansi_c_quotes
 from tools.approval_git_options import _GIT, _GIT_PUSH, _GIT_PUSH_ARGS, _join_escaped_word_chars
-from tools.approval_config_set import _HERMES_CONFIG_SET_APPROVAL_POLICY
+from tools.approval_config_set import _SLAVE_CONFIG_SET_APPROVAL_POLICY
 from tools.approval_env_split import _env_split_payload
 from tools.approval_fetch_exec import (
     _PIPE_PATH_PREFIX_RE,
@@ -27,8 +27,8 @@ from tools.approval_fetch_exec import (
     heredoc_scan_sources,
 )
 from tools.approval_grep_spans import _grep_safe_detection_variant, _quoted_grep_pattern_spans  # re-exported
-from tools.approval_hermes_store import _HERMES_HOME_BARE, _HERMES_STORE_FILE, _HERMES_STORE_PATH, _HERMES_STORE_ROOT
-from tools.approval_home_fold import _rewrite_resolved_hermes_home, _rewrite_resolved_user_home
+from tools.approval_slave_store import _SLAVE_HOME_BARE, _SLAVE_STORE_FILE, _SLAVE_STORE_PATH, _SLAVE_STORE_ROOT
+from tools.approval_home_fold import _rewrite_resolved_slave_home, _rewrite_resolved_user_home
 from tools.approval_shell_tokens import _shell_tokens_with_spans
 from tools.approval_windows_hardline import whatif_preview_is_real, windows_hardline_patterns, windows_whatif_strict_patterns
 from tools.approval_applescript import OSASCRIPT_OPAQUE_DESCRIPTION, OSASCRIPT_RISKY_DESCRIPTION, classify_osascript
@@ -37,22 +37,22 @@ from tools.approval_variation_selectors import _EMOJI_RANGE, _HIDDEN_VARIATION_S
 from tools.approval_wmic import WmicShadowDeleteMatcher
 
 
-# Sensitive write targets, matched via ~ / $HOME / $HERMES_HOME spellings. The resolved absolute
+# Sensitive write targets, matched via ~ / $HOME / $SLAVE_HOME spellings. The resolved absolute
 # home is folded into these forms at detection time by _normalize_command_for_detection(), so no
-# import-time path snapshot (stale once HERMES_HOME is set after import) lives in the patterns.
+# import-time path snapshot (stale once SLAVE_HOME is set after import) lives in the patterns.
 _SSH_SENSITIVE_PATH = r'(?:~|\$home|\$\{home\})/\.ssh(?:/|$)'
-# A Hermes home: the default root or a named profile under it (profiles/<name>/ has its own config.yaml/.env).
-_HERMES_HOME_DIR = (
-    r'(?:~\/\.hermes/|(?:\$home|\$\{home\})/\.hermes/|(?:\$hermes_home|\$\{hermes_home\})/)'
+# A Slave home: the default root or a named profile under it (profiles/<name>/ has its own config.yaml/.env).
+_SLAVE_HOME_DIR = (
+    r'(?:~\/\.slave/|(?:\$home|\$\{home\})/\.slave/|(?:\$slave_home|\$\{slave_home\})/)'
     r'(?:profiles/[^/\s"\'`]+/)?'
 )
-_HERMES_ENV_PATH = (
-    _HERMES_HOME_DIR + r'(?:\.op)?\.env\b'
+_SLAVE_ENV_PATH = (
+    _SLAVE_HOME_DIR + r'(?:\.op)?\.env\b'
 )
-# ~/.hermes/config.yaml IS the security policy (approvals.mode, yolo, allowlist) and the config cache is mtime-keyed,
+# ~/.slave/config.yaml IS the security policy (approvals.mode, yolo, allowlist) and the config cache is mtime-keyed,
 # so a write takes effect mid-session. Terminal-side coverage (sed -i, tee, >, cp) pairs the file_tools deny.
-_HERMES_CONFIG_PATH = (
-    _HERMES_HOME_DIR + r'config\.yaml\b'
+_SLAVE_CONFIG_PATH = (
+    _SLAVE_HOME_DIR + r'config\.yaml\b'
 )
 _PROJECT_ENV_PATH = r'(?:(?:/|\.{1,2}/)?(?:[^\s/"\'`]+/)*\.env(?:\.[^/\s"\'`]+)?)'
 _PROJECT_CONFIG_PATH = r'(?:(?:/|\.{1,2}/)?(?:[^\s/"\'`]+/)*config\.yaml)'
@@ -60,7 +60,7 @@ _SHELL_RC_FILES = rf"(?:~|\$home|\$\{{home\}})/(?:{'|'.join(re.escape(f) for f i
 _CREDENTIAL_FILES = r'(?:~|\$home|\$\{home\})/\.' r'(?:netrc|pgpass|npmrc|pypirc)\b'
 _HOME_PREFIX = r'(?:~|\$home|\$\{home\})/'
 _SECRET_FILE = (
-    rf'(?:{_SSH_SENSITIVE_PATH}|{_HERMES_ENV_PATH}|{_CREDENTIAL_FILES}|{_PROJECT_ENV_PATH}(?![\w-])'
+    rf'(?:{_SSH_SENSITIVE_PATH}|{_SLAVE_ENV_PATH}|{_CREDENTIAL_FILES}|{_PROJECT_ENV_PATH}(?![\w-])'
     rf'|{_HOME_PREFIX}\.(?:aws/credentials|git-credentials|config/gh/hosts\.yml|docker/config\.json|kube/config)\b'
     r'|/etc/(?:shadow|passwd)\b|\bid_(?:rsa|ed25519|ecdsa|dsa)\b)'
 )
@@ -80,19 +80,19 @@ _GLOBAL_FLAGS = r'(?:-\S++(?:\s++(?!-\S)\S++)?\s++)*'
 _MACOS_PRIVATE_SYSTEM_PATH = r'/private/(?:etc|var|tmp|home)/'
 _SYSTEM_CONFIG_PATH = rf'(?:/etc/|{_MACOS_PRIVATE_SYSTEM_PATH})'
 _SENSITIVE_WRITE_TARGET = (
-    rf'(?:{_SYSTEM_CONFIG_PATH}|/dev/sd|{_SSH_SENSITIVE_PATH}|{_HERMES_ENV_PATH}|{_HERMES_CONFIG_PATH}|'
+    rf'(?:{_SYSTEM_CONFIG_PATH}|/dev/sd|{_SSH_SENSITIVE_PATH}|{_SLAVE_ENV_PATH}|{_SLAVE_CONFIG_PATH}|'
     rf'{_SHELL_RC_FILES}|{_CREDENTIAL_FILES})'
 )
 _USER_SENSITIVE_WRITE_TARGET = rf'(?:{_SSH_SENSITIVE_PATH}|{_SHELL_RC_FILES}|{_CREDENTIAL_FILES})'
 # touch/mkdir/ln: the home-side targets only; /etc is out of their scope (#85321) and admin commands
 # like `mkdir -p /etc/apt/keyrings` would be mislabelled as credential/SSH/shell-rc writes.
-_HOME_SENSITIVE_WRITE_TARGET = rf'(?:{_USER_SENSITIVE_WRITE_TARGET}|{_HERMES_ENV_PATH}|{_HERMES_CONFIG_PATH})'
+_HOME_SENSITIVE_WRITE_TARGET = rf'(?:{_USER_SENSITIVE_WRITE_TARGET}|{_SLAVE_ENV_PATH}|{_SLAVE_CONFIG_PATH})'
 # Same set for touch/mkdir/ln, but a named FILE must end the shell word: `ln -s a ~/.bashrc.bak` /
 # `touch ~/.bashrc.d/x` name a sibling, not the startup or credential file (`~/.ssh/` is a directory: any entry;
 # a bare `~/.ssh` operand anywhere in the command names the directory itself, `~/.sshx` does not).
 # A glued redirect (`touch ~/.bashrc>/dev/null`) ends the word too; the ln rule also allows trailing redirects.
 _HOME_SENSITIVE_CREATE_TARGET = (
-    rf'(?:{_SSH_SENSITIVE_PATH}|(?:{_HOME_PREFIX}\.ssh|{_SHELL_RC_FILES}|{_CREDENTIAL_FILES}|{_HERMES_ENV_PATH}|{_HERMES_CONFIG_PATH})'
+    rf'(?:{_SSH_SENSITIVE_PATH}|(?:{_HOME_PREFIX}\.ssh|{_SHELL_RC_FILES}|{_CREDENTIAL_FILES}|{_SLAVE_ENV_PATH}|{_SLAVE_CONFIG_PATH})'
     r'(?=["\'\s;&|)`<>]|$))'
 )
 _PROJECT_SENSITIVE_WRITE_TARGET = rf'(?:{_PROJECT_ENV_PATH}|{_PROJECT_CONFIG_PATH})'
@@ -121,7 +121,7 @@ _WRITE_TARGET_BOUNDARY = r'(?=[\s;&|<>"\']|$)'
 # closing a substitution that _CMDPOS anchored inside: `ls $(pwd)/reboot` is data. Every run is possessive so a failed
 # match never re-splits a whitespace / path / busybox run (cubic on blank-line runs; re.search holds the GIL), and only
 # the last newline of a whitespace run starts a match (earlier ones reach the same word, rescanning once per newline).
-# A segment holds no `=` / `<` / `>`: `HERMES_HOME=/tmp/x hermes` and `socat>/tmp/log` are not program paths.
+# A segment holds no `=` / `<` / `>`: `SLAVE_HOME=/tmp/x slave` and `socat>/tmp/log` are not program paths.
 _CMD_PATH = r'(?:/?+(?:[^\s/)=<>]++/)*+)?+'
 _MULTI_CALL_PREFIX = r'(?:' + _CMD_PATH + r'(?:busybox|toybox)\b\s++)?+'
 
@@ -182,7 +182,7 @@ HARDLINE_PATTERNS = [
     # Drive-letter root (`C:/`, `c:/*`; `C:\` reaches here as `C:/` via the Windows-path variant): same floor as "/".
     # A quoted bare `"C:"` counts only when the next quoted/bare segment starts the root slash (`"C:"'/'`).
     # PowerShell's `rm` alias with a literal narrowing `-Include` (`rm -r C:/* -Include *.tmp`) deletes only matches.
-    # Caveat: Hermes runs the bare command through bash, where GNU rm rejects `-Include` unless POSIXLY_CORRECT is
+    # Caveat: Slave runs the bare command through bash, where GNU rm rejects `-Include` unless POSIXLY_CORRECT is
     # set; then getopt stops at the root operand and `-Include` is a file name, so that delete only prompts.
     (_CMDPOS + r'rm\s+' + _PS_INCLUDE_NARROWS + r'(-[^\s]*\s+)*' + _hardline_rm_path(r'[a-z]:/(?:(?:\.\.?)?/)*(?:\.\.?)?\**|[a-z]:/ \*|[a-z]:(?=["\']["\']?/)'),
      "recursive delete of drive root"),
@@ -585,7 +585,7 @@ DANGEROUS_PATTERNS = [
     (r'\bsc(?:\.exe)?\s+(?:stop|delete)\b', "stop/delete service (sc)"),
     # Windows-form credential paths; the POSIX ~/.ssh patterns never match drive-letter or backslash spellings.
     (r'\busers[\\/][^\\/\s]+[\\/]\.ssh\b', "access to SSH keys (Windows path)"),
-    (r'\bappdata[\\/](?:local|roaming)[\\/]hermes[^\n]*\.env\b', "access to Hermes secrets (Windows path)"),
+    (r'\bappdata[\\/](?:local|roaming)[\\/]slave[^\n]*\.env\b', "access to slave-agent secrets (Windows path)"),
     # ── end of Windows tier
     (r'\bchmod\s+(-[^\s]*\s+)*(777|666|o\+[rwx]*w|a\+[rwx]*w)\b', "world/other-writable permissions"),
     (r'\bchmod\s+--recursive\b.*(777|666|o\+[rwx]*w|a\+[rwx]*w)', "recursive world/other-writable (long flag)"),
@@ -696,9 +696,9 @@ DANGEROUS_PATTERNS = [
     (r'\b(?:rg|sort|ag|man)\b[^;|&\n]*(?<!\S)--(?:pre|hostname-bin|compress-program|pager|html)(?:\{|[*?\[])',
      "dynamic shell word may expand to arbitrary program execution flag"),
     # Gateway lifecycle: stopping/restarting the gateway kills all running agents. Global flags
-    # between `hermes` and `gateway` (`hermes -p ade gateway restart`) are allowed so a profile flag can't slip past.
-    (r'\bhermes\s+' + _GLOBAL_FLAGS + r'gateway\s+(stop|restart)\b', "stop/restart hermes gateway (kills running agents)"),
-    (r'\bhermes\s+update\b', "hermes update (restarts gateway, kills running agents)"),
+    # between `slave` and `gateway` (`slave -p ade gateway restart`) are allowed so a profile flag can't slip past.
+    (r'\bhermes\s+' + _GLOBAL_FLAGS + r'gateway\s+(stop|restart)\b', "stop/restart slave gateway (kills running agents)"),
+    (r'\bhermes\s+update\b', "slave update (restarts gateway, kills running agents)"),
     # Docker/Podman daemon redirect — global flags or env that point the CLI at a DIFFERENT (often remote) daemon:
     # `docker -H ssh://prod stop app` looks local but operates on remote infra, so any redirect requires approval
     # regardless of subcommand. The flag must be in global position (before the subcommand) and -H/--host/--context
@@ -718,28 +718,28 @@ DANGEROUS_PATTERNS = [
     # Removing a container or volume is strictly more destructive than stopping it, and the canonical
     # `container` spelling and the prunes (every stopped container, unused volume/image data) are the same
     # verbs (#132483). `docker image rm`/`rmi`/`network rm` stay ungated: a pull or a recreate restores them.
-    # Descriptions must name a word `hermes approvals suggest` treats as destructive (`rm`, `delete`), or
+    # Descriptions must name a word `slave approvals suggest` treats as destructive (`rm`, `delete`), or
     # it offers the class for the permanent allowlist.
     (r'\b(?:docker|podman)\s+' + _GLOBAL_FLAGS + r'(?:rm|container\s+(?:rm|remove))\b', "docker/podman rm (container destruction)"),
     (r'\bdocker(?:-compose|\s+compose)\s+' + _GLOBAL_FLAGS + r'rm\b', "docker compose rm (container destruction)"),
     (r'\b(?:docker|podman)\s+' + _GLOBAL_FLAGS + r'volume\s+(?:rm|remove|prune)\b', "docker/podman volume rm/prune (volume data destruction)"),
     (r'\b(?:docker|podman)\s+' + _GLOBAL_FLAGS + r'(?:container\s+prune|system\s+(?:prune|reset))\b', "docker/podman container/system prune, podman system reset (deletes stopped containers and unused data)"),
     # Gateway protection: never start gateway outside systemd management
-    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
-    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
+    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart slave-gateway')"),
+    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart slave-gateway')"),
     # Self-termination protection: prevent agent from killing its own process
-    (r'\b(pkill|killall)\b.*\b(hermes|gateway|cli\.py)\b', "kill hermes/gateway process (self-termination)"),
+    (r'\b(pkill|killall)\b.*\b(slave|gateway|cli\.py)\b', "kill slave/gateway process (self-termination)"),
     # Self-termination via kill + $(pgrep/pidof): the substitution is opaque to the name-based
     # pattern above, so catch the structural form.
     (r'\bkill\b.*\$\(\s*(pgrep|pidof)\b', "kill process via pgrep/pidof expansion (self-termination)"),
     (r'\bkill\b.*`\s*(pgrep|pidof)\b', "kill process via backtick pgrep/pidof expansion (self-termination)"),
-    # launchctl-driven gateway stop/restart on macOS (label `ai.hermes.gateway`). Two independent lookaheads, NOT a
-    # sequential match: a for-loop building the label from a list defined EARLIER (`for item in 'ai.hermes...'; do
-    # launchctl bootout "$label"`) never has "hermes" after the verb, and that slipped past and restarted 4 gateways
+    # launchctl-driven gateway stop/restart on macOS (label `ai.slave.gateway`). Two independent lookaheads, NOT a
+    # sequential match: a for-loop building the label from a list defined EARLIER (`for item in 'ai.slave...'; do
+    # launchctl bootout "$label"`) never has "slave" after the verb, and that slipped past and restarted 4 gateways
     # with zero approval. Erring broad is correct for an approval gate: an extra prompt is cheap.
     # Anchor whole-input lookaheads: re.search otherwise rescans every suffix of
     # long non-matching commands, holding the GIL and starving Gateway threads.
-    (r'\A(?=[\s\S]*\blaunchctl\s+(?:stop|kickstart|bootout|unload|kill|disable|remove)\b)(?=[\s\S]*\b(?:hermes|ai\.hermes)\b)', "stop/restart hermes launchd service (kills running agents)"),
+    (r'\A(?=[\s\S]*\blaunchctl\s+(?:stop|kickstart|bootout|unload|kill|disable|remove)\b)(?=[\s\S]*\b(?:slave|ai\.slave)\b)', "stop/restart slave launchd service (kills running agents)"),
     (rf'\b(cp|mv|install)\b.*\s{_SYSTEM_CONFIG_PATH}', "copy/move file into system config path"),
     (rf'\b(cp|mv|install)\b.*\s["\']?{_PROJECT_SENSITIVE_WRITE_TARGET}["\']?{_COMMAND_TAIL}', "overwrite project env/config file"),
     # cp/mv/install OVERWRITING a credential/SSH/shell-rc/Hermes file (key implant, login-time
@@ -747,7 +747,7 @@ DANGEROUS_PATTERNS = [
     # DESTINATION fires; reading OUT of a sensitive path (`cp ~/.ssh/config /tmp/x`) stays safe.
     # The trailing `[^\s"\']*` consumes the rest of the destination filename.
     # The tee/redirection patterns above already gate _SENSITIVE_WRITE_TARGET (~/.ssh/*,
-    # ~/.netrc/.pgpass/.npmrc/.pypirc, shell rc files, ~/.hermes/config.yaml/.env), but cp/mv/install was
+    # ~/.netrc/.pgpass/.npmrc/.pypirc, shell rc files, ~/.slave/config.yaml/.env), but cp/mv/install was
     # only paired for /etc and project-relative env/config — so `cp evil ~/.ssh/authorized_keys` (key
     # implant), `cp creds ~/.netrc`, and `cp evil ~/.bashrc` (login-time command injection) slipped through
     # with auto-approve. Same unpaired-door rationale as #14639 / the sed-tee-redirect pairing on these
@@ -760,23 +760,23 @@ DANGEROUS_PATTERNS = [
     # `touch -r REF` / `--reference REF` only reads REF (its timestamps), so that operand is not a create target.
     (rf'{_CMDPOS}(?:touch|mkdir)\s(?:[^\n;&|]*\s)?(?:(?<!\s-r\s)(?<!\s--reference\s)|(?<=\s--\s-r\s)|(?<=\s--\s--reference\s))["\']?{_HOME_SENSITIVE_CREATE_TARGET}', "create a file in a sensitive credential/SSH/shell-rc path"),
     (rf'{_CMDPOS}ln\s[^\n;&|]*\s["\']?{_HOME_SENSITIVE_CREATE_TARGET}[^\s"\'<>;&|)`]*+["\']?(?:\s*+\d*+[<>]++&?\s*+[^\s<>;&|)`]*+)*+\s*+(?:[\n;&|)`]|$)', "link a file into a sensitive credential/SSH/shell-rc path"),
-    # Hermes home / session-store floor (#109367): delete, wipe, move, or overwrite of the home or a
-    # protected store. cp/install/rsync only as the destination, so `cp ~/.hermes/state.db /tmp/bak` stays clean.
-    (_CMDPOS + rf'(?:rm|unlink|shred|truncate)\b[^;|&\n]*\s["\']?{_HERMES_STORE_PATH}', "delete/move/wipe Hermes home or session store"),
+    # Slave home / session-store floor (#109367): delete, wipe, move, or overwrite of the home or a
+    # protected store. cp/install/rsync only as the destination, so `cp ~/.slave/state.db /tmp/bak` stays clean.
+    (_CMDPOS + rf'(?:rm|unlink|shred|truncate)\b[^;|&\n]*\s["\']?{_SLAVE_STORE_PATH}', "delete/move/wipe slave-agent home or session store"),
     # mv: a store at any operand (moved away or overwritten), the bare home only as a SOURCE, so
-    # moving something INTO the home (`mv /tmp/skill ~/.hermes/`) stays clean.
-    (_CMDPOS + rf'mv\b[^;|&\n]*\s["\']?(?:{_HERMES_STORE_FILE}|{_HERMES_HOME_BARE}(?=\s+[^\s;|&<>]))',
-     "delete/move/wipe Hermes home or session store"),
-    (_CMDPOS + rf'(?:cp|install|rsync)\b[^;|&\n]*\s["\']?{_HERMES_STORE_ROOT}(?=\s*(?:$|[;&|#<>\n]|\d+[<>]))', "overwrite Hermes session/credential store"),
-    (_CMDPOS + rf'dd\b[^;|&\n]*\bof=["\']?{_HERMES_STORE_ROOT}', "overwrite Hermes session/credential store"),
-    (_CMDPOS + rf'tee\b[^;|&\n]*\s["\']?{_HERMES_STORE_ROOT}', "overwrite Hermes session/credential store"),
-    (rf'>[>|]?\s*["\']?{_HERMES_STORE_ROOT}', "overwrite Hermes session/credential store"),
-    # sqlite3 writing a Hermes store is keyed on the write verb, not on a missing WHERE (`where 1=1`
+    # moving something INTO the home (`mv /tmp/skill ~/.slave/`) stays clean.
+    (_CMDPOS + rf'mv\b[^;|&\n]*\s["\']?(?:{_SLAVE_STORE_FILE}|{_SLAVE_HOME_BARE}(?=\s+[^\s;|&<>]))',
+     "delete/move/wipe slave-agent home or session store"),
+    (_CMDPOS + rf'(?:cp|install|rsync)\b[^;|&\n]*\s["\']?{_SLAVE_STORE_ROOT}(?=\s*(?:$|[;&|#<>\n]|\d+[<>]))', "overwrite slave-agent session/credential store"),
+    (_CMDPOS + rf'dd\b[^;|&\n]*\bof=["\']?{_SLAVE_STORE_ROOT}', "overwrite slave-agent session/credential store"),
+    (_CMDPOS + rf'tee\b[^;|&\n]*\s["\']?{_SLAVE_STORE_ROOT}', "overwrite slave-agent session/credential store"),
+    (rf'>[>|]?\s*["\']?{_SLAVE_STORE_ROOT}', "overwrite slave-agent session/credential store"),
+    # sqlite3 writing a Slave store is keyed on the write verb, not on a missing WHERE (`where 1=1`
     # deletes the same rows), and any heredoc into a store prompts (its SQL sits past the newline).
-    (_CMDPOS + rf'sqlite3\b(?=[^\n]*{_HERMES_STORE_FILE})(?=[^\n]*(?:\b(?:delete\s+from|drop\s+\w+'
+    (_CMDPOS + rf'sqlite3\b(?=[^\n]*{_SLAVE_STORE_FILE})(?=[^\n]*(?:\b(?:delete\s+from|drop\s+\w+'
      r'|update\s+(?:or\s+\w+\s+)?\S+\s+(?:as\s+\S+\s+)?set|insert\s+(?:or\s+\w+\s+)?into|replace\s+into'
      r'|alter\s+table|vacuum(?!\s+(?:\w+\s+)?into))\b|\.restore\b|(?<!<)<<(?!<)))',
-     "modify Hermes session store via sqlite3"),
+     "modify slave-agent session store via sqlite3"),
     # In-place edits mutate the file directly, bypassing redirection/tee/cp coverage; gate the same
     # startup/credential files.
     (rf'\bsed\s+-[^\s]*i.*(?:{_USER_SENSITIVE_WRITE_TARGET})[^\s"\']*', "in-place edit of sensitive credential/SSH/shell-rc path"),
@@ -784,18 +784,18 @@ DANGEROUS_PATTERNS = [
     (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_USER_SENSITIVE_WRITE_TARGET})[^\s"\']*', "in-place edit of sensitive credential/SSH/shell-rc path (perl/ruby)"),
     (rf'\bsed\s+-[^\s]*i.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config"),
     (rf'\bsed\s+--in-place\b.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config (long flag)"),
-    # sed -i on Hermes config/.env bypasses the redirection/tee rules; pairs the file_tools
+    # sed -i on Slave config/.env bypasses the redirection/tee rules; pairs the file_tools
     # write_file/patch deny so the terminal side is not an open door.
-    # In-place edit of a Hermes-managed security file (~/.hermes/config.yaml or .env). sed -i bypasses the
+    # In-place edit of a Slave-managed security file (~/.slave/config.yaml or .env). sed -i bypasses the
     # redirection/tee patterns above because it mutates the file directly. See #14639.
-    (rf'\bsed\s+-[^\s]*i.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env"),
-    (rf'\bsed\s+--in-place\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env (long flag)"),
+    (rf'\bsed\s+-[^\s]*i.*(?:{_SLAVE_CONFIG_PATH}|{_SLAVE_ENV_PATH})', "in-place edit of slave-agent config/env"),
+    (rf'\bsed\s+--in-place\b.*(?:{_SLAVE_CONFIG_PATH}|{_SLAVE_ENV_PATH})', "in-place edit of slave-agent config/env (long flag)"),
     # perl/ruby -i: the flag may be its own token after other flags (`-p -i -e`), combined (`-pi`), or carry a backup
     # suffix (`-i.bak`), so match any flag token containing `i` anywhere; `perl -e '...'` (no -i) does not trip.
     # perl -i and ruby -i perform the same in-place mutation as sed -i but are not caught by the -e/-c
     # script-execution pattern above (which targets code evaluation, not file mutation). Pairs the sed -i
     # coverage from #14639.
-    (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env (perl/ruby)"),
+    (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_SLAVE_CONFIG_PATH}|{_SLAVE_ENV_PATH})', "in-place edit of slave-agent config/env (perl/ruby)"),
     # Interpreter heredocs are handled by _execution_flag_findings(); only shell heredocs stay
     # regex-based. `bash <<'EOF'` runs arbitrary commands without triggering the `bash -c` path.
     (rf'\b(?:{_SHELL_NAMES_RE})\s+<<', "shell execution via heredoc"),
@@ -817,15 +817,15 @@ DANGEROUS_PATTERNS = [
     # whole blank run sits between the option and its value (`-o  +foo`).
     (rf'{_GIT_PUSH}{_GIT_PUSH_ARGS}(?<!\s)(?<!\s-o)(?<!\s--push-option)\s+["\']?\+[^\s;&|\n]+',
      "git force push (rewrites remote history)"),
-    # `hermes config set` can rewrite the agent's own approval policy (approvals.mode, approvals.deny,
+    # `slave config set` can rewrite the agent's own approval policy (approvals.mode, approvals.deny,
     # command_allowlist) — gate it like the file-tool path so a default empty deny list is not an open door.
-    # Anchored to a real INVOCATION: the command must BE `hermes config set <policy key>`. The
+    # Anchored to a real INVOCATION: the command must BE `slave config set <policy key>`. The
     # `\bhermes\b.*\bconfig\b.*\bset\b` form matched that TEXT anywhere in the command, so a plain
-    # read of it (`grep -r 'hermes config set' docs/approvals.md`) demanded an approval it has no
+    # read of it (`grep -r 'slave config set' docs/approvals.md`) demanded an approval it has no
     # business demanding. The global-option run uses possessive quantifiers inside an atomic group,
     # so it cannot backtrack exponentially the way a plain nested `*` does.
-    (_CMDPOS + _HERMES_CONFIG_SET_APPROVAL_POLICY,
-     "hermes config set approval settings"),
+    (_CMDPOS + _SLAVE_CONFIG_SET_APPROVAL_POLICY,
+     "slave config set approval settings"),
     (rf'{_GIT}clean\s+-[^\s]*f', "git clean with force (deletes untracked files)"),
     # `-D` = `-d --force`: only the capital short flag is force-delete, so the group opts out of
     # the module-wide re.IGNORECASE and relies on _lower_preserving_flags keeping dash-prefixed
@@ -947,11 +947,11 @@ def _normalize_command_for_detection(command: str) -> str:
     # precede the generic escape strip below, whose [^\n] class skips newlines and would leave the
     # backslash wedged between tokens, defeating the structured rm/mkfs/dd patterns incl. the HARDLINE floor.
     command = re.sub(r'\\\r?\n', '', command)
-    # Fold absolute user/Hermes home prefixes to ~/ and ~/.hermes/ so the static patterns catch /home/alice/.bashrc
-    # and C:\Users\alice\.bashrc. Resolved at detection time (not import time) so it tracks HOME/HERMES_HOME set
-    # later. MUST run before the backslash strip (which would dissolve C:\Users\alice to C:Usersalice). Hermes home
+    # Fold absolute user/Hermes home prefixes to ~/ and ~/.slave/ so the static patterns catch /home/alice/.bashrc
+    # and C:\Users\alice\.bashrc. Resolved at detection time (not import time) so it tracks HOME/SLAVE_HOME set
+    # later. MUST run before the backslash strip (which would dissolve C:\Users\alice to C:Usersalice). Slave home
     # first: on Windows it nests under the user home, and folding the user home first would eat the prefix it needs.
-    command = _rewrite_resolved_hermes_home(command)
+    command = _rewrite_resolved_slave_home(command)
     command = _rewrite_resolved_user_home(command)
     # Strip backslash-escapes (r\m -> rm) and empty-string literals (r''m -> rm).
     command = re.sub(r'\\([^\n])', r'\1', command)
@@ -1078,7 +1078,7 @@ _SCAN_INCOMPLETE_DESCRIPTION = "command too complex to scan fully; review before
 # A refusal from the budget-trip fallback, which also reads quoted text as code: say so, so the block
 # message can point at splitting the command instead of claiming the operation was seen.
 _FALLBACK_MATCH_SUFFIX = " (a quick re-read of a command too complex to scan fully; quoted text can match)"
-_GATEWAY_LIFECYCLE_SPLICE_DESCRIPTION = "stop/restart hermes gateway via shell-spliced verb (kills running agents)"
+_GATEWAY_LIFECYCLE_SPLICE_DESCRIPTION = "stop/restart slave gateway via shell-spliced verb (kills running agents)"
 
 
 def _command_parser_limit_exceeded(command: str) -> bool:
@@ -1721,7 +1721,7 @@ def _single_command_detection_variants(
 
 
 def _is_verification_artifact_cleanup(command: str) -> bool:
-    """Return whether *command* only removes one Hermes ad-hoc temp script."""
+    """Return whether *command* only removes one slave-agent ad-hoc temp script."""
     try:
         argv = shlex.split(command, posix=True)
     except ValueError:
@@ -1734,7 +1734,7 @@ def _is_verification_artifact_cleanup(command: str) -> bool:
     return (
         operand == os.path.join(temp_dir, basename)
         and os.path.dirname(os.path.realpath(operand)) == temp_dir
-        and re.fullmatch(r"hermes-(?:verify|ad-hoc)-[A-Za-z0-9_.-]+", basename) is not None
+        and re.fullmatch(r"slave-(?:verify|ad-hoc)-[A-Za-z0-9_.-]+", basename) is not None
     )
 
 
@@ -1743,8 +1743,8 @@ def _is_shell_token_spliced_gateway_lifecycle(command: str) -> bool:
     Backslash splicing (``kick\\start``) is undone by normalization, but quote splicing is not:
     ``_deobfuscate_shell_word_for_detection`` is deliberately scoped to command-position words
     (widening it would let quoted prose like ``git commit -m "rm -rf /"`` match), and the spliced
-    verb is an ARGUMENT, so ``launchctl kick"start" -k gui/501/ai.hermes.gateway`` auto-approved.
-    Delegates to ``cron.lifecycle_guard`` (shlex-tokenized, anchored on a hermes-gateway
+    verb is an ARGUMENT, so ``launchctl kick"start" -k gui/501/ai.slave.gateway`` auto-approved.
+    Delegates to ``cron.lifecycle_guard`` (shlex-tokenized, anchored on a slave-gateway
     identifier). Runs last so an ordinary pattern match keeps its more specific reason; this layer
     only prompts — the non-bypassable block still lives in ``cron.lifecycle_guard``.
 

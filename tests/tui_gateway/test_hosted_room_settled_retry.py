@@ -14,17 +14,17 @@ from persistence_assembly import open_persistence, profile_scope
 @pytest.fixture(name="store")
 def store_fixture(tmp_path):
     """A store handle on the test home, closed at teardown."""
-    handle = open_persistence(profile_scope(home=tmp_path / ".hermes"))
+    handle = open_persistence(profile_scope(home=tmp_path / ".slave"))
     yield handle
     handle.close()
 
 
 @pytest.mark.parametrize("later_messages", [0, 25])
 def test_settled_discussion_retry_publishes_once(tmp_path, monkeypatch, later_messages, store):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-    (tmp_path / ".hermes" / "profiles" / "reviewer").mkdir(parents=True)
-    (tmp_path / ".hermes" / "profiles" / "reviewer" / "config.yaml").write_text("{}\n")  # identity marker
+    (tmp_path / ".slave" / "profiles" / "reviewer").mkdir(parents=True)
+    (tmp_path / ".slave" / "profiles" / "reviewer" / "config.yaml").write_text("{}\n")  # identity marker
     server = SimpleNamespace(_methods={}, _sessions={}, _sessions_lock=threading.Lock())
     service = HostedRoomService(server, store=store, placement="profile")
     service.create_room(room_id="room", name="Room", members=[

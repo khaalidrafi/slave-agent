@@ -83,7 +83,7 @@ export function sameOriginRequestUrl(base: string, url: string): string {
   }
   if (!sameOrigin) {
     throw new Error(
-      `Refusing to send the Hermes session to ${url}: fetchJSON/authedFetch only call ` +
+      `Refusing to send the slave-agent session to ${url}: fetchJSON/authedFetch only call ` +
         "this dashboard's own endpoints. Use plain fetch() for other hosts.",
     );
   }

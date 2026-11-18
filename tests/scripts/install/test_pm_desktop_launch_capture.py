@@ -19,7 +19,7 @@ def test_isolated_pm_launch_captures_only_final_electron_spawn(tmp_path, package
     )
     root = Path(__file__).resolve().parents[3]
     helper = root / "tests/install/e2e-assets/launch-capture/pm-launch.py"
-    launcher = tmp_path / "hermes"
+    launcher = tmp_path / "slave"
     app = tmp_path / "app.py"
     app.write_text(
         "import os, subprocess, sys\n"

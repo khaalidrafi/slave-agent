@@ -159,7 +159,7 @@ def _apply_limits(ledger) -> None:
 
 # ── worktrees ──────────────────────────────────────────────────────────────
 def _git_lines(args: list[str], cwd: str) -> list[str]:
-    from hermes_cli._subprocess_compat import noninteractive_repo_git_env
+    from slave_cli._subprocess_compat import noninteractive_repo_git_env
     env = noninteractive_repo_git_env(cwd)
     if env is None:
         return []
@@ -719,7 +719,7 @@ def last_workspace(parent_agent: Any, sid: str) -> Optional[dict[str, Any]]:
 # ── worktree sweep pin ─────────────────────────────────────────────────────
 def _profile_dbs() -> list[Any]:
     """The scope of every served profile that has a store."""
-    from hermes_cli.profiles import profiles_to_serve
+    from slave_cli.profiles import profiles_to_serve
     from persistence_assembly import profile_scope, store_exists
     homes = [home for _name, home in profiles_to_serve(multiplex=True, include_standalone=True, include_parked=True)]
     return [scope for scope in (profile_scope(home=Path(home)) for home in homes) if store_exists(scope)]

@@ -7,11 +7,11 @@ description: >-
   before they execute, while post_tool_call keeps a local SQLite audit ledger. Two tools
   manage it: permission_tiers_report (rules + ledger) and permission_tiers_set (add/update/
   remove). Implements the per-tool permission-levels feature requested in issue #527 without
-  touching Hermes core — public hooks only. Safe defaults: shell and MCP tools ask, everything
-  else keeps Hermes' existing behaviour; hook errors fail open; unattended runs fail closed
+  touching slave-agent core — public hooks only. Safe defaults: shell and MCP tools ask, everything
+  else keeps slave-agent’ existing behaviour; hook errors fail open; unattended runs fail closed
   on ask escalations (the plugin never auto-approves). Disclosure — no network calls, no
   third-party services, no stored credentials; reads/writes only its own tiers.json and
-  ledger under the Hermes plugin-data directory; bundled permission-tiers skill documents
+  ledger under the slave-agent plugin-data directory; bundled permission-tiers skill documents
   usage.
 maintainer: imperator-clawdius
 tier: community

@@ -14,7 +14,7 @@ from tests.gateway.restart_test_helpers import make_restart_runner, make_restart
 
 
 def _idle_restart(monkeypatch, tmp_path, send):
-    monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+    monkeypatch.setattr("gateway.run._slave_home", tmp_path)
     monkeypatch.setattr("gateway.restart.is_container_restart_context", lambda: False)
     monkeypatch.setattr("gateway.restart.is_gateway_supervisor_process", lambda: False)
     runner, adapter = make_restart_runner()
@@ -75,7 +75,7 @@ async def test_idle_restart_ack_carries_the_ordinary_reply_routing(monkeypatch, 
 
 @pytest.mark.asyncio
 async def test_local_restart_returns_its_ack(monkeypatch, tmp_path):
-    """A LOCAL session (``hermes chat -q "/restart"``) shows the handler's RETURNED reply; its
+    """A LOCAL session (``slave chat -q "/restart"``) shows the handler's RETURNED reply; its
     adapter's send is a no-op, so an early send there would leave the ack nowhere."""
     from types import SimpleNamespace
     from gateway.config import Platform

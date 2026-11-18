@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -17,7 +17,7 @@ const flush = () => new Promise<void>(resolve => setImmediate(resolve))
 
 function mount(canonical = false, extra: (method: string, params: any) => unknown = () => undefined) {
   const home = mkdtempSync(join(tmpdir(), 'ink-slash-attachment-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'owner' })
   const images = new Map<string, string[]>()
@@ -94,7 +94,7 @@ function mount(canonical = false, extra: (method: string, params: any) => unknow
 
 it('canonical slash images submit staged bytes and deleting tokens removes payload without RPC detach', async () => {
   const h = mount(true)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', '')
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', '')
   const path = join(h.home, 'shot.png')
   const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nL8AAAAASUVORK5CYII=', 'base64')
   writeFileSync(path, bytes)
@@ -199,7 +199,7 @@ it('a skill slash command keeps the staged image descriptors through the expande
     ? { type: 'skill', name: 'review', message: `SKILL BODY\n\nUser request: ${params.command.replace(/^review\s*/, '')}`, display: `/${params.command}` }
     : undefined
   const h = mount(true, skill)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', '')
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', '')
   const path = join(h.home, 'shot.png')
   writeFileSync(path, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nL8AAAAASUVORK5CYII=', 'base64'))
 
@@ -219,7 +219,7 @@ it('a skill slash command keeps the staged image descriptors through the expande
 
 it('keeps the caption and its image token in the composer when the pending-input journal cannot be written', async () => {
   const h = mount(true)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', '')
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', '')
   const path = join(h.home, 'shot.png')
   writeFileSync(path, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nL8AAAAASUVORK5CYII=', 'base64'))
   const journal = join(h.home, 'tui-pending-inputs')
@@ -280,7 +280,7 @@ it('`/queue` with an image journals its attachment in the first durable write', 
   // A second (attachments) write that fails must never leave a queued row whose durable retry lacks
   // the image while the composer also keeps the input (a duplicate send on the next Enter).
   const h = mount(true, method => method === 'prompt.submit' ? new Promise(() => {}) : undefined)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', '')
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', '')
   const path = join(h.home, 'shot.png')
   writeFileSync(path, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nL8AAAAASUVORK5CYII=', 'base64'))
   const real = pendingInputs.savePendingInput

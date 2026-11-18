@@ -14,7 +14,7 @@ bulk, cheaper conversations. Three commitments hold it together.
 - **Light core, optional bulk.** Capability lives at the edges (plugins, skills, gated
   tools), not in the model's tool schema. ~scripts/ci/kernel_floor.py~ records the size of
   the core so growth is visible instead of accidental.
-- **Absolute backwards compatibility.** ~hermes_compat: true~ (going to ~slave_compat~)
+- **Absolute backwards compatibility.** ~slave_compat: true~ (going to ~slave_compat~)
   reverts every lean default to upstream's value, knob for knob. An optimization without a
   documented way back is a bug.
 - **Branding is generated, never hand-edited.** ~brand.py~ states the vocabulary,
@@ -38,15 +38,15 @@ Upstream's ~self-update~ subsystem was deleted in ~ba9da5d86f~ (it fights a pack
 it wants to write into a read-only store path and re-resolve a dependency closure nobody
 chose). ~0bbd3f41cd~ is the tail:
 
-- ~hermes update~ is now a pointer to the package manager (~hermes_cli/subcommands/update.py~);
+- ~slave update~ is now a pointer to the package manager (~slave_cli/subcommands/update.py~);
   the ~/update~ slash command stays harmless instead of crashing.
 - The post-install maintenance tail that installers and source builds share was re-homed into
-  ~hermes_cli/install_maint.py~ (state-db guard, release history, catalog seeds, skills sync,
+  ~slave_cli/install_maint.py~ (state-db guard, release history, catalog seeds, skills sync,
   per-profile sync, config migration, notices) minus the updater-only parts.
 - One question the dashboard still needs from the deleted fleet module got its own home:
-  ~hermes_cli/gateway_systemd.py~ ("can this user elevate without prompting?" -- ~sudo -n true~
+  ~slave_cli/gateway_systemd.py~ ("can this user elevate without prompting?" -- ~sudo -n true~
   first, then a targeted probe, because a scoped NOPASSWD entry rejects the blanket one).
-- ~hermes_cli/main.py~ lost its PEP-562 frozen updater surface (-317 lines) that existed only
+- ~slave_cli/main.py~ lost its PEP-562 frozen updater surface (-317 lines) that existed only
   so deleted siblings could resolve names off it.
 - ~scripts/ci/classify_changes.py~ re-armed the ~desktop_updater~ CI lane on the Electron
   shell's own updater, which is what still performs an update here.
@@ -68,7 +68,7 @@ said nothing. ~scripts/rebrand.py --blind~ and ~--lint~ make that measurable, an
 ~.github/workflows/fork-brand-consistency.yml~ runs them on every branch and PR. Full-tree
 cleanliness (plus "no old-vocabulary imports") is asserted only for the branded branch.
 
-The ~HERMES AGENT~ block-art logo is dead in both hosts: ~hermes_cli/banner.py~ spells the
+The ~SLAVE-AGENT~ block-art logo is dead in both hosts: ~slave_cli/banner.py~ spells the
 nameplate from ~brand.PRODUCT~ / ~brand.TAGLINE~, ~ui-tui/src/banner.ts~ builds the same plate
 from a literal (TypeScript cannot import ~brand.py~, and a visible literal is what the
 generator can rewrite). Six rows of glyphs survived every rename the generator performed,
@@ -78,7 +78,7 @@ because a rule over words cannot see ~██╗  ██╗~.
 
 ~plugins/shop/~ gives the agent a *read-only* view of a real shop: a ~StorefrontAdapter~ ABC
 plus a REST implementation, four tools (~shop_queue~, ~shop_orders~, ~shop_order~,
-~shop_catalog~), ~hermes shop~ and ~/shop~. It is deliberately not a bespoke integration: the
+~shop_catalog~), ~slave shop~ and ~/shop~. It is deliberately not a bespoke integration: the
 shop's URL, path layout, filter names, status vocabulary and page shape are all
 ~plugins.entries.shop.settings~ in the profile's ~config.yaml~, so one plugin serves any
 REST-shaped order queue.
@@ -99,8 +99,8 @@ the first's connection.
 
 * Known-red tests, and why
 
-~tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission~ -- 5 tests still import
-~hermes_cli.update_contract~, which P0 deleted. They are the last visible part of the updater
+~tests/slave_cli/test_steward_detection.py::TestUpdateAdmission~ -- 5 tests still import
+~slave_cli.update_contract~, which P0 deleted. They are the last visible part of the updater
 cleanup, not a regression from the brand or shop work. Everything else touched here passes
 (~50/50~ brand + steward with those 5 attributed, ~23/23~ shop, generator agreement and banner
 tests green).
@@ -116,7 +116,7 @@ python3 scripts/rebrand.py --tier brand --apply --dry-run   # what the branded t
 #+end_src
 
 On a non-FHS distro the test runner needs an interpreter told to it explicitly:
-~HERMES_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh ...~ (the PM bootstrap stages
+~SLAVE_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh ...~ (the PM bootstrap stages
 binaries whose ELF interpreter does not exist there).
 
 * What to do next
@@ -125,7 +125,7 @@ binaries whose ELF interpreter does not exist there).
 - [ ] Decide which third-party names must *not* be rewritten (package manager names,
       container images, model IDs that belong to upstream) and encode that as a shape rule in
       ~KEEP_RE~ with tests -- the generator must not eat someone else's brand.
-- [ ] ~slave_compat~ as the canonical key while ~hermes_compat~ keeps working; a state-dir
+- [ ] ~slave_compat~ as the canonical key while ~slave_compat~ keeps working; a state-dir
       read-fallback plus a one-shot ~slave migrate-state~; launcher path default moving to the
       new command name with the old one still resolving.
 - [ ] Our own release URL and our own mark (icon / ~☤~), then regenerate skins.
@@ -139,9 +139,9 @@ binaries whose ELF interpreter does not exist there).
 Easiest entry points, in order:
 1. ~scripts/rebrand.py~ ~blindspots()~ / ~hand_brands()~ and
    ~tests/scripts/test_rebrand_brand_agreement.py~ -- the brand invariant, made executable.
-2. ~hermes_cli/banner.py~ ~_brand_wordmark()~ + ~tests/hermes_cli/test_banner.py~ -- the plate
+2. ~slave_cli/banner.py~ ~_brand_wordmark()~ + ~tests/slave_cli/test_banner.py~ -- the plate
    is text now, so a rename cannot leave a stale logo behind.
 3. ~plugins/shop/adapter.py~ -- the ABC and the settings table; check that no number is
    computed from anything but the shop's own fields.
-4. ~hermes_cli/install_maint.py~ -- read its docstring first; it explains which updater parts
+4. ~slave_cli/install_maint.py~ -- read its docstring first; it explains which updater parts
    were kept as maintenance and which were dropped.

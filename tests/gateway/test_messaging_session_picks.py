@@ -17,7 +17,7 @@ from tests.fixtures.storage_seed import seed_messages
 
 @pytest.fixture(autouse=True)
 def _home(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
 
 
 async def _compressed_chat(tmp_path):
@@ -78,7 +78,7 @@ async def test_a_reasoning_pick_on_a_compressed_messaging_chat_is_the_chats_next
 
 @pytest.mark.asyncio
 async def test_a_model_pick_on_a_messaging_chat_is_the_chats_next_turn_model(tmp_path, monkeypatch):
-    from hermes_cli import model_selection_guards, model_switch
+    from slave_cli import model_selection_guards, model_switch
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model=k['raw_input'], target_provider='custom', base_url='http://127.0.0.1:9/v1'))
     monkeypatch.setattr(model_selection_guards, 'selection_warnings', lambda *a, **k: [])
@@ -129,7 +129,7 @@ async def test_a_messaging_pick_is_fenced_by_its_receipt_and_revision(tmp_path):
 async def test_a_cold_model_pick_resolves_against_the_chats_saved_provider(tmp_path, monkeypatch):
     """After a restart the chat's /model override lives only in the session store: a bare model pick
     resolves against that saved provider and base URL and keeps them, not config.yaml's provider."""
-    from hermes_cli import model_selection_guards, model_switch
+    from slave_cli import model_selection_guards, model_switch
     seen = {}
 
     def switch(**k):
@@ -159,7 +159,7 @@ async def test_a_messaging_chats_effort_wire_is_clamped_for_its_api_mode(tmp_pat
     """A chat on the Codex app-server route displays ``ultra`` on the wire, as that route sends it;
     clamping without the route's api_mode showed ``max``."""
     import gateway.run as gateway_run
-    monkeypatch.setattr(gateway_run, '_hermes_home', tmp_path)
+    monkeypatch.setattr(gateway_run, '_slave_home', tmp_path)
     (tmp_path / 'config.yaml').write_text(
         'model:\n  default: gpt-5.6\n  provider: openai-codex\n  api_mode: codex_app_server\n')
     runner, _source, _route, viewer, root, fences = await _compressed_chat(tmp_path)

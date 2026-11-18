@@ -11,7 +11,7 @@ import tempfile
 import warnings
 from pathlib import Path
 
-from hermes_agent.compat.paths import original_path
+from slave_agent.compat.paths import original_path
 from scripts.code_health import py_rules, py_structure
 from scripts.code_health.config import RULES, RULES_BY_ID, in_scope, rule_applies
 from scripts.code_health.gitio import read_file

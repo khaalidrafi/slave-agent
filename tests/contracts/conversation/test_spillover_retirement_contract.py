@@ -18,9 +18,9 @@ PREFIX = "gateway.spillover.retired.v1."
 
 # One row per pointer form: a host path, structured content, a Windows path in the API content and in structured content (JSON-escaped), a sandbox pointer and the bare word (neither names an archive), and two names in one row, the second with a trailing full stop the name rule keeps.
 POINTERS = (
-    NewMessage(role="user", content="Saved to /home/u/.hermes/cache/spillover/out-1.txt"),
-    NewMessage(role="tool", content=[{"type": "text", "text": "see ~/.hermes/cache/spillover/out-2.txt"}], tool_call_id="c1", tool_name="terminal"),
-    NewMessage(role="assistant", content="short", api_content="full text in C:\\Users\\u\\.hermes\\cache\\spillover\\out-3.txt"),
+    NewMessage(role="user", content="Saved to /home/u/.slave/cache/spillover/out-1.txt"),
+    NewMessage(role="tool", content=[{"type": "text", "text": "see ~/.slave/cache/spillover/out-2.txt"}], tool_call_id="c1", tool_name="terminal"),
+    NewMessage(role="assistant", content="short", api_content="full text in C:\\Users\\u\\.slave\\cache\\spillover\\out-3.txt"),
     NewMessage(role="tool", content=[{"type": "text", "text": "C:\\Users\\u\\cache\\spillover\\out-4.txt"}], tool_call_id="c2", tool_name="terminal"),
     NewMessage(role="user", content="/tmp/hermes-results/sandbox.txt and the word spillover alone"),
     NewMessage(role="assistant", content="spillover/a.txt then spillover/b.log."),

@@ -4,7 +4,7 @@ The curator and every plugin idle task hold this claim for one run at a time acr
 gateway that crashed (or was SIGKILLed) mid-run used to keep its claim for an hour, so the task
 stayed suppressed after the restart. The claim records its owner's pid, process start and machine:
 a dead owner, or a pid that now names another process, loses the claim at once; an owner that
-cannot be checked (a bare pid written by an older Hermes) keeps the old hour-old rule.
+cannot be checked (a bare pid written by an older slave-agent) keeps the old hour-old rule.
 """
 
 from __future__ import annotations
@@ -108,7 +108,7 @@ def test_a_bare_pid_claim_keeps_the_hour_rule(tmp_path):
     lock = tmp_path / ".task.lock"
     gone = subprocess.Popen([sys.executable, "-c", "pass"])
     gone.wait(10)
-    lock.write_text(str(gone.pid))  # an older Hermes's claim: no start time to check the owner by
+    lock.write_text(str(gone.pid))  # an older Slave's claim: no start time to check the owner by
     assert claim_run(lock) is False
     _age(lock, CLAIM_STALE_SECONDS + 1)
     assert claim_run(lock) is True

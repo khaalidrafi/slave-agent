@@ -7,7 +7,7 @@ import { SystemActionsProvider } from "./contexts/SystemActions";
 import { I18nProvider } from "./i18n";
 import { exposePluginSDK } from "./plugins";
 import { ThemeProvider } from "./themes";
-import { HERMES_BASE_PATH } from "./lib/api";
+import { SLAVE_BASE_PATH } from "./lib/api";
 import { startChunkLoadRecovery } from "./lib/chunk-load-recovery";
 
 // Before the first render, so the first lazy route is covered too. The dev
@@ -19,7 +19,7 @@ if (import.meta.env.PROD) startChunkLoadRecovery();
 exposePluginSDK();
 
 createRoot(document.getElementById("root")!).render(
-  <BrowserRouter basename={HERMES_BASE_PATH || undefined}>
+  <BrowserRouter basename={SLAVE_BASE_PATH || undefined}>
     <I18nProvider>
       <ThemeProvider>
         <SystemActionsProvider>

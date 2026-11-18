@@ -159,7 +159,7 @@ def bound_submission_payload(owner, *, room_id, member_id, prompt, attachments=N
         # Retained native-inputs are excluded from age-only document cleanup; a live hosted row
         # holds its documents through the prompt path lines (``hosted_document_references``).
         # The content-addressed destination is stable on retry and refuses corruption.
-        with tempfile.TemporaryDirectory(prefix='hermes-room-input-') as directory:
+        with tempfile.TemporaryDirectory(prefix='slave-room-input-') as directory:
             path = Path(directory) / item['name']
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(fd, 'wb') as output:

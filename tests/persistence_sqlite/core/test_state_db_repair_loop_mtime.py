@@ -1,6 +1,6 @@
 """Regression: the state.db repair-loop guards must survive an mtime change.
 
-Incident (2026-08-17): a malformed-SCHEMA state.db sent Hermes into an
+Incident (2026-08-17): a malformed-SCHEMA state.db sent slave-agent into an
 unbounded repair loop that wrote a fresh 98MB forensic copy every ~10s:
 2.3GB in 20 minutes, disk heading to zero, whole agent fleet at risk.
 
@@ -266,7 +266,7 @@ def test_fingerprint_takes_no_raw_fd_while_a_connection_is_live(tmp_path):
     """
     import builtins
 
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     db = tmp_path / "state.db"
     conn = sqlite3.connect(str(db))
@@ -306,7 +306,7 @@ def test_live_connection_keeps_its_write_lock_across_a_repair_pass(tmp_path):
     makes the test vacuous.
 
     Rollback-journal mode only: WAL coordinates through ``-shm`` rather than
-    POSIX advisory locks, so it is immune. DELETE mode is what Hermes falls
+    POSIX advisory locks, so it is immune. DELETE mode is what slave-agent falls
     back to on NFS/SMB/FUSE/ZFS and on SQLite builds vulnerable to the
     WAL-reset bug, so it is a real deployment shape, not a corner case.
     """
@@ -314,7 +314,7 @@ def test_live_connection_keeps_its_write_lock_across_a_repair_pass(tmp_path):
     import sys
     import textwrap
 
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     db = tmp_path / "state.db"
     conn = sqlite3.connect(str(db))
@@ -470,7 +470,7 @@ def test_budget_exhausts_when_liveness_alternates_across_passes(tmp_path):
     peer connecting and disconnecting between passes would reset the counter to
     1 forever: the exact unbounded loop this whole ledger exists to stop.
     """
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     db = tmp_path / "state.db"
     conn = sqlite3.connect(str(db))
@@ -502,7 +502,7 @@ def test_budget_exhausts_when_liveness_alternates_across_passes(tmp_path):
 
 def test_fingerprint_returns_none_rather_than_a_mtime_shaped_key(tmp_path):
     """Never mint a second key SHAPE: the ledger compares for equality."""
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     db = tmp_path / "state.db"
     conn = sqlite3.connect(str(db))
@@ -614,7 +614,7 @@ def test_genuine_recovery_still_resets_the_budget(tmp_path):
 def test_forensic_backup_includes_the_rollback_journal(tmp_path):
     """DELETE mode leaves a hot -journal, and that file interprets the damage.
 
-    Rollback-journal mode is Hermes's fallback on NFS/SMB/FUSE/ZFS and on
+    Rollback-journal mode is slave-agent’s fallback on NFS/SMB/FUSE/ZFS and on
     WAL-reset-vulnerable SQLite builds. A forensic copy without the journal
     cannot be rolled back to a consistent state by hand.
     """

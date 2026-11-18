@@ -28,7 +28,7 @@ def test_managed_turn_finishes_inside_configured_restart_drain(tmp_path):
         'model': {'provider': 'custom', 'default': 'drain-fixture', 'base_url': url},
         'platform_toolsets': {'cli': []}, 'auxiliary': {'title_generation': {'enabled': False}}}))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
     admission_id = None
     async def exercise(process, descriptor):

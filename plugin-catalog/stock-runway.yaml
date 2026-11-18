@@ -8,7 +8,7 @@ description: >-
   lists what to order now (quantity and order-by date, with lead time, MOQ and pack size).
   Works from the bundled sample, a local CSV (reads SAP, NetSuite, Zoho, Odoo, Sage,
   QuickBooks and Dynamics export column names as is), or an optional read-only Odoo connection
-  configured through Hermes secrets. Adds a /stock command, a stock_runway tool and a
+  configured through slave-agent secrets. Adds a /stock command, a stock_runway tool and a
   Desktop page. Disclosure — with the Odoo source it makes read-only XML-RPC calls to the
   Odoo server you configure; the sample and CSV sources make no network calls.
 maintainer: usegreymatter

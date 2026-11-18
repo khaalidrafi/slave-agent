@@ -18,7 +18,7 @@ description: >-
   Disclosure — hosted mode sends the document and any scored region text to
   api.modelbest.ai; local mode uploads nothing. Reads only the path or public
   https URL passed to a tool, and stores review-queue state and CSV exports
-  under Hermes' plugin data directory. No telemetry, analytics, self-updater,
+  under slave-agent’ plugin data directory. No telemetry, analytics, self-updater,
   shell commands or background processes. The optional MODELBEST_API_KEY is read
   through agent.secret_scope.get_secret; the plugin never reads .env, auth.json
   or another tool's credential store.

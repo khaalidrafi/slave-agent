@@ -3,7 +3,7 @@
 telegram.md documents ``allow_from`` as "Global access (DMs + groups)". The default profile got that
 through the YAML-to-env bridge (``TELEGRAM_ALLOWED_USERS``); a secondary profile running its own bot
 gets no bridge, so its group verdict came from ``group_allow_from`` alone and an ``allow_from`` user
-was dropped in groups. Two real profiles under a temp ``HERMES_HOME``, real config loader, real
+was dropped in groups. Two real profiles under a temp ``SLAVE_HOME``, real config loader, real
 adapter wired to the real ``GatewayRunner`` auth callback.
 """
 
@@ -23,7 +23,7 @@ _AUTH_ENV = ("TELEGRAM_ALLOWED_USERS", "TELEGRAM_GROUP_ALLOWED_USERS", "TELEGRAM
 
 @pytest.fixture
 def two_profiles(monkeypatch):
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     secondary = home / "profiles" / "bot2"
     secondary.mkdir(parents=True)
     (home / "config.yaml").write_text("gateway:\n  multiplex_profiles: true\n" + _YAML, encoding="utf-8")
@@ -61,7 +61,7 @@ def _wire(home, secondary, profile):
         cfg = load_gateway_config()
     assert not any(os.environ.get(key) for key in _AUTH_ENV), "secondary YAML leaked into the env bridge"
     adapter = TelegramAdapter(cfg.platforms[Platform.TELEGRAM])
-    adapter._hermes_profile_name = "bot2"
+    adapter._slave_profile_name = "bot2"
     runner.adapters, runner._profile_adapters = {}, {"bot2": {Platform.TELEGRAM: adapter}}
     adapter.set_authorization_check(runner._make_adapter_auth_check(Platform.TELEGRAM, profile_name="bot2"))
     return adapter

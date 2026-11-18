@@ -3,16 +3,16 @@ repo: https://github.com/NousResearch/hermes-official-plugins
 sha: e7a218f26db88426ab3e7376f0e000b6e356f5e7
 subdir: elevenlabs-sound-effects
 title: ElevenLabs Sound Effects
-description: 'ElevenLabs sound effects for Hermes: one tool, elevenlabs_sound_effect, that turns a text
+description: 'ElevenLabs sound effects for slave-agent: one tool, elevenlabs_sound_effect, that turns a text
   description ("glass shattering on a tile floor", "90s hip-hop drum loop, 90 BPM") into an audio file,
   0.5 to 30 seconds, optionally a seamless loop, and sends it to you in chat. Bundles a sound-design skill
-  with a local ffmpeg script (trim, loudness, mono, loop fixing, game variation packs) and, in Hermes Desktop,
+  with a local ffmpeg script (trim, loudness, mono, loop fixing, game variation packs) and, in slave-agent Desktop,
   an inline sound card and a sound library tab. Model, audio format and endpoint are plugin settings.
-  Disclosure: uses your ElevenLabs API key (ELEVENLABS_API_KEY, the same key as Hermes''s ElevenLabs voice;
+  Disclosure: uses your ElevenLabs API key (ELEVENLABS_API_KEY, the same key as slave-agent’'s ElevenLabs voice;
   a restricted key needs the Sound Effects permission); every call is a paid generation billed to your
   ElevenLabs account. Only the sound description and its parameters are sent, to api.elevenlabs.io (or the
-  data-residency endpoint you set). Files are written to cache/generated/audio under the Hermes home and
-  never overwritten. One Python dependency (httpx, already part of Hermes).'
+  data-residency endpoint you set). Files are written to cache/generated/audio under the slave-agent home and
+  never overwritten. One Python dependency (httpx, already part of slave-agent).'
 maintainer: NousResearch
 tier: official
 category: tools

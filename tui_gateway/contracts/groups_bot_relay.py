@@ -155,16 +155,16 @@ class GroupsCapabilitiesParams(ProfileParams):
 
 class GroupsCapabilitiesResult(Result):
     protocol_version: int
-    #: On the canonical gateway (hermes gateway run, also via forwarding hermes serve),
+    #: On the canonical gateway (slave gateway run, also via forwarding slave serve),
     #: owning a group chat with peer members requires a running driver on the home.
     driver: bool
     #: The canonical home must be persistent to drive the group chat with Desktop closed.
-    #: Standalone hermes serve derives this from its lending catalog; clients should not
+    #: Standalone slave serve derives this from its lending catalog; clients should not
     #: treat it as a home for gateway-owned group chats.
     persistent_process: bool
     authority_gateway_id: str
     #: On the canonical gateway, lending requires room_link.enabled with its catalog and
-    #: endpoint; the home need not enable its own. Standalone hermes serve skips its
+    #: endpoint; the home need not enable its own. Standalone slave serve skips its
     #: API-server and endpoint checks.
     room_link: RoomLinkStatus
     features: list[str]

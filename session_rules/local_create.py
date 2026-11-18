@@ -26,10 +26,10 @@ _MAX_BYTES = 256 * 1024
 def _travels(name: str, secret=None) -> bool:
     """A toolchain name may travel unless it is a credential by execute_code's secret policy (even when
     listed: ``NODE_AUTH_TOKEN`` matches ``NODE_``; secrets reach tools through ``terminal.env_passthrough``)
-    or a Hermes control name (a delegated child's markers, Kanban pins). ``secret``: a session's frozen
+    or a slave-agent control name (a delegated child's markers, Kanban pins). ``secret``: a session's frozen
     copy of that policy's substrings."""
     hidden = is_secret_env_name(name) if secret is None else any(s in name.upper() for s in secret)
-    return not hidden and not name.startswith('HERMES_')
+    return not hidden and not name.startswith('SLAVE_')
 
 
 def _kept(name: str, rules: dict) -> bool:

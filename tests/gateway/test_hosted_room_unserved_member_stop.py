@@ -19,7 +19,7 @@ def deferred(tmp_path, monkeypatch):
     a turn deferred because that daemon never confirmed its Stop. Yields a factory."""
     from gateway.session_hosted_service import CanonicalHostedRoomService
     root = tmp_path.resolve()
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     dbs = []
 
     def build(member_home):
@@ -90,9 +90,9 @@ def test_a_live_daemon_that_does_not_answer_keeps_the_turn(tmp_path, deferred, l
 
 
 def test_a_deleted_profile_whose_entry_remains_settles_once_its_daemon_is_gone(tmp_path, deferred):
-    from hermes_constants import mark_named_profile_deleted
+    from slave_constants import mark_named_profile_deleted
     home = tmp_path.resolve() / 'profiles' / 'two'
     service, db, identity, _roster = deferred(home)
-    mark_named_profile_deleted(home)  # `hermes profile delete` tombstones it; the config entry stays
+    mark_named_profile_deleted(home)  # `slave profile delete` tombstones it; the config entry stays
     _disband(service)
     assert tasks.get_task(db, identity, placement='profile')['status'] == 'cancelled'

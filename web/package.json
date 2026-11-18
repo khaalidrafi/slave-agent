@@ -18,7 +18,7 @@
     "check": "pnpm run typecheck && pnpm run test && pnpm run lint"
   },
   "dependencies": {
-    "@hermes/shared": "workspace:*",
+    "@slave-agent/shared": "workspace:*",
     "@nous-research/ui": "0.19.1",
     "@observablehq/plot": "0.6.17",
     "@react-three/fiber": "9.8.1",

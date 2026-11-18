@@ -2,7 +2,7 @@
 
 Gated mode (non-loopback bind) demands a registered ``DashboardAuthProvider`` and verifies
 every bearer / WS ``?token=`` through ``verify_session``. The nix/agenix deployment story
-(``backend.sessionTokenFile`` → ``HERMES_DASHBOARD_SESSION_TOKEN=file:<path>``) provisions
+(``backend.sessionTokenFile`` → ``SLAVE_DASHBOARD_SESSION_TOKEN=file:<path>``) provisions
 exactly one shared secret — the same token the Desktop's "Session token" connection field
 presents — but until now nothing vouched for it in gated mode, so a token-only deployment
 was forced through the interactive provider prompt into basic-auth credentials it never
@@ -26,7 +26,7 @@ import os
 import time
 from typing import Optional
 
-from hermes_cli.dashboard_auth import (
+from slave_cli.dashboard_auth import (
     DashboardAuthProvider, RefreshExpiredError, Session)
 from plugins.dashboard_auth._shared import (
     NonInteractiveMixin, SkipRegistration, load_config_section, register_provider)
@@ -47,7 +47,7 @@ def _resolve_provisioned_token() -> str:
     ``file:``-prefixed path (BOM-tolerant, same reader). Raises ``SystemExit`` for an
     unreadable/empty token file — ``register`` maps that to a skip so plugin discovery
     never dies for a sibling provider's misconfiguration."""
-    from hermes_cli.web_server_session_token import resolve_session_token
+    from slave_cli.web_server_session_token import resolve_session_token
 
     return resolve_session_token()
 
@@ -58,7 +58,7 @@ def _load_session_token_auth_section() -> dict:
 
 def _opt_out() -> bool:
     """``dashboard.session_token_auth.enabled: false`` disables the provider. There is no
-    env toggle: the enabling side of this switch IS ``HERMES_DASHBOARD_SESSION_TOKEN``, a
+    env toggle: the enabling side of this switch IS ``SLAVE_DASHBOARD_SESSION_TOKEN``, a
     credential; behaviour belongs in config.yaml."""
     section = _load_session_token_auth_section()
     return str(section.get("enabled", True)).strip().lower() in ("0", "false", "no", "off")
@@ -69,9 +69,9 @@ def _settings() -> dict:
     not provisioned, the provider is disabled, or the token file is unreadable (the file
     resolver's ``SystemExit`` — a deployment misconfiguration must not crash plugin
     discovery for every sibling plugin)."""
-    if not os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN", "").strip():
+    if not os.environ.get("SLAVE_DASHBOARD_SESSION_TOKEN", "").strip():
         raise SkipRegistration(
-            "HERMES_DASHBOARD_SESSION_TOKEN is not set. Provision it (a literal token, or "
+            "SLAVE_DASHBOARD_SESSION_TOKEN is not set. Provision it (a literal token, or "
             "'file:<path>' pointing at a secret-manager-decrypted token file) to let the "
             "deployment session token authorize the gated dashboard.")
     if _opt_out():
@@ -91,7 +91,7 @@ def _settings() -> dict:
 
 
 class SessionTokenProvider(NonInteractiveMixin, DashboardAuthProvider):
-    """Vouches for the deployment session token (``HERMES_DASHBOARD_SESSION_TOKEN``).
+    """Vouches for the deployment session token (``SLAVE_DASHBOARD_SESSION_TOKEN``).
 
     ``supports_session`` is True — the presented bearer/``?token=`` IS the session
     credential the middleware seam verifies — while ``interactive_login`` is False: there
@@ -151,5 +151,5 @@ def register(ctx) -> None:
     if kwargs is not None:
         logger.info(
             "%s: registered deployment session-token provider — the provisioned "
-            "HERMES_DASHBOARD_SESSION_TOKEN authorizes the gated dashboard "
+            "SLAVE_DASHBOARD_SESSION_TOKEN authorizes the gated dashboard "
             "(bearer REST + /api/ws ?token=).", _TAG)

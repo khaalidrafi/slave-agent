@@ -53,12 +53,12 @@ def _seed_login_data(copy_dir: Path, origin: str = "https://example.com/login",
 
 @pytest.fixture
 def real_profile(tmp_path, monkeypatch):
-    """Scratch HERMES_HOME with a seeded snapshot for the 'chrome' default browser and consent on."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    copy_dir = tmp_path / ".hermes" / "browser-profile" / "chrome"
+    """Scratch SLAVE_HOME with a seeded snapshot for the 'chrome' default browser and consent on."""
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+    copy_dir = tmp_path / ".slave" / "browser-profile" / "chrome"
     _seed_login_data(copy_dir)
-    with patch("hermes_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
-         patch("hermes_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)):
+    with patch("slave_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
+         patch("slave_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)):
         yield copy_dir
 
 
@@ -235,8 +235,8 @@ def test_list_prepares_snapshot_when_none_exists(tmp_path, monkeypatch):
     """On a fresh profile with no prior browser session the snapshot does not exist yet; listing must
     drive the real-profile lifecycle (``real_profile_cdp``) to create it, then read it — not silently
     return empty so the user can never select a login to initialise the source."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    copy_dir = tmp_path / ".hermes" / "browser-profile" / "chrome"  # does NOT exist yet
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+    copy_dir = tmp_path / ".slave" / "browser-profile" / "chrome"  # does NOT exist yet
 
     def prepare_snapshot():
         _seed_login_data(copy_dir)  # the lifecycle call is what materialises the snapshot
@@ -248,8 +248,8 @@ def test_list_prepares_snapshot_when_none_exists(tmp_path, monkeypatch):
         prepared["n"] += 1
         return prepare_snapshot()
 
-    with patch("hermes_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
-         patch("hermes_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
+    with patch("slave_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
+         patch("slave_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
          patch("tools.browser_session_real_profile.real_profile_cdp", side_effect=counted), \
          _set_consent(True):
         b = next(b for b in enabled_backends() if b.name == "browser")
@@ -453,10 +453,10 @@ def test_read_login_metadata_with_hash_in_path(tmp_path):
         "logins under a '#'-containing path were dropped (unescaped sqlite URI)")
 
 
-# ── finding 3 (round 3): a RELATIVE copy dir (HERMES_HOME=./root) must still list, not ValueError ──
+# ── finding 3 (round 3): a RELATIVE copy dir (SLAVE_HOME=./root) must still list, not ValueError ──
 
 def test_read_login_metadata_with_relative_copy_dir(tmp_path, monkeypatch):
-    """``HERMES_HOME=./root`` (a supported setting) makes ``real_profile_copy_dir()`` relative, so
+    """``SLAVE_HOME=./root`` (a supported setting) makes ``real_profile_copy_dir()`` relative, so
     the DB path reaches ``read_login_metadata`` relative. ``Path.as_uri()`` raises ValueError on a
     relative path, which escapes the ``sqlite3.Error`` handler and makes listing fail for EVERY
     source once a snapshot exists. Resolving the path to absolute first must let the real logins
@@ -473,7 +473,7 @@ def test_read_login_metadata_with_relative_copy_dir(tmp_path, monkeypatch):
     con.commit()
     con.close()
 
-    # Make the copy dir RELATIVE to cwd, exactly as a relative HERMES_HOME would.
+    # Make the copy dir RELATIVE to cwd, exactly as a relative SLAVE_HOME would.
     monkeypatch.chdir(tmp_path)
     rel = Path("copy")
     assert not rel.is_absolute()
@@ -487,7 +487,7 @@ def test_read_login_metadata_with_relative_copy_dir(tmp_path, monkeypatch):
 def _write_snapshot(copy_dir: Path, *, source: str, origin: str, username: str) -> None:
     """A completed snapshot dir: Default/Login Data with one row + the done marker naming its source
     profile (what ``snapshot_real_profile`` writes)."""
-    from hermes_cli.browser_connect import _SNAPSHOT_DONE_MARKER
+    from slave_cli.browser_connect import _SNAPSHOT_DONE_MARKER
     default = copy_dir / "Default"
     default.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(default / "Login Data")
@@ -512,12 +512,12 @@ def test_list_refreshes_when_pin_changed_to_another_profile(tmp_path, monkeypatc
     live_root = tmp_path / "chrome-data"           # the real browser's user-data dir
     (live_root / "Default").mkdir(parents=True)
     (live_root / "Profile 2").mkdir(parents=True)
-    copy_dir = tmp_path / ".hermes" / "browser-profile" / "chrome"
+    copy_dir = tmp_path / ".slave" / "browser-profile" / "chrome"
     # Existing snapshot was taken from 'Default' and lists alice.
     _write_snapshot(copy_dir, source="Default", origin="https://alice.example/login", username="alice")
 
     # Config pins the source to 'Profile 2' now.
-    monkeypatch.setattr("hermes_cli.browser_connect._real_profile_pin", lambda: "Profile 2")
+    monkeypatch.setattr("slave_cli.browser_connect._real_profile_pin", lambda: "Profile 2")
 
     def refresh():
         # The lifecycle rebuild: re-snapshot from the pinned 'Profile 2' (bob) and re-stamp the marker.
@@ -533,9 +533,9 @@ def test_list_refreshes_when_pin_changed_to_another_profile(tmp_path, monkeypatc
         return refresh()
 
     with patch("agent.vault_backends.base._browser_profile_enabled", return_value=True), \
-         patch("hermes_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
-         patch("hermes_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
-         patch("hermes_cli.browser_connect.real_profile_data_dir", return_value=str(live_root)), \
+         patch("slave_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
+         patch("slave_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
+         patch("slave_cli.browser_connect.real_profile_data_dir", return_value=str(live_root)), \
          patch("tools.browser_session_real_profile.real_profile_cdp", side_effect=counted):
         backend = next(b for b in enabled_backends() if b.name == "browser")
         items = backend.list_items()
@@ -552,16 +552,16 @@ def test_list_does_not_refresh_when_snapshot_source_still_matches(tmp_path, monk
 
     live_root = tmp_path / "chrome-data"
     (live_root / "Default").mkdir(parents=True)
-    copy_dir = tmp_path / ".hermes" / "browser-profile" / "chrome"
+    copy_dir = tmp_path / ".slave" / "browser-profile" / "chrome"
     _write_snapshot(copy_dir, source="Default", origin="https://alice.example/login", username="alice")
 
-    monkeypatch.setattr("hermes_cli.browser_connect._real_profile_pin", lambda: "Default")
+    monkeypatch.setattr("slave_cli.browser_connect._real_profile_pin", lambda: "Default")
     refreshed = {"n": 0}
 
     with patch("agent.vault_backends.base._browser_profile_enabled", return_value=True), \
-         patch("hermes_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
-         patch("hermes_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
-         patch("hermes_cli.browser_connect.real_profile_data_dir", return_value=str(live_root)), \
+         patch("slave_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
+         patch("slave_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
+         patch("slave_cli.browser_connect.real_profile_data_dir", return_value=str(live_root)), \
          patch("tools.browser_session_real_profile.real_profile_cdp",
                side_effect=lambda: refreshed.__setitem__("n", refreshed["n"] + 1) or ("ws://x", None)):
         backend = next(b for b in enabled_backends() if b.name == "browser")
@@ -594,10 +594,10 @@ def test_list_refreshes_when_pin_changed_and_browser_is_running(tmp_path, monkey
     live_root = tmp_path / "chrome-data"
     (live_root / "Default").mkdir(parents=True)
     (live_root / "Profile 2").mkdir(parents=True)
-    copy_dir = tmp_path / ".hermes" / "browser-profile" / "chrome"
+    copy_dir = tmp_path / ".slave" / "browser-profile" / "chrome"
     _write_snapshot(copy_dir, source="Default", origin="https://alice.example/login", username="alice")
 
-    monkeypatch.setattr("hermes_cli.browser_connect._real_profile_pin", lambda: "Profile 2")
+    monkeypatch.setattr("slave_cli.browser_connect._real_profile_pin", lambda: "Profile 2")
 
     # Browser lifecycle state: a browser is running, attached to the old (alice) snapshot.
     state = {"running": True}
@@ -623,9 +623,9 @@ def test_list_refreshes_when_pin_changed_and_browser_is_running(tmp_path, monkey
     monkeypatch.setattr(rpf, "_launch", fake_launch)
 
     with patch("agent.vault_backends.base._browser_profile_enabled", return_value=True), \
-         patch("hermes_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
-         patch("hermes_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
-         patch("hermes_cli.browser_connect.real_profile_data_dir", return_value=str(live_root)):
+         patch("slave_cli.browser_connect.detect_default_chromium", return_value="chrome"), \
+         patch("slave_cli.browser_connect.real_profile_copy_dir", return_value=str(copy_dir)), \
+         patch("slave_cli.browser_connect.real_profile_data_dir", return_value=str(live_root)):
         backend = next(b for b in enabled_backends() if b.name == "browser")
         items = backend.list_items()
 

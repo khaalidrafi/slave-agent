@@ -1,4 +1,4 @@
-"""Metadata documents whose issuer the SDK's exact-string check (RFC 8414 §3.3) refuses but Hermes accepts.
+"""Metadata documents whose issuer the SDK's exact-string check (RFC 8414 §3.3) refuses but slave-agent accepts.
 
 Strava's MCP connector advertises ``authorization_servers: ["https://www.strava.com/mcp-issuer"]`` and
 serves ``/.well-known/oauth-authorization-server/mcp-issuer`` with ``issuer: "https://www.strava.com"``
@@ -33,7 +33,7 @@ PATH_DOC = "/.well-known/oauth-authorization-server/mcp-issuer"
     pytest.param(f"{RESOURCE}#/.well-known/openid-configuration", id="fragment"),
 ])
 async def test_origin_issued_metadata_shim_does_not_read_non_discovery_response(url):
-    from tools.mcp_oauth_provider import HermesProviderMixin
+    from tools.mcp_oauth_provider import SlaveProviderMixin
 
     class ResourceResponse:
         status_code = 200
@@ -42,10 +42,10 @@ async def test_origin_issued_metadata_shim_does_not_read_non_discovery_response(
         async def aread(self):
             raise AssertionError("normal MCP resource response must not be consumed as OAuth metadata")
 
-    provider = HermesProviderMixin.__new__(HermesProviderMixin)
+    provider = SlaveProviderMixin.__new__(SlaveProviderMixin)
     response = ResourceResponse()
 
-    assert await provider._hermes_accept_origin_issued_metadata(response) is response
+    assert await provider._slave_accept_origin_issued_metadata(response) is response
 
 
 def _asm(issuer):
@@ -85,12 +85,12 @@ async def _run_flow(tmp_path, monkeypatch, issuer_doc, advertised=ADVERTISED, is
     from mcp.shared.auth import OAuthClientMetadata
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import HermesTokenStorage, _authorization_code_result
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import SlaveTokenStorage, _authorization_code_result
+    from tools.mcp_oauth_manager import _SLAVE_PROVIDER_CLS, reset_manager_for_tests
     from tools.mcp_tool import sdk_httpx
 
     httpx = sdk_httpx()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     reset_manager_for_tests()
     seen = {}
 
@@ -101,10 +101,10 @@ async def _run_flow(tmp_path, monkeypatch, issuer_doc, advertised=ADVERTISED, is
     async def callback():
         return _authorization_code_result("code-1", seen["state"], iss=iss)
 
-    storage = HermesTokenStorage("srv")
-    provider = _HERMES_PROVIDER_CLS(
+    storage = SlaveTokenStorage("srv")
+    provider = _SLAVE_PROVIDER_CLS(
         server_name="srv", server_url=RESOURCE, storage=storage,
-        client_metadata=OAuthClientMetadata(redirect_uris=[AnyUrl("http://127.0.0.1:1/cb")], client_name="Hermes Agent"),
+        client_metadata=OAuthClientMetadata(redirect_uris=[AnyUrl("http://127.0.0.1:1/cb")], client_name="slave-agent"),
         redirect_handler=redirect, callback_handler=callback)
     standin = _StandIn(httpx, issuer_doc, advertised)
     async with httpx.AsyncClient(auth=provider, transport=httpx.MockTransport(standin)) as client:
@@ -164,10 +164,10 @@ async def test_path_scoped_issuer_differing_only_by_a_trailing_slash_is_still_re
 
 @pytest.mark.asyncio
 async def test_issuer_equal_to_the_advertised_identifier_is_left_to_the_sdk():
-    from tools.mcp_oauth_provider import HermesProviderMixin
+    from tools.mcp_oauth_provider import SlaveProviderMixin
     from tools.mcp_tool import sdk_httpx
 
-    class _Provider(HermesProviderMixin):
+    class _Provider(SlaveProviderMixin):
         context: SimpleNamespace
 
     httpx = sdk_httpx()
@@ -176,5 +176,5 @@ async def test_issuer_equal_to_the_advertised_identifier_is_left_to_the_sdk():
     request = httpx.Request("GET", f"{AS_ORIGIN}/.well-known/oauth-authorization-server")
     response = httpx.Response(200, json=_asm(f"{AS_ORIGIN}/"), request=request)
 
-    assert await provider._hermes_accept_origin_issued_metadata(response) is response
+    assert await provider._slave_accept_origin_issued_metadata(response) is response
     assert provider.context.oauth_metadata is None

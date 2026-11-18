@@ -5,7 +5,7 @@ sha: a6f3a0ce923a14d3c36249ae8618d69b00cc9401
 description: >-
   Ask why any line of agent-written code exists. Each time the agent writes or
   patches a file, Why records the lines it wrote and that turn's user request,
-  locally. /why app.py:42 (or hermes why, or the why_line tool) then names the
+  locally. /why app.py:42 (or slave why, or the why_line tool) then names the
   request, date, model and session behind the line; /why app.py shows which
   requests wrote which share of a file. Lines are matched by text, not number,
   so they are found after they move. No model calls, network or dependencies.

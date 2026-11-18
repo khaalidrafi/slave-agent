@@ -49,12 +49,12 @@ def _profile(home: Path, base_url: str) -> None:
 def two_homes(tmp_path, monkeypatch):
     """Launch home A (= multiplex ``default``) and served named profile B under ``A/profiles/b``."""
     fake_home = tmp_path / "home"
-    a = fake_home / ".hermes"
+    a = fake_home / ".slave"
     b = a / "profiles" / "b"
     _profile(a, "https://a.example/v1")
     _profile(b, "https://b.example/v1")
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: fake_home))
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("SLAVE_HOME", str(a))
     monkeypatch.delenv("NOUS_INFERENCE_BASE_URL", raising=False)
     # The store the current scope resolves must stay INSIDE the sandbox: a resolution that escaped
     # to the real home would have these tests writing the live store.
@@ -66,13 +66,13 @@ def two_homes(tmp_path, monkeypatch):
 def _record_credential_chores(monkeypatch):
     """Replace the credential-reading chores with recorders of (home, Nous override) they see."""
     from agent import curator
-    from hermes_cli.auth_nous import _nous_inference_env_override
-    from hermes_constants import get_hermes_home
+    from slave_cli.auth_nous import _nous_inference_env_override
+    from slave_constants import get_slave_home
 
     seen: dict = {"curator": []}
 
     def _rec(key):
-        return lambda *a, **k: seen[key].append((get_hermes_home().name, _nous_inference_env_override()))
+        return lambda *a, **k: seen[key].append((get_slave_home().name, _nous_inference_env_override()))
 
     monkeypatch.setattr(curator, "maybe_run_curator", _rec("curator"))
     return seen
@@ -87,7 +87,7 @@ def test_multiplexed_credential_chores_run_once_per_profile_in_its_own_scope(two
     A's tick reads A's override, B's reads B's (B never sees A's), and no fail-closed credential
     read fires the ``no profile secret scope`` warning. The ambient home is untouched afterwards."""
     from agent.secret_scope import set_multiplex_active
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     a, b = two_homes
     seen = _record_credential_chores(monkeypatch)
@@ -101,14 +101,14 @@ def test_multiplexed_credential_chores_run_once_per_profile_in_its_own_scope(two
     expected = [(a.name, "https://a.example/v1"), (b.name, "https://b.example/v1")]
     assert seen == {"curator": expected}
     assert not [r for r in caplog.records if "no profile secret scope" in r.getMessage()]
-    assert get_hermes_home() == a
+    assert get_slave_home() == a
 
 
 def test_multiplexed_auto_archive_tick_sweeps_every_served_profile_store(two_homes, monkeypatch):
     """The auto-archive sweep reaches each served profile's OWN state.db.
 
-    ``profile_scope()`` resolves through ``get_hermes_home()``, so an unscoped tick archived the
-    launch profile's store only — and `hermes serve`/the dashboard defer to the gateway for
+    ``profile_scope()`` resolves through ``get_slave_home()``, so an unscoped tick archived the
+    launch profile's store only — and `slave serve`/the dashboard defer to the gateway for
     every profile it owns, so a served secondary would have had no archiver at all.
     """
     import session_retention
@@ -120,7 +120,7 @@ def test_multiplexed_auto_archive_tick_sweeps_every_served_profile_store(two_hom
     monkeypatch.setattr(
         session_retention, "run_auto_archive", lambda store, **kw: swept.append(store_location(store.scope)))
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "slave_cli.config.load_config",
         lambda *args, **kwargs: {"sessions": {"auto_archive": True, "min_interval_hours": 0}})
 
     set_multiplex_active(True)
@@ -177,14 +177,14 @@ def test_a_failing_profile_does_not_strand_the_profiles_after_it(two_homes, monk
     import persistence_assembly
     import session_retention
     from agent.secret_scope import set_multiplex_active
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     a, b = two_homes
     swept: list = []
     real_open = persistence_assembly.open_persistence
 
     def _open(*args, **kwargs):
-        if get_hermes_home() == a:
+        if get_slave_home() == a:
             raise OSError("launch store unavailable")
         return real_open(*args, **kwargs)
 
@@ -193,7 +193,7 @@ def test_a_failing_profile_does_not_strand_the_profiles_after_it(two_homes, monk
         session_retention, "run_auto_archive",
         lambda store, **kw: swept.append(persistence_assembly.store_location(store.scope)))
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "slave_cli.config.load_config",
         lambda *args, **kwargs: {"sessions": {"auto_archive": True, "min_interval_hours": 0}})
 
     set_multiplex_active(True)
@@ -203,7 +203,7 @@ def test_a_failing_profile_does_not_strand_the_profiles_after_it(two_homes, monk
         set_multiplex_active(False)
 
     assert swept == [b / "state.db"]
-    assert get_hermes_home() == a
+    assert get_slave_home() == a
 
 
 def test_profile_scope_setup_failure_restores_the_callers_home(two_homes, monkeypatch):
@@ -211,10 +211,10 @@ def test_profile_scope_setup_failure_restores_the_callers_home(two_homes, monkey
 
     The home override was set before hydration and only reset in the ``finally`` around the
     ``yield``, so a raising ``.env`` load left the housekeeping thread (or a turn's context)
-    resolving ``get_hermes_home()`` to the failed profile for every later unscoped read.
+    resolving ``get_slave_home()`` to the failed profile for every later unscoped read.
     """
     from agent.secret_scope import current_secret_scope
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     a, b = two_homes
     scope_before = current_secret_scope()
@@ -222,14 +222,14 @@ def test_profile_scope_setup_failure_restores_the_callers_home(two_homes, monkey
     def _boom(home):
         raise OSError(f"cannot read {home}/.env")
 
-    import hermes_cli.env_loader
-    monkeypatch.setattr(hermes_cli.env_loader, "hydrate_profile_secret_sources", _boom)
+    import slave_cli.env_loader
+    monkeypatch.setattr(slave_cli.env_loader, "hydrate_profile_secret_sources", _boom)
 
     with pytest.raises(OSError):
         with gateway_run._profile_runtime_scope(b):
             pass
 
-    assert get_hermes_home() == a
+    assert get_slave_home() == a
     assert current_secret_scope() == scope_before
 
 
@@ -285,7 +285,7 @@ def test_multiplexed_plugin_update_check_visits_every_served_profiles_plugins(tw
     and marker, under that profile's ``plugins:`` config. Unscoped it checked the launch home's
     plugins only, so B's plugins were never checked and B's ``plugins.auto_apply`` was ignored."""
     from agent.secret_scope import set_multiplex_active
-    from hermes_cli import plugins_cadence
+    from slave_cli import plugins_cadence
 
     a, b = two_homes
     (a / "config.yaml").write_text("plugins:\n  auto_update_check_hours: 1\n", encoding="utf-8")
@@ -297,7 +297,7 @@ def test_multiplexed_plugin_update_check_visits_every_served_profiles_plugins(tw
         checked.append((plugins_dir, plugins_cadence.auto_apply_enabled()))
         return []
 
-    import hermes_cli.plugins_updates as updates
+    import slave_cli.plugins_updates as updates
     monkeypatch.setattr(updates, "run_checks", _run_checks)
 
     set_multiplex_active(True)

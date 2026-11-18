@@ -60,7 +60,7 @@ def test_only_a_definite_refusal_marks_an_admission_not_admitted(monkeypatch, st
             return io.BytesIO(code)
         raise urllib.error.HTTPError("https://peer.example.test/v1/runs", status, "refused", {},
                                      io.BytesIO(json.dumps({"error": {"code": code}}).encode()))
-    monkeypatch.setattr("hermes_cli.urllib_security.open_credentialed_url", respond)
+    monkeypatch.setattr("slave_cli.urllib_security.open_credentialed_url", respond)
     client = PeerRunsHTTPClient(base_url="https://peer.example.test", api_key="")
     with pytest.raises(PeerRunsHTTPError) as caught:
         client._request("/v1/runs", method="POST", body={"input": "frozen"}, room_grant="signed.room.grant")
@@ -86,6 +86,6 @@ def test_first_idempotency_conflict_replays_only_the_same_frozen_request(tmp_pat
     assert result["run_id"] == "retained-run" and result["replayed"]
     assert len(requests) == 2 and requests[0] == requests[1]
     assert requests[0][2] == "room:task-1:1"
-    assert requests[0][3] == "HermesRoom signed.room.grant"
+    assert requests[0][3] == "SlaveRoom signed.room.grant"
     saved = client._receipt("task-1", 1)
     assert saved["run_id"] == "retained-run" and saved["execution_generation"] == 1

@@ -20,7 +20,7 @@ def _probe(worker_pid, worker_birth):
     ``worker_not_live`` (gone)."""
     import psutil
     from gateway.status import get_process_start_time
-    from hermes_cli import process_identity
+    from slave_cli import process_identity
     try:
         if process_identity.worker_birth(psutil.Process(worker_pid)) != worker_birth:
             return None, 'permission_denied'

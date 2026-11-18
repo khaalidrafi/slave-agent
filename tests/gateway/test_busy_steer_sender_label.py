@@ -28,7 +28,7 @@ class _Receiver:
 
 
 async def _inject(route, source, tmp_path, monkeypatch):
-    monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+    monkeypatch.setattr("gateway.run._slave_home", tmp_path)
     runner = GatewayRunner(config=GatewayConfig(group_sessions_per_user=False))
     event = MessageEvent(text="/steer check the logs" if route == "explicit" else "check the logs",
                          source=source, message_id="m2")

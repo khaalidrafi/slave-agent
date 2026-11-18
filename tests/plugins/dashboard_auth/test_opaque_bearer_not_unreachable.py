@@ -9,7 +9,7 @@ failure fetching the JWKS is "unreachable"; anything else means "not my
 token" (``verify_session`` -> None -> 401 / next provider).
 
 The same 503 later came back for well-signed Portal JWTs this instance does not accept: the
-user's Portal CLI token (``aud=hermes-cli:hermes-cli``), another instance's ``aud`` or
+user's Portal CLI token (``aud=slave-cli:slave-cli``), another instance's ``aud`` or
 ``agent_instance_id``, and a ``kid`` the reachable JWKS does not hold.
 
 Real ``NousDashboardAuthProvider`` + real ``SelfHostedOIDCProvider`` JWKS path,
@@ -32,15 +32,15 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.algorithms import RSAAlgorithm
 from starlette.testclient import TestClient
 
-from hermes_cli import web_server
-from hermes_cli.dashboard_auth import (
+from slave_cli import web_server
+from slave_cli.dashboard_auth import (
     InvalidCodeError,
     ProviderError,
     classify_jwks_lookup_error,
     clear_providers,
     register_provider,
 )
-from hermes_cli.dashboard_auth.cookies import SESSION_AT_COOKIE, SESSION_RT_COOKIE
+from slave_cli.dashboard_auth.cookies import SESSION_AT_COOKIE, SESSION_RT_COOKIE
 import plugins.dashboard_auth.nous as nous_plugin
 
 OPAQUE_PEER_KEY = "hk_live_opaque_peer_key_0123456789abcdef"
@@ -165,7 +165,7 @@ def test_self_hosted_provider_shares_the_classification(empty_jwks_server, monke
 
     provider = object.__new__(sh.SelfHostedOIDCProvider)
     provider._jwks_client = None
-    provider._client_id = "hermes"
+    provider._client_id = "slave"
     monkeypatch.setattr(
         provider, "_get_discovery",
         lambda: {"jwks_uri": f"{empty_jwks_server}/jwks", "issuer": empty_jwks_server},
@@ -229,7 +229,7 @@ def test_gated_api_accepts_own_portal_token(gated_portal, portal):
 
 
 @pytest.mark.parametrize("token_kwargs", [
-    pytest.param({"aud": "hermes-cli:hermes-cli"}, id="portal-cli-token"),
+    pytest.param({"aud": "slave-cli:slave-cli"}, id="portal-cli-token"),
     pytest.param({"aud": "agent:other-instance"}, id="other-instance-aud"),
     pytest.param({"agent_instance_id": "other-instance"}, id="other-instance-claim"),
     pytest.param({"kid": "rotated-out"}, id="unknown-kid"),
@@ -242,7 +242,7 @@ def test_gated_api_rejects_foreign_portal_jwt_bearer_with_401_not_503(gated_port
 
 def test_gated_api_foreign_portal_jwt_cookie_is_401_not_503(gated_portal, portal):
     """Cookie path: a foreign access-token cookie with no refresh token is a signed-out 401."""
-    gated_portal.cookies.set(f"__Host-{SESSION_AT_COOKIE}", _mint(portal, aud="hermes-cli:hermes-cli"))
+    gated_portal.cookies.set(f"__Host-{SESSION_AT_COOKIE}", _mint(portal, aud="slave-cli:slave-cli"))
     r = gated_portal.get("/api/auth/me")
     assert r.status_code == 401, r.text
     assert r.json()["reason"] == "invalid_or_expired_session"
@@ -251,7 +251,7 @@ def test_gated_api_foreign_portal_jwt_cookie_is_401_not_503(gated_portal, portal
 def test_gated_api_refresh_minting_foreign_token_is_401_not_503(gated_portal, portal):
     """Cookie path with a refresh token: the rotated token Portal hands back does not verify
     here, so the provider rejects the RT (signed-out 401), never a 503 or an uncaught 500."""
-    foreign = _mint(portal, aud="hermes-cli:hermes-cli")
+    foreign = _mint(portal, aud="slave-cli:slave-cli")
     grant = MagicMock(status_code=200, headers={"content-type": "application/json"})
     grant.json.return_value = {"access_token": foreign, "token_type": "Bearer", "refresh_token": "rt2"}
     # The __Host- names the server sets over HTTPS (bare names are not read there, #136772).

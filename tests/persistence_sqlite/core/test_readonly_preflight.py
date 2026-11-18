@@ -7,7 +7,7 @@ from deep inside ``_init_schema`` — naming no file and no fix.
 
 ``preflight_db_writability`` now runs before the first connection:
 
-- files inside the Hermes home tree are repaired with ``chmod u+rw``
+- files inside the slave-agent home tree are repaired with ``chmod u+rw``
   (the safe scope — chmod fails on files the user doesn't own);
 - anything else fails fast with an error naming the exact file and the
   exact ``chmod`` command;
@@ -36,11 +36,11 @@ pytestmark = [
 
 
 @pytest.fixture()
-def hermes_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME so the repair scope covers tmp DBs."""
-    home = tmp_path / ".hermes"
+def slave_home(tmp_path, monkeypatch):
+    """Isolated SLAVE_HOME so the repair scope covers tmp DBs."""
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     return home
 
 
@@ -74,8 +74,8 @@ def _make_wal_db(path: Path) -> None:
 
 
 class TestRepairScope:
-    def test_repairs_readonly_db_inside_home(self, hermes_home):
-        db = hermes_home / "state.db"
+    def test_repairs_readonly_db_inside_home(self, slave_home):
+        db = slave_home / "state.db"
         _make_db(db)
         os.chmod(db, 0o444)
 
@@ -83,8 +83,8 @@ class TestRepairScope:
 
         assert os.access(db, os.W_OK)
 
-    def test_repairs_readonly_sidecars(self, hermes_home):
-        db = hermes_home / "state.db"
+    def test_repairs_readonly_sidecars(self, slave_home):
+        db = slave_home / "state.db"
         _make_wal_db(db)
         wal = db.with_name(db.name + "-wal")
         assert wal.is_file(), "fixture must leave a -wal behind"
@@ -97,8 +97,8 @@ class TestRepairScope:
         assert os.access(wal, os.W_OK)
 
 
-    def test_repairs_readonly_parent_directory(self, hermes_home):
-        sub = hermes_home / "kanban"
+    def test_repairs_readonly_parent_directory(self, slave_home):
+        sub = slave_home / "kanban"
         sub.mkdir()
         db = sub / "kanban.db"
         _make_db(db)
@@ -111,7 +111,7 @@ class TestRepairScope:
 
 
 class TestRefusalOutsideScope:
-    def test_actionable_error_names_file_and_chmod(self, hermes_home, tmp_path):
+    def test_actionable_error_names_file_and_chmod(self, slave_home, tmp_path):
         outside = tmp_path / "elsewhere"
         outside.mkdir()
         db = outside / "custom.db"
@@ -127,7 +127,7 @@ class TestRefusalOutsideScope:
         finally:
             os.chmod(db, 0o644)
 
-    def test_wal_error_warns_against_deletion(self, hermes_home, tmp_path):
+    def test_wal_error_warns_against_deletion(self, slave_home, tmp_path):
         outside = tmp_path / "elsewhere"
         outside.mkdir()
         db = outside / "custom.db"
@@ -146,7 +146,7 @@ class TestRefusalOutsideScope:
 class TestSkips:
     @pytest.mark.parametrize("next_opener_recreates", [False, True], ids=["vanished", "recreated"])
     def test_sidecars_unlinked_by_sibling_close_mid_preflight_are_not_readonly(
-        self, hermes_home, tmp_path, monkeypatch, next_opener_recreates
+        self, slave_home, tmp_path, monkeypatch, next_opener_recreates
     ):
         """A sibling connection's last close() unlinks -wal/-shm after the preflight
         listed them (and the next opener may recreate them before the re-check); a
@@ -184,8 +184,8 @@ class TestSkips:
                 conn.close()
         assert not open_sibling and len(next_opener) == int(next_opener_recreates)
 
-    def test_healthy_db_untouched(self, hermes_home):
-        db = hermes_home / "state.db"
+    def test_healthy_db_untouched(self, slave_home):
+        db = slave_home / "state.db"
         _make_db(db)
         before = stat.S_IMODE(db.stat().st_mode)
         preflight_db_writability(db)
@@ -193,8 +193,8 @@ class TestSkips:
 
 
 class TestSessionDBIntegration:
-    def test_sessiondb_repairs_readonly_dir_before_fresh_db_lock(self, hermes_home):
-        sub = hermes_home / "profiles" / "p1"
+    def test_sessiondb_repairs_readonly_dir_before_fresh_db_lock(self, slave_home):
+        sub = slave_home / "profiles" / "p1"
         sub.mkdir(parents=True)
         os.chmod(sub, 0o555)
         try:
@@ -204,8 +204,8 @@ class TestSessionDBIntegration:
         finally:
             os.chmod(sub, 0o755)
 
-    def test_sessiondb_selfheals_readonly_db_in_home(self, hermes_home):
-        db_path = hermes_home / "state.db"
+    def test_sessiondb_selfheals_readonly_db_in_home(self, slave_home):
+        db_path = slave_home / "state.db"
         first = StoreHolder(db_path)
         first.close()
         for suffix in ("", "-wal", "-shm"):
@@ -220,7 +220,7 @@ class TestSessionDBIntegration:
             db.close()
 
     def test_sessiondb_actionable_error_outside_home(
-        self, hermes_home, tmp_path
+        self, slave_home, tmp_path
     ):
         outside = tmp_path / "custom-loc"
         outside.mkdir()

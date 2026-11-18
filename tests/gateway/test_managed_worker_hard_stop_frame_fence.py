@@ -69,7 +69,7 @@ def test_worker_stop_hard_cancels_the_agent_before_and_after_construction(tmp_pa
 
 
 CHILD = """import json, os, sys, psutil
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 me = psutil.Process()
 out = os.fdopen(os.dup(sys.stdout.fileno()), 'wb', buffering=0)
 send = lambda f: out.write((json.dumps(f) + '\\n').encode())
@@ -91,7 +91,7 @@ def test_worker_frames_read_no_ledger_per_frame(tmp_path, monkeypatch):
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_session
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = open_persistence(profile_scope(home=tmp_path))
     seed_session(db, 's', 'test')
     runner = SimpleNamespace(_draining=False, _cached_agent_for=lambda route: None,

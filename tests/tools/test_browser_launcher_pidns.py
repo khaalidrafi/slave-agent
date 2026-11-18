@@ -1,6 +1,6 @@
 """A pid in launcher state means something only inside the PID namespace and boot that wrote it.
 
-One ``HERMES_HOME`` can be shared by a container gateway and a host CLI: a record, lease or throwaway profile dir
+One ``SLAVE_HOME`` can be shared by a container gateway and a host CLI: a record, lease or throwaway profile dir
 written in another PID namespace (or before a reboot), or one that does not say where it was written, names a
 pid that may be dead HERE while its process lives THERE. It is never judged dead: never reaped, deleted,
 dropped or handed over. Same-namespace state of a process that is gone is still cleaned up
@@ -36,8 +36,8 @@ def _dead_pid() -> int:
 
 
 def _home_state() -> tuple[Path, Path]:
-    from hermes_constants import get_hermes_home
-    browser = Path(get_hermes_home()) / "cache" / "browser"
+    from slave_constants import get_slave_home
+    browser = Path(get_slave_home()) / "cache" / "browser"
     records, throwaway = browser / "chromium-records", browser / "chromium"
     for path in (records, throwaway):
         path.mkdir(mode=0o700, parents=True, exist_ok=True)

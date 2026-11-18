@@ -22,7 +22,7 @@ from persistence_assembly import profile_scope
 
 @pytest.fixture(autouse=True)
 def _fresh_ledger(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
     monkeypatch.setattr(dl, "_scope", lambda: profile_scope(home=home))
     monkeypatch.setattr(dl, "ledger_enabled", lambda config=None: True)

@@ -124,8 +124,8 @@ def _copy_core_inputs(source: Path, destination: Path) -> None:
                 or name in published or name.endswith(".egg-info") or (Path(directory) / name).is_symlink()]
 
     # Runtime data dirs ride the same one-pass directory sweep: they are read beside the
-    # project root (agent/i18n.py, tools/skills_sync.py, hermes_cli/plugin_catalog.py,
-    # hermes_cli/mcp_catalog.py), not as package data, and are deliberately not setuptools
+    # project root (agent/i18n.py, tools/skills_sync.py, slave_cli/plugin_catalog.py,
+    # slave_cli/mcp_catalog.py), not as package data, and are deliberately not setuptools
     # packages. Naming them here keeps a single copy even when the include patterns (or their
     # ["*"] default) already match — a second pass would collide with the copied directory.
     for entry in source.iterdir():
@@ -171,11 +171,11 @@ def _generate_pyproject(plugin_dirs: list[Path] | Mapping[Path, Path], root: Pat
 
         document = tomllib.loads(core_text)
         uv_policy = document.setdefault("tool", {}).setdefault("uv", {})
-        # Release age is checked when Hermes locks; users trust that lock (#135589).
+        # Release age is checked when Slave locks; users trust that lock (#135589).
         uv_policy.pop("exclude-newer", None)
         uv_policy.pop("exclude-newer-package", None)
         uv_policy["workspace"] = {"members": sorted(members)}
-        # A member requirement naming core (a selected extra's ``hermes-agent[x] @ git+…``)
+        # A member requirement naming core (a selected extra's ``slave-agent[x] @ git+…``)
         # names a workspace member, which uv refuses without a source; root sources apply
         # to every member, renamed virtual ones included.
         uv_policy.setdefault("sources", {})[document["project"]["name"]] = {"workspace": True}
@@ -194,7 +194,7 @@ def _without_release_age(text: str) -> str:
     """Drop ``[tool.uv] exclude-newer`` from a generated root's pyproject text.
 
     The lock already holds checked versions; on the user's machine the cutoff only gates the
-    build tools uv fetches for source builds (setuptools for Hermes itself), and a mirror that
+    build tools uv fetches for source builds (setuptools for slave-agent itself), and a mirror that
     serves no upload times rejects all of them (#135589). Text-level so the pre-3.11 bootstrap
     python, which has no tomllib, can run it.
     """
@@ -307,7 +307,7 @@ def enabled_plugin_dirs(*, proposed_home=None, enabled=None, disabled=None,
 def enabled_member_dirs(*, proposed_home=None, enabled=None, disabled=None) -> list[Path]:
     """Keep every selected member or refuse an incompatible selection.
 
-    A member that does not accept the running Hermes (``hermes_fit_error``) sits out instead:
+    A member that does not accept the running slave-agent (``slave_fit_error``) sits out instead:
     the verdict is only as good as our version identity (an untagged source checkout reads
     as an older release), the loader skips that plugin anyway, and the member rejoins as
     soon as the verdict flips. Enabling one is still refused at admission. Judged with no
@@ -318,7 +318,7 @@ def enabled_member_dirs(*, proposed_home=None, enabled=None, disabled=None) -> l
     members = []
     for path in selected:
         declaration = read_python_declaration(path)
-        if hermes_fit_error(declaration, ()):
+        if slave_fit_error(declaration, ()):
             continue
         reason = manifest_version_error(declaration.manifest, path.name)
         if reason:
@@ -330,7 +330,7 @@ def enabled_member_dirs(*, proposed_home=None, enabled=None, disabled=None) -> l
 
 def build_member_dirs(extras: Iterable[str], python: Path | None = None) -> list[Path]:
     """``enabled_member_dirs`` for a build selecting core *extras*: a plugin extra they select
-    can add a ``hermes-agent`` requirement the running Hermes misses, which sits out too.
+    can add a ``slave-agent`` requirement the running slave-agent misses, which sits out too.
     A build passes its interpreter *python*, whose markers the generation (and so the loader)
     sees; PM itself may run under a bootstrap Python."""
     extras, members = list(extras), enabled_member_dirs()
@@ -342,7 +342,7 @@ def build_member_dirs(extras: Iterable[str], python: Path | None = None) -> list
 def _member_key(identity: Path) -> str:
     """``<plugin dir name>-<sha256(path)[:16]>``: the hash keeps two same-named plugins from
     different homes apart; the name is what a user sees in uv's conflict text
-    (``hermes-plugin-<key> depends on …``) — a bare hash told them nothing to disable."""
+    (``slave-plugin-<key> depends on …``) — a bare hash told them nothing to disable."""
     import re
 
     digest = hashlib.sha256(str(identity.resolve()).encode()).hexdigest()[:16]
@@ -557,9 +557,9 @@ def _recorded_extras() -> list[str]:
 
 def core_requirement_error(declaration, extras: Iterable[str] | None = None,
                            target: Mapping[str, str] | None = None) -> Optional[str]:
-    """Why the plugin's applicable requirement on ``hermes-agent`` rejects the running Hermes.
+    """Why the plugin's applicable requirement on ``slave-agent`` rejects the running Slave.
 
-    PM satisfies ``hermes-agent`` from the checkout itself: a runtime requirement naming it is
+    PM satisfies ``slave-agent`` from the checkout itself: a runtime requirement naming it is
     dropped, and a selected extra naming it binds to the workspace root, where uv ignores the
     specifier. So the specifier is judged here, PEP 440 like any requirement, under *extras*
     (the core extras the build selects; ``None`` reads the recorded selection) and the markers
@@ -573,7 +573,7 @@ def core_requirement_error(declaration, extras: Iterable[str] | None = None,
     from packaging.markers import default_environment
     from packaging.version import InvalidVersion, Version
 
-    from hermes_cli.plugins_manifest import running_hermes_version
+    from slave_cli.plugins_manifest import running_slave_version
     from pm.install import _extra_key
 
     if declaration.external:
@@ -585,11 +585,11 @@ def core_requirement_error(declaration, extras: Iterable[str] | None = None,
         installed = _selected_member_extras(document, _recorded_extras() if extras is None else extras, environment)[0]
         specs += [spec for name, values in document["project"].get("optional-dependencies", {}).items()
                   if _extra_key(name) in installed for spec in values]
-    pins = [requirement for requirement in _self_references(specs, "hermes-agent")
+    pins = [requirement for requirement in _self_references(specs, "slave-agent")
             if requirement.specifier and _reference_active(requirement, ("", *sorted(installed)), environment)]
     if not pins:
         return None
-    current = running_hermes_version()
+    current = running_slave_version()
     try:
         Version(current)
     except InvalidVersion:
@@ -599,12 +599,12 @@ def core_requirement_error(declaration, extras: Iterable[str] | None = None,
     return f"requires {rejected[0]}, running {current}" if rejected else None
 
 
-def hermes_fit_error(declaration, extras: Iterable[str] | None = None) -> Optional[str]:
-    """Why this Hermes is not one the plugin accepts: its ``requires_hermes`` or an applicable
-    ``hermes-agent`` requirement rejects the running version. Either verdict is only as good as
+def slave_fit_error(declaration, extras: Iterable[str] | None = None) -> Optional[str]:
+    """Why this slave-agent is not one the plugin accepts: its ``requires_hermes`` or an applicable
+    ``slave-agent`` requirement rejects the running version. Either verdict is only as good as
     our version identity, so a selected misfit sits out of the build (config untouched) and
     rejoins once it flips; admission refuses it."""
-    from hermes_cli.plugins_manifest import requires_hermes_error
+    from slave_cli.plugins_manifest import requires_hermes_error
 
     return requires_hermes_error(declaration.manifest) or core_requirement_error(declaration, extras)
 
@@ -637,7 +637,7 @@ def _workspace_member(plugin_dir: Path, root: Path, *, identity: Path, extras: I
             changed = True
         if virtual:
             # Before the extras pass, so its self-reference closure reads the names uv will see.
-            _rename_virtual_member(document, f"hermes-plugin-{key}")
+            _rename_virtual_member(document, f"slave-plugin-{key}")
         changed = _runtime_member_metadata(document, extras, target) or changed
         for sources in document.get("tool", {}).get("uv", {}).get("sources", {}).values():
             for spec in sources if isinstance(sources, list) else [sources]:
@@ -669,7 +669,7 @@ def _workspace_member(plugin_dir: Path, root: Path, *, identity: Path, extras: I
     member = root / "plugin-deps" / key
     member.mkdir(parents=True)
     (member / "pyproject.toml").write_text(
-        f'[project]\nname = "hermes-plugin-{key}"\nversion = "0.0.0"\n'
+        f'[project]\nname = "slave-plugin-{key}"\nversion = "0.0.0"\n'
         'requires-python = ">=3.11"\n'
         f'dependencies = {json.dumps(specs)}\n[tool.uv]\npackage = false\n',
         encoding="utf-8",
@@ -696,7 +696,7 @@ def install_node_sidecar(
 
     # Tool availability does not authorize mutation of the sidecar itself.
     if not explicit and not lazy_installs_allowed():
-        return "lazy installs are disabled — run `hermes plugins install` and approve Node dependencies"
+        return "lazy installs are disabled — run `slave plugins install` and approve Node dependencies"
 
     # a lockfile means reproducible `npm ci`; plain `npm install` otherwise
     install_cmd = ["ci"] if (plugin_dir / "package-lock.json").is_file() else ["install"]

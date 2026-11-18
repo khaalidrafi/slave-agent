@@ -1,5 +1,5 @@
-import { stripAnsi } from '@hermes/shared/ansi'
-import { compactNumber } from '@hermes/shared/format'
+import { stripAnsi } from '@slave-agent/shared/ansi'
+import { compactNumber } from '@slave-agent/shared/format'
 import type {
   BackgroundStartResponse,
   ConfigGetValueResponse,
@@ -9,8 +9,8 @@ import type {
   SessionUsageResponse,
   SlashExecResponse,
   VoiceToggleResponse
-} from '@hermes/shared/gateway-types'
-import { sessionScopedModelArg, TUI_SESSION_MODEL_FLAG } from '@hermes/shared/slash-input'
+} from '@slave-agent/shared/gateway-types'
+import { sessionScopedModelArg, TUI_SESSION_MODEL_FLAG } from '@slave-agent/shared/slash-input'
 
 import { usageBarsText } from '../../../components/overlayPrimitives.js'
 import { introMsg, toTranscriptMessages } from '../../../domain/messages.js'
@@ -402,7 +402,7 @@ export const sessionCommands: SlashCommand[] = [
       }
 
       // T9: the shared owner holds a session's voice mode (its /voice handler, per session). The
-      // sidecar's voice.toggle flipped the owner's process-global HERMES_VOICE for every chat; run
+      // sidecar's voice.toggle flipped the owner's process-global SLAVE_VOICE for every chat; run
       // the owner's handler instead and mirror the mode it reports back.
       if (ctx.gateway.gw?.isCanonical && ctx.sid) {
         const sid = ctx.sid

@@ -116,8 +116,8 @@ class CredentialPoolAdminMixin:
             _borrowed_single_use_pool_root, _next_priority, _profile_owns_pool_provider,
             write_credential_pool,
         )
-        from hermes_cli import auth as auth_mod
-        from hermes_cli.auth_oauth_grants import SINGLE_USE_REFRESH_POOL_PROVIDERS
+        from slave_cli import auth as auth_mod
+        from slave_cli.auth_oauth_grants import SINGLE_USE_REFRESH_POOL_PROVIDERS
 
         with self._lock:
             entry = replace(entry, priority=_next_priority(self._entries))
@@ -133,7 +133,7 @@ class CredentialPoolAdminMixin:
                 and _borrowed_single_use_pool_root() is not None
             )
             if borrowed_ids or profile_borrows:
-                # ``hermes -p <profile> auth add <single-use provider>``: a fresh
+                # ``slave -p <profile> auth add <single-use provider>``: a fresh
                 # login inside the profile is the profile's OWN credential, so
                 # it goes to the profile store, never to root. Only that row is
                 # written: the rest of this pool is root's (its rows, or its

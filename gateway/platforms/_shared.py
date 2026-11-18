@@ -88,8 +88,8 @@ def _unscoped_profile_secrets() -> dict:
     if _UNSCOPED_PROFILE_SECRETS is None:
         try:
             from agent.secret_scope import build_profile_secret_scope
-            from hermes_constants import get_hermes_home
-            _UNSCOPED_PROFILE_SECRETS = dict(build_profile_secret_scope(get_hermes_home()))
+            from slave_constants import get_slave_home
+            _UNSCOPED_PROFILE_SECRETS = dict(build_profile_secret_scope(get_slave_home()))
         except Exception:
             logger.warning(
                 "Could not build the profile secret scope; externally managed credentials will not be "
@@ -119,7 +119,7 @@ def platform_gate_env(name: str, default: str = "") -> str:
 
 
 def decode_json_list_literal(raw):
-    """Decode a JSON-encoded allowlist written by ``hermes config set``.
+    """Decode a JSON-encoded allowlist written by ``slave config set``.
 
     String-typed defaults keep list literals verbatim on write (``allowed_chats`` is
     declared as ``""``), so the config can hold ``'["-100","-200"]'`` as a string.
@@ -186,7 +186,7 @@ def profile_scoped() -> bool:
 # edited YAML would never take effect (#109032's mirror image). The marker holds a digest, never
 # the value: bridged names include credential-bearing ones (``TELEGRAM_PROXY``) and allowlists the
 # subprocess scrub strips, and ownership only needs equality. The scrub also drops the markers
-# (``local_env_policy._is_hermes_internal_secret``); only a same-profile restart child gets them back. The prefix and digest live in the
+# (``local_env_policy._is_slave_internal_secret``); only a same-profile restart child gets them back. The prefix and digest live in the
 # stdlib-only ``gateway.bridged_env`` so the spawn path never imports ``gateway.platforms``.
 
 
@@ -205,17 +205,17 @@ _LAUNCH_GATE_RELOAD: contextvars.ContextVar[bool] = contextvars.ContextVar("_LAU
 
 def _foreign_home_load() -> bool:
     from agent.secret_scope import current_secret_scope_home
-    from hermes_constants import get_hermes_home_override, get_routing_process_hermes_home, hermes_home_key
-    own = hermes_home_key(get_routing_process_hermes_home())
-    return any(home and hermes_home_key(home) != own
-               for home in (get_hermes_home_override(), current_secret_scope_home()))
+    from slave_constants import get_slave_home_override, get_routing_process_slave_home, slave_home_key
+    own = slave_home_key(get_routing_process_slave_home())
+    return any(home and slave_home_key(home) != own
+               for home in (get_slave_home_override(), current_secret_scope_home()))
 
 
 def bridge_env_skipped() -> bool:
     """True when this load must not touch the launch profile's ``os.environ`` bridge values.
 
     A multiplexed secondary's scope (``profile_scoped``), and also any load for a home other than the
-    process's own: a HERMES_HOME override or a secret scope stamped with another home. Without the
+    process's own: a SLAVE_HOME override or a secret scope stamped with another home. Without the
     second half a cross-home load with no bound secret scope would refresh or retract the launch
     profile's allowlist with another profile's YAML. The default profile's own unscoped loads under
     multiplex still bridge, as on main, and so does the live allowlist reload of the launch profile's
@@ -235,13 +235,13 @@ def _supplied_by_operator(name: str) -> bool:
     must not clobber or retract.
     """
     try:
-        from hermes_cli.env_loader import get_secret_source_values, has_nonblank_dotenv_value
+        from slave_cli.env_loader import get_secret_source_values, has_nonblank_dotenv_value
     except ImportError:  # bridging must not fail because the loader is unavailable
         return False
-    from hermes_constants import get_routing_process_hermes_home
+    from slave_constants import get_routing_process_slave_home
     # The launch home's CURRENT source snapshot, never the lifetime all-homes name history
     # (``source_supplied_names``): a mapping removed since, or another profile's vault, owns nothing here.
-    return has_nonblank_dotenv_value(name) or name in get_secret_source_values(get_routing_process_hermes_home())
+    return has_nonblank_dotenv_value(name) or name in get_secret_source_values(get_routing_process_slave_home())
 
 
 @dataclass
@@ -441,11 +441,11 @@ def gate_config_version(home: Any = None) -> tuple:
     """Change signature of *home*'s config.yaml (default: the active home) plus the managed overlay's."""
     from pathlib import Path
 
-    from hermes_cli.config_backend import config_cache_version_or_none, config_version_or_none, get_config_backend
-    from hermes_cli.managed_scope import get_managed_dir
-    from hermes_constants import get_hermes_home
+    from slave_cli.config_backend import config_cache_version_or_none, config_version_or_none, get_config_backend
+    from slave_cli.managed_scope import get_managed_dir
+    from slave_constants import get_slave_home
 
-    home = get_hermes_home() if home is None else Path(home)
+    home = get_slave_home() if home is None else Path(home)
     managed = get_managed_dir()
     managed_sig = None
     if managed is not None and get_config_backend().honors_managed_config():
@@ -474,10 +474,10 @@ def _owner_scope(home: str):
     stamped with another home counts as foreign even with no home override: its mapping, not the
     owner's, is what the gate would read."""
     from agent.secret_scope import current_secret_scope_home
-    from hermes_constants import get_hermes_home, hermes_home_key
+    from slave_constants import get_slave_home, slave_home_key
 
     stamped = current_secret_scope_home()
-    if str(get_hermes_home()) == home and (stamped is None or hermes_home_key(stamped) == hermes_home_key(home)):
+    if str(get_slave_home()) == home and (stamped is None or slave_home_key(stamped) == slave_home_key(home)):
         yield
         return
     from pathlib import Path
@@ -506,8 +506,8 @@ def refresh_live_gate_extra(adapter: Any, keys: Iterable[str], on_reload: Option
     with _LIVE_GATE_LOCK:
         if version == adapter._live_gate_version:
             return False
-        from hermes_constants import get_routing_process_hermes_home, hermes_home_key
-        launch = hermes_home_key(home) == hermes_home_key(get_routing_process_hermes_home())
+        from slave_constants import get_routing_process_slave_home, slave_home_key
+        launch = slave_home_key(home) == slave_home_key(get_routing_process_slave_home())
         with _owner_scope(home):
             return _reload_live_gate_extra(adapter, keys, version, on_reload, launch=launch)
 
@@ -703,11 +703,11 @@ def seed_extra_from_env(spec: Iterable[tuple[str, str, Callable[[str], Any] | No
 
 def env_is_connected(*names: str) -> Callable[[Any], bool]:
     """``is_connected`` for platforms whose only configuration is env: True when every ``names`` var is
-    non-blank. Resolves ``hermes_cli.gateway.get_env_value`` at call time (scope-aware, .env-backed) so
+    non-blank. Resolves ``slave_cli.gateway.get_env_value`` at call time (scope-aware, .env-backed) so
     setup-status tests that patch it see the same value."""
 
     def is_connected(config: Any) -> bool:
-        import hermes_cli.gateway as gateway_mod
+        import slave_cli.gateway as gateway_mod
         return all((gateway_mod.get_env_value(name) or "").strip() for name in names)
 
     return is_connected

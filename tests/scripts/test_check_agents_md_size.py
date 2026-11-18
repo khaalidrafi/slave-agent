@@ -48,8 +48,8 @@ def test_a_chain_at_the_cap_loads_whole_on_a_128k_model(tmp_path):
     ``## <label>`` header the loader puts on each file, still fits its 128k budget."""
     from agent.prompt_builder import _load_agents_md
 
-    area = "hermes_agent/gateway/platforms"
-    repo = _repo(tmp_path, {"AGENTS.md": ROOT_CAP, "hermes_agent/gateway/AGENTS.md": CHAIN_CAP - ROOT_CAP - 8_000,
+    area = "slave_agent/gateway/platforms"
+    repo = _repo(tmp_path, {"AGENTS.md": ROOT_CAP, "slave_agent/gateway/AGENTS.md": CHAIN_CAP - ROOT_CAP - 8_000,
                             f"{area}/AGENTS.md": 8_000})
     assert _check(repo).returncode == 0
     assert "[...truncated" not in _load_agents_md(repo / area, context_length=128_000)

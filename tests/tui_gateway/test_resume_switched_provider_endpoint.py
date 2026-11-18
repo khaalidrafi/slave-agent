@@ -9,7 +9,7 @@ import json
 
 import pytest
 
-from hermes_cli.cli_model_switch_mixin import stored_session_route
+from slave_cli.cli_model_switch_mixin import stored_session_route
 from persistence.conversation.sessions import ReplaceSessionConfig, RuntimeLock, parse_model_config
 from persistence.conversation.usage import BillingRoute, TokenCounts, UsageDelta
 from persistence_assembly import open_persistence, profile_scope

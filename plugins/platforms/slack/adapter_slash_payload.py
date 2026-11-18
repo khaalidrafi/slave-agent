@@ -11,10 +11,10 @@ def slash_command_text(command: dict) -> str:
     ``<subcommand> [args]`` via the registry, else free-form text is a regular question."""
     slash_name = (command.get("command") or "").lstrip("/").strip()
     raw_text = str(command.get("text") or "")
-    if slash_name not in {"hermes", ""}:
+    if slash_name not in {"slave", ""}:
         return f"/{slash_name}" if not raw_text else f"/{slash_name} {raw_text}"
     legacy_text = raw_text.strip()
-    from hermes_cli.commands_platforms import slack_subcommand_map
+    from slave_cli.commands_platforms import slack_subcommand_map
     subcommand_map = slack_subcommand_map()
     subcommand_map["compact"] = "/compress"
     first_word = legacy_text.split()[0] if legacy_text.split() else ""

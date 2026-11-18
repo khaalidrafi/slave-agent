@@ -25,14 +25,14 @@ async def test_concurrent_changed_conversation_cannot_replace_response_key(api, 
     owner.runner._handle_message = handle
     app = web.Application()
     app.router.add_post('/v1/responses', api._handle_responses)
-    headers = {'Idempotency-Key': 'same-request', 'X-Hermes-Session-Key': 'first-room',
+    headers = {'Idempotency-Key': 'same-request', 'X-Slave-Session-Key': 'first-room',
                'Authorization': 'Bearer identity-fixture'}
     async with TestClient(TestServer(app)) as client:
         first = asyncio.create_task(client.post('/v1/responses', json={'input': 'first'}, headers=headers))
         await asyncio.wait_for(started.wait(), 5)
         try:
             changed = await client.post('/v1/responses', json={'input': 'different'},
-                headers={**headers, 'X-Hermes-Session-Key': 'second-room'})
+                headers={**headers, 'X-Slave-Session-Key': 'second-room'})
             assert changed.status == 409
         finally:
             release.set()
@@ -42,7 +42,7 @@ async def test_concurrent_changed_conversation_cannot_replace_response_key(api, 
         replay = await client.post('/v1/responses', json={'input': 'first'}, headers=headers)
         assert await replay.json() == saved
         changed_target = await client.post('/v1/responses', json={'input': 'first'},
-            headers={**headers, 'X-Hermes-Session-Key': 'second-room'})
+            headers={**headers, 'X-Slave-Session-Key': 'second-room'})
         assert changed_target.status == 409
     assert calls == ['first']
 

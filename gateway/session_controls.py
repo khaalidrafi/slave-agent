@@ -12,7 +12,7 @@ from gateway.config import Platform
 from gateway.session_contract import CANONICAL_GATEWAY_PROTOCOL, SessionActor, SessionRef, Submission
 from gateway.session_llm_oneshot import DeferredReply
 from gateway.session_persistence import authority_persistence
-from hermes_constants import profile_name_for_home
+from slave_constants import profile_name_for_home
 from persistence.core.errors import STORE_FAILURES, AuthorityRefusal, PersistenceError
 
 logger = logging.getLogger(__name__)
@@ -183,7 +183,7 @@ class AuthorityConnection:
         home. Only a host-scoped grant (the Desktop's shared-primary socket, the dashboard gate)
         reaches a sibling; a profile-bound ticket naming any other profile is a mismatch, exactly
         like a profile nobody here serves. Never a fallback, never a rewritten profile_id."""
-        from hermes_cli.profiles import profile_matches_home
+        from slave_cli.profiles import profile_matches_home
         if profile_matches_home(profile, Path(self.authority.profile_id)):
             return None
         if not self.host_scoped:
@@ -216,7 +216,7 @@ class AuthorityConnection:
         registry = getattr(getattr(self.authority, 'runner', None), 'session_authorities', None)
         if not (self.host_scoped and isinstance(profile, str) and profile and registry is not None):
             return None
-        from hermes_cli.profiles import profile_matches_home
+        from slave_cli.profiles import profile_matches_home
         key = next((key for key in held if profile_matches_home(profile, Path(key))), None)
         return (key, None) if key is not None else registry.starting(profile)
 
@@ -354,7 +354,7 @@ class AuthorityConnection:
         try:
             from gateway.session_group_controls import GROUP_METHODS, dispatch_group_control
             # Every handler reads config/jobs/policy for the OWNING profile: enter its home so
-            # ``_load_gateway_config`` / ``build_policy(get_hermes_home())`` never snapshot the
+            # ``_load_gateway_config`` / ``build_policy(get_slave_home())`` never snapshot the
             # launch profile's config into a served secondary's session. Under a single profile
             # the scope is that profile's own home, so behaviour is unchanged.
             from gateway.session_authorities import async_owner_scope
@@ -695,7 +695,7 @@ class AuthorityConnection:
         mounted = self.authority.sessions[ref.session_id].source
         # Only a local route has a stored creation policy to refresh; a platform lane's turns read the profile.
         if 'session:control' in self.actor.capabilities and getattr(mounted, 'platform', None) == Platform.LOCAL:
-            # A client attaching (main's `hermes -c` was a new process) re-reads the config-derived settings
+            # A client attaching (main's `slave -c` was a new process) re-reads the config-derived settings
             # (CFG-2); a snapshot poll on this attachment does not. Any open still adopts a frozen Bot Chat
             # whose earlier open found it busy (Desktop's warm `session.activate` resumes on one connection).
             from gateway.session_policy_refresh import refresh_resumed_policy

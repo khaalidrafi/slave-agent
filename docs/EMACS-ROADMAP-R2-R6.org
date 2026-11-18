@@ -34,7 +34,7 @@ body as the prompt and the result as the block output.
 Memory and skills are Org trees the master can read and edit; answers
 cite ~file.org::*Heading~.
 
-- Shape: ~$HERMES_HOME/memory/*.org~ with top-level headings as memory
+- Shape: ~$SLAVE_HOME/memory/*.org~ with top-level headings as memory
   entries; the loader reads through ~org-element~ (no regex over Org).
   Writes append a timestamped heading; they never rewrite what is there.
 - Contract: an agent answer that used memory carries the heading refs it

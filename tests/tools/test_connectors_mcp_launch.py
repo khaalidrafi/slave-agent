@@ -46,7 +46,7 @@ def test_card_names_the_launch_target_and_the_model_result_does_not():
 
     with patch("tools.connectors.mcp._catalog_names", return_value=["acme"]), \
          patch("tools.connectors.mcp._configured_names", return_value=[]), \
-         patch("hermes_cli.mcp_catalog.get_entry", return_value=entry), \
+         patch("slave_cli.mcp_catalog.get_entry", return_value=entry), \
          patch("tools.connectors.run.WATCH_INTERVAL_SECONDS", 0.01):
         out = json.loads(manage_connections({"action": "install", "connectors": [{"name": "acme", "mcp": True}]},
                                             connection_callback=callback, session_id="s1", mcp_backend=_Backend()))
@@ -220,8 +220,8 @@ def test_a_real_control_character_never_reads_as_its_literal_escape(real, litera
 @pytest.mark.parametrize("url,command,args,line", [
     (None, "npx", ["-y", "@modelcontextprotocol/server-filesystem", "/home/me/projects", "./data"],
      "npx -y @modelcontextprotocol/server-filesystem /home/me/projects ./data"),
-    (None, "uvx", ["mcp-server-git", "--repository", "/srv/repos/hermes-agent-2024", "-v"],
-     "uvx mcp-server-git --repository /srv/repos/hermes-agent-2024 -v"),
+    (None, "uvx", ["mcp-server-git", "--repository", "/srv/repos/slave-agent-2024", "-v"],
+     "uvx mcp-server-git --repository /srv/repos/slave-agent-2024 -v"),
     (None, "node", ["packages/server2/dist/build/index20240101.js", "--port", "8080"],
      "node packages/server2/dist/build/index20240101.js --port 8080"),
     (None, "mysql", ["-p", "--verbose"], "mysql -p --verbose"),
@@ -251,7 +251,7 @@ def test_enable_reads_env_and_cwd_from_the_configured_entry():
     from tools.connectors.mcp_launch import launch_for
 
     cfg = {"acme": {"command": "node", "args": ["srv.js"], "env": {"NODE_OPTIONS": "--require /x.js"}, "cwd": "/w"}}
-    with patch("hermes_cli.mcp_catalog.installed_servers", return_value=cfg):
+    with patch("slave_cli.mcp_catalog.installed_servers", return_value=cfg):
         assert launch_for("enable", "acme") == {"kind": "stdio", "target": "node srv.js", "env": ["NODE_OPTIONS"],
                                                 "cwd": "/w"}
 

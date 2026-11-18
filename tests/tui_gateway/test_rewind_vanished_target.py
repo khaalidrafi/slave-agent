@@ -15,7 +15,7 @@ from tests.fixtures.storage_seed import seed_messages, seed_session
 
 
 def test_a_vanished_target_raises_value_error_and_changes_nothing(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     from tui_gateway.server import _rewind_active_session_history
 
     every_row = TranscriptRead(view=TranscriptView.ALL)

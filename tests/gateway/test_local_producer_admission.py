@@ -36,7 +36,7 @@ class _Gateway:
 
     def __init__(self, tmp_path, monkeypatch):
         from pathlib import Path
-        self.tmp_path, root = tmp_path, tmp_path / '.hermes'
+        self.tmp_path, root = tmp_path, tmp_path / '.slave'
         self.homes = (('default', root), ('beta', root / 'profiles' / 'beta'))
         for name, home in self.homes:
             home.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -44,7 +44,7 @@ class _Gateway:
                 'default': f'{name}-model', 'provider': 'custom', 'base_url': 'http://127.0.0.1:9/v1',
                 'api_key': 'loopback-only'}}))
         monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-        monkeypatch.setenv('HERMES_HOME', str(root))
+        monkeypatch.setenv('SLAVE_HOME', str(root))
         self.turns, self.gate = [], None
         self.runner, self.connections = None, []
 
@@ -155,7 +155,7 @@ def _tick_output(text):
 @pytest.mark.asyncio
 async def test_a_liveness_tick_is_admitted_into_the_session_that_started_the_process(gateway):
     from gateway.session_automation import admission_display
-    from hermes_cli.gateway_tools_notify import _card
+    from slave_cli.gateway_tools_notify import _card
     sid = gateway.launch.session_id
 
     assert await gateway.drain(gateway.tick(gateway.primary, sid, 1)) == [], 'the tick was refused and requeued'
@@ -217,7 +217,7 @@ async def messaging(tmp_path, monkeypatch):
     from gateway.session_authority import SessionAuthority, initialize_session_authority
     from gateway.session_ingress_context import native_callback, register_transport_home
     from plugins.platforms.discord.adapter import DiscordAdapter
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setenv('DISCORD_ALLOWED_USERS', '42')
     monkeypatch.setattr(SessionAuthority, '_schedule', lambda self, ref: None)
     runner = GatewayRunner(GatewayConfig(sessions_dir=tmp_path / 'sessions'))

@@ -2,7 +2,7 @@
 
 The tmux suites (``tests/e2e/core/cli_tmux`` and the Vertex ``/bg`` CLI test) skip without tmux,
 which is right on a developer box. In the CI ``e2e`` job a skip would turn the lane green over zero
-coverage if the runner image ever dropped tmux. That job sets ``HERMES_E2E_REQUIRE_TUI=1`` (and
+coverage if the runner image ever dropped tmux. That job sets ``SLAVE_E2E_REQUIRE_TUI=1`` (and
 GitHub sets ``CI``); under both, a missing tmux is a failure.
 """
 
@@ -25,7 +25,7 @@ _BARE_SKIP = re.compile(r"skipif\(\s*shutil\.which\(\s*[\"']tmux[\"']\s*\)")
 
 def _no_tmux(monkeypatch, *, ci: str | None, require: str | None) -> None:
     monkeypatch.setattr(_classic.shutil, "which", lambda name: None if name == "tmux" else "/bin/x")
-    for name, value in (("CI", ci), ("HERMES_E2E_REQUIRE_TUI", require)):
+    for name, value in (("CI", ci), ("SLAVE_E2E_REQUIRE_TUI", require)):
         if value is None:
             monkeypatch.delenv(name, raising=False)
         else:
@@ -54,9 +54,9 @@ def test_every_tmux_suite_uses_the_gate_instead_of_a_bare_skip():
 
 
 def test_the_e2e_job_requires_tmux():
-    yaml = pytest.importorskip("hermes_yaml")
+    yaml = pytest.importorskip("slave_yaml")
     job = yaml.safe_load((_REPO / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8"))["jobs"]["e2e"]
     run_step = next(s for s in job["steps"] if s.get("name") == "Run e2e tests")
-    assert run_step["env"]["HERMES_E2E_REQUIRE_TUI"] == "1"
+    assert run_step["env"]["SLAVE_E2E_REQUIRE_TUI"] == "1"
     assert any("tmux" in s.get("run", "") and "tmux -V" in s.get("run", "") for s in job["steps"]), \
         "the e2e job must install/verify tmux before the tmux suites run"

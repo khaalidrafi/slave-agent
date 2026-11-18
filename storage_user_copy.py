@@ -25,15 +25,15 @@ class StorageFailure:
     action: str     # what to do, one sentence naming the exact command
 
 
-_DOCTOR = "Run `hermes {profile_arg}doctor --fix` to diagnose and repair."
+_DOCTOR = "Run `slave {profile_arg}doctor --fix` to diagnose and repair."
 
 # cause -> (code, gloss, action). "disk" is split by is_disk_full_error at lookup time.
 _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
     "locked": (
         "storage_locked",
-        "the session database is locked by another Hermes process",
-        "Wait a moment and try again; if it persists, stop the other Hermes process "
-        "(`hermes {profile_arg}gateway stop`).",
+        "the session database is locked by another slave-agent process",
+        "Wait a moment and try again; if it persists, stop the other slave-agent process "
+        "(`slave {profile_arg}gateway stop`).",
     ),
     "disk_full": (
         "disk_full",
@@ -48,32 +48,32 @@ _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
     "corrupt": (
         "storage_corrupt",
         "the session database file is damaged",
-        _DOCTOR + " Recovery: `hermes {profile_arg}sessions recover --source <state.db> --inspect-only`.",
+        _DOCTOR + " Recovery: `slave {profile_arg}sessions recover --source <state.db> --inspect-only`.",
     ),
     "session_row_missing": (
         "storage_session_missing",
         "this session's database row was deleted while the chat was still open and could not be recreated",
-        "Try again; if it persists, run `hermes {profile_arg}doctor`.",
+        "Try again; if it persists, run `slave {profile_arg}doctor`.",
     ),
     "fts_index": (
         "storage_index_corrupt",
         "the session search index is damaged (the messages themselves are intact)",
-        "Run `hermes {profile_arg}doctor --fix` (or `hermes {profile_arg}sessions repair`) to rebuild it.",
+        "Run `slave {profile_arg}doctor --fix` (or `slave {profile_arg}sessions repair`) to rebuild it.",
     ),
     "replaced": (
         "storage_replaced",
-        "the session database file was replaced while Hermes was running",
-        "Stop Hermes (`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor`, then start it again.",
+        "the session database file was replaced while slave-agent was running",
+        "Stop slave-agent (`slave {profile_arg}gateway stop`), run `slave {profile_arg}doctor`, then start it again.",
     ),
     # Code stays `storage_replaced` (GUI clients key on it); the copy names the real remedy: every writer
     # on the profile must stop, doctor names the ones still holding the retired log.
     "deleted_wal": (
         "storage_replaced",
-        "another Hermes process still holds an old copy of the session database's write-ahead log, "
-        "so Hermes stopped writing to keep the file safe",
-        "Nothing is lost. Quit every Hermes process on this profile (Desktop app, "
-        "`hermes {profile_arg}gateway stop`, dashboard, cron), run `hermes {profile_arg}doctor` — it names "
-        "any process still holding the log — then start Hermes again. Do not run `doctor --fix` or delete "
+        "another slave-agent process still holds an old copy of the session database's write-ahead log, "
+        "so slave-agent stopped writing to keep the file safe",
+        "Nothing is lost. Quit every slave-agent process on this profile (Desktop app, "
+        "`slave {profile_arg}gateway stop`, dashboard, cron), run `slave {profile_arg}doctor` — it names "
+        "any process still holding the log — then start slave-agent again. Do not run `doctor --fix` or delete "
         "any state.db files while they run. Guide: " + STORAGE_RECOVERY_DOCS_URL,
     ),
     "compression": (
@@ -88,7 +88,7 @@ _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
     ),
     "turn_lease": (
         "storage_busy",
-        "another Hermes process took over this session",
+        "another slave-agent process took over this session",
         "Wait for it to finish, then send your message again.",
     ),
     "unknown": (
@@ -121,7 +121,7 @@ def describe_storage_failure(exc_or_str) -> StorageFailure:
     key = "disk_full" if cause == "disk" and is_disk_full_error(exc_or_str) else cause
     code, gloss, action = _STORAGE_FAILURES.get(key, _STORAGE_FAILURES["unknown"])
     # Pin the copy-pasteable command to the failing profile — see profile_cli_selector.
-    from hermes_constants import profile_cli_selector
+    from slave_constants import profile_cli_selector
 
     return StorageFailure(
         cause=cause, code=code, gloss=gloss, action=action.replace("{profile_arg}", profile_cli_selector())
@@ -138,7 +138,7 @@ _SESSION_DB_CONSEQUENCE = "Sessions will not be saved until this is fixed."
 _NETWORK_DRIVE_HINT = " If the database lives on a network drive, move it to a local disk."
 _NETWORK_DRIVE_GLOSS = "the session database could not be opened; it may be on a network or unsupported drive"
 _NETWORK_DRIVE_ACTION = (
-    "Move it to a local disk (`hermes {profile_arg}doctor` shows where it is), then start Hermes again."
+    "Move it to a local disk (`slave {profile_arg}doctor` shows where it is), then start slave-agent again."
 )
 
 
@@ -161,7 +161,7 @@ def get_last_init_error() -> Optional[str]:
 
 
 def format_session_db_unavailable(
-    prefix: str = "Hermes can't open its session history right now",
+    prefix: str = "slave-agent can't open its session history right now",
     *,
     details: bool = False,
 ) -> str:
@@ -171,15 +171,15 @@ def format_session_db_unavailable(
     and TUI agree. Chat surfaces (gateway, TUI) get the one-liner; ``details=True`` (the CLI
     banner) appends a ``Details: <raw cause>`` line for the raw SQLite text. Network filesystems
     (NFS/SMB/FUSE/ZFS) cannot host SQLite's write-ahead log: when the raw cause carries one of
-    those markers the message names the network-drive suspicion, because ``hermes doctor --fix``
+    those markers the message names the network-drive suspicion, because ``slave doctor --fix``
     cannot repair a mount — only moving the file can."""
-    from hermes_constants import profile_cli_selector
+    from slave_constants import profile_cli_selector
 
     profile_arg = profile_cli_selector()
     cause = get_last_init_error()
     if not cause:
         return (
-            f"{prefix}. {_SESSION_DB_CONSEQUENCE} Run `hermes {profile_arg}doctor` to check the "
+            f"{prefix}. {_SESSION_DB_CONSEQUENCE} Run `slave {profile_arg}doctor` to check the "
             "storage location."
         )
     failure = describe_storage_failure(cause)

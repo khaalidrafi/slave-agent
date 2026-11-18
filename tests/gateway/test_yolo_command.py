@@ -13,11 +13,11 @@ from tools.approval import disable_session_yolo, is_session_yolo_enabled
 
 @pytest.fixture(autouse=True)
 def _clean_yolo_state(monkeypatch):
-    monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+    monkeypatch.delenv("SLAVE_YOLO_MODE", raising=False)
     disable_session_yolo("agent:main:telegram:dm:chat-a")
     disable_session_yolo("agent:main:telegram:dm:chat-b")
     yield
-    monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+    monkeypatch.delenv("SLAVE_YOLO_MODE", raising=False)
     disable_session_yolo("agent:main:telegram:dm:chat-a")
     disable_session_yolo("agent:main:telegram:dm:chat-b")
 
@@ -52,16 +52,16 @@ async def test_yolo_command_toggles_only_current_session(monkeypatch):
 
     assert is_session_yolo_enabled(session_a) is True
     assert is_session_yolo_enabled(session_b) is False
-    assert os.environ.get("HERMES_YOLO_MODE") is None
+    assert os.environ.get("SLAVE_YOLO_MODE") is None
 
     await runner._handle_yolo_command(event_a)
 
     assert is_session_yolo_enabled(session_a) is False
-    assert os.environ.get("HERMES_YOLO_MODE") is None
+    assert os.environ.get("SLAVE_YOLO_MODE") is None
 
 
 def test_launch_yolo_revocation_survives_the_next_turn(monkeypatch):
-    """`hermes chat --yolo` seeds the bypass once; a later `/yolo` off is not re-enabled per turn."""
+    """`slave chat --yolo` seeds the bypass once; a later `/yolo` off is not re-enabled per turn."""
     from types import SimpleNamespace
     from gateway import session_policy
     from gateway.run_turn_runner import TurnRunner
@@ -128,7 +128,7 @@ async def test_yolo_survives_gateway_restart_and_dies_at_session_boundary(tmp_pa
 
 @pytest.mark.asyncio
 async def test_owner_yolo_off_is_not_revived_by_the_persisted_restore(tmp_path):
-    """The owner's `config.set key=yolo` (TUI/Desktop/`hermes chat` /yolo) writes the route's persisted
+    """The owner's `config.set key=yolo` (TUI/Desktop/`slave chat` /yolo) writes the route's persisted
     copy too: switching off a persisted /yolo must not be re-armed by the next turn's restore."""
     from types import SimpleNamespace
     from gateway.config import GatewayConfig

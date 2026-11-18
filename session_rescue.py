@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
 
 def divert_session_transcript_jsonl(session_id: str, messages, *, sessions_dir: Path) -> Optional[Path]:

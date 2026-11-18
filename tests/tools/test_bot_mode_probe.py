@@ -22,7 +22,7 @@ def _make_bot_profile(root, name, *, managed=True, soul=None):
             textwrap.dedent(
                 """\
                 ui_meta:
-                  hermes-bots:
+                  slave-bots:
                     shape: cloud
                     color: '#8b5cf6'
                 """
@@ -37,9 +37,9 @@ def _make_bot_profile(root, name, *, managed=True, soul=None):
 def test_roster_excludes_infra_dirs_and_tombstones(tmp_path):
     """The teammate roster applies the same identity predicate as ``profile list``: bare
     infrastructure dirs (``@sessions``, ``@logs``) and deleted profiles are not teammates (#99392)."""
-    from hermes_constants import mark_named_profile_deleted
+    from slave_constants import mark_named_profile_deleted
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     for stray in ("sessions", "logs"):
@@ -57,7 +57,7 @@ def test_roster_excludes_dirs_failing_the_profile_id_regex(tmp_path):
     """#116905: a directory carrying an identity marker but named like anything other than a
     profile id (a parked backup, a dotfile staging dir) is not a teammate. ``profile list``
     hides such dirs via ``_PROFILE_ID_RE``; the roster must agree with that predicate."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     for stray in ("_backup_removed_20260920", ".staging-area"):
@@ -72,14 +72,14 @@ def test_roster_excludes_dirs_failing_the_profile_id_regex(tmp_path):
 
 
 def test_silent_when_no_profile_is_bot_managed(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=False)
     assert bot_mode_probe.get_bot_mode_protocol_section(home) == ""
 
 
 def test_emits_for_default_when_any_profile_is_managed(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
 
@@ -93,7 +93,7 @@ def test_emits_for_default_when_any_profile_is_managed(tmp_path):
 
 
 def test_emits_for_named_profile_with_own_handle(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     profile_dir = _make_bot_profile(home, "coder", managed=True)
 
@@ -107,7 +107,7 @@ def test_emits_for_named_profile_with_own_handle(tmp_path):
 
 def test_received_teammate_message_returns_one_current_turn_reply(tmp_path):
     """The delivery runner captures stdout; recipients must not bounce a DM."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
 
@@ -130,7 +130,7 @@ def test_roster_lines_carry_roles(tmp_path):
     """Bots must know WHO to message: the roster carries title/description."""
     import textwrap as _tw
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     d = home / "profiles" / "researcher"
     d.mkdir(parents=True)
@@ -139,7 +139,7 @@ def test_roster_lines_carry_roles(tmp_path):
             """\
             description: Deep research and literature review
             ui_meta:
-              hermes-bots:
+              slave-bots:
                 title: Research Buddy
             """
         ),
@@ -154,7 +154,7 @@ def test_roster_lines_carry_roles(tmp_path):
 
 def test_soul_legacy_protocol_no_longer_suppresses_live_section(tmp_path):
     """Plugin-era SOUL append is stripped at load time; the live roster is the only copy."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "coder", managed=True)
     (home / "SOUL.md").write_text(
@@ -165,7 +165,7 @@ def test_soul_legacy_protocol_no_longer_suppresses_live_section(tmp_path):
 
 
 def test_deterministic_across_calls(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     first = bot_mode_probe.get_bot_mode_protocol_section(home)
@@ -177,7 +177,7 @@ def test_deterministic_across_calls(tmp_path):
 
 
 def test_never_raises_on_garbage(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     profiles = home / "profiles" / "bad"
     profiles.mkdir(parents=True)
@@ -195,7 +195,7 @@ def test_never_raises_on_garbage(tmp_path, monkeypatch):
 
 
 def test_fingerprint_changes_when_protocol_version_changes(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     before = bot_mode_probe.capability_fingerprint(home)
@@ -210,7 +210,7 @@ def test_fingerprint_changes_when_protocol_version_changes(tmp_path, monkeypatch
 
 
 def test_fingerprint_changes_on_each_capability_axis(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     base = bot_mode_probe.capability_fingerprint(home)
@@ -222,16 +222,16 @@ def test_fingerprint_changes_on_each_capability_axis(tmp_path):
     after_skill = bot_mode_probe.capability_fingerprint(home)
     assert after_skill != base
 
-    # toolset pin changed (the key `hermes tools enable/disable` writes, #124211)
+    # toolset pin changed (the key `slave tools enable/disable` writes, #124211)
     (home / "config.yaml").write_text(
-        "platform_toolsets:\n  desktop: [hermes-desktop, computer_use]\n", encoding="utf-8"
+        "platform_toolsets:\n  desktop: [slave-desktop, computer_use]\n", encoding="utf-8"
     )
     after_tools = bot_mode_probe.capability_fingerprint(home)
     assert after_tools != after_skill
 
     # global suppression changed
     (home / "config.yaml").write_text(
-        "platform_toolsets:\n  desktop: [hermes-desktop, computer_use]\n"
+        "platform_toolsets:\n  desktop: [slave-desktop, computer_use]\n"
         "agent:\n  disabled_toolsets: [computer_use]\n",
         encoding="utf-8",
     )
@@ -240,7 +240,7 @@ def test_fingerprint_changes_on_each_capability_axis(tmp_path):
 
     # MCP server added
     (home / "config.yaml").write_text(
-        "platform_toolsets:\n  desktop: [hermes-desktop, computer_use]\n"
+        "platform_toolsets:\n  desktop: [slave-desktop, computer_use]\n"
         "agent:\n  disabled_toolsets: [computer_use]\n"
         "mcp_servers:\n  github:\n    preset: github\n",
         encoding="utf-8",
@@ -260,7 +260,7 @@ def test_fingerprint_changes_on_each_capability_axis(tmp_path):
 
 def test_fingerprint_changes_when_model_vision_override_flips(tmp_path):
     """A Bot Chat prompt must rebuild when model.supports_vision flips."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     config = home / "config.yaml"
@@ -284,7 +284,7 @@ def test_fingerprint_changes_when_model_vision_override_flips(tmp_path):
 
 def test_vision_override_spellings_share_one_fingerprint(tmp_path):
     """YAML boolean tokens that image routing treats as the same override share an epoch."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     config = home / "config.yaml"
@@ -299,7 +299,7 @@ def test_vision_override_spellings_share_one_fingerprint(tmp_path):
 
 def test_fingerprint_changes_when_model_context_length_override_changes(tmp_path):
     """context_length truncates context files in the rebuilt prompt, so it is part of the epoch."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     config = home / "config.yaml"
@@ -313,7 +313,7 @@ def test_fingerprint_changes_when_model_context_length_override_changes(tmp_path
 
 
 def test_stored_prompt_staleness(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
 
@@ -335,7 +335,7 @@ def test_stored_prompt_staleness(tmp_path):
 
 
 def test_legacy_bot_chat_upgrade(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
 
@@ -365,7 +365,7 @@ def test_legacy_bot_chat_upgrade(tmp_path):
 
 
 def test_peer_paragraph_lists_registered_peers(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     (home / "config.yaml").write_text(
@@ -386,7 +386,7 @@ def test_peer_paragraph_lists_registered_peers(tmp_path):
 
 
 def test_fingerprint_changes_when_a_peer_is_registered(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
 
@@ -400,7 +400,7 @@ def test_fingerprint_changes_when_a_peer_is_registered(tmp_path):
 
 
 def test_roster_resolves_default_to_root_home_over_stray_directory(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     _make_bot_profile(home, "researcher", managed=True)
     # A stray profiles/default/ directory must not shadow the reserved root home.

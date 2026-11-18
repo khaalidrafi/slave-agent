@@ -10,11 +10,11 @@ from contextlib import contextmanager
 import pytest
 
 from agent.secret_scope import current_secret_scope, set_multiplex_active
-from hermes_cli import env_loader
-from hermes_constants import (
-    get_hermes_home,
-    reset_hermes_home_override,
-    set_hermes_home_override,
+from slave_cli import env_loader
+from slave_constants import (
+    get_slave_home,
+    reset_slave_home_override,
+    set_slave_home_override,
 )
 from tools import mcp_tool_discovery as discovery
 from tools.mcp_tool_config import _build_safe_env
@@ -33,13 +33,13 @@ def profile_home(tmp_path, monkeypatch):
     # process-wide; the VALUE must come from the active profile's scope.
     monkeypatch.setitem(env_loader._SECRET_SOURCES, TOKEN_NAME, "command")
 
-    home_token = set_hermes_home_override(str(home))
+    home_token = set_slave_home_override(str(home))
     set_multiplex_active(True)
     try:
         yield home
     finally:
         set_multiplex_active(False)
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
 
 
 @pytest.fixture
@@ -137,13 +137,13 @@ def _boot_scope(home):
     """The gateway's boot-time ``_profile_runtime_scope`` shape: home override plus a secret scope
     SNAPSHOT built now — before the profile's secret source may have answered."""
     from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-    home_token = set_hermes_home_override(str(home))
+    home_token = set_slave_home_override(str(home))
     token = set_secret_scope(build_profile_secret_scope(home), profile_home=str(home))
     try:
         yield
     finally:
         reset_secret_scope(token)
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
 
 
 def _connect_under_boot_scope(home, config):
@@ -191,7 +191,7 @@ def test_launch_profile_env_only_credential_survives_the_owner_rebuild(spawn_env
     from pathlib import Path
     from tools import mcp_tool_config as _config
     from tui_gateway import launch_profile_policy
-    launch_home = Path(os.environ["HERMES_HOME"])  # conftest's per-test process home
+    launch_home = Path(os.environ["SLAVE_HOME"])  # conftest's per-test process home
     (launch_home / ".env").write_text("", encoding="utf-8")
     monkeypatch.setenv(TOKEN_NAME, "tok-from-systemd")
     monkeypatch.setattr(launch_profile_policy, "_snapshot", None)
@@ -254,21 +254,21 @@ def test_reconnect_rerenders_remote_headers_under_the_owners_fresh_scope(tmp_pat
 
 
 def test_stdio_child_env_pins_active_profile_home(tmp_path, monkeypatch):
-    """The stdio child env must carry the ACTIVE profile's ``HERMES_HOME``, never fall back.
+    """The stdio child env must carry the ACTIVE profile's ``SLAVE_HOME``, never fall back.
 
-    Regression (#18594): ``_SAFE_ENV_KEYS`` omitted ``HERMES_HOME``, so a child spawned by a
+    Regression (#18594): ``_SAFE_ENV_KEYS`` omitted ``SLAVE_HOME``, so a child spawned by a
     multiplexed host / dashboard backend serving ``--open-profile`` inherited no home and
     resolved to the platform default — tripping ``_warn_profile_fallback_once`` and writing
     state to the wrong profile. The child env must name the served home.
     """
-    monkeypatch.delenv("HERMES_HOME", raising=False)  # the failing condition: launch env has none
+    monkeypatch.delenv("SLAVE_HOME", raising=False)  # the failing condition: launch env has none
     home = tmp_path / "served"
     home.mkdir()
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
-        assert _build_safe_env(None)["HERMES_HOME"] == str(get_hermes_home())
+        assert _build_safe_env(None)["SLAVE_HOME"] == str(get_slave_home())
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
-    # An explicit server ``env.HERMES_HOME`` still wins (merged after the pin).
-    assert _build_safe_env({"HERMES_HOME": "/tmp/explicit"})["HERMES_HOME"] == "/tmp/explicit"
+    # An explicit server ``env.SLAVE_HOME`` still wins (merged after the pin).
+    assert _build_safe_env({"SLAVE_HOME": "/tmp/explicit"})["SLAVE_HOME"] == "/tmp/explicit"

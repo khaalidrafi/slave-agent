@@ -2,9 +2,9 @@ name: spotify
 repo: https://github.com/NousResearch/hermes-official-plugins
 sha: e7a218f26db88426ab3e7376f0e000b6e356f5e7
 subdir: spotify
-description: 'Spotify for Hermes: seven tools (playback, devices, queue, search, playlists, albums,
-  library) over the Spotify Web API, plus `hermes spotify login|status|logout` (loopback PKCE with your
-  own Spotify developer app; Premium needed for playback control). Formerly built into Hermes core;
+description: 'Spotify for slave-agent: seven tools (playback, devices, queue, search, playlists, albums,
+  library) over the Spotify Web API, plus `slave spotify login|status|logout` (loopback PKCE with your
+  own Spotify developer app; Premium needed for playback control). Formerly built into slave-agent core;
   existing users are migrated automatically.'
 maintainer: NousResearch
 tier: official

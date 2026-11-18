@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Hermes Agent WhatsApp Bridge
+ * Slave Agent WhatsApp Bridge
  *
  * Standalone Node.js process that connects to WhatsApp via Baileys
  * and exposes HTTP endpoints for the Python gateway adapter.
@@ -16,7 +16,7 @@
  *   GET  /health         - Health check
  *
  * Usage:
- *   node bridge.js --port 3000 --session ~/.hermes/whatsapp/session
+ *   node bridge.js --port 3000 --session ~/.slave/whatsapp/session
  */
 
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, getAggregateVotesInPollMessage, decryptPollVote, getKeyAuthor, jidNormalizedUser } from '@whiskeysockets/baileys';
@@ -98,21 +98,21 @@ const SEND_READ_RECEIPTS =
   ['1', 'true', 'yes', 'on'].includes(process.env.WHATSAPP_SEND_READ_RECEIPTS.toLowerCase());
 
 const PORT = parseInt(getArg('port', '3000'), 10);
-const SESSION_DIR = getArg('session', path.join(process.env.HOME || '~', '.hermes', 'whatsapp', 'session'));
+const SESSION_DIR = getArg('session', path.join(process.env.HOME || '~', '.slave', 'whatsapp', 'session'));
 // Cache directories: the Python gateway passes the profile-aware paths via
-// env (HERMES_HOME-aware, new cache/ layout).  Fall back to the legacy
+// env (SLAVE_HOME-aware, new cache/ layout).  Fall back to the legacy
 // hardcoded locations for bridges launched outside the gateway.
-const IMAGE_CACHE_DIR = process.env.HERMES_IMAGE_CACHE_DIR
-  || path.join(process.env.HOME || '~', '.hermes', 'image_cache');
-const DOCUMENT_CACHE_DIR = process.env.HERMES_DOCUMENT_CACHE_DIR
-  || path.join(process.env.HOME || '~', '.hermes', 'document_cache');
-const AUDIO_CACHE_DIR = process.env.HERMES_AUDIO_CACHE_DIR
-  || path.join(process.env.HOME || '~', '.hermes', 'audio_cache');
+const IMAGE_CACHE_DIR = process.env.SLAVE_IMAGE_CACHE_DIR
+  || path.join(process.env.HOME || '~', '.slave', 'image_cache');
+const DOCUMENT_CACHE_DIR = process.env.SLAVE_DOCUMENT_CACHE_DIR
+  || path.join(process.env.HOME || '~', '.slave', 'document_cache');
+const AUDIO_CACHE_DIR = process.env.SLAVE_AUDIO_CACHE_DIR
+  || path.join(process.env.HOME || '~', '.slave', 'audio_cache');
 
 // Self-hash of this script file.  Reported in /health so the Python gateway
 // can detect a running bridge that predates the current bridge.js and
 // restart it instead of silently reusing stale code (stale-bridge trap:
-// `hermes update` updates bridge.js on disk but a long-lived bridge process
+// `slave update` updates bridge.js on disk but a long-lived bridge process
 // keeps serving the old behavior forever).
 let SCRIPT_HASH = '';
 try {
@@ -144,7 +144,7 @@ try {
 // Per-session secret the adapter spawned us with. Loopback binding does not identify the caller:
 // any local process can POST /send on this port, so every API route demands this bearer and
 // /auth-proof lets the adapter verify a listener knows the secret before handing it over.
-const BRIDGE_TOKEN = process.env.HERMES_WHATSAPP_BRIDGE_TOKEN || '';
+const BRIDGE_TOKEN = process.env.SLAVE_WHATSAPP_BRIDGE_TOKEN || '';
 const WHATSAPP_MODE = getArg('mode', process.env.WHATSAPP_MODE || 'self-chat'); // "bot" or "self-chat"
 const WHATSAPP_DM_POLICY = String(process.env.WHATSAPP_DM_POLICY || 'open').trim().toLowerCase();
 const WHATSAPP_GROUP_POLICY = String(process.env.WHATSAPP_GROUP_POLICY || 'pairing').trim().toLowerCase();
@@ -152,7 +152,7 @@ const ALLOWED_USERS = parseAllowedUsers(process.env.WHATSAPP_ALLOWED_USERS || ''
 // Group authorization is by group JID, not by every participant's JID.  The
 // Python adapter still applies group policy and mention rules after intake.
 const GROUP_ALLOWED_USERS = parseAllowedUsers(process.env.WHATSAPP_GROUP_ALLOWED_USERS || '');
-const DEFAULT_REPLY_PREFIX = '☤ *Hermes Agent*\n────────────\n';
+const DEFAULT_REPLY_PREFIX = '☤ *slave-agent*\n────────────\n';
 const REPLY_PREFIX = process.env.WHATSAPP_REPLY_PREFIX === undefined
   ? DEFAULT_REPLY_PREFIX
   : process.env.WHATSAPP_REPLY_PREFIX.replace(/\\n/g, '\n');
@@ -348,7 +348,7 @@ function enqueuePollUpdateEvent({ key, update, selectedOptions, aggregation }) {
     || update?.pollUpdates?.[0]?.pollCreationMessageKey?.id
     || update?.pollUpdates?.[0]?.pollUpdateMessageKey?.id
     || '';
-  // Only surface votes on polls Hermes itself created (tracked when
+  // Only surface votes on polls Slave itself created (tracked when
   // /send-poll returns). Arbitrary human polls in a group chat must not
   // inject agent-visible messages on every vote.
   if (!pollId || !recentlySentIds.has(pollId)) {
@@ -446,7 +446,7 @@ async function startSocket() {
     auth: state,
     logger,
     printQRInTerminal: false,
-    browser: ['Hermes Agent', 'Chrome', '120.0'],
+    browser: ['slave-agent', 'Chrome', '120.0'],
     syncFullHistory: false,
     markOnlineOnConnect: false,
     // Required for Baileys 7.x: without this, incoming messages that need
@@ -650,7 +650,7 @@ async function startSocket() {
           // via WHATSAPP_FORWARD_OWNER_MESSAGES so existing deployments see
           // no behavior change. When opted in, we still gate on the
           // customer chatId allowlist — without that gate, any contact
-          // the owner replied to would leak into Hermes and trigger
+          // the owner replied to would leak into Slave and trigger
           // implicit handover. See `owner_message_gate.js`.
           const decision = classifyOwnerMessageGate({
             fromMe: true,
@@ -821,7 +821,7 @@ async function startSocket() {
       });
       event.fromOwner = fromOwner;
 
-      // Ignore Hermes' own reply messages in self-chat mode to avoid loops.
+      // Ignore Slave' own reply messages in self-chat mode to avoid loops.
       if (msg.key.fromMe && ((REPLY_PREFIX && event.body.startsWith(REPLY_PREFIX)) || recentlySentIds.has(msg.key.id))) {
         if (WHATSAPP_DEBUG) {
           emitDebugEvent({
@@ -913,7 +913,7 @@ app.use((req, res, next) => {
 // Registered BEFORE the bearer gate so the adapter never discloses the secret to an impostor
 // that bound the port first (it could otherwise replay a reflected bearer as its own proof).
 app.get('/auth-proof', (req, res) => {
-  const challenge = req.headers['x-hermes-bridge-challenge'];
+  const challenge = req.headers['x-slave-bridge-challenge'];
   if (typeof challenge !== 'string' || !challenge) {
     return res.status(400).json({ error: 'Missing bridge challenge' });
   }
@@ -921,7 +921,7 @@ app.get('/auth-proof', (req, res) => {
 });
 
 // Every other route (including /health and /messages — inbound text is as sensitive as outbound)
-// requires `Authorization: Bearer <HERMES_WHATSAPP_BRIDGE_TOKEN>`. JSON bodies are parsed only
+// requires `Authorization: Bearer <SLAVE_WHATSAPP_BRIDGE_TOKEN>`. JSON bodies are parsed only
 // after the gate so an unauthenticated caller cannot drive the body parser.
 app.use(createBridgeAuthMiddleware(BRIDGE_TOKEN));
 app.use(express.json());
@@ -1036,7 +1036,7 @@ app.post('/send-media', async (req, res) => {
           // as video/mp4.
           let tmpGifMp4 = null;
           try {
-            tmpGifMp4 = path.join(tmpdir(), `hermes_gif_${randomBytes(6).toString('hex')}.mp4`);
+            tmpGifMp4 = path.join(tmpdir(), `slave_gif_${randomBytes(6).toString('hex')}.mp4`);
             execFileSync(
               'ffmpeg',
               ['-y', '-i', filePath, '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', tmpGifMp4],
@@ -1070,7 +1070,7 @@ app.post('/send-media', async (req, res) => {
         const needsConversion = !['ogg', 'opus'].includes(ext);
         let tmpPath = null;
         if (needsConversion) {
-          tmpPath = path.join(tmpdir(), `hermes_voice_${randomBytes(6).toString('hex')}.ogg`);
+          tmpPath = path.join(tmpdir(), `slave_voice_${randomBytes(6).toString('hex')}.ogg`);
           try {
             execFileSync(
               'ffmpeg',
@@ -1253,7 +1253,7 @@ if (PAIR_ONLY) {
 } else {
   if (!BRIDGE_TOKEN) {
     // Refusing beats serving: without a secret every local process could read and send as the user.
-    console.error('HERMES_WHATSAPP_BRIDGE_TOKEN is required; start the bridge through `hermes gateway`.');
+    console.error('SLAVE_WHATSAPP_BRIDGE_TOKEN is required; start the bridge through `slave gateway`.');
     process.exit(1);
   }
   const server = app.listen(PORT, '127.0.0.1', () => {

@@ -6,7 +6,7 @@ import pytest
 from dataclasses import replace
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from gateway.config import Platform, GatewayConfig, PlatformConfig
 from gateway.platforms.event import MessageEvent
 from gateway.session import (
@@ -124,8 +124,8 @@ class TestBuildSessionContextPrompt:
         token = ss.set_secret_scope(_ExplodingScope())
         try:
             with patch("tools.mcp_tool_discovery.get_registered_mcp_server_names", return_value=[]), \
-                    patch("hermes_cli.config.load_config", return_value={}), \
-                    patch("hermes_cli.tools_config._get_platform_tools", return_value=["slack"]):
+                    patch("slave_cli.config.load_config", return_value={}), \
+                    patch("slave_cli.tools_config._get_platform_tools", return_value=["slack"]):
                 assert _slack_tools_loaded() is False
         finally:
             ss.reset_secret_scope(token)
@@ -164,7 +164,7 @@ class TestBuildSessionContextPrompt:
 
 
 
-    def test_local_delivery_path_uses_display_hermes_home(self):
+    def test_local_delivery_path_uses_display_slave_home(self):
         config = GatewayConfig()
         source = SessionSource(
             platform=Platform.LOCAL, chat_id="cli",
@@ -172,10 +172,10 @@ class TestBuildSessionContextPrompt:
         )
         ctx = build_session_context(source, config)
 
-        with patch("hermes_constants.display_hermes_home", return_value="~/.hermes/profiles/coder"):
+        with patch("slave_constants.display_slave_home", return_value="~/.slave/profiles/coder"):
             prompt = build_session_context_prompt(ctx)
 
-        assert "~/.hermes/profiles/coder/cron/output/" in prompt
+        assert "~/.slave/profiles/coder/cron/output/" in prompt
 
 
     def test_prompt_quotes_untrusted_metadata_labels(self):
@@ -510,14 +510,14 @@ class TestWhatsAppSessionKeyConsistency:
         """With group_sessions_per_user, the same human flipping between
         phone-JID and LID inside a group must not produce two isolated
         per-user sessions."""
-        tmp_home = tmp_path / "hermes-home"
+        tmp_home = tmp_path / "slave-home"
         mapping_dir = tmp_home / "whatsapp" / "session"
         mapping_dir.mkdir(parents=True, exist_ok=True)
         (mapping_dir / "lid-mapping-999999999999999.json").write_text(
             json.dumps("15551234567@s.whatsapp.net"),
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_home))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_home))
 
         lid_source = SessionSource(
             platform=Platform.WHATSAPP,
@@ -856,7 +856,7 @@ class TestWhatsAppIdentifierPublicHelpers:
             json.dumps("15551234567@s.whatsapp.net"),
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
         canonical = canonical_whatsapp_identifier("999999999999999@lid")
         assert canonical == "15551234567"
@@ -1134,7 +1134,7 @@ class TestRewriteTranscriptPreservesReasoning:
     """rewrite_transcript must not drop reasoning fields from SQLite."""
 
     def test_reasoning_survives_rewrite(self, tmp_path):
-        db = storage_handle(get_hermes_home())
+        db = storage_handle(get_slave_home())
         session_id = "reasoning-test"
         seed_session(db, session_id, "cli")
 
@@ -1436,10 +1436,10 @@ class TestGatewaySessionDbRecovery:
         to disk (long before the 200-message cap) and replayed in order on recovery."""
         import threading
         from types import SimpleNamespace
-        import hermes_constants
+        import slave_constants
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+        monkeypatch.setattr(slave_constants, "get_slave_home", lambda: tmp_path)
         store = object.__new__(SessionStore)
         store._db = None
         store._transcript_retry_lock = threading.Lock()

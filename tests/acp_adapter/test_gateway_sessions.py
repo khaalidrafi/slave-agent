@@ -8,7 +8,7 @@ import time
 import pytest
 from websockets.asyncio.client import connect
 
-from hermes_cli.gateway_client import GatewayClient
+from slave_cli.gateway_client import GatewayClient
 from tests.gateway.test_normal_runtime_boot import control
 from tests.waiting import async_wait_until
 
@@ -19,7 +19,7 @@ async def viewer(daemon):
     grant = control(home, "session-ticket", {"profile_id": str(home),
                     "instance_id": descriptor["instance_id"], "purpose": "interactive"})
     url = descriptor["api_origin"].replace("http:", "ws:") + "/api/ws"
-    async with connect(url, subprotocols=["hermes-gateway-v1", "hermes-gateway-ticket." + grant["ticket"]]) as ws:
+    async with connect(url, subprotocols=["slave-gateway-v1", "slave-gateway-ticket." + grant["ticket"]]) as ws:
         async with GatewayClient(ws) as client:
             yield client
 
@@ -108,7 +108,7 @@ async def test_acp_transport_shares_canonical_history_and_order(daemon, tmp_path
 async def test_acp_permission_detach_keeps_canonical_waiter(daemon, tmp_path, model_peer):
     import shlex
     from contextlib import suppress
-    from hermes_cli.gateway_client import GatewayClientError
+    from slave_cli.gateway_client import GatewayClientError
     from tests.gateway.fixtures.authority_controls_peer import ModelPeer as ApprovalPeer
 
     target = tmp_path / "owned-removal"

@@ -28,21 +28,21 @@ def _drain(receiver: socket.socket) -> list[str]:
                          [(30, True, None), (30, False, None), (0, True, None), (30, True, "inf")])
 async def test_secondary_boot_extends_systemd_start_timeout(tmp_path, monkeypatch, watchdog_seconds, notify_socket,
                                                            connect_timeout):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     for name, var in (("alpha", "DISCORD_BOT_TOKEN"), ("beta", "SLACK_BOT_TOKEN")):
         profile = home / "profiles" / name
         profile.mkdir(parents=True)
         (profile / "config.yaml").write_text("model: {default: test}\n", encoding="utf-8")
         extra = "SLACK_APP_TOKEN=xapp-test\n" if name == "beta" else ""
         (profile / ".env").write_text(f"{var}={name}-token\n{extra}", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setattr("hermes_cli.profiles.get_active_profile_name", lambda: "default")
+    monkeypatch.setattr("slave_cli.profiles.get_active_profile_name", lambda: "default")
     if connect_timeout is None:
-        monkeypatch.delenv("HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT", raising=False)
+        monkeypatch.delenv("SLAVE_GATEWAY_PLATFORM_CONNECT_TIMEOUT", raising=False)
     else:  # an unbounded connect budget has no finite extension; every secondary must still connect
-        monkeypatch.setenv("HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT", connect_timeout)
-    address = f"hermes-test-extend-{os.getpid()}-{watchdog_seconds}-{notify_socket}-{connect_timeout}"
+        monkeypatch.setenv("SLAVE_GATEWAY_PLATFORM_CONNECT_TIMEOUT", connect_timeout)
+    address = f"slave-test-extend-{os.getpid()}-{watchdog_seconds}-{notify_socket}-{connect_timeout}"
     receiver = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
     receiver.bind("\0" + address)
     receiver.setblocking(False)

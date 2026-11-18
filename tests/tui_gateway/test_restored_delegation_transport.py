@@ -20,9 +20,9 @@ from tui_gateway.ws import WSTransport
 
 @pytest.fixture
 def notification_env(monkeypatch, tmp_path):
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     ad._reset_for_tests()
     monkeypatch.setattr(server, "_sessions", {})
     monkeypatch.setattr(process_registry, "completion_queue", queue.Queue())

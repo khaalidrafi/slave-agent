@@ -28,12 +28,12 @@
 # state. Each rename is one rename(2) on one volume, so there is no mid-rename
 # state to kill into.
 
-SWAP_ST_FILES="${HERMES_SELFTEST_SWAP_FILES:-1500}"
+SWAP_ST_FILES="${SLAVE_SELFTEST_SWAP_FILES:-1500}"
 SWAP_ST_FAILED="" SWAP_ST_CELL=""
 
 swap_st_fail() { echo "FAIL [$SWAP_ST_CELL] $*"; SWAP_ST_FAILED="$SWAP_ST_FAILED $SWAP_ST_CELL"; }
 
-swap_st_bundle() { # dir version -- a fixture Hermes.app; every file carries the version
+swap_st_bundle() { # dir version -- a fixture Slave.app; every file carries the version
   local d="$1" v="$2" i=0
   mkdir -p "$d/Contents/MacOS" "$d/Contents/Resources/payload" || return 1
   printf '%s\n' "$v" > "$d/Contents/Resources/hermes-version"
@@ -64,10 +64,10 @@ swap_st_stopped() { # pid -> 0 iff the process is stopped (job-control stop)
 swap_st_interrupt() { # root pause-at mode
   local root="$1" pause="$2" mode="$3" t pid i deadline s sentinels
   rm -rf "$root"
-  mkdir -p "$root/Applications" "$root/hermes-agent/apps/desktop/release/mac-arm64" || return 2
+  mkdir -p "$root/Applications" "$root/slave-agent/apps/desktop/release/mac-arm64" || return 2
   cp -R "$SWAP_ST_ROOT/old.app" "$root/Applications/Hermes.app" || return 2
-  cp -R "$SWAP_ST_ROOT/new.app" "$root/hermes-agent/apps/desktop/release/mac-arm64/Hermes.app" || return 2
-  INSTALL_ROOT="$root/hermes-agent" RELAUNCH_TARGET="$root/Applications/Hermes.app"
+  cp -R "$SWAP_ST_ROOT/new.app" "$root/slave-agent/apps/desktop/release/mac-arm64/Hermes.app" || return 2
+  INSTALL_ROOT="$root/slave-agent" RELAUNCH_TARGET="$root/Applications/Hermes.app"
   t="$RELAUNCH_TARGET"
   if [ "$mode" = none ]; then
     ( FINAL_CODE=0 APP_REBUILD_FAILED=0; mac_swap ) </dev/null >/dev/null 2>&1

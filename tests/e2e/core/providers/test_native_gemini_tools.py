@@ -1,6 +1,6 @@
 """Gemini native wire conformance: the tool loop and thought-signature replay across ``--resume``.
 
-Real ``hermes chat -q`` subprocesses talk to Google AI Studio's native ``streamGenerateContent``
+Real ``slave chat -q`` subprocesses talk to Google AI Studio's native ``streamGenerateContent``
 dialect; only the vendor is faked (``tests/fakes/providers/gemini_native.py``, a TLS-terminating
 loopback proxy that validates every request like Google and rejects it with a 400 when it would).
 
@@ -20,15 +20,15 @@ import pytest
 from tests.e2e.core.providers import _native_helpers as nh
 from tests.fakes.providers.gemini_native import (
     API_KEY,
-    HERMES_CONFIG,
-    HERMES_ENV,
+    SLAVE_CONFIG,
+    SLAVE_ENV,
     MODEL_ID,
     Call,
     Calls,
     GeminiFake,
     Recorded,
     Text,
-    hermes_model,
+    slave_model,
 )
 
 SEED = "GEMINI-SEED-CANARY-5521"
@@ -51,7 +51,7 @@ class Run:
 @pytest.fixture(scope="module")
 def run(tmp_path_factory: pytest.TempPathFactory) -> Run:
     root = tmp_path_factory.mktemp("gemini_tools")
-    home = nh.make_home(root, hermes_model(), env_file=HERMES_ENV, extra_config=HERMES_CONFIG)
+    home = nh.make_home(root, slave_model(), env_file=SLAVE_ENV, extra_config=SLAVE_CONFIG)
     seed = home.project / "seed.txt"
     seed.write_text(f"{SEED}\n", encoding="utf-8")
     script = [

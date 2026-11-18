@@ -9,9 +9,9 @@ import json
 import logging
 import re
 import time
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence import STORE_FAILURES
 from utils import atomic_json_write
 
@@ -28,7 +28,7 @@ _RESULT_FIELDS = (
 
 def _result_paths():
     """Prune by completion time, not start time (jobs can take days)."""
-    directory = get_hermes_home() / "logs" / "process-results"
+    directory = get_slave_home() / "logs" / "process-results"
     cutoff = time.time() - RESULT_RETENTION_SECONDS
     retained = []
     for path in directory.glob("proc_*.json"):
@@ -60,9 +60,9 @@ def save_completed_result(session) -> None:
     # Live-output opt-out must not persist raw credentials in durable receipts.
     record["output"] = redact_terminal_output(record["output"], record["command"], force=True)
     record["command"] = redact_sensitive_text(record["command"], code_file=True, force=True)
-    directory = get_hermes_home() / "logs" / "process-results"
+    directory = get_slave_home() / "logs" / "process-results"
     try:
-        from hermes_constants import assert_named_profile_home_live
+        from slave_constants import assert_named_profile_home_live
         assert_named_profile_home_live(directory)
         make_user_dir(directory, mode=0o700, parents=True, exist_ok=True)
         atomic_json_write(directory / f"{session.id}.json", record, mode=0o600)
@@ -92,7 +92,7 @@ def load_completed_results(prefix: str = "") -> dict:
     from gateway.session_context import get_session_env
     from tools.environments.sandbox_scope import hosted_scope
 
-    owner = get_session_env("HERMES_SESSION_ID", "")
+    owner = get_session_env("SLAVE_SESSION_ID", "")
     # A hosted agent's processes leave no receipt here and it sees no local one: never read or prune them.
     if not owner or hosted_scope() is not None:
         return {}

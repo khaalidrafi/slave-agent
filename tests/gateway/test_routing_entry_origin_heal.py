@@ -67,8 +67,8 @@ def test_next_inbound_turn_fills_an_origin_nothing_else_can_restore(tmp_path, to
 def test_named_profile_route_heals_from_row_columns_under_multiplex(tmp_path):
     from gateway.config import Platform
     from gateway.session import SessionSource
-    from hermes_constants import get_hermes_home
-    work = get_hermes_home() / 'profiles' / 'work'
+    from slave_constants import get_slave_home
+    work = get_slave_home() / 'profiles' / 'work'
     work.mkdir(parents=True)
     (work / 'config.yaml').write_text('{}\n')  # identity marker: a bare dir is not a profile
     store = _store(tmp_path, multiplex_profiles=True)

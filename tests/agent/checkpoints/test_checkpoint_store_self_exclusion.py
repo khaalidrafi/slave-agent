@@ -1,6 +1,6 @@
 """The checkpoint store must never stage itself.
 
-When the checkpointed working directory is HERMES_HOME (or a profile home under it), the
+When the checkpointed working directory is SLAVE_HOME (or a profile home under it), the
 shadow store at ``<home>/checkpoints/store`` sits inside the tree being snapshotted. Without
 an exclusion every snapshot stages the store's own packfiles and per-project index, so each
 checkpoint carries the previous one and the store grows by about its own size per snapshot
@@ -36,12 +36,12 @@ def _snapshot_paths(store: Path, workdir: Path) -> list[str]:
 
 @pytest.fixture()
 def home_as_workdir(tmp_path, monkeypatch):
-    """A HERMES_HOME that is also the checkpointed working directory, with the store inside it."""
-    home = tmp_path / "hermes-home"
+    """A SLAVE_HOME that is also the checkpointed working directory, with the store inside it."""
+    home = tmp_path / "slave-home"
     home.mkdir()
     (home / "config.yaml").write_text("checkpoints:\n  enabled: true\n")
     (home / "notes.md").write_text("one\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     # Use the system git so PM's lazy acquisition does not bootstrap a runtime under HOME.
     monkeypatch.setattr(
         "agent.checkpoints.manager.selected_git_env",

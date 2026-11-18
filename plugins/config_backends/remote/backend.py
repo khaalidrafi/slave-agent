@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_cli.config_backend import (
+from slave_cli.config_backend import (
     Changes, ConfigBackendUnavailable, ConfigLockedError, ConfigValueError, ConfigWriteError, UserLayer,
     pinned_keys, refused_locked_omission_prefixes)
 
@@ -46,7 +46,7 @@ def poll_interval() -> float:
 
 
 def _latest_config_version() -> int:
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from slave_cli.config_defaults import DEFAULT_CONFIG
     version = DEFAULT_CONFIG.get("_config_version")
     return version if isinstance(version, int) else 1
 
@@ -101,7 +101,7 @@ _UNKNOWN = object()
 class _Private:
     """An in-memory migration's working copy of one profile's document (D12).
 
-    The migration steps read and persist through ``hermes_cli.config`` like any reader and writer;
+    The migration steps read and persist through ``slave_cli.config`` like any reader and writer;
     while one runs, THAT thread sees this copy instead of the published one (``_PRIVATE``), and
     everyone else keeps seeing the published doc with its matching diff base. The migrated doc and
     its base are published together, in one step, when the migration ends: a concurrent writer
@@ -183,17 +183,17 @@ class RemoteBackend:
 
     @staticmethod
     def _key(home: Path) -> str:
-        from hermes_constants import hermes_home_key
-        return hermes_home_key(home)
+        from slave_constants import slave_home_key
+        return slave_home_key(home)
 
     @staticmethod
     def _profile_for(home: Path) -> str:
-        from hermes_constants import PROFILE_ID_RE, profile_name_for_home
+        from slave_constants import PROFILE_ID_RE, profile_name_for_home
         name = profile_name_for_home(home)
         if not name or not PROFILE_ID_RE.match(name):
             raise ConfigBackendUnavailable(
-                f"Remote Config: {home} is not a Hermes profile home, so it has no remote config "
-                "(HERMES_CONFIG_BACKEND=remote serves profile homes only).")
+                f"Remote Config: {home} is not a slave-agent profile home, so it has no remote config "
+                "(SLAVE_CONFIG_BACKEND=remote serves profile homes only).")
         return name
 
     def _state(self, home: Path) -> _ProfileState:
@@ -212,7 +212,7 @@ class RemoteBackend:
             raise ConfigBackendUnavailable(
                 f"Remote Config: a config read for {home} re-entered the load of that profile's config "
                 "on the same thread (code on the boot path read config before it was loaded). This is "
-                "a Hermes bug; refusing the read instead of deadlocking.")
+                "a slave-agent bug; refusing the read instead of deadlocking.")
         with self._lock:
             fetch_lock = self._fetch_locks.setdefault(key, threading.Lock())
         booting = self._booting()
@@ -244,8 +244,8 @@ class RemoteBackend:
         profile = self._profile_for(home)
         if not client.instance_id():
             raise ConfigBackendUnavailable(
-                f"Remote Config: {client.INSTANCE_ENV} is not set, so Hermes cannot identify this agent "
-                "to the config plane. Hermes does not start without its remote config.")
+                f"Remote Config: {client.INSTANCE_ENV} is not set, so slave-agent cannot identify this agent "
+                "to the config plane. slave-agent does not start without its remote config.")
         delays = list(BOOT_RETRY_DELAYS)
         while True:
             notes: list[str] = []
@@ -270,8 +270,8 @@ class RemoteBackend:
                     continue
                 raise ConfigBackendUnavailable(
                     f"Remote Config: cannot load the config for profile {profile!r} from "
-                    f"{client.shown_url()}: {exc}. Hermes does not start without its remote config "
-                    "(HERMES_CONFIG_BACKEND=remote has no local fallback).") from exc
+                    f"{client.shown_url()}: {exc}. slave-agent does not start without its remote config "
+                    "(SLAVE_CONFIG_BACKEND=remote has no local fallback).") from exc
 
     @staticmethod
     def _bearer(home: Path) -> str:
@@ -358,7 +358,7 @@ class RemoteBackend:
 
     def _completed(self, st: _ProfileState) -> bool:
         """Bring the published doc to its completed postprocess output; False when that is not
-        possible yet (``hermes_cli.config`` still importing during the boot fetch)."""
+        possible yet (``slave_cli.config`` still importing during the boot fetch)."""
         if _private_for(st) is not None:
             return True  # a migration's own reads use its private copy (never another pass)
         for _ in range(self._MAX_POSTPROCESS):
@@ -373,13 +373,13 @@ class RemoteBackend:
 
     def _postprocess(self, st: _ProfileState) -> bool:
         """First read after a change: warn on unknown keys and migrate in memory (D12). Runs on a
-        read, not at fetch, because both need ``hermes_cli.config``, which may still be importing
+        read, not at fetch, because both need ``slave_cli.config``, which may still be importing
         when the boot fetch runs (then False: nothing could be done).
 
         No single flight: a reader or writer that finds the published doc unmigrated runs its own
         private pass, even while another thread's pass is in flight, and the first pass to finish
         publishes. Waiting for the other pass instead could deadlock (a migration reads through
-        hermes_cli.config's _CONFIG_LOCK, which the waiting caller may hold), and returning the
+        slave_cli.config's _CONFIG_LOCK, which the waiting caller may hold), and returning the
         unmigrated doc meanwhile would hand that caller legacy settings the migration removes."""
         if _private_for(st) is not None:
             return True  # a migration's own reads: never start another one
@@ -393,14 +393,14 @@ class RemoteBackend:
             current = int(st.doc.get("_config_version") or 0)
             doc = copy.deepcopy(st.doc)
         try:
-            from hermes_cli.config import _known_top_level_keys
-            from hermes_cli.config_migrations import SUPPORT_FLOOR_VERSION
+            from slave_cli.config import _known_top_level_keys
+            from slave_cli.config_migrations import SUPPORT_FLOOR_VERSION
         except ImportError:
             return False  # still importing; the next read retries
         for key in sorted(set(doc) - _known_top_level_keys() - {"_config_version"}):
             if key not in self._unknown_warned:
                 self._unknown_warned.add(key)
-                logger.warning("Remote Config: unknown config key %r is ignored by this Hermes version", key)
+                logger.warning("Remote Config: unknown config key %r is ignored by this slave-agent version", key)
         latest = _latest_config_version()
         if SUPPORT_FLOOR_VERSION <= current < latest:
             self._migrate_in_memory(st, seen, current, doc)
@@ -416,18 +416,18 @@ class RemoteBackend:
     def _run_private(self, st: _ProfileState, doc: dict[str, Any], current: int) -> dict[str, Any]:
         """Run the migrations from schema *current* over a private copy of *doc* and return it.
         Nothing is published: only this thread sees the copy while the steps run (:class:`_Private`)."""
-        from hermes_cli.config_migrations import run_migrations
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from slave_cli.config_migrations import run_migrations
+        from slave_constants import reset_slave_home_override, set_slave_home_override
         m = _Private(st=st, doc=copy.deepcopy(doc), serial=next(_PRIVATE_SERIAL))
         m.doc["_config_version"] = current
         private_token = _PRIVATE.set(m)
-        home_token = set_hermes_home_override(st.home)
+        home_token = set_slave_home_override(st.home)
         try:
             # config_only: a read (or a refused write's check) must change no local file (D12).
             run_migrations(current, {"env_added": [], "config_added": [], "warnings": []}, True, config_only=True,
                            stop_at_failure=False)
         finally:
-            reset_hermes_home_override(home_token)
+            reset_slave_home_override(home_token)
             _PRIVATE.reset(private_token)
         return m.doc
 
@@ -574,7 +574,7 @@ class RemoteBackend:
             for _ in range(self._MAX_PREPARE):
                 # Diff against the doc readers get, i.e. migrated in memory (D12) — also after the
                 # CAS re-read below or a poll landing mid-prepare. Outside st.lock: a migration
-                # reads through hermes_cli.config.
+                # reads through slave_cli.config.
                 ready = self._completed(st)
                 with st.lock:
                     if ready and not st.postprocessed:
@@ -628,7 +628,7 @@ class RemoteBackend:
         A keyed set/unset names its own keys, so it applies to the current base.
 
         The third item is the leaf paths a keyed ``set`` (or, for a document save, a
-        :func:`~hermes_cli.config_backend.pinning_keys` block) names: they are stored at the profile
+        :func:`~slave_cli.config_backend.pinning_keys` block) names: they are stored at the profile
         level even when the value equals the inherited one, as the file backend writes them into
         ``config.yaml``. Otherwise ``config set k v`` with ``v`` equal to the upper level's value
         would report success, store nothing, and follow the next upper-level change."""
@@ -730,7 +730,7 @@ class RemoteBackend:
         if not sets:
             return None
         try:
-            from hermes_cli.config_migrations import SUPPORT_FLOOR_VERSION
+            from slave_cli.config_migrations import SUPPORT_FLOOR_VERSION
         except ImportError:
             return None
         latest = _latest_config_version()
@@ -829,7 +829,7 @@ class RemoteBackend:
         return PLANE_CREDENTIAL_ENV_NAMES
 
     def deployment_env_names(self) -> frozenset:
-        from hermes_cli.config_backend import BACKEND_ENV
+        from slave_cli.config_backend import BACKEND_ENV
         return frozenset({BACKEND_ENV, client.URL_ENV, client.INSTANCE_ENV})
 
     def bootstrap_env_names(self) -> frozenset:
@@ -858,7 +858,7 @@ class RemoteBackend:
             self._managed_warned = True
             path = managed_config_file()
             if path is not None:
-                msg = (f"WARNING: {path} exists but is IGNORED: HERMES_CONFIG_BACKEND=remote takes config "
+                msg = (f"WARNING: {path} exists but is IGNORED: SLAVE_CONFIG_BACKEND=remote takes config "
                        "and locks only from Remote Config (D18). Remove the file.")
                 logger.warning(msg)
                 print(msg, file=sys.stderr)
@@ -927,7 +927,7 @@ class RemoteBackend:
 
 
 def managed_config_file() -> Optional[Path]:
-    from hermes_cli import managed_scope
+    from slave_cli import managed_scope
     managed_dir = managed_scope.get_managed_dir()
     path = managed_dir / "config.yaml" if managed_dir else None
     if path is None:

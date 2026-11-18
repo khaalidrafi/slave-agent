@@ -36,7 +36,7 @@ def live_relay(monkeypatch):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setenv("GATEWAY_RELAY_PLATFORMS", "slack")
     monkeypatch.setattr("gateway.run._load_gateway_config", dict, raising=False)
-    monkeypatch.setattr("hermes_cli.auth.resolve_nous_access_token", lambda: "nas-token")
+    monkeypatch.setattr("slave_cli.auth.resolve_nous_access_token", lambda: "nas-token")
     monkeypatch.setattr("gateway.relay.media._UPLOAD_RETRY_DELAYS_S", (0.0, 0.0), raising=False)
 
     loop = asyncio.new_event_loop()

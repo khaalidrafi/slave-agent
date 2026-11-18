@@ -25,7 +25,7 @@ def _route_key(child: Any) -> tuple:
 
 
 def _caches_prompts(child: Any) -> bool:
-    """Only routes Hermes marks for prompt caching benefit; for the rest the wait would be pure latency."""
+    """Only routes slave-agent marks for prompt caching benefit; for the rest the wait would be pure latency."""
     return getattr(child, "_use_prompt_caching", False) is True
 
 

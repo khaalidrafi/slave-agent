@@ -4,10 +4,10 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# The @handle Bot Mode advertises a host's default profile under (apps/desktop hermes-bots
+# The @handle Bot Mode advertises a host's default profile under (apps/desktop slave-bots
 # ``botHandle``). New profiles cannot take the name, but a pre-reservation profiles/hermes can exist.
-DEFAULT_PROFILE_HANDLE = "hermes"
-# 404 body for a prefix naming no profile here. Older gateways also send it for a 'hermes' profile
+DEFAULT_PROFILE_HANDLE = "slave"
+# 404 body for a prefix naming no profile here. Older gateways also send it for a 'slave' profile
 # they do not serve, so peer clients treat it as ambiguous and never reroute @hermes on it.
 UNKNOWN_PROFILE_ERROR = "Unknown or unconfigured profile"
 # The typed verdict in that body; peer clients key on it. The sentence stays byte-identical
@@ -24,7 +24,7 @@ def _handle_is_free() -> bool:
     pre-reservation ``profiles/hermes`` (served, parked or standalone) keeps it, so its traffic is
     never answered by the default profile. Fail closed: unknown counts as taken."""
     try:
-        from hermes_cli.profiles import profile_exists
+        from slave_cli.profiles import profile_exists
         return not profile_exists(DEFAULT_PROFILE_HANDLE)
     except Exception:
         logger.warning("Cannot check for a '%s' profile", DEFAULT_PROFILE_HANDLE, exc_info=True)
@@ -38,12 +38,12 @@ def _prefix_profile(request: Any) -> str:
     raw = (request.match_info.get("profile") or "").strip()
     if not raw:
         return ""
-    from hermes_cli.profiles import normalize_profile_name
+    from slave_cli.profiles import normalize_profile_name
     return normalize_profile_name(raw)
 
 
 def rejection_response(request: Any):
-    """The 404 for a rejected prefix. A 'hermes' profile this gateway does not serve gets its own
+    """The 404 for a rejected prefix. A 'slave' profile this gateway does not serve gets its own
     body, so a peer reads it as "exists elsewhere", never as "no such profile, use default"."""
     from aiohttp import web
     if _prefix_profile(request) == DEFAULT_PROFILE_HANDLE and not _handle_is_free():
@@ -57,8 +57,8 @@ def resolve_request_profile(adapter: Any, request: Any):
     """Resolve + validate the /p/<profile>/ prefix: ``None`` (no prefix, or multiplexing off and the
     prefix names this gateway's own profile), the served profile name, or ``_PROFILE_REJECTED``
     (-> 404). Fail closed: a foreign prefix must never be ignored. The default profile's handle
-    ``hermes`` reaches the default profile, because peers address the mirror by the handle their
-    roster shows (#118076), unless the host has a profile literally named ``hermes``."""
+    ``slave`` reaches the default profile, because peers address the mirror by the handle their
+    roster shows (#118076), unless the host has a profile literally named ``slave``."""
     from gateway.platforms.api_server import _PROFILE_REJECTED, _prefix_names_served_profile
     profile = _prefix_profile(request)
     if not profile:
@@ -70,7 +70,7 @@ def resolve_request_profile(adapter: Any, request: Any):
             alias and _prefix_names_served_profile("default") and _handle_is_free())
         return None if served else _PROFILE_REJECTED
     try:
-        from hermes_cli.profiles import profiles_to_serve
+        from slave_cli.profiles import profiles_to_serve
         served = {name for name, _ in profiles_to_serve(multiplex=True)}
     except Exception:
         # Fail closed: a prefix this gateway cannot prove it serves is a 404.

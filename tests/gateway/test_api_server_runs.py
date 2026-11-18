@@ -223,7 +223,7 @@ class TestStartRun:
                     "/v1/runs",
                     data="{this body must never be parsed",
                     headers={
-                        "Authorization": "HermesRoom invalid-token",
+                        "Authorization": "SlaveRoom invalid-token",
                         "Content-Type": "application/json",
                     },
                 )
@@ -257,13 +257,13 @@ class TestStartRun:
                 status = await status_resp.json()
                 assert status["run_id"] == data["run_id"]
                 assert status["status"] in {"queued", "running", "completed"}
-                assert status["object"] == "hermes.run"
+                assert status["object"] == "slave.run"
 
     @pytest.mark.asyncio
     async def test_start_binds_chat_id_for_delegation_wake_target(self, adapter):
         """/v1/runs must bind the raw session id as the api_server chat_id
         (like every other agent-entry route does via _run_agent): the async
-        delegation dispatch reads HERMES_SESSION_CHAT_ID to pick its wake
+        delegation dispatch reads SLAVE_SESSION_CHAT_ID to pick its wake
         self-post target, and an empty binding forces background delegations
         on this route back to synchronous execution."""
         app = _create_runs_app(adapter)
@@ -498,7 +498,7 @@ class TestRunStatus:
             scope, "shutdown-test-key", "shutdown-test-fingerprint", "run_live", status)
         adapter._run_idempotency_ids.add("run_live")
         adapter._run_statuses["run_done"] = {
-            "object": "hermes.run", "run_id": "run_done", "status": "completed"}
+            "object": "slave.run", "run_id": "run_done", "status": "completed"}
         _claim_run(adapter, "run_done")
 
         async with TestClient(TestServer(_create_runs_app(adapter))) as client:
@@ -1002,7 +1002,7 @@ class TestSteerRun:
 
         assert resp.status == 200
         assert payload == {
-            "object": "hermes.run.steer",
+            "object": "slave.run.steer",
             "run_id": "run_123",
             "accepted": True,
         }
@@ -1835,12 +1835,12 @@ class TestRunIdempotency:
                 first_headers = {
                     "Authorization": "Bearer sk-secret",
                     "Idempotency-Key": "memory-scope",
-                    "X-Hermes-Session-Key": "memory-a",
+                    "X-Slave-Session-Key": "memory-a",
                 }
                 second_headers = {
                     "Authorization": "Bearer sk-secret",
                     "Idempotency-Key": "memory-scope",
-                    "X-Hermes-Session-Key": "memory-b",
+                    "X-Slave-Session-Key": "memory-b",
                 }
                 first = await cli.post(
                     "/v1/runs", json={"input": "same"}, headers=first_headers
@@ -1869,7 +1869,7 @@ class TestRunIdempotency:
                 headers = {
                     "Authorization": "Bearer sk-secret",
                     "Idempotency-Key": "lost-acceptance",
-                    "X-Hermes-Session-Key": "memory-a",
+                    "X-Slave-Session-Key": "memory-a",
                 }
                 first = await cli.post(
                     "/v1/runs", json={"input": "same"}, headers=headers
@@ -1887,7 +1887,7 @@ class TestRunIdempotency:
                 assert replay.status == 202
                 assert replay_body["run_id"] == first_body["run_id"]
                 assert replay_body["replayed"] is True
-                assert replay.headers["X-Hermes-Session-Key"] == "memory-a"
+                assert replay.headers["X-Slave-Session-Key"] == "memory-a"
 
     @pytest.mark.asyncio
     async def test_direct_status_hydrates_after_adapter_restart(

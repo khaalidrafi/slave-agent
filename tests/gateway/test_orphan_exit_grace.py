@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.gateway import (
+from slave_cli.gateway import (
     _ORPHAN_EXIT_GRACE_SECONDS,
     _await_gateway_exit,
 )
@@ -72,7 +72,7 @@ def test_the_grace_period_covers_a_large_wal_checkpoint() -> None:
 def test_force_kill_is_logged_so_the_next_incident_has_evidence(caplog) -> None:
     import logging
 
-    from hermes_cli import gateway as gw
+    from slave_cli import gateway as gw
 
     killed = []
     with caplog.at_level(logging.WARNING):

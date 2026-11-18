@@ -81,7 +81,7 @@ def _schedule_persist(adapter: Any) -> None:
         return
 
     async def _flush() -> None:
-        from hermes_constants import mkdir_under_hermes_home
+        from slave_constants import mkdir_under_slave_home
         from utils import atomic_json_write
         while adapter._telegram_send_cooldown_dirty:
             adapter._telegram_send_cooldown_dirty = False
@@ -89,7 +89,7 @@ def _schedule_persist(adapter: Any) -> None:
             snapshot = {chat: now + (deadline - loop_now)
                         for chat, deadline in adapter._telegram_send_cooldown_until.items() if deadline > loop_now}
             try:
-                mkdir_under_hermes_home(path.parent)
+                mkdir_under_slave_home(path.parent)
                 await asyncio.to_thread(atomic_json_write, path, {"until": snapshot}, indent=None)
             except Exception:  # health: allow BLE001 -- best-effort: a failed write keeps the in-memory window
                 logger.warning("[Telegram] Failed to persist flood windows to %s", path, exc_info=True)

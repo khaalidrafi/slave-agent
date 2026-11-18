@@ -12,7 +12,7 @@ from functools import partial
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from hermes_platform import declaration
+from slave_platform import declaration
 from tools.registry import invalidate_check_fn_cache, tool_error
 from tools.ansi_strip import strip_unicode_tags, strip_unicode_tags_deep
 from tools.thread_context import capture_thread_callbacks
@@ -31,8 +31,8 @@ _MISSING = object()
 declaration.on_change = invalidate_check_fn_cache
 
 _NEEDS_REAUTH_MSG = (
-    "MCP server '{s}' requires re-authentication.{detail} Run `hermes mcp login {s}` (or delete the tokens file under "
-    "~/.hermes/mcp-tokens/ and restart). Do NOT retry this tool — ask the user to re-authenticate.")
+    "MCP server '{s}' requires re-authentication.{detail} Run `slave mcp login {s}` (or delete the tokens file under "
+    "~/.slave/mcp-tokens/ and restart). Do NOT retry this tool — ask the user to re-authenticate.")
 _STDIO_NO_RESPAWN_MSG = (
     "MCP server '{s}' stdio subprocess had exited (this is not a timeout — the call never reached the server). A "
     "respawn was requested but no fresh session came back within {t:.0f}s. Wait a few seconds before retrying; if it "
@@ -42,7 +42,7 @@ _STDIO_DIED_AGAIN_MSG = (
     "cleanly — do NOT retry this tool; ask the user to check the server's command and its stderr log.")
 _STDIO_OUTCOME_UNCERTAIN_MSG = (
     "MCP server '{s}' lost its stdio subprocess after the tool call began. The operation may have completed, so "
-    "Hermes did not replay it. Do NOT retry automatically; inspect the external state first.")
+    "slave-agent did not replay it. Do NOT retry automatically; inspect the external state first.")
 _SESSION_OUTCOME_UNCERTAIN_MSG = (
     "The MCP transport session to '{s}' expired while this write-capable call was in flight, so the outcome is "
     "UNKNOWN — the operation may or may not have taken effect server-side. It was NOT automatically retried to "
@@ -132,9 +132,9 @@ def _raw_server_entry_trust(server_name: str, home) -> Any:
     entry without one, ``_NOT_CONFIGURED`` when no source has the server. No ``${VAR}`` expansion: the tier
     needs no secret, and an unscoped multiplex expansion raises. Read errors (managed overlay included)
     propagate."""
-    from hermes_cli.config_backend import read_config_doc_readonly
-    from hermes_cli.managed_scope import load_managed_config
-    from hermes_constants import get_hermes_home, hermes_home_key
+    from slave_cli.config_backend import read_config_doc_readonly
+    from slave_cli.managed_scope import load_managed_config
+    from slave_constants import get_slave_home, slave_home_key
 
     def entry(doc):
         servers = doc.get("mcp_servers") if isinstance(doc, dict) else None
@@ -149,8 +149,8 @@ def _raw_server_entry_trust(server_name: str, home) -> Any:
         return managed["trust"]
     if isinstance(native, dict) or isinstance(managed, dict):
         return (native if isinstance(native, dict) else {}).get("trust", _NO_TRUST_KEY)
-    if hermes_home_key(home) == hermes_home_key(get_hermes_home()):  # plugin managers are per active home
-        from hermes_cli.plugins import discover_plugins, get_plugin_manager
+    if slave_home_key(home) == slave_home_key(get_slave_home()):  # plugin managers are per active home
+        from slave_cli.plugins import discover_plugins, get_plugin_manager
         discover_plugins()
         portable = get_plugin_manager().get_portable_mcp_servers().get(server_name)
         if isinstance(portable, dict):
@@ -164,13 +164,13 @@ def _configured_trust(server_name: str, key) -> str:
     entry that exists without a ``trust`` key keeps the compat ``full``; a failed read or a server no
     source configures is ``untrusted``."""
     from pathlib import Path
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.mcp_tool_registration import _normalize_server_trust
     from tools.mcp_tool_scope import _key_scope
     scope = _key_scope(key)
-    # A profile scope is that profile's home key; the HERMES_HOME override can name another profile.
-    home = Path(scope) if scope and Path(scope).is_absolute() else get_hermes_home()
-    from hermes_cli.config_backend import ConfigBackendUnavailable  # a SystemExit: a config-plane outage
+    # A profile scope is that profile's home key; the SLAVE_HOME override can name another profile.
+    home = Path(scope) if scope and Path(scope).is_absolute() else get_slave_home()
+    from slave_cli.config_backend import ConfigBackendUnavailable  # a SystemExit: a config-plane outage
     try:
         raw = _raw_server_entry_trust(server_name, home)
     except (Exception, ConfigBackendUnavailable) as exc:  # health: allow BLE001 -- any read failure fails closed
@@ -228,7 +228,7 @@ def _untrusted(server_name: str) -> bool:
 
 
 class _RefusedRetry(str):
-    """A retry Hermes refused itself: the server did nothing wrong, so it is no breaker strike."""
+    """A retry slave-agent refused itself: the server did nothing wrong, so it is no breaker strike."""
 
 
 async def _refuse_unconsented_write(server_name: str, tool_name: str) -> str:
@@ -677,10 +677,10 @@ def _render_content_blocks(result, server_name: str) -> tuple[str, int, list[str
     usable_parts = 0
     image_paths: list[str] = []
     # MCP tool results can also include ImageContent blocks (screenshot / Blockbench / Playwright etc.);
-    # cache those via the gateway's image-cache helper so they flow through Hermes' MEDIA: tag convention
+    # cache those via the gateway's image-cache helper so they flow through Slave' MEDIA: tag convention
     # and out to messaging adapters that render images natively. Without this, image blocks were silently
     # dropped and the agent got an empty response. Distilled from #17915 (c3115644151) and #10848
-    # (gnanirahulnutakki), both too stale to cherry-pick. #10848's approach (integrate with Hermes' MEDIA
+    # (gnanirahulnutakki), both too stale to cherry-pick. #10848's approach (integrate with Slave' MEDIA
     # tag + cache_image_from_bytes) was the cleaner of the two — plugs into existing infrastructure.
     for block in (result.content or []):
         if getattr(block, "text", None):
@@ -1061,8 +1061,8 @@ def _make_check_fn(server_name: str):
 def _declared_app_offerable(server_name: str) -> bool:
     """True unless the registered declaration is unavailable on this host. Called only for a
     connected server, so a reachable loopback port outranks the interactive-session rule."""
-    from hermes_platform import declaration
-    from hermes_platform.resolver.availability import availability
+    from slave_platform import declaration
+    from slave_platform.resolver.availability import availability
 
     decl = declaration.lookup(server_name)
     if decl is None:

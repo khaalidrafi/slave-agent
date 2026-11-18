@@ -1,9 +1,9 @@
 # Bundled wake-word models
 
-`hey_hermes.tflite` — the on-device "Hey Hermes" hotword model. This is the
+`hey_hermes.tflite` — the on-device "Hey slave-agent" hotword model. This is the
 default detector for the wake word feature (see
 `website/docs/user-guide/features/wake-word.md`); no training or setup is
-required to say "hey hermes".
+required to say "hey slave".
 
 - **Engine:** [pyopen-wakeword](https://github.com/rhasspy/pyopen-wakeword)
   (rhasspy's maintained fork of openWakeWord; Apache-2.0). Runs TFLite via a
@@ -18,6 +18,6 @@ required to say "hey hermes".
   scores across inference engines or platforms.
 
 To use a different phrase, point `wake_word.openwakeword.model` at an
-absolute path to a compatible `.tflite` model. Hermes does not download
+absolute path to a compatible `.tflite` model. slave-agent does not download
 models by name, and this engine does not load `.onnx` files. See the
 wake-word docs for the training guide and platform limits.

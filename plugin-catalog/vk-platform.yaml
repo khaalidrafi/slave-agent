@@ -9,7 +9,7 @@ tier: community
 category: platform
 docs_url: https://github.com/web3blind/hermes-vk-platform/blob/2443f32b38a944f17889fba3efc5243af3b8e875/README.md
 known_issues:
-  - Uses internal Hermes session and approval helpers, which may change between host releases.
+  - Uses internal slave-agent session and approval helpers, which may change between host releases.
   - Platform adapters run in-process; host-process plugin isolation is not supported.
 capabilities:
   provides_tools: []

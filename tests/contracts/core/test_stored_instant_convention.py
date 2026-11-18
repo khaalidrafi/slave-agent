@@ -1,6 +1,6 @@
 """The stored-instant read convention (``persistence.core.conventions.stored_instant``).
 
-Both backends are bound to it: each decodes its stored row instants through it, pinned below by planting a corrupt cell in the reference's row dict and reading it back through ``SessionRepository.get`` as an epoch float. The trust window and the unset spellings are those of ``hermes_cli.timefmt.coerce_epoch``; the parity case pins the two against each other so they cannot drift apart.
+Both backends are bound to it: each decodes its stored row instants through it, pinned below by planting a corrupt cell in the reference's row dict and reading it back through ``SessionRepository.get`` as an epoch float. The trust window and the unset spellings are those of ``slave_cli.timefmt.coerce_epoch``; the parity case pins the two against each other so they cannot drift apart.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone, UTC
 
 import pytest
 
-from hermes_cli.timefmt import coerce_epoch
+from slave_cli.timefmt import coerce_epoch
 from persistence import SessionId
 from persistence.core.conventions import UNTRUSTED_INSTANT, stored_instant
 from persistence.conversation.sessions import NewSession

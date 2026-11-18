@@ -130,7 +130,7 @@ def test_every_side_task_reader_sees_the_same_route(tmp_path, monkeypatch):
     model) agree inside one chat's turn: there is no second copy for them to disagree about."""
     from agent.auxiliary_task_config import _get_auxiliary_task_config
     from gateway.session_policy import policy_scope
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
     cfg = {'model': {'provider': 'custom', 'default': 'primary-model', 'base_url': 'http://127.0.0.1:9/v1',
                      'api_key': 'main-key'},
            'auxiliary': {'compression': {'provider': 'custom', 'model': 'first', 'base_url': 'http://127.0.0.1:9/a/v1',

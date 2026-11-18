@@ -8,7 +8,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
 
-from hermes_cli.config import get_hermes_home
+from slave_cli.config import get_slave_home
 
 from .config import Platform, GatewayConfig, PlatformConfig
 from .session import SessionSource
@@ -185,17 +185,17 @@ async def _ensure_named_dm_topic(adapter: Any, chat_id: str, name: str, *, refre
         raise RuntimeError(f"Telegram adapter cannot {verb} named private DM topics")
     # The topic is persisted in the bot owner's config.yaml, not that of the profile delivering
     # through it (a credentialless satellite's cron job sends via the primary's bot).
-    from hermes_constants import get_routing_process_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import get_routing_process_slave_home, reset_slave_home_override, set_slave_home_override
     owner = getattr(adapter, "_owner_profile", None)  # None = the launch (primary) profile's bot
     if isinstance(owner, str) and owner:
-        from hermes_cli.profiles import get_profile_dir
-        token = set_hermes_home_override(get_profile_dir(owner))
+        from slave_cli.profiles import get_profile_dir
+        token = set_slave_home_override(get_profile_dir(owner))
     else:
-        token = set_hermes_home_override(get_routing_process_hermes_home())
+        token = set_slave_home_override(get_routing_process_slave_home())
     try:
         thread_id = await ensure_dm_topic(chat_id, name, **({"force_create": True} if refresh else {}))
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     if not thread_id:
         raise RuntimeError(f"Failed to {verb} Telegram private DM topic '{name}'")
     return str(thread_id)
@@ -208,7 +208,7 @@ class DeliveryRouter:
                  dead_targets: Optional[DeadTargetRegistry] = None):  # profile-local registry when omitted
         self.config = config
         self.adapters = adapters or {}
-        self.output_dir = get_hermes_home() / "cron" / "output"
+        self.output_dir = get_slave_home() / "cron" / "output"
         self.dead_targets = dead_targets or DeadTargetRegistry()
 
     async def deliver(self, content: str, targets: list[DeliveryTarget], job_id: Optional[str] = None,
@@ -263,7 +263,7 @@ class DeliveryRouter:
     def _save_full_output(self, content: str, job_id: str) -> Path:
         """Save full cron output to disk and return the file path."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        path = get_hermes_home() / "cron" / "output" / f"{job_id}_{timestamp}.txt"
+        path = get_slave_home() / "cron" / "output" / f"{job_id}_{timestamp}.txt"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         return path

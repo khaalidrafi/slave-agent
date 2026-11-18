@@ -15,7 +15,7 @@ screenshots:
   - "https://raw.githubusercontent.com/KevinM0001/hermes-hyperliquid-plugin/abc81670fbfa0839fa6d3fc5b0ad823fe8c9e97d/docs/screenshots/03-flow-deck.png"
   - "https://raw.githubusercontent.com/KevinM0001/hermes-hyperliquid-plugin/abc81670fbfa0839fa6d3fc5b0ad823fe8c9e97d/docs/screenshots/04-wallets.png"
   - "https://raw.githubusercontent.com/KevinM0001/hermes-hyperliquid-plugin/abc81670fbfa0839fa6d3fc5b0ad823fe8c9e97d/docs/screenshots/05-node-stop-map.png"
-  - "https://raw.githubusercontent.com/KevinM0001/hermes-hyperliquid-plugin/abc81670fbfa0839fa6d3fc5b0ad823fe8c9e97d/docs/screenshots/06-ask-hermes.png"
+  - "https://raw.githubusercontent.com/KevinM0001/hermes-hyperliquid-plugin/abc81670fbfa0839fa6d3fc5b0ad823fe8c9e97d/docs/screenshots/06-ask-slave.png"
 readme: true
 platforms: [linux, macos]
 title: Hyperliquid Desk

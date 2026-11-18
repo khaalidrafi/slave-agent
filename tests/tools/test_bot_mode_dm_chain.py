@@ -36,7 +36,7 @@ def test_recipients_are_keyed_by_the_identity_their_turns_carry(tmp_path):
         {"profile": "ops", "handle": "ops", "connection_id": "mini", "connection_label": "Mini"}])
     sender = _sender(home / "profiles" / "researcher")
 
-    assert recipient_key("hermes", sender) == recipient_key("@default", sender) == "bot:default"
+    assert recipient_key("slave", sender) == recipient_key("@default", sender) == "bot:default"
     assert recipient_key("peer-a/worker", sender) != recipient_key("peer-b/worker", sender)
     assert recipient_key("ops@mini", sender) == recipient_key("ops", sender) == "bot:mini/ops"
 
@@ -46,7 +46,7 @@ def test_a_peer_reply_is_keyed_as_the_peers_author_id(tmp_path):
     from tools.bot_mode_dm_chain import recipient_key
 
     home = _managed_home(tmp_path, peers=("spark",))
-    sender = _sender(home, author={"id": "bot:spark/default", "name": "hermes", "is_bot": True})
+    sender = _sender(home, author={"id": "bot:spark/default", "name": "slave", "is_bot": True})
     assert recipient_key("spark", sender) == recipient_key("spark/default", sender) == "bot:spark/default"
     assert recipient_key("spark/other", sender) == "peer:spark/other"
 
@@ -58,7 +58,7 @@ def _sender(home, author=None):
 
     agent = _FakeAgent(home)
     agent._turn_author = author
-    root = probe._hermes_root(home)
+    root = probe._slave_root(home)
     return SimpleNamespace(home=str(home), root=root, me=probe._profile_name(home), roster_homes=dict(probe._roster(root)),
                            peers=probe._peers(root), agent=agent)
 
@@ -81,14 +81,14 @@ def test_an_offline_relay_target_can_be_retried_after_it_reconnects(tmp_path, mo
     """Greptile 4467193919: the definite no-send hands its ask back, so the same message is not a duplicate."""
     home = _managed_home(tmp_path)
     _capture_spawn(monkeypatch)
-    row = {"profile": "default", "handle": "hermes", "connection_id": "mini", "connection_label": "Mini"}
+    row = {"profile": "default", "handle": "slave", "connection_id": "mini", "connection_label": "Mini"}
     bot_relay.write_remote_roster(home, [{**row, "online": False}])
     agent = _FakeAgent(home)
     _bot_turn(agent, "bot:researcher")
 
-    offline = json.loads(bot_mode_dm.message_agent_tool("hermes@mini", "ping", agent=agent))
+    offline = json.loads(bot_mode_dm.message_agent_tool("slave@mini", "ping", agent=agent))
     bot_relay.write_remote_roster(home, [{**row, "online": True}])
-    retry = json.loads(bot_mode_dm.message_agent_tool("hermes@mini", "ping", agent=agent))
+    retry = json.loads(bot_mode_dm.message_agent_tool("slave@mini", "ping", agent=agent))
 
     assert offline["reason"] == "runtime_offline"
     assert retry["status"] == "queued", retry
@@ -100,11 +100,11 @@ def test_a_relay_reply_carries_the_no_reply_marker_and_the_receiver_honours_it(t
     home = _managed_home(tmp_path)
     calls = _capture_spawn(monkeypatch)
     bot_relay.write_remote_roster(home, [
-        {"profile": "default", "handle": "hermes", "connection_id": "mini", "connection_label": "Mini"}])
+        {"profile": "default", "handle": "slave", "connection_id": "mini", "connection_label": "Mini"}])
     agent = _FakeAgent(home)
     _bot_turn(agent, "bot:mini/default")  # mini's default messaged us through the relay
 
-    ack = json.loads(bot_mode_dm.message_agent_tool("hermes@mini", "42", agent=agent))
+    ack = json.loads(bot_mode_dm.message_agent_tool("slave@mini", "42", agent=agent))
     (envelope,) = bot_relay.claim_pending_envelopes(home)
     assert ack["expects_reply"] is False and calls == []  # notify-only: no waiter
     assert f"{NO_REPLY_MARKER} 42" in envelope["message"]
@@ -112,7 +112,7 @@ def test_a_relay_reply_carries_the_no_reply_marker_and_the_receiver_honours_it(t
     # The receiving side: its turn author is what tui_gateway/methods_bot_relay.py rebuilds.
     receiver = _FakeAgent(home / "elsewhere")
     receiver.session_id = "receiver"
-    _bot_turn(receiver, bot_relay.delivery_turn_author("default", "hermes", "laptop")["id"],
+    _bot_turn(receiver, bot_relay.delivery_turn_author("default", "slave", "laptop")["id"],
               message=envelope["message"])
     assert "needs no answer" in bot_chain.admit_send(receiver, ["bot:laptop/default"], "thanks").refused[
         "bot:laptop/default"]

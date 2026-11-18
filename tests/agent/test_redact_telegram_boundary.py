@@ -94,7 +94,7 @@ def test_cron_stdout_preserves_identity_and_masks_adjacent_token(tmp_path, monke
     home = tmp_path / "home"
     scripts = home / "scripts"
     scripts.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
     identity = "ITEM-000042:job-a12345678:q-" + "a" * 32
     token = "123456789:" + "Ab_9-" * 7

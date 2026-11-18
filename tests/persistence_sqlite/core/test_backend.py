@@ -19,7 +19,7 @@ from persistence import (
 )
 from persistence.sqlite import SQLiteBackend, translated
 from persistence.sqlite import _registry
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence.sqlite._state.errors import StateDbCorruptError, StateDbReplacedError
 from tests.persistence_sqlite.conftest import store_for
 
@@ -54,7 +54,7 @@ def test_each_profile_has_its_own_file(backend, scope_a, scope_b):
 
 
 def test_handles_and_backends_on_one_file_share_the_registry_holder(scope_a, scope_b, backend):
-    other = SQLiteBackend({scope_a.hermes_home_key: store_for(scope_a)})
+    other = SQLiteBackend({scope_a.slave_home_key: store_for(scope_a)})
     try:
         first, second = backend.open(scope_a), backend.open(scope_a)
         first.state_meta.set("k", "1")
@@ -107,12 +107,12 @@ def test_a_handle_opened_after_its_file_is_replaced_writes_the_replacement_while
 
 @pytest.mark.parametrize("read_only", [False, True])
 def test_a_store_opens_with_its_own_profiles_database_settings_whichever_profile_the_caller_runs_as(backend, scope_a, read_only):
-    (get_hermes_home() / "config.yaml").write_text("database:\n  synchronous: OFF\n  cache_size: -1111\n")
+    (get_slave_home() / "config.yaml").write_text("database:\n  synchronous: OFF\n  cache_size: -1111\n")
     (store_for(scope_a).parent / "config.yaml").write_text("database:\n  synchronous: EXTRA\n  cache_size: -2222\n")
     backend.open(scope_a).state_meta.set("k", "v")
     if read_only:
         backend.close()
-        backend = SQLiteBackend({scope_a.hermes_home_key: store_for(scope_a)}, read_only=True)
+        backend = SQLiteBackend({scope_a.slave_home_key: store_for(scope_a)}, read_only=True)
     try:
         conn = backend.open(scope_a).holder()._conn
         assert conn.execute("PRAGMA synchronous").fetchone()[0] == 3
@@ -143,7 +143,7 @@ def test_close_refuses_further_use(backend, scope_a):
 def test_read_only_backend_reads_refuses_writes_and_never_creates(backend, scope_a, scope_b):
     backend.open(scope_a).state_meta.set("k", "v")
     backend.close()
-    reader = SQLiteBackend({s.hermes_home_key: store_for(s) for s in (scope_a, scope_b)}, read_only=True)
+    reader = SQLiteBackend({s.slave_home_key: store_for(s) for s in (scope_a, scope_b)}, read_only=True)
     try:
         store_a = reader.open(scope_a)
         assert store_a.read_only and store_a.state_meta.get("k") == "v"
@@ -215,7 +215,7 @@ def test_awaitable_form_runs_on_the_backend_executor_with_the_callers_context(ba
 
     loop_thread, value = asyncio.run(call())
     [(name, ident, marker)] = seen
-    assert name.startswith("hermes-sqlite-store") and ident != loop_thread
+    assert name.startswith("slave-sqlite-store") and ident != loop_thread
     assert (marker, value) == ("caller", "v")
     assert _marker.get() == "unset"
 
@@ -223,7 +223,7 @@ def test_awaitable_form_runs_on_the_backend_executor_with_the_callers_context(ba
 def test_awaitable_form_returns_the_verbs_exception(backend, scope_a):
     backend.open(scope_a).state_meta.set("k", "v")
     backend.close()
-    reader = SQLiteBackend({scope_a.hermes_home_key: store_for(scope_a)}, read_only=True)
+    reader = SQLiteBackend({scope_a.slave_home_key: store_for(scope_a)}, read_only=True)
     try:
         store = reader.open(scope_a)
         with pytest.raises(ValueError):
@@ -251,5 +251,5 @@ def test_awaitable_calls_share_one_bounded_pool(backend, scope_a, monkeypatch):
         return await asyncio.gather(*(store.aio.state_meta.get("k") for _ in range(64)))
 
     assert asyncio.run(burst()) == ["v"] * 64
-    assert names and all(name.startswith("hermes-sqlite-store") for name in names)
+    assert names and all(name.startswith("slave-sqlite-store") for name in names)
     assert len(names) <= min(32, (os.cpu_count() or 1) + 4)

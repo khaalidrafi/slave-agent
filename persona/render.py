@@ -135,7 +135,7 @@ def render_refusal(data: Dict[str, Any], what: str) -> str:
 def persona_nameplate(data: Optional[Dict[str, Any]]) -> Optional[tuple[str, str]]:
     """(name, tagline) for the banner, or None when no persona is active.
 
-    ``hermes_cli.banner`` calls this: the product's own wordmark stays the
+    ``slave_cli.banner`` calls this: the product's own wordmark stays the
     default (generator-owned, specs/002); an active deployment persona
     replaces it at runtime (specs/013 req. 2) without touching brand.py.
     """

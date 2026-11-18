@@ -6,12 +6,12 @@ checkpointing for ``--resume``, trajectories in from/value format, and tool-usag
 statistics aggregated across all batches. See ``main`` (fire CLI) for usage.
 """
 
-# hermes_bootstrap must be the very first import — UTF-8 stdio on Windows, no-op on POSIX.
+# slave_bootstrap must be the very first import — UTF-8 stdio on Windows, no-op on POSIX.
 try:
-    import hermes_bootstrap
+    import slave_bootstrap
 except ModuleNotFoundError as exc:
-    # Partial ``hermes update`` (git reset landed, ``uv pip install -e .`` did not).
-    if exc.name != "hermes_bootstrap" and not "hermes_bootstrap".startswith(f"{exc.name}."):
+    # Partial ``slave update`` (git reset landed, ``uv pip install -e .`` did not).
+    if exc.name != "slave_bootstrap" and not "slave_bootstrap".startswith(f"{exc.name}."):
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import json

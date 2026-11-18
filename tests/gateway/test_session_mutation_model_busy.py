@@ -19,7 +19,7 @@ def _owner(tmp_path, monkeypatch, handle):
     from gateway.session_authority import SessionAuthority
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {})
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model=k['raw_input'], target_provider='custom', base_url='http://127.0.0.1:9/v1'))
@@ -238,7 +238,7 @@ async def test_pending_pick_writes_do_not_stall_the_event_loop(tmp_path, monkeyp
 async def test_a_guarded_deferred_pick_asks_for_confirmation_instead_of_being_dropped(tmp_path, monkeypatch):
     from agent.usage_anchor import USAGE_ANCHOR_MODEL_CONFIG_KEY, capture_usage_anchor
     from gateway.session_contract import Submission
-    from hermes_cli import model_selection_guards
+    from slave_cli import model_selection_guards
     monkeypatch.setattr(model_selection_guards, '_context_cache_threshold', lambda: 1000)
     started, release = threading.Event(), asyncio.Event()
     seen, events = [], []
@@ -294,7 +294,7 @@ async def test_a_guarded_deferred_pick_asks_for_confirmation_instead_of_being_dr
 @pytest.mark.asyncio
 async def test_a_refused_deferred_pick_names_the_reason_and_the_committed_model(tmp_path, monkeypatch):
     from gateway.session_contract import Submission
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     started, release = threading.Event(), asyncio.Event()
     events = []
 
@@ -332,7 +332,7 @@ async def test_a_refused_deferred_pick_names_the_reason_and_the_committed_model(
 @pytest.mark.parametrize('error', [RuntimeError, OSError])
 async def test_a_deferred_pick_that_raises_is_refused_and_the_queue_keeps_draining(tmp_path, monkeypatch, error):
     from gateway.session_contract import Submission
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     started, release = threading.Event(), asyncio.Event()
     events, seen, state, raising = [], [], {}, threading.Event()
 

@@ -7,7 +7,7 @@ from tests.waiting import async_wait_until
 
 async def multiplex_probe(runner, authority, primary, state, mode, peer):
     from agent.secret_scope import set_multiplex_active, get_secret
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from run_agent import AIAgent
 
     # Observe the actual worker entry without replacing its implementation or auth.
@@ -15,7 +15,7 @@ async def multiplex_probe(runner, authority, primary, state, mode, peer):
     original = AIAgent.run_conversation
 
     def observed(self, *args, **kwargs):
-        worker_scopes.append((str(get_hermes_home()), get_secret('OPENAI_API_KEY')))
+        worker_scopes.append((str(get_slave_home()), get_secret('OPENAI_API_KEY')))
         return original(self, *args, **kwargs)
 
     AIAgent.run_conversation = observed

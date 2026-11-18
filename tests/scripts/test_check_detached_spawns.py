@@ -73,7 +73,7 @@ def test_marker_on_the_line_or_above_opts_out_and_nothing_else_does(tmp_path):
 
 def test_tests_and_the_helper_are_out_of_scope(tmp_path):
     mod = _load()
-    for rel in ("tests/tools/test_x.py", "tools/test_y.py", "hermes_cli/process_identity.py"):
+    for rel in ("tests/tools/test_x.py", "tools/test_y.py", "slave_cli/process_identity.py"):
         path = tmp_path / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("subprocess.Popen(a, start_new_session=True)\n", encoding="utf-8")

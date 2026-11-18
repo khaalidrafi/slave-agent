@@ -18,10 +18,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    yield hermes_home
+    slave_home = tmp_path / ".slave"
+    slave_home.mkdir()
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
+    yield slave_home
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +64,7 @@ def test_registry_add_get_roundtrip_persists(tmp_path):
 
 @pytest.mark.platforms("posix")
 def test_registry_update_tightens_permissive_token_file(tmp_path):
-    """A nodes.json left 0644 (older Hermes, hand-made) must not keep that mode on rewrite."""
+    """A nodes.json left 0644 (older slave-agent, hand-made) must not keep that mode on rewrite."""
     import os
     import stat
 

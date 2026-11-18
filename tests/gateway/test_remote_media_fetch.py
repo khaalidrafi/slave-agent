@@ -67,9 +67,9 @@ def test_sandbox_project_env_file_is_not_fetched(remote_env):
 
 def test_local_backend_and_strict_mode_do_not_fetch(monkeypatch, tmp_path, remote_env):
     """Strict mode keeps its recency gate: a fetched copy would land in an allowlisted root and skip it."""
-    monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
+    monkeypatch.setenv("SLAVE_MEDIA_DELIVERY_STRICT", "1")
     assert BasePlatformAdapter.filter_media_delivery_paths([("/home/agent/out/report.txt", False)]) == []
-    monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT")
+    monkeypatch.delenv("SLAVE_MEDIA_DELIVERY_STRICT")
     monkeypatch.setattr(media_fetch, "_active_remote_env", lambda: None)
     assert BasePlatformAdapter.filter_media_delivery_paths([(str(tmp_path / "nope.txt"), False)]) == []
     assert remote_env.fetched == []

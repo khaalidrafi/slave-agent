@@ -1,5 +1,5 @@
 """Idle-job scheduling shared by the skill curator (``agent/curator.py``) and plugin idle tasks
-(``hermes_cli/plugins_idle_tasks.py``): the interval gate, whose first observation seeds
+(``slave_cli/plugins_idle_tasks.py``): the interval gate, whose first observation seeds
 ``last_run_at`` and defers one interval, and the cross-process run claim."""
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from typing import Any, Callable, Optional
 logger = logging.getLogger(__name__)
 
 CLAIM_STALE_SECONDS = 3600.0
-# This process image: ``os.execvp`` (hermes_cli/relaunch.py) keeps the pid and its start time, so a
+# This process image: ``os.execvp`` (slave_cli/relaunch.py) keeps the pid and its start time, so a
 # claim the image before the exec took would otherwise look held by a live owner until this exits.
 _IMAGE = uuid.uuid4().hex
 
@@ -77,7 +77,7 @@ def _owner_record() -> dict[str, Any]:
 
 
 def _read_owner(lock: Path) -> Optional[dict[str, Any]]:
-    """The claim's owner record; ``None`` when unreadable or a bare pid (a claim of an older Hermes)."""
+    """The claim's owner record; ``None`` when unreadable or a bare pid (a claim of an older slave-agent)."""
     try:
         data = json.loads(lock.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
@@ -134,7 +134,7 @@ def _unlink_guard(lock: Path):
 def claim_run(lock: Path, stale_seconds: float = CLAIM_STALE_SECONDS) -> bool:
     """One run at a time across processes: the O_EXCL create of ``lock`` wins the claim. The claim
     records its owner (pid, process start, machine); a claim whose owner is provably dead is taken
-    over at once, one whose owner cannot be checked (another machine, an older Hermes's bare pid)
+    over at once, one whose owner cannot be checked (another machine, an older slave-agent’s bare pid)
     once it is older than ``stale_seconds``. When the lock dir cannot be created, run anyway."""
     try:
         lock.parent.mkdir(parents=True, exist_ok=True)

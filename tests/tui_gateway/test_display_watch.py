@@ -1,6 +1,6 @@
-"""Lease transitions made by ANOTHER process reach `hermes serve` clients as ``display.lease``.
+"""Lease transitions made by ANOTHER process reach `slave serve` clients as ``display.lease``.
 
-The agent lives in whatever process hosts it (messaging gateway, ``hermes chat``, a cron worker);
+The agent lives in whatever process hosts it (messaging gateway, ``slave chat``, a cron worker);
 ``lease.on_change`` is in-process only, so the serve backend must notice the file move itself.
 """
 
@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 def _other_process(home: Path, stmt: str) -> None:
-    env = {**os.environ, "HERMES_HOME": str(home)}
+    env = {**os.environ, "SLAVE_HOME": str(home)}
     subprocess.run(
         [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(REPO)!r}); "
          f"from tools.bot_desktop import lease; {stmt}"],
@@ -48,14 +48,14 @@ def _serialize_polls(server, monkeypatch) -> None:
 
 
 def _watching(server, home: Path, monkeypatch) -> list:
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     events: list = []
     # Before the home is watched: no pass that can see it runs unlocked.
     _serialize_polls(server, monkeypatch)
     monkeypatch.setattr(server, "_broadcast_global_event", lambda ev, payload=None: events.append((ev, payload)))
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     server._ensure_lease_watcher()
-    assert _wait_for(lambda: hermes_home_key(home) in server._lease_epochs), "watcher never seeded the home"
+    assert _wait_for(lambda: slave_home_key(home) in server._lease_epochs), "watcher never seeded the home"
     return events
 
 
@@ -65,7 +65,7 @@ def _lease_events(events, **want):
 
 def test_takeover_in_another_process_is_broadcast(tmp_path, monkeypatch):
     from tui_gateway import server
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     home = tmp_path / "home"
     home.mkdir()
     events = _watching(server, home, monkeypatch)
@@ -74,7 +74,7 @@ def test_takeover_in_another_process_is_broadcast(tmp_path, monkeypatch):
 
     assert _wait_for(lambda: _lease_events(events, reason="probe")), events
     (payload,) = _lease_events(events, reason="probe")
-    assert payload["profile_key"] == hermes_home_key(home)
+    assert payload["profile_key"] == slave_home_key(home)
 
 
 def test_release_in_another_process_is_broadcast_and_local_transition_not_duplicated(tmp_path, monkeypatch):

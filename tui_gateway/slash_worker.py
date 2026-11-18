@@ -1,18 +1,18 @@
-"""Persistent slash-command worker — one HermesCLI per TUI session.
+"""Persistent slash-command worker — one SlaveCLI per TUI session.
 
 Protocol: reads JSON lines from stdin {id, command}, writes {id, ok, output|error} to stdout.
 """
 
-# Stop a ``utils/`` (or ``proxy/``, ``ui/``) package in the launch directory from shadowing Hermes's own
+# Stop a ``utils/`` (or ``proxy/``, ``ui/``) package in the launch directory from shadowing Slave's own
 # top-level modules: this worker is spawned as ``-m tui_gateway.slash_worker`` with the user's CWD, so
 # ``import cli`` would otherwise resolve ``utils`` to a colliding local package and crash the child in a
-# retry loop. ``hermes_bootstrap`` lives at the repo root (no collision risk), so importing it first is safe.
-# ``hermes_bootstrap`` lives at the repo root, so importing it is safe before the guard runs (its name won't
+# retry loop. ``slave_bootstrap`` lives at the repo root (no collision risk), so importing it first is safe.
+# ``slave_bootstrap`` lives at the repo root, so importing it is safe before the guard runs (its name won't
 # collide with a user package), and it owns the canonical path-hardening logic shared with the other entry
 # points — #51693 added the guard to ``entry.py``/``acp_adapter/entry.py`` but missed this child.
-import hermes_bootstrap
+import slave_bootstrap
 
-hermes_bootstrap.harden_import_path()
+slave_bootstrap.harden_import_path()
 
 import argparse
 import contextlib
@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 from tui_gateway._stdin_recovery import handle_spurious_eof
 
 if TYPE_CHECKING:
-    from cli import HermesCLI
+    from cli import SlaveCLI
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def _start_legacy_parent_watchdog(parent_pid: int, *, poll_s: float = 2.0, grace
         deadline = time.monotonic() + grace_s
         while _in_flight.is_set() and time.monotonic() < deadline:
             time.sleep(0.05)
-        from hermes_cli.observability.shared_metrics_process import flush_before_hard_exit
+        from slave_cli.observability.shared_metrics_process import flush_before_hard_exit
         flush_before_hard_exit()  # os._exit skips the opt-in metrics runtimes' atexit flush (bounded)
         os._exit(0)
 
@@ -65,12 +65,12 @@ def _start_legacy_parent_watchdog(parent_pid: int, *, poll_s: float = 2.0, grace
 
 
 def _prepare_slash_worker_runtime() -> None:
-    """Start bounded MCP discovery before HermesCLI snapshots tools: each slash_worker child is its
-    own process — the parent ``hermes serve`` discovery thread does not populate this registry.
+    """Start bounded MCP discovery before SlaveCLI snapshots tools: each slash_worker child is its
+    own process — the parent ``slave serve`` discovery thread does not populate this registry.
 
     See #61891.
     """
-    from hermes_cli.mcp_startup import start_background_mcp_discovery, wait_for_mcp_discovery
+    from slave_cli.mcp_startup import start_background_mcp_discovery, wait_for_mcp_discovery
     start_background_mcp_discovery(logger=logger, thread_name="slash-worker-mcp-discovery")
     wait_for_mcp_discovery()
 
@@ -107,7 +107,7 @@ def _refuse_skill_slash(command: str) -> None:
         raise SkillSlashRefused(base)
 
 
-def _run(cli: "HermesCLI", command: str) -> str:
+def _run(cli: "SlaveCLI", command: str) -> str:
     """Run one command; return its captured, ANSI-stripped output.
 
     A command like /prompt or /blueprint parks the composed text on the one-shot
@@ -162,22 +162,22 @@ def main():
     # Passed only by a gateway started before the owned-child update (see the legacy watchdog).
     p.add_argument("--parent-pid", type=int, default=0, help=argparse.SUPPRESS)
     args = p.parse_args()
-    os.environ["HERMES_SESSION_KEY"] = args.session_key
-    os.environ["HERMES_INTERACTIVE"] = "1"
+    os.environ["SLAVE_SESSION_KEY"] = args.session_key
+    os.environ["SLAVE_INTERACTIVE"] = "1"
     # Before the heavy cli import, so a legacy parent dying during startup is still noticed.
     _start_legacy_parent_watchdog(args.parent_pid)
-    # Import cli ahead of MCP discovery: importing it loads ~/.hermes/.env and sets HERMES_QUIET,
+    # Import cli ahead of MCP discovery: importing it loads ~/.slave/.env and sets SLAVE_QUIET,
     # which MCP ``${VAR}`` interpolation in the runtime prep depends on.
-    from cli import HermesCLI
+    from cli import SlaveCLI
     _prepare_slash_worker_runtime()
 
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
         # --provider pins the CLI to the parent agent's resolved provider (a MoA session's virtual
-        # "moa" provider included). Without it HermesCLI re-resolves from config and dispatches the
+        # "moa" provider included). Without it SlaveCLI re-resolves from config and dispatches the
         # MoA preset NAME to the configured real provider (#57283).
-        cli = HermesCLI(model=args.model or None, provider=args.provider or None,
+        cli = SlaveCLI(model=args.model or None, provider=args.provider or None,
                         compact=True, resume=args.session_key, verbose=False)
-    if args.base_url:  # a seed, not launch policy: HermesCLI seeds the default provider's model.base_url (#141953)
+    if args.base_url:  # a seed, not launch policy: SlaveCLI seeds the default provider's model.base_url (#141953)
         cli.base_url = args.base_url
     cli._slash_metrics_surface = None  # the TUI/Desktop client already counted the typed command
     cli.is_slash_worker = True
@@ -207,7 +207,7 @@ def main():
             # Workers persist for the TUI session: release allocator pages at the command boundary like
             # other long-lived gateway processes (trim_memory's shared cooldown coalesces nearby activity).
             try:
-                from hermes_cli.mem_trim import trim_memory
+                from slave_cli.mem_trim import trim_memory
                 trim_memory(reason="slash worker command completion")
             except Exception as exc:
                 # debug, not warning — a persistent failure would repeat every command.

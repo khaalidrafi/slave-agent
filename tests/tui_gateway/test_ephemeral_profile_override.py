@@ -1,10 +1,10 @@
-"""Regression tests: profile HERMES_HOME override in ephemeral agent threads (#50233).
+"""Regression tests: profile SLAVE_HOME override in ephemeral agent threads (#50233).
 
 Why: normal prompt turns bind ``session['profile_home']`` via
-``set_hermes_home_override`` before ``run_conversation`` so the turn runs against
+``set_slave_home_override`` before ``run_conversation`` so the turn runs against
 the correct profile home. The two ephemeral RPC paths — ``prompt.background`` and
 ``preview.restart`` — spawn a fresh ``AIAgent`` on a NEW thread, and the
-``HERMES_HOME`` ContextVar set on the session-create thread does NOT propagate to
+``SLAVE_HOME`` ContextVar set on the session-create thread does NOT propagate to
 those threads. Without an explicit re-bind, a background/preview-restart turn under
 a non-default profile would run against the wrong home. This module locks in:
 
@@ -25,9 +25,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tui_gateway import server as srv
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
-PROFILE_HOME = "/home/user/.hermes/profiles/work"
+PROFILE_HOME = "/home/user/.slave/profiles/work"
 
 class _InlineThread:
     """Drop-in for ``threading.Thread`` that runs the target synchronously.
@@ -59,11 +59,11 @@ def override_calls():
     """
     agent_instance = MagicMock()
     # run_conversation returns a plain dict like the real agent does.
-    homes: list[str] = []  # get_hermes_home() as the ephemeral turn saw it
+    homes: list[str] = []  # get_slave_home() as the ephemeral turn saw it
 
     def _run_conversation(*_a, **_kw):
-        from hermes_constants import get_hermes_home
-        homes.append(str(get_hermes_home()))
+        from slave_constants import get_slave_home
+        homes.append(str(get_slave_home()))
         return {"final_response": "done"}
 
     agent_instance.run_conversation.side_effect = _run_conversation
@@ -96,19 +96,19 @@ class TestBackgroundProfileOverride:
         _run("prompt.background", {"text": "hi", "session_id": "ui1"}, fake_session)
 
         assert override_calls["homes"] == [PROFILE_HOME]
-        assert str(get_hermes_home()) != PROFILE_HOME
+        assert str(get_slave_home()) != PROFILE_HOME
 
     def test_background_restores_override_on_error(self, fake_session, override_calls):
         """A failing turn must still restore the override (finally-block parity)."""
         def _boom(*_a, **_kw):
-            override_calls["homes"].append(str(get_hermes_home()))
+            override_calls["homes"].append(str(get_slave_home()))
             raise RuntimeError("boom")
 
         override_calls["agent"].run_conversation.side_effect = _boom
         _run("prompt.background", {"text": "hi", "session_id": "ui1"}, fake_session)
 
         assert override_calls["homes"] == [PROFILE_HOME]
-        assert str(get_hermes_home()) != PROFILE_HOME
+        assert str(get_slave_home()) != PROFILE_HOME
 
 class TestPreviewRestartProfileOverride:
     def test_preview_binds_and_restores_profile_home(self, fake_session, override_calls):
@@ -120,7 +120,7 @@ class TestPreviewRestartProfileOverride:
         )
 
         assert override_calls["homes"] == [PROFILE_HOME]
-        assert str(get_hermes_home()) != PROFILE_HOME
+        assert str(get_slave_home()) != PROFILE_HOME
 
     def test_preview_does_not_close_agent(self, fake_session, override_calls):
         """The restarted preview server must survive: the ephemeral agent is NOT

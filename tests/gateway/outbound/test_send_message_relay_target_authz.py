@@ -6,7 +6,7 @@ outbound relay frame for it — authenticating the sender while never
 authorizing the destination. These tests drive the REAL `send_message_tool`
 entrypoint through the REAL production wiring (`gateway.relay.egress`,
 `gateway.channel_directory`, `gateway.relay.relay_fronted_platforms`) against
-a temp HERMES_HOME; nothing under test is constructed by the test itself.
+a temp SLAVE_HOME; nothing under test is constructed by the test itself.
 """
 
 from __future__ import annotations
@@ -101,7 +101,7 @@ def test_arbitrary_relay_chat_id_is_refused_and_never_egresses(relay_env):
         "error": (
             f"Refusing to send to unattested relay target 'discord:{ARBITRARY_CHAT}': "
             "this gateway has no record of that destination. Use "
-            "`hermes send --list` to see the targets it can reach."
+            "`slave send --list` to see the targets it can reach."
         )
     }
     assert sent == []
@@ -296,7 +296,7 @@ def test_slack_user_target_resolving_to_unattested_dm_is_refused(slack_relay_env
         "error": (
             f"Refusing to send to unattested relay target 'slack:{unattested}': "
             "this gateway has no record of that destination. Use "
-            "`hermes send --list` to see the targets it can reach."
+            "`slave send --list` to see the targets it can reach."
         )
     }
     assert sent == []

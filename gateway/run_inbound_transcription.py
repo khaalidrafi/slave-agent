@@ -68,9 +68,9 @@ def _clip_digest(path: str) -> Optional[bytes]:
 
 
 def _gate_key(path: str) -> Optional[tuple[str, bytes]]:
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     digest = _clip_digest(path)
-    return None if digest is None else (hermes_home_key(), digest)
+    return None if digest is None else (slave_home_key(), digest)
 
 
 def remember_gate_transcript(path: str, transcript: str) -> None:

@@ -2,7 +2,7 @@
 
 Turn 1 (process A) reads two bulky files (two signed functionCall steps) and answers. Turn 2
 (process B, ``--resume``) reads a third file; that response reports a huge ``promptTokenCount``, so
-Hermes compacts mid-turn (tiny ``compression.threshold_tokens``) before the next step, then the
+slave-agent compacts mid-turn (tiny ``compression.threshold_tokens``) before the next step, then the
 model makes one more signed call and answers.
 
 The fake validates every request like Google: roles alternate, every functionResponse follows
@@ -21,14 +21,14 @@ import pytest
 
 from tests.e2e.core.providers import _native_helpers as nh
 from tests.fakes.providers.gemini_native import (
-    HERMES_CONFIG,
-    HERMES_ENV,
+    SLAVE_CONFIG,
+    SLAVE_ENV,
     Call,
     Calls,
     GeminiFake,
     Recorded,
     Text,
-    hermes_model,
+    slave_model,
 )
 
 SUMMARY_MARK = "GEMINI-SUMMARY-CHECKPOINT"
@@ -69,8 +69,8 @@ class Run:
 @pytest.fixture(scope="module")
 def run(tmp_path_factory: pytest.TempPathFactory) -> Run:
     root = tmp_path_factory.mktemp("gemini_compaction")
-    home = nh.make_home(root, hermes_model(context_length=64_000), env_file=HERMES_ENV,
-                        extra_config={**HERMES_CONFIG, "compression": {"threshold_tokens": 12_000, "protect_last_n": 4}})
+    home = nh.make_home(root, slave_model(context_length=64_000), env_file=SLAVE_ENV,
+                        extra_config={**SLAVE_CONFIG, "compression": {"threshold_tokens": 12_000, "protect_last_n": 4}})
     rng = random.Random(7)
     words = "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima mike oscar".split()
     paths = []

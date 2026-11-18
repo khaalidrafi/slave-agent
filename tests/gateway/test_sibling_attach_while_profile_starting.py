@@ -24,7 +24,7 @@ class _Socket:
     """The browser end of one WebSocket: frames in, replies collected by id and in written order."""
 
     def __init__(self, authority):
-        self.scope = {'hermes.session_authority': authority}
+        self.scope = {'slave.session_authority': authority}
         self.inbound = asyncio.Queue()
         self.replies = {}
         self.order = []

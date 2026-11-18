@@ -26,7 +26,7 @@ logger = logging.getLogger("plugins.platforms.telegram.adapter")
 _RETRYABLE = (kinds.UNSENT, kinds.SERVER_ERROR)
 # Set on an error the upload request itself raised: only those can mean "it may be in the chat".
 # A local error (opening the file, a transcode) classifies the same way by type and never left.
-_REQUEST_ERROR_ATTR = "_hermes_telegram_media_request_error"
+_REQUEST_ERROR_ATTR = "_slave_telegram_media_request_error"
 
 
 async def send_media_retrying(

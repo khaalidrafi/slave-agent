@@ -1,7 +1,7 @@
 name: mediarag
 repo: https://github.com/dyiapanis/mediarag
 sha: 8b2423d52d3ef1e8da9e0418fd7218c8b899f05c
-description: 'Local, offline semantic search across your documents, notes, images, audio and subtitles: one index you query by meaning from Hermes or any MCP client, with snippets, timestamps and thumbnails from PDFs, Office files, photos and recordings.
+description: 'Local, offline semantic search across your documents, notes, images, audio and subtitles: one index you query by meaning from slave-agent or any MCP client, with snippets, timestamps and thumbnails from PDFs, Office files, photos and recordings.
 
 
   Disclosure —

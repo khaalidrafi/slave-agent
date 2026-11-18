@@ -3,7 +3,7 @@
 0.22.1 was cut from the gateway line, so its sessions carry a ``gateway.local_policy.v1`` receipt.
 0.22.2 is the classic line again: it resumes such a session by id, and when it compacts it ends the
 tip with ``compression`` and publishes the child with the parent's route columns
-(``hermes_state_compression._publish_child_session_row`` at v0.22.2), but it never advances the
+(``slave_state_compression._publish_child_session_row`` at v0.22.2), but it never advances the
 receipt. Back on the gateway, the receipt's tip then has a compression child, and every restore
 refused the session with ``storage_unavailable``.
 """
@@ -346,7 +346,7 @@ async def test_the_resume_hint_the_tui_prints_opens_the_session(tmp_path, monkey
     from pathlib import Path
 
     from gateway.session_local import create_local_session
-    from hermes_cli.chat_launch import _short_resume_id
+    from slave_cli.chat_launch import _short_resume_id
     from persistence_assembly import open_persistence_reader
 
     authority, connection = await _owner(tmp_path, monkeypatch, 'first')

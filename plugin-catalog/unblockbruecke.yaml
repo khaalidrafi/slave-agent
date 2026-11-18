@@ -2,7 +2,7 @@ name: unblockbruecke
 title: Unblockbrücke
 repo: https://github.com/studioluftbruecke/hermes-unblockbruecke
 sha: 0aeeb7dbfff8650b21fe19e6d339af8b2a79e502
-description: "Cards to unblock yourself or your agent, drawn by you when you are stuck and by Hermes when its tool calls keep failing. Disclosure — With auto-draw switched on (off by default), once 3 of the last 5 tool calls in a turn failed it adds one card's text to that failing result (one card per turn), so the model reads it, and adds one line naming the card after that turn's reply (not in scheduled jobs, webhooks, the API server or single-query runs); the agent's deck tool can import a deck from any file path and export a .yaml deck file to any folder you name (attended chats only, never overwriting a non-deck file); the page's settings switches save through a short `hermes config set` child process."
+description: "Cards to unblock yourself or your agent, drawn by you when you are stuck and by slave-agent when its tool calls keep failing. Disclosure — With auto-draw switched on (off by default), once 3 of the last 5 tool calls in a turn failed it adds one card's text to that failing result (one card per turn), so the model reads it, and adds one line naming the card after that turn's reply (not in scheduled jobs, webhooks, the API server or single-query runs); the agent's deck tool can import a deck from any file path and export a .yaml deck file to any folder you name (attended chats only, never overwriting a non-deck file); the page's settings switches save through a short `slave config set` child process."
 maintainer: studioluftbruecke
 tier: community
 category: desktop
@@ -19,8 +19,8 @@ screenshots:
 readme: true
 platforms: [linux, macos]
 known_issues:
-  - "Auto-draw is off by default. Switch on \"Hermes draws when stuck\" in Settings, Plugins, Unblockbrücke, Agent settings."
-  - "With Hermes on a server, install the plugin on the Desktop computer too, on the same version: Desktop loads the Unblockbrücke page from its own computer."
+  - "Auto-draw is off by default. Switch on \"slave-agent draws when stuck\" in Settings, Plugins, Unblockbrücke, Agent settings."
+  - "With slave-agent on a server, install the plugin on the Desktop computer too, on the same version: Desktop loads the Unblockbrücke page from its own computer."
 capabilities:
   provides_tools:
     - unblockbruecke_card

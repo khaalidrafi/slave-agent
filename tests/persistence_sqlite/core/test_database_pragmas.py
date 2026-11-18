@@ -99,7 +99,7 @@ class TestApplyDatabasePragmas:
     @staticmethod
     def _patch_cfg(monkeypatch, cfg):
         monkeypatch.setattr(
-            "hermes_cli.config.load_config_readonly",
+            "slave_cli.config.load_config_readonly",
             lambda: cfg,
         )
 
@@ -253,9 +253,9 @@ class TestPerformancePragmasEndToEnd:
             sqlite_support, "is_sqlite_wal_reset_vulnerable",
             lambda version_info=None: False,
         )
-        home = tmp_path / "hermes_home"
+        home = tmp_path / "slave_home"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("SLAVE_HOME", str(home))
         if config_text is not None:
             (home / "config.yaml").write_text(config_text)
         return home

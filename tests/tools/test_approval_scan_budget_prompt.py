@@ -29,9 +29,9 @@ GREP_500 = "\n".join(['v=$(grep -o "[^\\"]*" f)'] * 500)
 def manual_cli(monkeypatch):
     monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(approval, "_YOLO_MODE_FROZEN", False)
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-    monkeypatch.setenv("HERMES_SESSION_KEY", SESSION)
-    for name in ("HERMES_GATEWAY_SESSION", "HERMES_EXEC_ASK", "HERMES_YOLO_MODE"):
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", SESSION)
+    for name in ("SLAVE_GATEWAY_SESSION", "SLAVE_EXEC_ASK", "SLAVE_YOLO_MODE"):
         monkeypatch.delenv(name, raising=False)
     token = approval_context.set_current_session_key(SESSION)
     saved = set(approval._permanent_approved)
@@ -103,5 +103,5 @@ def test_a_hardline_verb_found_before_the_budget_ran_out_still_hard_refuses(tail
 
 
 def test_approvals_suggest_never_proposes_an_unread_command():
-    from hermes_cli.approvals_suggest import is_unsafe_class
+    from slave_cli.approvals_suggest import is_unsafe_class
     assert is_unsafe_class(_SCAN_INCOMPLETE_DESCRIPTION)

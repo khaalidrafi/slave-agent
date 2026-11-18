@@ -1,11 +1,11 @@
-"""Bot Desktop runtime: one headless Xfce desktop per Hermes profile, served over RFB on a private
-Unix socket, viewed and driven from Hermes Desktop.
+"""Bot Desktop runtime: one headless Xfce desktop per slave-agent profile, served over RFB on a private
+Unix socket, viewed and driven from slave-agent Desktop.
 
-Layout under ``<HERMES_HOME>/bot-desktop/``: ``display`` (allocated X display number), ``rfb.sock``
+Layout under ``<SLAVE_HOME>/bot-desktop/``: ``display`` (allocated X display number), ``rfb.sock``
 (Xvnc RFB Unix socket, 0600), ``Xauthority``, ``env`` (DISPLAY/XAUTHORITY/DBUS_SESSION_BUS_ADDRESS
 published by the launcher once Xfce's bus exists), ``launcher.pid``, ``launcher.log``, ``xdg/``
 (per-profile XDG_CONFIG_HOME so two profiles never share xfconf). Everything is profile-scoped via
-``get_hermes_home()`` so N profiles in one gateway get N desktops: one screen per bot on the shared
+``get_slave_home()`` so N profiles in one gateway get N desktops: one screen per bot on the shared
 machine.
 
 The launcher is ``launcher.sh`` next to this module; :func:`desktop_env` is what cua-driver and headed
@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Callable, Dict, Optional
 
 from agent.deadline import poll_until
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tools.bot_desktop import placement
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ PACKAGES = {
 
 
 def state_dir() -> Path:
-    return get_hermes_home() / "bot-desktop"
+    return get_slave_home() / "bot-desktop"
 
 
 def is_supported_host() -> bool:
@@ -81,11 +81,11 @@ def package_manager() -> Optional[str]:
 
 def install_command() -> Optional[str]:
     """The distro command that installs the Bot Desktop packages, as the human would type it on THIS host:
-    prefixed with ``sudo`` unless Hermes already runs as root, so it is both what the pane shows and what
+    prefixed with ``sudo`` unless slave-agent already runs as root, so it is both what the pane shows and what
     :mod:`tools.bot_desktop.install` runs. ``None`` when no package manager is present.
 
     Not a promise that it can run here: see :func:`installable`. The published Docker image supervises
-    every service under ``s6-setuidgid hermes`` (UID 10000 by default) and ships no ``sudo`` binary, so an
+    every service under ``s6-setuidgid slave`` (UID 10000 by default) and ships no ``sudo`` binary, so an
     install on a hosted instance is impossible no matter what this returns."""
     pm = package_manager()
     if pm is None:
@@ -107,7 +107,7 @@ def installable() -> bool:
     """Whether :func:`install_command` could actually succeed on this host.
 
     False on an unprivileged process with no ``sudo`` to reach for, which is exactly the published Docker
-    image: services drop to the ``hermes`` user and no ``sudo`` binary is installed. The packages can only
+    image: services drop to the ``slave`` user and no ``sudo`` binary is installed. The packages can only
     arrive in the image there, so :func:`start` says that instead of printing a sudo line the user has no
     way to run. ``status()`` still reports ``install_command`` for the pane; surfacing this there needs a
     wire-contract change and is deliberately out of scope.
@@ -303,7 +303,7 @@ def _kill_group_then_wait(pgid: Optional[int], pid: int, grace: float = 2.0) -> 
 # Host-wide (every profile allocates from one band), so it lives outside any profile home. A predictable
 # name must not be squattable: XDG_RUNTIME_DIR is the boundary — 0700 from logind, or from
 # docker/stage2-hook.sh in containers, which have none.
-_ALLOC_LOCK = Path(os.environ.get("XDG_RUNTIME_DIR") or Path.home() / ".cache") / "hermes-bot-desktop-alloc.lock"
+_ALLOC_LOCK = Path(os.environ.get("XDG_RUNTIME_DIR") or Path.home() / ".cache") / "slave-bot-desktop-alloc.lock"
 
 
 @contextlib.contextmanager
@@ -410,7 +410,7 @@ def _should_auto_start(env: dict[str, str]) -> bool:
         return False
     if missing_binaries():
         return False
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
     cfg = load_config_readonly().get("bot_desktop") or {}
     return bool(cfg.get("auto_start", False))
 
@@ -454,7 +454,7 @@ def idle_seconds() -> Optional[float]:
 
 
 def idle_stop_seconds() -> float:
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
     cfg = load_config_readonly().get("bot_desktop") or {}
     try:
         minutes = float(cfg.get("idle_stop_minutes", DEFAULT_IDLE_STOP_MINUTES))
@@ -527,7 +527,7 @@ def published_env() -> dict[str, str]:
     """Variables the launcher wrote once Xfce's private bus existed; empty when the desktop is down.
 
     Pure file reads on the common path: this is called from every browser / cua-driver env builder, so it
-    must not load config (that initializes HERMES_HOME). A sandbox-hosted screen leaves a host-side marker at
+    must not load config (that initializes SLAVE_HOME). A sandbox-hosted screen leaves a host-side marker at
     start; only its presence routes to the sandbox probe."""
     from tools.bot_desktop import sandbox_host
     if sandbox_host._read_marker():
@@ -609,7 +609,7 @@ def open_rfb_stream() -> subprocess.Popen:
 
 
 def geometry() -> str:
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
     cfg = load_config_readonly().get("bot_desktop") or {}
     return str(cfg.get("geometry") or "1440x900")
 
@@ -668,7 +668,7 @@ def _sandbox_status(profile: Optional[str], where) -> DesktopStatus:
         if where.backend == "docker":
             # The usual reason on an upgraded install: the persisted container predates the default
             # flip and was kept on purpose. The pane offers the switch instead of a config hint.
-            from hermes_cli.sandbox_image_switch import pending
+            from slave_cli.sandbox_image_switch import pending
             sw = pending()
             if sw is not None:
                 image_switch = {"current_image": sw.current_image, "target_image": sw.target_image,
@@ -698,7 +698,7 @@ def _sandbox_status(profile: Optional[str], where) -> DesktopStatus:
 
 def _profile_name() -> str:
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from slave_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
     except Exception:
         return "default"
@@ -784,36 +784,36 @@ def _spawn_and_wait(sd: Path, wait_seconds: float) -> DesktopStatus:
         # scrubbed child env like any other agent child, keeping the user's HOME.
         from tools.environments.local import served_profile_child_env
         child_env = served_profile_child_env(inherit_credentials=False)
-        child_env["HOME"] = child_env["HERMES_REAL_HOME"]
+        child_env["HOME"] = child_env["SLAVE_REAL_HOME"]
         for key in ("DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "SESSION_MANAGER"):
             child_env.pop(key, None)
-        from hermes_cli._launchers import installation_command
+        from slave_cli._launchers import installation_command
         from tools.bot_desktop.idle_watch import next_check_in
-        from hermes_cli._startup_fast import project_root_str
+        from slave_cli._startup_fast import project_root_str
         child_env.update({
-            "HERMES_BD_PROFILE": _profile_name(),
-            "HERMES_BD_DISPLAY_NUM": str(num),
-            "HERMES_BD_SOCKET": str(sd / "rfb.sock"),
-            "HERMES_BD_XAUTH": str(sd / "Xauthority"),
-            "HERMES_BD_ENV_FILE": str(env_file),
-            "HERMES_BD_CONFIG_HOME": str(sd / "xdg"),
-            "HERMES_BD_GEOMETRY": geometry(),
+            "SLAVE_BD_PROFILE": _profile_name(),
+            "SLAVE_BD_DISPLAY_NUM": str(num),
+            "SLAVE_BD_SOCKET": str(sd / "rfb.sock"),
+            "SLAVE_BD_XAUTH": str(sd / "Xauthority"),
+            "SLAVE_BD_ENV_FILE": str(env_file),
+            "SLAVE_BD_CONFIG_HOME": str(sd / "xdg"),
+            "SLAVE_BD_GEOMETRY": geometry(),
             # The launcher's idle self-stop runs tools.bot_desktop.idle_watch through the install's stable
-            # command (the ``hermes --run-module`` launcher on a store install, which follows Python pin changes
+            # command (the ``slave --run-module`` launcher on a store install, which follows Python pin changes
             # and picks the current dependency generation at every run; this interpreter elsewhere), in this
             # home, first once the screen could be due (nothing is idle at start). The screen outlives updates,
             # so the inherited PYTHONPATH generation is never pinned, and on a store install neither is this
             # interpreter.
-            "HERMES_BD_IDLE_CMD": shlex.join(installation_command(
+            "SLAVE_BD_IDLE_CMD": shlex.join(installation_command(
                 Path(project_root_str()), module="tools.bot_desktop.idle_watch")),
-            "HERMES_BD_HOME": str(get_hermes_home()),
-            "HERMES_BD_IDLE_FIRST_DELAY": str(next_check_in(idle_stop_seconds(), 0.0)),
+            "SLAVE_BD_HOME": str(get_slave_home()),
+            "SLAVE_BD_IDLE_FIRST_DELAY": str(next_check_in(idle_stop_seconds(), 0.0)),
         })
         from tools.bot_desktop.browser import dock_exec_line, dock_launch
         if (browser := dock_launch()) is not None:
             # The bare executable (the launcher checks it exists) and the ready-made, spec-quoted Exec= line.
-            child_env["HERMES_BD_BROWSER_EXEC"] = browser[0]
-            child_env["HERMES_BD_BROWSER_EXEC_LINE"] = dock_exec_line(*browser)
+            child_env["SLAVE_BD_BROWSER_EXEC"] = browser[0]
+            child_env["SLAVE_BD_BROWSER_EXEC_LINE"] = dock_exec_line(*browser)
         # A new file per start: the log is a diagnostic for THIS launch, and nothing rotates it otherwise. Not
         # truncated in place: the old screen's idle check (in a session of its own) may still hold the old file
         # open, and its late write would land in this one behind a run of NUL bytes.

@@ -19,7 +19,7 @@ PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4
 
 @pytest.mark.asyncio
 async def test_upload_is_authorized_private_staging_not_legacy_execution(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path / 'wrong-home'))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path / 'wrong-home'))
     home = tmp_path / 'owner'
     home.mkdir()
     with open_persistence(profile_scope(home=home)) as db:
@@ -94,7 +94,7 @@ def test_authenticated_daemon_upload_retains_exact_admitted_bytes(tmp_path):
               'auxiliary': {'title_generation': {'enabled': False}}, 'platform_toolsets': {'cli': []}}
     (home / 'config.yaml').write_text(json.dumps(config))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', PYTHONUNBUFFERED='1')
 
     async def exercise(desc):

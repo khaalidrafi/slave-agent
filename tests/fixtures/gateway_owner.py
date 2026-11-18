@@ -10,9 +10,9 @@ import threading
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
-from hermes_cli.gateway_client import rpc_error
-from hermes_cli.gateway_connection import GatewayConnection
-from hermes_cli.gateway_session_store import GatewaySessionStore
+from slave_cli.gateway_client import rpc_error
+from slave_cli.gateway_connection import GatewayConnection
+from slave_cli.gateway_session_store import GatewaySessionStore
 
 
 class _Life:

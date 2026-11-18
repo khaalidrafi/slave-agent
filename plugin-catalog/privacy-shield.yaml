@@ -1,6 +1,6 @@
 # Catalog entry for privacy-shield (subdir of the MOTHR/security-suite monorepo).
 # Owner submission (Rule 5): submitted by MOTHR, owner of the plugin repo.
-# Validated with `hermes plugins validate` + `hermes plugins doctor --ci`
+# Validated with `slave plugins validate` + `slave plugins doctor --ci`
 # at this exact commit against a fresh clone.
 name: privacy-shield
 repo: https://github.com/MOTHR/hermes-security-suite

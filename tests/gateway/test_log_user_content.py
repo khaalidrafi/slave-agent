@@ -1,4 +1,4 @@
-"""Gateway logs at INFO+ carry no verbatim user content (#46006): `hermes debug share` uploads them."""
+"""Gateway logs at INFO+ carry no verbatim user content (#46006): `slave debug share` uploads them."""
 
 import hashlib
 import hmac
@@ -40,7 +40,7 @@ async def test_webhook_log_delivery_keeps_the_body_out_of_info(caplog, deliver):
 def _fresh_home(tmp_path, monkeypatch, name):
     home = tmp_path / name
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(helpers, "_LOG_HASH_SALTS", {})
     return home
 

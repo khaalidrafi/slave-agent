@@ -73,7 +73,7 @@ def _fake_docker(monkeypatch, security_options: str, fail: str = ""):
     monkeypatch.setattr(docker_env.subprocess, "run", _run)
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env.DockerEnvironment, "init_session", lambda self: None)
-    monkeypatch.setattr(os, "geteuid", lambda: 1000)  # Hermes itself is not root
+    monkeypatch.setattr(os, "geteuid", lambda: 1000)  # Slave itself is not root
     monkeypatch.setattr(os, "getegid", lambda: 1000)
     return calls
 
@@ -132,9 +132,9 @@ def test_root_container_teardown_hands_every_sandbox_mount_back_before_removal(
     if scenario == "persist-reap":
         (tmp_path / "link").symlink_to(real_sandbox)
     monkeypatch.setenv("TERMINAL_SANDBOX_DIR", str(tmp_path / ("link" if scenario == "persist-reap" else "sandboxes")))
-    if scenario == "persist-shared":  # profiles of one Hermes root, each with its default sandbox dir
+    if scenario == "persist-shared":  # profiles of one Slave root, each with its default sandbox dir
         monkeypatch.delenv("TERMINAL_SANDBOX_DIR")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "root" / "profiles" / "creator"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "root" / "profiles" / "creator"))
     caps = any(a in user_args for args in _CAP_ARGS.values() for a in args[-1:])
     fail = scenario.rsplit("-", 1)[1] if "fails" in scenario else scenario if scenario == "chown-timeout" else ""
     calls = _fake_docker(monkeypatch, security_options, fail=fail)
@@ -143,7 +143,7 @@ def test_root_container_teardown_hands_every_sandbox_mount_back_before_removal(
     shared.mkdir()
     decoy.mkdir(parents=True)
     if scenario == "persist-label":  # extra args (or an image LABEL) claim a host dir as a sandbox root
-        user_args = ["--label", f"hermes-sandbox={tmp_path / 'outside'}", "-v", f"{decoy}:/workspace"]
+        user_args = ["--label", f"slave-sandbox={tmp_path / 'outside'}", "-v", f"{decoy}:/workspace"]
     record = tmp_path / "sandboxes" / "docker" / "chown-back" / ".hermes-owner-handback"
     if scenario.startswith("reclaim"):  # an earlier root teardown handed these back; "link" is now a symlink
         record.parent.mkdir(parents=True)
@@ -153,7 +153,7 @@ def test_root_container_teardown_hands_every_sandbox_mount_back_before_removal(
         return docker_env.DockerEnvironment(
             image="python:3.12-slim", cwd="/root", timeout=5, task_id="chown-back", persistent_filesystem=True,
             persist_across_processes=scenario.startswith("persist"), run_as_host_user=run_as_host_user,
-            volumes=[f"{nested_ro}:/root/.hermes/skills:ro"],
+            volumes=[f"{nested_ro}:/root/.slave/skills:ro"],
             extra_args=["-v", f"{shared}:/workspace/shared", *user_args])
     env = _env()
     if scenario.startswith("reclaim-fails"):
@@ -175,7 +175,7 @@ def test_root_container_teardown_hands_every_sandbox_mount_back_before_removal(
     assert env.wait_for_cleanup(5)
     if scenario.startswith("persist"):  # a running container: strip bits/caps in place, give nothing away
         if scenario == "persist-shared":
-            monkeypatch.setenv("HERMES_HOME", str(tmp_path / "root" / "profiles" / "other"))
+            monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "root" / "profiles" / "other"))
         monkeypatch.setattr(docker_env.DockerEnvironment, "_find_reusable_container", lambda *a: ("fake-cid", "running"))
         if scenario == "persist-gone":
             docker_env.reap_orphan_containers(max_age_seconds=0)
@@ -210,7 +210,7 @@ def test_root_container_teardown_hands_every_sandbox_mount_back_before_removal(
     _assert_strip(strip, sandbox, caps)
     if scenario == "chown-timeout":  # the CLI is killed; the named throwaway must not run on
         name = chowns[0][0][chowns[0][0].index("--name") + 1]
-        assert name.startswith("hermes-handback-fake-cid-") and [docker_env.find_docker(), "rm", "-f", name] in [
+        assert name.startswith("slave-handback-fake-cid-") and [docker_env.find_docker(), "rm", "-f", name] in [
             argv for argv, _ in calls], calls
         assert calls.index((chowns[0][0], chowns[0][1])) < calls.index((strip, b""))  # a timeout never skips it
         return
@@ -229,5 +229,5 @@ def test_root_container_teardown_hands_every_sandbox_mount_back_before_removal(
     assert walk[walk.index("/usr/bin/find") + 1:walk.index("-xdev")] == ["-P", "/root", "/workspace"]
     assert " ".join(walk).endswith('( -type f -o -type d -o -type l ) -user 0 -print0'), walk  # no device nodes
     pruned = [walk[i + 1] for i, a in enumerate(walk) if a == "-path"]
-    assert {"/root/.hermes/skills", "/workspace/shared"} <= set(pruned)  # docker_volumes and extra-args binds
+    assert {"/root/.slave/skills", "/workspace/shared"} <= set(pruned)  # docker_volumes and extra-args binds
     assert "1000:1000" in chown and stdin == _ROOT_OWNED

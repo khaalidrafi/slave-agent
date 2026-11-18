@@ -124,7 +124,7 @@ async def test_turn_poll_loop_ignores_host_sleep(clock, monkeypatch):
 
 
 def test_stale_agent_eviction_ignores_host_sleep(clock, monkeypatch):
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", str(TIMEOUT_S))
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", str(TIMEOUT_S))
     turn = TurnState(ctx=TurnContext(), started_ts=clock.wall)
     agent = _ScriptedAgent(clock, [lambda c: c.sleep(SLEEP_S), lambda c: c.awake(TIMEOUT_S)])
     turn.agent = agent
@@ -143,7 +143,7 @@ def test_stale_agent_eviction_ignores_host_sleep(clock, monkeypatch):
 def test_stale_agent_eviction_drops_sleep_credit_once_the_agent_was_active_again(clock, monkeypatch):
     """Eviction samples the meter only when a message arrives. Sleep before the agent's
     post-resume activity must not keep discounting the idle time that followed that activity."""
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", str(TIMEOUT_S))
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", str(TIMEOUT_S))
     turn = TurnState(ctx=TurnContext(), started_ts=clock.wall)
 
     def work_after_resume_then_idle(c):

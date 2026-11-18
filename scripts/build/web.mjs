@@ -16,15 +16,15 @@ import { recordProduct, buildInputs } from './freshness.mjs'
 // already-running process, so the default heap cap is enforced with a single
 // re-exec (spawnSync → exit); the thread cap is set before vite is imported.
 // User-set env (NODE_OPTIONS heap flag, RAYON_NUM_THREADS) always wins, and
-// HERMES_WEB_BUILD_MAX_OLD_SPACE_SIZE / HERMES_WEB_BUILD_THREADS tailor the
-// caps; HERMES_WEB_BUILD_LIGHT=1 tightens them (1 thread, minimum heap) for
+// SLAVE_WEB_BUILD_MAX_OLD_SPACE_SIZE / SLAVE_WEB_BUILD_THREADS tailor the
+// caps; SLAVE_WEB_BUILD_LIGHT=1 tightens them (1 thread, minimum heap) for
 // hosts that cannot spare full CPU during the build.
 const MIN_HEAP_MB = 1024
 const MAX_HEAP_MB = 4096
 const MAX_THREADS = 8
 const TRUTHY = new Set(['1', 'true', 'yes', 'on'])
 
-const webBuildLight = () => TRUTHY.has(String(process.env.HERMES_WEB_BUILD_LIGHT ?? '').toLowerCase())
+const webBuildLight = () => TRUTHY.has(String(process.env.SLAVE_WEB_BUILD_LIGHT ?? '').toLowerCase())
 
 function availableCores() {
   try {
@@ -63,7 +63,7 @@ function boundedHeapMb() {
 
 function applyThreadCap() {
   if (process.env.RAYON_NUM_THREADS) return
-  const explicit = Number.parseInt(process.env.HERMES_WEB_BUILD_THREADS ?? '', 10)
+  const explicit = Number.parseInt(process.env.SLAVE_WEB_BUILD_THREADS ?? '', 10)
   const threads = Number.isFinite(explicit) && explicit > 0 ? explicit
     : (webBuildLight() ? 1 : boundedThreads())
   process.env.RAYON_NUM_THREADS = String(Math.max(1, threads))
@@ -74,7 +74,7 @@ function applyThreadCap() {
 async function ensureHeapCapForFreshProcess() {
   const tokens = (process.env.NODE_OPTIONS ?? '').split(/\s+/).filter(Boolean)
   if (tokens.some(token => token.startsWith('--max-old-space-size='))) return
-  const explicit = Number.parseInt(process.env.HERMES_WEB_BUILD_MAX_OLD_SPACE_SIZE ?? '', 10)
+  const explicit = Number.parseInt(process.env.SLAVE_WEB_BUILD_MAX_OLD_SPACE_SIZE ?? '', 10)
   const heapMb = Number.isFinite(explicit) && explicit > 0
     ? Math.max(MIN_HEAP_MB, explicit)
     : (webBuildLight() ? MIN_HEAP_MB : boundedHeapMb())
@@ -150,7 +150,7 @@ export async function buildWeb(options) {
 if (isMain(import.meta.url)) {
   try {
     const options = process.argv.length === 2
-      ? { source: repoRoot, icons: repoRoot, out: path.join(repoRoot, 'hermes_cli/web_dist') }
+      ? { source: repoRoot, icons: repoRoot, out: path.join(repoRoot, 'slave_cli/web_dist') }
       : frontendArgs(process.argv.slice(2), { icons: { type: 'string' } })
     const result = await buildWeb(options)
     console.log(`built ${result.index}`)

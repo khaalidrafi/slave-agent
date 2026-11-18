@@ -18,10 +18,10 @@ from tests.fixtures.storage_read import session_row
 
 
 def _reserve_homes(tmp_path, monkeypatch, names=('beta',)):
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.slave'
     root.mkdir(mode=0o700)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     homes = [('default', root)]
     for name in names:
         home = root / 'profiles' / name
@@ -38,7 +38,7 @@ async def test_secondary_pick_reaches_next_turn_after_primary_local_session(tmp_
     from gateway.session_controls import AuthorityConnection
     from gateway.session_policy import policy_for_source
     from gateway.session_local import LocalSessionAdapter, create_local_session
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
 
     monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {
         'platform_toolsets': {'cli': [], 'tui': []},

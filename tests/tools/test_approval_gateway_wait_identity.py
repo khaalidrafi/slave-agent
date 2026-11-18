@@ -73,7 +73,7 @@ def test_the_command_guard_keys_prompts_on_what_runs(monkeypatch):
     monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(wait_mod._ctx, "_fire_approval_hook", lambda name, **kw: None)
     monkeypatch.setattr(wait_mod._ctx, "_get_approval_timeout", lambda: 60)
-    for name, value in (("HERMES_GATEWAY_SESSION", "1"), ("HERMES_EXEC_ASK", "1"), ("HERMES_SESSION_KEY", SESSION_KEY)):
+    for name, value in (("SLAVE_GATEWAY_SESSION", "1"), ("SLAVE_EXEC_ASK", "1"), ("SLAVE_SESSION_KEY", SESSION_KEY)):
         monkeypatch.setenv(name, value)
     follows: list[str] = []
     real_follow = wait_mod._await_coalesced_leader

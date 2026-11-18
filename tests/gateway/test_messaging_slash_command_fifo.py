@@ -150,7 +150,7 @@ async def test_idle_rewrite_waits_behind_a_queued_row(monkeypatch, command):
     from gateway.session_ingress import admit_message, executing_admission
     from gateway.session_ingress_context import native_callback
     from gateway.session_results import execution_result
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     runner, adapter, _sent = _owner(monkeypatch)
     real_schedule = SessionAuthority._schedule
@@ -168,12 +168,12 @@ async def test_idle_rewrite_waits_behind_a_queued_row(monkeypatch, command):
         return 'ok'
     monkeypatch.setattr(runner, '_handle_message_with_agent', turn)
     follow_up = MessageEvent(text='B', source=source, message_id='B')
-    with native_callback(runner, follow_up, get_hermes_home()):
+    with native_callback(runner, follow_up, get_slave_home()):
         waiter = asyncio.create_task(admit_message(authority, follow_up))
         await async_wait_until(lambda: authority.waiters)
     owner = runner.session_store.peek_session_id(runner.session_store._generate_session_key(source))
     cmd = MessageEvent(text=command, message_type=MessageType.COMMAND, source=source, message_id='C')
-    with native_callback(runner, cmd, get_hermes_home()):
+    with native_callback(runner, cmd, get_slave_home()):
         task = asyncio.create_task(runner._handle_message(cmd))
         await async_wait_until(lambda: order or len(authority.persistence.admissions.list(session_id=owner)) >= 2,
                                what=f'{command} to run or be admitted')

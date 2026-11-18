@@ -2,7 +2,7 @@
 import pytest
 
 from agent import secret_scope as ss
-from hermes_constants import hermes_home_key
+from slave_constants import slave_home_key
 
 
 @pytest.fixture(autouse=True)
@@ -100,10 +100,10 @@ class TestRoutedForeignHomeScope:
     the .env-overlay fallthrough is only safe when the scope's home IS ours."""
 
     def test_scoped_miss_under_foreign_home_returns_default(self, monkeypatch, tmp_path):
-        from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+        from slave_constants import set_slave_home_override, reset_slave_home_override
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-launch-profile")
-        home_token = set_hermes_home_override(str(tmp_path / "other-profile"))
+        home_token = set_slave_home_override(str(tmp_path / "other-profile"))
         token = ss.set_secret_scope({})
         try:
             assert ss.serves_routed_profile() is True
@@ -111,38 +111,38 @@ class TestRoutedForeignHomeScope:
             assert ss.get_secret("OPENAI_API_KEY", "d") == "d"
         finally:
             ss.reset_secret_scope(token)
-            reset_hermes_home_override(home_token)
+            reset_slave_home_override(home_token)
 
     def test_scoped_miss_under_own_home_keeps_env_overlay(self, monkeypatch, tmp_path):
         """The deliberate single-profile overlay: a scope bound for the process's
         own home still falls through to os.environ (systemd / op run credentials)."""
-        from hermes_constants import get_process_hermes_home, set_hermes_home_override, reset_hermes_home_override
+        from slave_constants import get_process_slave_home, set_slave_home_override, reset_slave_home_override
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-own-env")
-        home_token = set_hermes_home_override(str(get_process_hermes_home()))
+        home_token = set_slave_home_override(str(get_process_slave_home()))
         token = ss.set_secret_scope({})
         try:
             assert ss.serves_routed_profile() is False
             assert ss.get_secret("OPENAI_API_KEY") == "sk-own-env"
         finally:
             ss.reset_secret_scope(token)
-            reset_hermes_home_override(home_token)
+            reset_slave_home_override(home_token)
 
     def test_scope_hit_under_foreign_home_still_wins(self, monkeypatch, tmp_path):
         """A scoped hit is unaffected: only the miss branch changes."""
-        from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+        from slave_constants import set_slave_home_override, reset_slave_home_override
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-launch-profile")
-        home_token = set_hermes_home_override(str(tmp_path / "other-profile"))
+        home_token = set_slave_home_override(str(tmp_path / "other-profile"))
         token = ss.set_secret_scope({"OPENAI_API_KEY": "sk-served-profile"})
         try:
             assert ss.get_secret("OPENAI_API_KEY") == "sk-served-profile"
         finally:
             ss.reset_secret_scope(token)
-            reset_hermes_home_override(home_token)
+            reset_slave_home_override(home_token)
 
     def test_stamped_foreign_scope_miss_fails_closed_without_override(self, monkeypatch, tmp_path):
-        """The kanban/MCP shape: a foreign-home scope bound WITHOUT the HERMES_HOME
+        """The kanban/MCP shape: a foreign-home scope bound WITHOUT the SLAVE_HOME
         override (deliberate — those paths need the dispatcher's policy reads).
         The profile_home stamp makes serves_routed_profile see it anyway."""
         monkeypatch.setenv("OPENAI_API_KEY", "sk-launch-profile")
@@ -157,10 +157,10 @@ class TestRoutedForeignHomeScope:
     def test_stamped_own_home_scope_keeps_env_overlay(self, monkeypatch):
         """A scope stamped with the process's own home is not routed: env
         fallthrough stays, matching launch_secret_scope's documented precedence."""
-        from hermes_constants import get_process_hermes_home
+        from slave_constants import get_process_slave_home
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-own-env")
-        token = ss.set_secret_scope({}, profile_home=str(get_process_hermes_home()))
+        token = ss.set_secret_scope({}, profile_home=str(get_process_slave_home()))
         try:
             assert ss.serves_routed_profile() is False
             assert ss.get_secret("OPENAI_API_KEY") == "sk-own-env"
@@ -190,7 +190,7 @@ class TestRoutedForeignHomeScope:
     def test_worker_profile_scope_fails_closed_on_a_scoped_miss_e2e(self, monkeypatch, tmp_path):
         """The kanban spawn-env build binds the assignee's whole scope. The profile_home stamp
         must make scoped misses fail closed, or the dispatcher's env leaks into B's worker env."""
-        from hermes_cli.kanban_db_dispatch import _worker_profile_scope
+        from slave_cli.kanban_db_dispatch import _worker_profile_scope
 
         foreign = tmp_path / "profiles" / "assignee"
         foreign.mkdir(parents=True)
@@ -205,12 +205,12 @@ class TestRoutedForeignHomeScope:
 
 class TestScopeSetupRecovery:
     """A raise mid-scope-setup must release whatever was already bound — a leaked
-    HERMES_HOME override or secret scope silently re-homes every later read in
+    SLAVE_HOME override or secret scope silently re-homes every later read in
     the caller's context."""
 
     def test_profile_runtime_scope_setup_failure_restores_override(self, monkeypatch, tmp_path):
         from gateway.run import _profile_runtime_scope
-        from hermes_constants import get_hermes_home_override
+        from slave_constants import get_slave_home_override
 
         foreign = tmp_path / "profiles" / "b"
         foreign.mkdir(parents=True)
@@ -222,12 +222,12 @@ class TestScopeSetupRecovery:
         with pytest.raises(RuntimeError):
             with _profile_runtime_scope(foreign, hydrate_secrets=False):
                 pass
-        assert get_hermes_home_override() is None
+        assert get_slave_home_override() is None
         assert ss.current_secret_scope() is None
 
     def test_worker_profile_scope_setup_failure_restores_override(self, monkeypatch, tmp_path):
-        from hermes_cli.kanban_db_dispatch import _worker_profile_scope
-        from hermes_constants import get_hermes_home_override
+        from slave_cli.kanban_db_dispatch import _worker_profile_scope
+        from slave_constants import get_slave_home_override
 
         foreign = tmp_path / "profiles" / "assignee"
         foreign.mkdir(parents=True)
@@ -239,7 +239,7 @@ class TestScopeSetupRecovery:
         with pytest.raises(RuntimeError):
             with _worker_profile_scope(str(foreign)):
                 pass
-        assert get_hermes_home_override() is None
+        assert get_slave_home_override() is None
         assert ss.current_secret_scope() is None
 
     def test_model_switch_bind_releases_partial_scopes_on_raise(self, monkeypatch, tmp_path):
@@ -247,7 +247,7 @@ class TestScopeSetupRecovery:
         bound (home override + secret scope). Driven through ``server`` — the split module's
         functions run rebound on server.py's globals (``bind_module``)."""
         from tui_gateway import server
-        from hermes_constants import get_hermes_home_override
+        from slave_constants import get_slave_home_override
 
         home = tmp_path / "profiles" / "b"
         home.mkdir(parents=True)
@@ -258,7 +258,7 @@ class TestScopeSetupRecovery:
         monkeypatch.setattr("tools.terminal_scope.prepare_profile_terminal_scope", boom)
         with pytest.raises(RuntimeError):
             server._profile_runtime_scope_tokens(home, hydrate_secrets=False)
-        assert get_hermes_home_override() is None
+        assert get_slave_home_override() is None
         assert ss.current_secret_scope() is None
 
 
@@ -291,7 +291,7 @@ class TestEnvFileParsing:
         '\"' or '\\' worked interactively but were corrupted under scoped
         (cron / multiplex) resolution.
         """
-        from hermes_cli.config import _quote_env_value
+        from slave_cli.config import _quote_env_value
 
         original = 'tok"en\\with spaces'
         (tmp_path / ".env").write_text(f"MY_TOKEN={_quote_env_value(original)}\n")
@@ -344,7 +344,7 @@ class TestEnvFileParsing:
     def test_round_trip_writer_value_with_trailing_comment(self, tmp_path):
         """A value quoted by the save_env_value writer survives an appended
         inline comment byte-exactly."""
-        from hermes_cli.config import _quote_env_value
+        from slave_cli.config import _quote_env_value
 
         original = 'we#ird "tok\\en" # not a comment'
         quoted = _quote_env_value(original)
@@ -391,9 +391,9 @@ class TestEnvFileParsing:
         self, tmp_path, monkeypatch
     ):
         (tmp_path / ".env").write_text("XIAOMI_API_KEY=placeholder\n")
-        from hermes_cli import env_loader
+        from slave_cli import env_loader
 
-        home_key = hermes_home_key(tmp_path)
+        home_key = slave_home_key(tmp_path)
         monkeypatch.setitem(
             env_loader._SECRET_SOURCE_VALUES_BY_HOME,
             home_key,
@@ -411,11 +411,11 @@ class TestEnvFileParsing:
         other = tmp_path / "other"
         profile.mkdir()
         other.mkdir()
-        from hermes_cli import env_loader
+        from slave_cli import env_loader
 
         monkeypatch.setitem(
             env_loader._SECRET_SOURCE_VALUES_BY_HOME,
-            hermes_home_key(other),
+            slave_home_key(other),
             {"XIAOMI_API_KEY": "sk-other-profile"},
         )
 
@@ -431,15 +431,15 @@ class TestEnvFileParsing:
         profile = tmp_path / "profile"
         profile.mkdir()
         (profile / ".env").write_text(
-            "HERMES_MANAGED_DIR=/nonexistent/user-choice\n"
+            "SLAVE_MANAGED_DIR=/nonexistent/user-choice\n"
             "SLACK_ALLOWED_USERS=legit-profile-value\n",
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_MANAGED_DIR", "/launch/admin-dir")
+        monkeypatch.setenv("SLAVE_MANAGED_DIR", "/launch/admin-dir")
 
         scope = ss.build_profile_secret_scope(profile)
 
-        assert "HERMES_MANAGED_DIR" not in scope
+        assert "SLAVE_MANAGED_DIR" not in scope
         assert scope["SLACK_ALLOWED_USERS"] == "legit-profile-value"  # control: others survive
 
         # The direct-reader threat: an installed scope must answer `.get` miss for the
@@ -447,7 +447,7 @@ class TestEnvFileParsing:
         ss.set_multiplex_active(True)
         token = ss.set_secret_scope(dict(scope))
         try:
-            assert ss.current_secret_scope().get("HERMES_MANAGED_DIR") is None
+            assert ss.current_secret_scope().get("SLAVE_MANAGED_DIR") is None
         finally:
             ss.reset_secret_scope(token)
 
@@ -456,7 +456,7 @@ class TestEnvFileParsing:
         profile = tmp_path / "profile"
         profile.mkdir()
         (profile / ".env").write_text(
-            "hermes_managed_dir=/user/choice\nHermes_Home=/x\nOTHER=1\n", encoding="utf-8")
+            "slave_managed_dir=/user/choice\nSlave_Home=/x\nOTHER=1\n", encoding="utf-8")
         assert ss.build_profile_secret_scope(profile) == {"OTHER": "1"}
 
 

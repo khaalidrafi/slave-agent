@@ -14,10 +14,10 @@ def test_persist_branch_copies_the_parent_system_prompt(tmp_path, monkeypatch):
     from tests.fixtures.storage_seed import seed_session
     from tui_gateway import server
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
     with open_persistence(profile_scope(home=home)) as db:
         seed_session(db, "parent", "desktop", model="test-model")

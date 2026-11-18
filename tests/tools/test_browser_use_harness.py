@@ -1,4 +1,4 @@
-"""Browser Use caller -> browser-harness on Hermes's own interpreter -> actual child."""
+"""Browser Use caller -> browser-harness on slave-agent’s own interpreter -> actual child."""
 import importlib.metadata
 import json
 import subprocess
@@ -39,7 +39,7 @@ def test_browser_exec_child_environment(tmp_path, monkeypatch):
                      "print('ok')\n",
                      encoding="utf-8")
     monkeypatch.setattr(bu, "_find_cli", lambda: [sys.executable, str(probe)])
-    monkeypatch.setattr("hermes_cli.config_effective.load_user_config_effective", lambda: {"browser": {}})
+    monkeypatch.setattr("slave_cli.config_effective.load_user_config_effective", lambda: {"browser": {}})
     monkeypatch.setattr("tools.browser_session_cdp.get_cdp_override", lambda: "")
     monkeypatch.setattr("tools.browser_session_cdp.resolve_cdp_override", lambda url: url)
     monkeypatch.setattr("tools.browser_session_cloud.get_cloud_provider", lambda: None)
@@ -62,7 +62,7 @@ def test_browser_exec_child_environment(tmp_path, monkeypatch):
     assert result["success"], result
     child = json.loads(child_view.read_text(encoding="utf-8"))
     assert child["stdin"] == "print('payload')"
-    for key in ("PYTHONHOME", "OPENAI_API_KEY", "BROWSERBASE_API_KEY", "_HERMES_BU_PRIVATE_BROWSER"):
+    for key in ("PYTHONHOME", "OPENAI_API_KEY", "BROWSERBASE_API_KEY", "_SLAVE_BU_PRIVATE_BROWSER"):
         assert key not in child["env"]
     assert child["env"].get("PYTHONPATH") == bu._harness_site_dir()
     assert child["env"]["BU_NAME"] == "research"

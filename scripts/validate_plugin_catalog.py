@@ -1,15 +1,15 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-slave-env" python3 "$0" "$@"'
 """Standalone structural validator for plugin-catalog entry files.
 
 Validates ``plugin-catalog/*.yaml`` catalog entries and
 ``plugin-catalog/removed.yaml`` against the catalog contract schema, using
 only stdlib + ruamel.yaml so the admission CI (and third-party repos) can run it
-WITHOUT installing hermes-agent.
+WITHOUT installing slave-agent.
 
 NOTE: this script intentionally duplicates the schema rules instead of
-importing ``hermes_cli`` — the whole point is the no-install requirement for
+importing ``slave_cli`` — the whole point is the no-install requirement for
 cheap cross-repo CI use. The runtime twin of this schema lives in
-``hermes_cli/plugin_catalog.py``; if the contract changes there, update the
+``slave_cli/plugin_catalog.py``; if the contract changes there, update the
 rules here in lockstep.
 
 Usage:

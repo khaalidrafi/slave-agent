@@ -1,6 +1,6 @@
 """One-shot CLI exit linger for notify_on_complete background processes (#90879).
 
-A Bot Mode agent invoked as a short-lived ``hermes -p <bot> chat -Q
+A Bot Mode agent invoked as a short-lived ``slave -p <bot> chat -Q
 --query-file ...`` process (exactly how DM handoffs deliver) dispatches its
 reply via ``terminal(background=true, notify_on_complete=true)`` and then
 exits.  The reply child writes to a stdout pipe owned by the dying parent and
@@ -197,14 +197,14 @@ def test_config_reader_falls_back_when_config_unreadable(monkeypatch):
         raise RuntimeError("config unreadable")
 
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config", _boom, raising=False
+        "slave_cli.config.read_raw_config", _boom, raising=False
     )
     val = pr_mod.ProcessRegistry._oneshot_completion_wait_seconds()
     assert val > 0
 
 def test_config_value_is_floored_at_zero(monkeypatch):
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config",
+        "slave_cli.config.read_raw_config",
         lambda: {"terminal": {"oneshot_completion_wait_seconds": -5}},
         raising=False,
     )
@@ -330,7 +330,7 @@ def _run_e2e_parent(tmp_path, *, linger: bool) -> Path:
         encoding="utf-8",
     )
     env = dict(os.environ)
-    env.setdefault("HERMES_HOME", str(tmp_path / "hermes_home"))
+    env.setdefault("SLAVE_HOME", str(tmp_path / "slave_home"))
     proc = subprocess.run(
         [sys.executable, str(script)],
         capture_output=True,

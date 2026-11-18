@@ -59,7 +59,7 @@ def test_real_daemon_persists_hidden_rows_and_the_paste_title_preview(tmp_path, 
     home, user = tmp_path / 'state', tmp_path / 'user'
     home.mkdir(mode=0o700)
     user.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     monkeypatch.setenv('HOME', str(user))
     monkeypatch.setenv('USERPROFILE', str(user))
     model = ThreadingHTTPServer(('127.0.0.1', 0), Model)
@@ -75,7 +75,7 @@ def test_real_daemon_persists_hidden_rows_and_the_paste_title_preview(tmp_path, 
         'auxiliary': {'title_generation': {'enabled': True, 'model_upgrade_enabled': False}},
         'platform_toolsets': {'gui': []}, 'terminal': {'cwd': str(home)},
     }))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
         PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, PYTHONUNBUFFERED='1')
 
     paste = home / 'paste.txt'

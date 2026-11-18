@@ -12,7 +12,7 @@ import pytest
 import run_agent
 from agent.chat_completion_helpers import interruptible_streaming_api_call
 from agent.stream_max_lifetime import StreamLifetimeExceeded, resolve_stream_max_lifetime
-from hermes_cli.config_defaults import DEFAULT_CONFIG
+from slave_cli.config_defaults import DEFAULT_CONFIG
 
 
 class _DripWire:
@@ -53,9 +53,9 @@ class _DripWire:
 
 
 def _set_cap(monkeypatch, tmp_path, cap):
-    """``agent.stream_max_lifetime`` in a temp HERMES_HOME config.yaml, read by the real loader."""
+    """``agent.stream_max_lifetime`` in a temp SLAVE_HOME config.yaml, read by the real loader."""
     (tmp_path / "config.yaml").write_text(f"agent:\n  stream_max_lifetime: {cap}\n")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
 
 @pytest.fixture
@@ -68,9 +68,9 @@ def drip_wire():
 
 def test_cap_cuts_a_stream_that_never_goes_quiet(drip_wire, monkeypatch, tmp_path):
     _set_cap(monkeypatch, tmp_path, 1.5)
-    monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "1.0")
-    monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
-    monkeypatch.setenv("HERMES_STREAM_STALE_GIVEUP", "2")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_TIMEOUT", "1.0")
+    monkeypatch.setenv("SLAVE_STREAM_RETRIES", "0")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_GIVEUP", "2")
     agent = run_agent.AIAgent(
         api_key="test-key", base_url=drip_wire.base_url, model="m", provider="custom",
         platform="cli", quiet_mode=True, skip_context_files=True, skip_memory=True,

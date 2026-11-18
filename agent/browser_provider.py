@@ -2,7 +2,7 @@
 
 Providers register via :meth:`PluginContext.register_browser_provider`; the active one (selected by
 ``browser.cloud_provider``) supplies the CDP browser ``browser_exec`` drives in cloud mode. They live in
-``<repo>/plugins/browser/<name>/`` (built-in) or ``~/.hermes/plugins/browser/<name>/`` (user).
+``<repo>/plugins/browser/<name>/`` (built-in) or ``~/.slave/plugins/browser/<name>/`` (user).
 
 Session metadata contract (legacy ``CloudBrowserProvider`` shape; ``tools.browser_session`` caches it
 as-is). ``bb_session_id`` is a legacy key name kept verbatim — it holds the provider's session ID
@@ -31,14 +31,14 @@ class BrowserProvider(ProviderBase):
 
     Subclasses implement :attr:`name` (the ``browser.cloud_provider`` value), :meth:`is_available`, and
     the lifecycle trio :meth:`create_session` / :meth:`close_session` / :meth:`emergency_cleanup`.
-    ``get_setup_schema`` may add ``"post_setup"`` naming a ``hermes tools`` install hook.
+    ``get_setup_schema`` may add ``"post_setup"`` naming a ``slave tools`` install hook.
     """
 
     @abc.abstractmethod
     def is_available(self) -> bool:
         """True when this provider can service calls. Cheap check only (env var, token readable, dep
         importable) — must NOT make network calls; runs at tool-registration time and on every
-        ``hermes tools`` paint."""
+        ``slave tools`` paint."""
 
     @abc.abstractmethod
     def create_session(self, task_id: str) -> dict[str, object]:

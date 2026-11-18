@@ -6,7 +6,7 @@ maintainer: Light5566
 tier: community
 category: tools
 requires_hermes: ">=0.22.0"
-docs_url: https://github.com/Light5566/claude-lightkeeper#hermes-agent
+docs_url: https://github.com/Light5566/claude-lightkeeper#slave-agent
 version: "2.4.4"
 title: Lightkeeper
 image: https://raw.githubusercontent.com/Light5566/claude-lightkeeper/3d107f02e570c20d11196683a1608d2fc70f1749/docs/assets/social.png
@@ -16,8 +16,8 @@ screenshots:
   - https://raw.githubusercontent.com/Light5566/claude-lightkeeper/3d107f02e570c20d11196683a1608d2fc70f1749/docs/assets/gallery/bookstack.png
 platforms: [linux, macos]
 known_issues:
-  - "Verified with a real model on Hermes stable 0.22.2 in hermes chat -q mode: patch and write_file, the edit pointer, the verify-gate reminder, the note update and the session-end notice. Not yet verified: the messaging gateways, interactive multi-turn sessions, turns after a context compaction, concurrent sessions on one gateway, and host-unified main builds."
-  - "Does nothing until a vault covers the session's working directory: create one with python3 ~/.hermes/plugins/lightkeeper/bin/vault init <vault folder> --name <name> --repo <checkout> (README, Hermes Agent section). Needs the local terminal backend."
+  - "Verified with a real model on slave-agent stable 0.22.2 in slave chat -q mode: patch and write_file, the edit pointer, the verify-gate reminder, the note update and the session-end notice. Not yet verified: the messaging gateways, interactive multi-turn sessions, turns after a context compaction, concurrent sessions on one gateway, and host-unified main builds."
+  - "Does nothing until a vault covers the session's working directory: create one with python3 ~/.slave/plugins/lightkeeper/bin/vault init <vault folder> --name <name> --repo <checkout> (README, slave-agent section). Needs the local terminal backend."
 capabilities:
   provides_tools: []
   provides_hooks:

@@ -9,7 +9,7 @@ description: >-
   remote MCP server at mcp.parrotnotes.app (OAuth via a Supabase auth backend); note titles,
   transcripts and insights from the user's ParrotNotes account are pulled into the session
   context, and text the model passes to save_note_insight is written to that account. OAuth
-  must be enabled with `hermes mcp add parrotnotes --url https://mcp.parrotnotes.app/mcp --auth oauth`;
+  must be enabled with `slave mcp add parrotnotes --url https://mcp.parrotnotes.app/mcp --auth oauth`;
   the bundled mcp.json alone yields 401.
 maintainer: ParrotNotes
 tier: community

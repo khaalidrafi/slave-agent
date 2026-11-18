@@ -1,4 +1,4 @@
-"""Parity tests for the shared ``_HermesView`` base behind the Discord component views.
+"""Parity tests for the shared ``_SlaveView`` base behind the Discord component views.
 
 Every view must keep its own user-visible rejection strings and the shared
 timeout behaviour (buttons disabled, embed greyed with the expiry footer).
@@ -96,7 +96,7 @@ async def test_answered_view_is_released(monkeypatch, tmp_path, name, call):
     test_discord_approval_lifecycle)."""
     from tools import slash_confirm
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(slash_confirm, "resolve", AsyncMock(return_value=None))
     view = _views()[name]
     monkeypatch.setattr(view, "_check_auth", lambda _interaction: True)

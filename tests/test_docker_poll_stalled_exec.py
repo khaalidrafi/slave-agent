@@ -31,7 +31,7 @@ class _Clock:
 
 
 def _scripted_exec(clock: _Clock, outcomes: list):
-    def fake(container, command, *, user="hermes", timeout=30):
+    def fake(container, command, *, user="slave", timeout=30):
         clock.now += timeout if outcomes[0] == "stall" else 0.1
         outcome = outcomes.pop(0) if len(outcomes) > 1 else outcomes[0]
         if outcome == "stall":

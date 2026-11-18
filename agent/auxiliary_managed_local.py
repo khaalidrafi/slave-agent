@@ -1,4 +1,4 @@
-"""Which endpoint is the llama-server this Hermes manages (sibling of ``auxiliary_client``)."""
+"""Which endpoint is the llama-server this slave-agent manages (sibling of ``auxiliary_client``)."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def _managed_local_netloc() -> str:
     if now - ts < _MANAGED_LOCAL_STATE_TTL_S:
         return cached
     try:
-        from hermes_cli.local_runtime.supervisor import state_path
+        from slave_cli.local_runtime.supervisor import state_path
 
         raw = state_path().read_text(encoding="utf-8-sig")
         base = str((json.loads(raw) or {}).get("base_url", ""))
@@ -32,7 +32,7 @@ def _managed_local_netloc() -> str:
 
 
 def _is_managed_local_endpoint(base_url: Optional[str]) -> bool:
-    """True when *base_url* targets the llama-server this Hermes manages."""
+    """True when *base_url* targets the llama-server this slave-agent manages."""
     if not base_url:
         return False
     managed = _managed_local_netloc()

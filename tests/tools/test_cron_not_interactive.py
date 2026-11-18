@@ -1,7 +1,7 @@
 """Unattended approval contexts never resolve as interactive (#110932).
 
-A gateway sets HERMES_EXEC_ASK=1 at startup and hands its environ to every external cron
-worker; interactive launches export HERMES_INTERACTIVE=1. Inside cron nobody can answer the
+A gateway sets SLAVE_EXEC_ASK=1 at startup and hands its environ to every external cron
+worker; interactive launches export SLAVE_INTERACTIVE=1. Inside cron nobody can answer the
 card, so ``_presence()`` must clear the trio and let the gate resolve from
 ``approvals.cron_mode``. Unattended platforms keep ``is_ask`` only while their session has a
 registered approval notifier: api_server answers via the ``/v1/runs`` approval bridge, which
@@ -16,16 +16,16 @@ from tools import approval as approval_mod
 
 @pytest.fixture
 def leaked_presence(monkeypatch):
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
-    monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
-    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
+    monkeypatch.setenv("SLAVE_GATEWAY_SESSION", "1")
+    monkeypatch.delenv("SLAVE_CRON_SESSION", raising=False)
+    monkeypatch.delenv("SLAVE_SINGLE_QUERY_SESSION", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_PLATFORM", raising=False)
 
 
 def test_cron_context_clears_leaked_presence(monkeypatch, leaked_presence):
-    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.setenv("SLAVE_CRON_SESSION", "1")
     _, is_cli, is_gateway, is_ask = approval_mod._presence()
     assert (is_cli, is_gateway, is_ask) == (False, False, False)
 
@@ -41,8 +41,8 @@ def test_api_server_platform_keeps_exec_ask_for_runs_approval_bridge(monkeypatch
     survive — clearing it with a live bridge would turn every bridged dangerous command into
     an instant BLOCK. Without a notifier the gate falls to ``approvals.unattended_mode``
     (#100532; covered in test_approval.py)."""
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "api_server")
-    monkeypatch.setenv("HERMES_SESSION_KEY", "test-runs-bridge-presence")
+    monkeypatch.setenv("SLAVE_SESSION_PLATFORM", "api_server")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", "test-runs-bridge-presence")
     approval_mod.register_gateway_notify("test-runs-bridge-presence", lambda data: None)
     try:
         _, _, _, is_ask = approval_mod._presence()

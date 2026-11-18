@@ -17,7 +17,7 @@ description: >-
   events, 4000 characters) with a metadata-only consent row that cannot carry
   excerpt text. Imports are idempotent by content fingerprint. Python standard
   library only, no network access, no API key, no environment variable; the
-  database lives under $HERMES_HOME/plugin-data/tmewai/ and TMEWAI_DB_PATH
+  database lives under $SLAVE_HOME/plugin-data/tmewai/ and TMEWAI_DB_PATH
   overrides it. Disclosure — the plugin reads a personal social export the user
   points it at and stores it unencrypted in that local SQLite file; it never
   sends archive content anywhere, and archive_evidence only returns its capped

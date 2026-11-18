@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from tools.skills_hub_github import GitHubAuth, GitHubSource
 from tools.skills_hub_models import SkillBundle
-from tools.skills_hub_official import HermesIndexSource
+from tools.skills_hub_official import SlaveIndexSource
 from tools.skills_hub_skillssh import SkillsShSource
 
 ROW = {"name": "weread-skills", "description": "WeChat Reading skills", "source": "skills.sh",
@@ -18,7 +18,7 @@ def _generic_bundle(*_):
 
 
 def _index_source(row, github, monkeypatch):
-    src = HermesIndexSource(auth=GitHubAuth())
+    src = SlaveIndexSource(auth=GitHubAuth())
     src._index, src._loaded = {"skills": [row]}, True
     monkeypatch.setattr(src, "_get_github", lambda: github)
     return src

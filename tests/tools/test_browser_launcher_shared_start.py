@@ -1,6 +1,6 @@
 """Starting a persistent (shared) profile's browser is one step under the profile's cross-process lock.
 
-Two Hermes processes starting one profile at once must end with ONE Chromium both drive: the later one waits,
+Two slave-agent processes starting one profile at once must end with ONE Chromium both drive: the later one waits,
 then attaches (a second launch would wipe the first's ``DevToolsActivePort`` and lose Chromium's singleton). An
 attach probes and leases under the same lock, so the owner's stop cannot fall between the live probe and the
 lease and hand out a dead endpoint (``tools/browser_launcher.py``). Runs the real launcher against a fake Chromium
@@ -26,7 +26,7 @@ pytestmark = [pytest.mark.platforms("linux"),
 
 _REPO = Path(__file__).resolve().parents[2]
 
-# A Hermes process on a persistent profile: prints "ready", launches once it reads "go", prints
+# A Slave process on a persistent profile: prints "ready", launches once it reads "go", prints
 # "<pid> <owned> <cdp_url>" (or "ERR ..."), then exits normally on the next line.
 _RACER = textwrap.dedent("""\
     import os, sys

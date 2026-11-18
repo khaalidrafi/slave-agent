@@ -1,5 +1,5 @@
 """Plugin module-level caches must not hand profile A's state to profile B under a multiplexed
-HERMES_HOME override (``hermes_constants.set_hermes_home_override``).
+SLAVE_HOME override (``slave_constants.set_slave_home_override``).
 
 One invariant per mechanism: home-keyed slot with the unscoped module slot intact (router), credential-fingerprinted catalog keys (openrouter), per-home registries (memory
 provider skills), lru_cache keyed by the home (disk-cleanup).
@@ -19,15 +19,15 @@ from pathlib import Path
 import pytest
 
 from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 REPO = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    """Profile A (launch home, ``HERMES_HOME``) and profile B with different config/.env values."""
-    root = tmp_path / ".hermes"
+    """Profile A (launch home, ``SLAVE_HOME``) and profile B with different config/.env values."""
+    root = tmp_path / ".slave"
     a, b = root, root / "profiles" / "B"
     for home, tag in ((a, "A"), (b, "B")):
         home.mkdir(parents=True)
@@ -35,7 +35,7 @@ def homes(tmp_path, monkeypatch):
         (home / ".env").write_text(
             f"RAMP_ROUTER_API_KEY=router-key-{tag}\nRAMP_ROUTER_BASE_URL=https://{tag.lower()}.router.test/v1\n",
             encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("SLAVE_HOME", str(a))
     for var in ("RAMP_ROUTER_API_KEY", "RAMP_ROUTER_BASE_URL", "PYTEST_CURRENT_TEST"):
         monkeypatch.delenv(var, raising=False)
     return a, b
@@ -43,13 +43,13 @@ def homes(tmp_path, monkeypatch):
 
 @contextlib.contextmanager
 def scoped(home: Path):
-    t_home = set_hermes_home_override(str(home))
+    t_home = set_slave_home_override(str(home))
     t_secret = set_secret_scope(build_profile_secret_scope(home))
     try:
         yield
     finally:
         reset_secret_scope(t_secret)
-        reset_hermes_home_override(t_home)
+        reset_slave_home_override(t_home)
 
 
 class _Resp:
@@ -84,7 +84,7 @@ def test_router_efforts_cache_and_base_url_follow_the_active_profile(homes, monk
     """Efforts map + once-only flags are per home under an override (and the warm thread inherits the
     scope), while the unscoped path keeps using the module slots; the base URL comes from the
     profile's .env."""
-    from hermes_cli import urllib_security
+    from slave_cli import urllib_security
 
     a, b = homes
     profile, mod = _router()
@@ -153,7 +153,7 @@ def test_memory_provider_skill_prune_only_touches_the_active_home(homes, monkeyp
     """Pruning under profile B (whose active provider differs) must leave profile A's registered
     provider skill in place; A's own later prune still retracts it."""
     import plugins.memory as mem
-    from hermes_cli.plugins import _reset_plugin_managers_for_tests, get_plugin_manager
+    from slave_cli.plugins import _reset_plugin_managers_for_tests, get_plugin_manager
 
     a, b = homes
     _reset_plugin_managers_for_tests()

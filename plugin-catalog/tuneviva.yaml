@@ -1,7 +1,7 @@
 name: tuneviva
 repo: https://github.com/omercelik/tuneviva-skills
 sha: 7668e06fa823e1bb2746bd026dea5af51228c32b
-subdir: hermes
+subdir: slave
 description: >-
   Read-only sheet music discovery and practice links through TuneViva's
   Streamable HTTP MCP server, with browser-local recognition guidance.

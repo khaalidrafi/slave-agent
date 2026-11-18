@@ -36,7 +36,7 @@ PEER = {
 @pytest.fixture
 def store(tmp_path, scope_a):
     """A store outside the profile tree (no owner profile to fence by)."""
-    backend = SQLiteBackend({scope_a.hermes_home_key: tmp_path / "state.db"})
+    backend = SQLiteBackend({scope_a.slave_home_key: tmp_path / "state.db"})
     try:
         yield backend.open(scope_a)
     finally:
@@ -342,11 +342,11 @@ def test_donor_must_share_the_orphans_profile(tmp_path, monkeypatch):
     sibling profile's keyed row in a shared legacy store must never be named as donor
     (by contiguity or lineage), and the write-time re-verify must refuse the pair even
     from a stale report. A legacy NULL-stamped row still reads as this store's own."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     scope = ProfileScope(profile_dir=root, name="default")
-    backend = SQLiteBackend({scope.hermes_home_key: root / "state.db"})  # owner: default
+    backend = SQLiteBackend({scope.slave_home_key: root / "state.db"})  # owner: default
     try:
         routing = backend.open(scope).routing
         store = backend.open(scope).holder()

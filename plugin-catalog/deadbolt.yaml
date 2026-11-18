@@ -13,7 +13,7 @@ platforms: [linux, macos]
 readme: true
 known_issues:
   - "Requires a separately installed DeadBolt 2.0.0 engine and operator-provisioned local sidecar, run, policy and scoped admission credential."
-  - "Only this plugin's artifact commit route is gated; other Hermes tools, plugins, MCP routes and already-running work are outside its boundary."
+  - "Only this plugin's artifact commit route is gated; other slave-agent tools, plugins, MCP routes and already-running work are outside its boundary."
   - "New files only, existing parent directories, 32 KiB request limit and five-minute exact approvals. Admitted filesystem failures require operator reconciliation."
 capabilities:
   provides_tools: [deadbolt_prepare_write, deadbolt_commit_write]

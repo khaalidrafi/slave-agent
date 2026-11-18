@@ -17,20 +17,20 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from persistence.sqlite._state.holders import read_only_db_uri
-from hermes_cli.sqlite_safe_read import connect_tracked, read_header_bytes_preopen
+from slave_cli.sqlite_safe_read import connect_tracked, read_header_bytes_preopen
 
 from .._backend import translated
 
 from . import _recovery
 from ._base import AdminFile
 
-logger = logging.getLogger("hermes_cli.backup_restore")
-_backup_sqlite_logger = logging.getLogger("hermes_cli.backup_sqlite")
+logger = logging.getLogger("slave_cli.backup_restore")
+_backup_sqlite_logger = logging.getLogger("slave_cli.backup_sqlite")
 
 _SQLITE_HEADER = b"SQLite format 3\0"
 
 # Above this size ``PRAGMA integrity_check`` (walks every b-tree page: minutes of pegged CPU on a
-# 30 GB state.db, reading as a hung ``hermes update``) is replaced by the O(1) header+schema probe.
+# 30 GB state.db, reading as a hung ``slave update``) is replaced by the O(1) header+schema probe.
 # Sessions databases in the tens of GB are normal for heavy users, so the size-unbounded check is
 # never an acceptable default on the update path.
 DEFAULT_INTEGRITY_CHECK_MAX_BYTES = 2 << 30  # 2 GiB
@@ -349,7 +349,7 @@ def _foreign_db_holder_pids(db_path: Path) -> Optional[list[int]]:
 def _restore_epoch(path: Path) -> int:
     if not path.exists():
         return 0
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     with closing(connect_tracked(read_only_db_uri(path), uri=True, tracking_path=path,
                                  connect_fn=sqlite3.connect)) as conn:
@@ -365,7 +365,7 @@ def _restore_destination_epoch(dst: Path) -> int:
     except (OSError, sqlite3.Error, ValueError) as exc:
         raise OSError(
             f"Cannot read the canonical runtime epoch at {dst}; refusing in-place restore. "
-            "Use `hermes sessions recover --source <snapshot> --output <separate-path>` "
+            "Use `slave sessions recover --source <snapshot> --output <separate-path>` "
             "to salvage transcripts into a separate output."
         ) from exc
 
@@ -424,7 +424,7 @@ def _restore_db_pages(src: Path, dst: Path) -> bool:
     Callers go through ``restore_from``, which validates *src* and holds
     the maintenance reservation and epoch floor around this publication.
     """
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     dst_conn: Optional[sqlite3.Connection] = None
     try:
@@ -462,7 +462,7 @@ def _restore_db_pages(src: Path, dst: Path) -> bool:
                 logger.debug("Closing %s before the fallback restore failed: %s", dst, close_exc)
         # Fallback: unlink+move.  This still works for
         # the common case where no other process holds the DB open.
-        from hermes_cli.sqlite_safe_read import (
+        from slave_cli.sqlite_safe_read import (
             LiveConnectionError,
             offline_file_access,
         )
@@ -515,7 +515,7 @@ def _restore_db_pages(src: Path, dst: Path) -> bool:
         except LiveConnectionError as exc2:
             logger.error(
                 "Refusing unlink+move restore of %s: %s Close the in-process "
-                "database handles (or restart Hermes) and retry.",
+                "database handles (or restart slave-agent) and retry.",
                 dst, exc2,
             )
             return False
@@ -606,7 +606,7 @@ class BackupAdmin(AdminFile):
         """Return ``(sessions, messages)`` stored in the file.
 
         Read-only and best effort.  ``None`` means "unknown": a missing file, a
-        database that is not a Hermes session store, or one that cannot be read.
+        database that is not a slave-agent session store, or one that cannot be read.
         Callers must never read ``None`` as "zero rows": acting on an unreadable
         database would mask the very loss this count exists to surface.
         """
@@ -614,7 +614,7 @@ class BackupAdmin(AdminFile):
         if not path.is_file():
             return None
         try:
-            from hermes_cli.sqlite_safe_read import connect_tracked
+            from slave_cli.sqlite_safe_read import connect_tracked
 
             conn = connect_tracked(read_only_db_uri(path), uri=True, tracking_path=path, connect_fn=sqlite3.connect)
         except sqlite3.Error:
@@ -635,7 +635,7 @@ class BackupAdmin(AdminFile):
         if not db_path.is_file():
             return False
         try:
-            from hermes_cli.sqlite_safe_read import connect_tracked
+            from slave_cli.sqlite_safe_read import connect_tracked
 
             with closing(connect_tracked(read_only_db_uri(db_path), uri=True, timeout=5.0, tracking_path=db_path,
                                          connect_fn=sqlite3.connect)) as conn:

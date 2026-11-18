@@ -112,24 +112,24 @@ def pip_conf_index_url(env: Mapping[str, str]) -> str | None:
 NPM_PUBLIC_REGISTRY = "https://registry.npmjs.org/"
 
 
-def hermes_npmrc() -> Path | None:
-    """The profile's ``$HERMES_HOME/npmrc`` when it exists."""
-    from hermes_constants import get_hermes_home
+def slave_npmrc() -> Path | None:
+    """The profile's ``$SLAVE_HOME/npmrc`` when it exists."""
+    from slave_constants import get_slave_home
 
-    path = get_hermes_home() / "npmrc"
+    path = get_slave_home() / "npmrc"
     return path if path.is_file() else None
 
 
 def user_npmrc(env: Mapping[str, str]) -> Path:
-    """The user npmrc Hermes's npm and pnpm children read: a non-empty ``npm_config_userconfig``
-    (that exact name first, as pnpm and the desktop read it, then any case), else ``hermes_npmrc()``
+    """The user npmrc slave-agent’s npm and pnpm children read: a non-empty ``npm_config_userconfig``
+    (that exact name first, as pnpm and the desktop read it, then any case), else ``slave_npmrc()``
     (``source_build_env`` points ``NPM_CONFIG_USERCONFIG`` at it), else ``~/.npmrc``. As npm's
-    userconfig, the Hermes file replaces ``~/.npmrc``; the two never merge."""
+    userconfig, the slave-agent file replaces ``~/.npmrc``; the two never merge."""
     names = sorted((key for key in env if key.lower() == "npm_config_userconfig"), key=lambda key: key != "npm_config_userconfig")
     explicit = next((env[key] for key in names if env[key]), "")
     if explicit:
         return Path(explicit).expanduser()
-    return hermes_npmrc() or Path.home() / ".npmrc"
+    return slave_npmrc() or Path.home() / ".npmrc"
 
 
 # npm's line grammar (the ``ini`` package @npmcli/config parses with) and its ${VAR} / ${VAR?}

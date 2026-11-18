@@ -2,7 +2,7 @@
 
 Only `reg delete` / `Remove-ItemProperty -Force` were gated; `reg add`, `setx` and
 `Set-ItemProperty` mutated persistent machine state with no prompt. Read verbs must stay quiet,
-and `hermes approvals suggest` must never propose a registry-write class for the allowlist.
+and `slave approvals suggest` must never propose a registry-write class for the allowlist.
 """
 
 import os
@@ -11,18 +11,18 @@ import sys
 
 import pytest
 
-from hermes_cli.approvals_suggest import is_unsafe_class
+from slave_cli.approvals_suggest import is_unsafe_class
 from tools.approval import detect_dangerous_command
 
 
 @pytest.mark.parametrize("cmd", [
-    r"reg add HKCU\Environment /v HERMES_TEST /t REG_SZ /d x /f",
+    r"reg add HKCU\Environment /v SLAVE_TEST /t REG_SZ /d x /f",
     r"reg.exe add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /v x /d c:\x.exe",
     r"REG ADD HKCU\Software\Thing /f",
     r"reg import C:\tmp\settings.reg",
     r"reg copy HKCU\Software\A HKCU\Software\B /s",
     r"reg restore HKLM\SOFTWARE\Thing C:\tmp\hive.hiv",
-    "setx HERMES_TEST x",
+    "setx SLAVE_TEST x",
     "setx.exe PATH \"%PATH%;C:\\tools\" /M",
     r"Set-ItemProperty -Path HKCU:\Environment -Name X -Value y",
     r"New-ItemProperty -Path HKCU:\Software\Thing -Name X -Value 1",

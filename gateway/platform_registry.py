@@ -15,7 +15,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Optional
 
-from hermes_constants import hermes_home_key
+from slave_constants import slave_home_key
 
 logger = logging.getLogger(__name__)
 # The verdict of an ``ensure_deps`` an async gateway caller already ran in an executor (#125607).
@@ -78,11 +78,11 @@ class PlatformEntry:
     # Connected/configured for this PlatformConfig (``get_connected_platforms``, setup UI);
     # None falls back to ``validate_config`` or ``check_fn``.
     is_connected: Optional[Callable[[Any], bool]] = None
-    required_env: list = field(default_factory=list)  # ``hermes setup`` display
+    required_env: list = field(default_factory=list)  # ``slave setup`` display
     install_hint: str = ""  # shown when check_fn is False
     setup_fn: Optional[Callable[[], None]] = None  # None = _setup_standard_platform / env display
     source: str = "plugin"  # "builtin" or "plugin"
-    plugin_name: str = ""  # owning manifest so ``hermes gateway setup`` can auto-enable it
+    plugin_name: str = ""  # owning manifest so ``slave gateway setup`` can auto-enable it
     allowed_users_env: str = ""  # comma-separated allowed user IDs (_is_user_authorized)
     allow_all_env: str = ""  # truthy "allow everyone" switch
     max_message_length: int = 0  # smart-chunking cap; 0 = no limit
@@ -160,7 +160,7 @@ class PlatformEntry:
     # ``gateway.platforms.send_targets.StandaloneSendPolicy`` or None (generic send routing).
     standalone_send: Optional[Any] = None
     # --- dashboard ---
-    # Channels-page card metadata (hermes_cli/web_server_messaging.py, Desktop + web dashboard).
+    # Channels-page card metadata (slave_cli/web_server_messaging.py, Desktop + web dashboard).
     # Every field defaults to "not declared": the card then falls back to ``label`` / ``install_hint``
     # / ``required_env`` + prefix-discovered env vars.
     dashboard_label: str = ""  # card title when it differs from ``label`` (status/CLI keep ``label``)
@@ -168,7 +168,7 @@ class PlatformEntry:
     docs_url: str = ""  # setup guide linked from the card
     dashboard_env_vars: tuple = ()  # card fields shown first, in this order, before discovered vars
     # Credentials the card treats as "configured"; None = ``required_env`` (which also drives
-    # ``hermes setup`` and the child-env scrub, so the card may legitimately ask for a different set).
+    # ``slave setup`` and the child-env scrub, so the card may legitimately ask for a different set).
     dashboard_required_env: Optional[tuple] = None
     # ``{ENV_KEY: (accepts(value) -> bool, 400 detail)}``: the dashboard PUT rejects a non-empty value
     # the predicate refuses, catching credentials pasted into the wrong field.
@@ -180,7 +180,7 @@ class PlatformEntry:
     # importable and may set token / home channel / reply mode or force-disable.
     env_overrides: tuple = ()
     # Env names whose presence drives that enable, cited by the explicit-disable WARNING and used by
-    # ``hermes_cli.profile_channels`` as the platform's credential set; () = none declared.
+    # ``slave_cli.profile_channels`` as the platform's credential set; () = none declared.
     env_enable_credentials: tuple = ()
 
 
@@ -201,12 +201,12 @@ class PlatformRegistry:
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._entries: dict[str, PlatformEntry] = {}  # process-global (e.g. the built-in relay)
-        # Plugin adapters are isolated per resolved HERMES_HOME and overlay the
+        # Plugin adapters are isolated per resolved SLAVE_HOME and overlay the
         # process-global entries for lookups in that profile's runtime scope.
         self._scoped_entries: dict[str, dict[str, PlatformEntry]] = {}
         # Deferred loaders: name -> callable importing the owning plugin module (which calls
         # register()); eagerly importing ~20 SDK-heavy adapters added seconds to every
-        # `hermes` invocation, so the import happens only when a lookup asks for it.
+        # `slave` invocation, so the import happens only when a lookup asks for it.
         self._deferred: dict[str, _Loader] = {}
         self._scoped_deferred: dict[str, dict[str, _Loader]] = {}
         self._inflight: dict[_LoadKey, threading.Event] = {}
@@ -231,7 +231,7 @@ class PlatformRegistry:
 
     @staticmethod
     def current_scope_key() -> str:
-        return hermes_home_key()
+        return slave_home_key()
 
     def _scope_maps(
         self, scope: Optional[str], *, create: bool = False
@@ -322,7 +322,7 @@ class PlatformRegistry:
             event = self._inflight.get(scoped_key)
             load_key = scoped_key
             if event is None and name not in entries and self._loading.get():
-                from hermes_cli.plugins_loader import in_plugin_load_worker
+                from slave_cli.plugins_loader import in_plugin_load_worker
                 if in_plugin_load_worker():
                     return  # on a deadline worker: never block on a sibling load the parent may hold the lock for; caller sees it unloaded
             if event is None and name not in entries:

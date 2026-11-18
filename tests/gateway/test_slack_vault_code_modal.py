@@ -198,8 +198,8 @@ def test_a_code_submitted_but_unconsumed_when_the_turn_ends_is_dropped(monkeypat
 
 
 @pytest.mark.parametrize("logger_name, marker", [
-    ("discord.gateway", "hermes_vault_code_value"),
-    ("slack_bolt.AsyncApp", "hermes_vault_code_submit"),
+    ("discord.gateway", "slave_vault_code_value"),
+    ("slack_bolt.AsyncApp", "slave_vault_code_submit"),
 ])
 def test_sdk_raw_frame_debug_logs_drop_a_modal_submit(logger_name, marker, caplog):
     """Both SDKs log every received frame at DEBUG before any handler runs (discord.py

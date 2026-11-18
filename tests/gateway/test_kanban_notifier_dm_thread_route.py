@@ -15,7 +15,7 @@ from gateway.config import GatewayConfig, Platform
 from gateway.kanban_watchers_notifier import _KanbanNotification, _notifier_collect
 from gateway.profile_routing import parse_profile_routes
 from gateway.run import GatewayRunner
-from hermes_cli import kanban_db as kb, kanban_db_connect as kbc, kanban_db_notify as kbn
+from slave_cli import kanban_db as kb, kanban_db_connect as kbc, kanban_db_notify as kbn
 
 DM = "D_TEST"
 THREAD_TS = "1234567890.123456"
@@ -39,9 +39,9 @@ class RecordingAdapter:
 
 def setup_runner(tmp_path, monkeypatch, routes):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(home / "kanban.db"))
+    home = tmp_path / ".slave"
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_KANBAN_DB", str(home / "kanban.db"))
     for name in ("household-coordinator",):
         profile = home / "profiles" / name
         profile.mkdir(parents=True)
@@ -147,7 +147,7 @@ def test_a_cli_thread_row_with_no_stated_chat_type_keeps_the_unknown_parent_gate
     """``notify-subscribe`` without ``--chat-type`` stores the column's 'dm' default; that default is
     no evidence ``chat_id`` is the thread's parent, so an earlier channel route still refuses."""
     import argparse
-    from hermes_cli import kanban as kc
+    from slave_cli import kanban as kc
 
     runner = setup_runner(tmp_path, monkeypatch, [
         dict(platform="discord", guild_id=TEAM, chat_id="C_OTHER", profile="household-coordinator"),

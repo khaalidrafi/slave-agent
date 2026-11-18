@@ -25,20 +25,20 @@ this session's brand hunks, disclosed in the message).
 
 * Requirements (what the tail commit contains)
 
-1. ~hermes update~ is now a pointer to the package manager
-   (~hermes_cli/subcommands/update.py~); the ~/update~ slash command stays
+1. ~slave update~ is now a pointer to the package manager
+   (~slave_cli/subcommands/update.py~); the ~/update~ slash command stays
    harmless instead of crashing.
 2. The post-install maintenance tail shared by installers and source builds
-   is re-homed into ~hermes_cli/install_maint.py~ (+987 lines: state-db
+   is re-homed into ~slave_cli/install_maint.py~ (+987 lines: state-db
    guard, release history, catalog seeds, skills sync, per-profile sync,
    config migration, notices) minus the updater-only parts. Read its
    docstring first — it explains which updater parts were kept as maintenance
    and which were dropped (HANDOFF.org review entry point #4).
 3. The one question the dashboard still needs from the deleted fleet module
-   got its own home: ~hermes_cli/gateway_systemd.py~ — "can this user
+   got its own home: ~slave_cli/gateway_systemd.py~ — "can this user
    elevate without prompting?" (~sudo -n true~ first, then a targeted probe,
    because a scoped NOPASSWD entry rejects the blanket one).
-4. ~hermes_cli/main.py~ lost its PEP-562 frozen updater surface (−317 lines)
+4. ~slave_cli/main.py~ lost its PEP-562 frozen updater surface (−317 lines)
    that existed only so deleted siblings could resolve names off it.
 5. ~scripts/ci/classify_changes.py~ re-armed the ~desktop_updater~ CI lane on
    the Electron shell's own updater, which is what still performs an update
@@ -58,7 +58,7 @@ this session's brand hunks, disclosed in the message).
 2. Everything else touched passes: ~50/50~ brand + steward with the 5
    attributed reds, ~23/23~ shop, generator-agreement and banner tests green
    (HANDOFF.org).
-3. Known-red, and why: ~tests/hermes_cli/test_steward_detection.py::TestUpdateAdmission~ — 5 tests still import ~hermes_cli.update_contract~,
+3. Known-red, and why: ~tests/slave_cli/test_steward_detection.py::TestUpdateAdmission~ — 5 tests still import ~slave_cli.update_contract~,
    which P0 deleted. They are the last visible part of the updater cleanup,
    not a regression. Fixing them is a separate board item (rewrite the
    assertions against the steward table instead of the deleted contract

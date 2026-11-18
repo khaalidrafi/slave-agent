@@ -11,10 +11,10 @@ import sqlite3
 import pytest
 
 from agent.insights import InsightsEngine
-from hermes_cli.session_export import iter_user_prompt_records, to_legacy_export_dict
-from hermes_cli.session_export_html import generate_multi_session_html_export
-from hermes_cli.session_export_md import _iso_timestamp
-from hermes_cli.sessions_cmd import _cmd_list
+from slave_cli.session_export import iter_user_prompt_records, to_legacy_export_dict
+from slave_cli.session_export_html import generate_multi_session_html_export
+from slave_cli.session_export_md import _iso_timestamp
+from slave_cli.sessions_cmd import _cmd_list
 from persistence.sqlite._holder import StoreHolder
 from persistence.sqlite.conversation._store.messages import append_message, append_messages_batch, get_messages
 from persistence.sqlite.conversation._store.sessions import (
@@ -52,7 +52,7 @@ def corrupt_db(backend_store):
 
 
 def test_list_export_and_insights_survive_corrupt_timestamp_rows(backend_store, corrupt_db, capsys, caplog):
-    with caplog.at_level(logging.WARNING, logger="hermes_cli.timefmt"):
+    with caplog.at_level(logging.WARNING, logger="slave_cli.timefmt"):
         with open_persistence_reader(corrupt_db.db_path) as store:
             _cmd_list(argparse.Namespace(limit=20, source=None, all=False, workspace=None), persistence=store)
         listing = capsys.readouterr().out

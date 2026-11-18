@@ -1,7 +1,7 @@
 """A browser pick attaches through the shared owner, copied only from a profile it may reach.
 
 The Webapp's upload route stages a browser file and hands the renderer a ``staged_upload`` receipt
-(``hermes_cli/staged_uploads.py``); once the browser is an attach client of the gateway, that
+(``slave_cli/staged_uploads.py``); once the browser is an attach client of the gateway, that
 receipt reaches the owner's canonical ``file.attach``, which only knew ``path``/``data_url`` and
 answered ``invalid_params`` for every browser file drop.
 """
@@ -19,7 +19,7 @@ def test_a_staged_browser_upload_attaches_only_from_its_own_backend_and_profile(
     home.mkdir()
     user.mkdir()
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED='1')
     result = subprocess.run([sys.executable, str(root / 'tests/gateway/fixtures/staged_file_attach_peer.py')],
                             cwd=root, env=env, capture_output=True, text=True, timeout=90, check=False)

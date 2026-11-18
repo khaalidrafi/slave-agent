@@ -1,4 +1,4 @@
-import { stringWidth, wrapAnsi } from '@hermes/ink'
+import { stringWidth, wrapAnsi } from '@slave-agent/ink'
 
 import type { Msg } from '../types.js'
 

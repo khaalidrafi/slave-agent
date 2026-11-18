@@ -13,10 +13,10 @@ description: >-
   session. reserve_delivery, confirm_delivery, update_delivery and cancel_delivery book, change or
   cancel a real delivery and take payment; the package marks the server untrusted, but the required
   sign-in step writes a config.yaml entry that replaces the package's own, trust included, unless
-  the user adds trust: untrusted to it. Hermes stores and refreshes the OAuth tokens. The tool list
+  the user adds trust: untrusted to it. slave-agent stores and refreshes the OAuth tokens. The tool list
   comes from Autolane's server at run time, so the pinned commit doesn't cover it. Invite-only for
   now. OAuth must be enabled with
-  `hermes mcp add courier-by-autolane --url https://mcp.goautolane.com/courier-mcp --auth oauth --connect-timeout 300`;
+  `slave mcp add courier-by-autolane --url https://mcp.goautolane.com/courier-mcp --auth oauth --connect-timeout 300`;
   the bundled mcp.json alone yields 401.
 maintainer: Autolane
 tier: community
@@ -26,7 +26,7 @@ docs_url: https://github.com/Autolane/hermes-courier-plugin/blob/65027e6025cdf51
 version: "1.0.0"
 platforms: []
 known_issues:
-  - "Sign in once after installing: hermes mcp add courier-by-autolane --url https://mcp.goautolane.com/courier-mcp --auth oauth --connect-timeout 300"
+  - "Sign in once after installing: slave mcp add courier-by-autolane --url https://mcp.goautolane.com/courier-mcp --auth oauth --connect-timeout 300"
 capabilities:
   provides_tools: []
   provides_hooks: []

@@ -23,17 +23,17 @@ def _streams_llamacpp(agent) -> bool:
     """True when this agent's chat requests go to llama-server: the managed server, or a
     ``llamacpp`` provider endpoint. These requests always stream and ask for prompt progress
     (unless the user turned streaming off in config). A non-streamed request can't be cancelled
-    through the router, so it would keep the server busy after Hermes gives up on it."""
+    through the router, so it would keep the server busy after slave-agent gives up on it."""
     if getattr(agent, "api_mode", "") not in ("", "chat_completions"):
         return False
-    from hermes_cli.local_runtime.capabilities import is_managed_provider
+    from slave_cli.local_runtime.capabilities import is_managed_provider
 
     return is_managed_provider(str(getattr(agent, "provider", "") or ""), str(getattr(agent, "base_url", "") or ""))
 
 
 def stale_giveup() -> int:
     """Consecutive stale attempts after which calls fail at once; 0 turns the breaker off."""
-    return env_int("HERMES_STREAM_STALE_GIVEUP", 5)
+    return env_int("SLAVE_STREAM_STALE_GIVEUP", 5)
 
 
 def _local_server_answers(agent) -> bool:
@@ -76,8 +76,8 @@ def _managed_local_load_notice(agent, api_kwargs: dict) -> Optional[str]:
         if not base:
             return None
         from agent.chat_completion_helpers import estimate_request_context_tokens
-        from hermes_cli.local_runtime.load_progress import get_loading_progress, get_prefill_progress
-        from hermes_cli.local_runtime.supervisor import state_path
+        from slave_cli.local_runtime.load_progress import get_loading_progress, get_prefill_progress
+        from slave_cli.local_runtime.supervisor import state_path
         state = json.loads(state_path().read_text(encoding="utf-8-sig"))
         managed = urlparse(str(state.get("base_url", ""))).netloc.lower()
         if not managed or urlparse(base).netloc.lower() != managed:

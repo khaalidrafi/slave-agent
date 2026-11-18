@@ -1,7 +1,7 @@
 """Remote backend lock order: same-thread re-entry, logging outside backend locks, the formatter."""
 from __future__ import annotations
 
-from hermes_cli.config_backend import ConfigBackendUnavailable, write_config_key
+from slave_cli.config_backend import ConfigBackendUnavailable, write_config_key
 from plugins.config_backends import remote as remote_pkg
 from plugins.config_backends.remote import backend as backend_mod
 
@@ -112,7 +112,7 @@ def test_boot_retry_warning_through_the_real_redacting_formatter(plane, monkeypa
     import logging
 
     from agent.redact import RedactingFormatter
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     backend = remote_pkg.get_remote_backend()
     formatted: list = []
@@ -134,11 +134,11 @@ def test_boot_retry_warning_through_the_real_redacting_formatter(plane, monkeypa
     backend_mod.logger.addHandler(handler)
     plane.upper = {"display": {"skin": "ares"}}
     plane.fail_status = 503
-    token = set_hermes_home_override(plane.home)
+    token = set_slave_home_override(plane.home)
     try:
         assert backend.read_user_doc(plane.home)["display"]["skin"] == "ares"  # booted after one retry
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
         backend_mod.logger.removeHandler(handler)
     assert any("retrying" in m for m in formatted), formatted
     assert len(_gets(plane)) == 2
@@ -149,10 +149,10 @@ def test_the_formatter_never_reads_config(tmp_path, monkeypatch):
     (its policy is not recorded yet: the secure default), and no config read is attempted."""
     import logging
 
-    import hermes_cli.config_backend as cb
+    import slave_cli.config_backend as cb
     from agent import redact
     from agent.redact import RedactingFormatter
-    from hermes_constants import hermes_home_key, reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import slave_home_key, reset_slave_home_override, set_slave_home_override
 
     reads: list = []
 
@@ -166,13 +166,13 @@ def test_the_formatter_never_reads_config(tmp_path, monkeypatch):
     monkeypatch.setattr(redact, "_REDACT_ENABLED", False)  # the launch profile opted out
     secret = "sk-proj-" + "c" * 32
     record = logging.LogRecord("t", logging.WARNING, __file__, 1, "key %s", (secret,), None)
-    token = set_hermes_home_override(tmp_path)
+    token = set_slave_home_override(tmp_path)
     try:
         out = RedactingFormatter("%(message)s").format(record)
-        redact.note_env_policy(hermes_home_key(), None)
-        redact.note_config_policy(hermes_home_key(), "false")  # recorded later: the profile opted out
+        redact.note_env_policy(slave_home_key(), None)
+        redact.note_config_policy(slave_home_key(), "false")  # recorded later: the profile opted out
         out_after = RedactingFormatter("%(message)s").format(record)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert secret not in out and secret in out_after
     assert reads == []

@@ -13,13 +13,13 @@ from contextvars import ContextVar, Token
 from pathlib import Path
 from typing import Any
 
-from hermes_cli._startup_fast import project_root_str
+from slave_cli._startup_fast import project_root_str
 
 logger = logging.getLogger(__name__)
 
 _UNSET: Any = object()
 
-_SESSION_CWD: ContextVar = ContextVar("HERMES_SESSION_CWD", default=_UNSET)
+_SESSION_CWD: ContextVar = ContextVar("SLAVE_SESSION_CWD", default=_UNSET)
 
 # The package/source root (<root>/agent/runtime_cwd.py). A backend launched from or
 # self-spawned into this tree (desktop default) must never let an os.getcwd() fallback
@@ -49,7 +49,7 @@ def clear_session_cwd() -> None:
 def scoped_session_cwd() -> str:
     """Return the current session's declared cwd without local path validation.
 
-    Remote and container paths may not exist on the Hermes host. Callers that only need
+    Remote and container paths may not exist on the slave-agent host. Callers that only need
     logical workspace identity should preserve the declared value instead of resolving it.
     """
     value = _SESSION_CWD.get()
@@ -111,8 +111,8 @@ def resolve_agent_cwd() -> Path:
 
 def resolve_context_cwd(*, include_session_override: bool = True) -> Path | None:
     """Configured cwd for context-file discovery, or None (build_context_files_prompt then falls back to the
-    launch dir). An existing configured path is honored verbatim — including the Hermes source tree, a
-    legitimate workspace when developing Hermes; fallback-directory policy lives in the caller.
+    launch dir). An existing configured path is honored verbatim — including the slave-agent source tree, a
+    legitimate workspace when developing slave-agent; fallback-directory policy lives in the caller.
 
     Launch-artifact callers can skip the session override while still honoring the active profile's
     TERMINAL_CWD.

@@ -35,7 +35,7 @@ print(json.dumps({"replayed": replayed, "writes": writes, "writers": writers}))
 
 
 def test_startup_restore_with_an_empty_ledger_neither_writes_nor_opens_a_writer():
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     StoreHolder(home / "state.db").close()
     root = Path(__file__).resolve().parents[2]
     env = dict(os.environ, PYTHONPATH=str(root))

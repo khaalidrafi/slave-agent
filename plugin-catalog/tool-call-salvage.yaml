@@ -12,8 +12,8 @@ description: >-
   and limited to the models you list, turns the markup into a real call to a tool offered in
   that request. Disclosure: no network, files, shell, subprocesses, telemetry or stored state;
   logs name the format and tools, never arguments; in salvage mode text the model wrote can
-  become a real tool call (tools offered in the request, or Hermes's tool_call bridge when
-  deferred_tools is on), run through Hermes's normal approvals.
+  become a real tool call (tools offered in the request, or slave-agent’s tool_call bridge when
+  deferred_tools is on), run through slave-agent’s normal approvals.
 maintainer: Julientalbot
 tier: community
 category: models

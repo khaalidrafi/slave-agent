@@ -273,7 +273,7 @@ def _make_runner(adapter):
 
 
 async def _run_turn(monkeypatch, tmp_path, *, consumer_cls=None, session_id):
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump(
@@ -303,7 +303,7 @@ async def _run_turn(monkeypatch, tmp_path, *, consumer_cls=None, session_id):
         monkeypatch.setattr(
             stream_consumer_mod, "GatewayStreamConsumer", consumer_cls
         )
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
     )
@@ -441,7 +441,7 @@ class TestLedgerReplaysDegradedDiscordSend:
         reconnect sweep; a generic 'Not connected' row (pre-fix error
         string) is stranded. This is the exact silent-loss mechanism from
         the #95382 field logs."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         import gateway.delivery_ledger as dl
 
         importlib.reload(dl)

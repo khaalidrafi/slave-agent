@@ -7,7 +7,7 @@ description: >-
   Disclosure — sends recall queries and explicit memory operations to api.thememoria.ai by default
   (or a configured self-hosted origin). When enabled, auto capture uploads completed user/assistant text
   for fact extraction, excluding tool results and media. A local SQLite outbox stores pending text;
-  credentials are resolved through the active Hermes profile's MEMORIA_API_KEY secret.
+  credentials are resolved through the active slave-agent profile's MEMORIA_API_KEY secret.
 maintainer: matrixorigin
 tier: community
 category: memory

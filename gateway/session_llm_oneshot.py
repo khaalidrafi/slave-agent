@@ -70,7 +70,7 @@ class _Pool:
             # Daemon: a call stuck on its model must not hold up interpreter exit (it writes no state).
             from agent.memory_provider import spawn_context_thread
             try:
-                spawn_context_thread(self.drain, name='hermes-oneshot').start()
+                spawn_context_thread(self.drain, name='slave-oneshot').start()
             except RuntimeError:
                 # No new worker (thread exhaustion). A live worker drains this call; with none it
                 # would never run, so it leaves the queue with its slot and the error goes out.
@@ -243,7 +243,7 @@ async def oneshot(connection, ref, params):
             raise AuthorityRefusal('permission_denied')
         if params.get('profile'):
             from pathlib import Path
-            from hermes_cli.profiles import profile_matches_home
+            from slave_cli.profiles import profile_matches_home
             if not profile_matches_home(params['profile'], Path(authority.profile_id)):
                 raise AuthorityRefusal('profile_mismatch')
         runtime = lambda: None  # the task backend

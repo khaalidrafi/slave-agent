@@ -182,9 +182,9 @@ def test_gws_bridge_refresh_writes_token_owner_only(monkeypatch, tmp_path):
     import io
     import urllib.request
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    slave_home = tmp_path / ".slave"
+    slave_home.mkdir()
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
     spec = importlib.util.spec_from_file_location(
         "gws_bridge_permissions_test", SCRIPT_PATH.with_name("gws_bridge.py")
     )

@@ -10,7 +10,7 @@ Fixtures provided:
 
 Collection policy: a contracts run that collects backend-bound cases fails when every such case has a ``skip`` marker or a ``skipif`` marker whose first positional argument is truthy; entirely backend-neutral collections are exempt. It tests that argument directly; it does not evaluate string conditions or read ``condition=``. Use ``require_capability`` for capability-gated optional features so the skip reason names the missing capability; ``_approved_skip`` also accepts uppercase ``QUIRK`` reason text.
 
-Skip accounting: per-backend outcome counts are collected from runtest reports (a skip raised at setup or call time counts as a skip; nothing is inferred at collection time) and written as JSON to the path in ``HERMES_CONTRACT_ACCOUNTING`` when set and reports or backend-bound collected nodes exist, keyed by backend name with collected/passed/skipped/xfailed/errored/failed counts plus each skipped node id and reason. With that artifact requested, ``pytest_sessionfinish`` fails an otherwise successful run on accounting violations, including an unapproved skip in a mapped authority case whose backend declares the capability; the accounting judges only the suites a run selected, so a partial run passes on its own cases, and it refuses xdist, whose workers would each reconcile the whole collection against their own reports.
+Skip accounting: per-backend outcome counts are collected from runtest reports (a skip raised at setup or call time counts as a skip; nothing is inferred at collection time) and written as JSON to the path in ``SLAVE_CONTRACT_ACCOUNTING`` when set and reports or backend-bound collected nodes exist, keyed by backend name with collected/passed/skipped/xfailed/errored/failed counts plus each skipped node id and reason. With that artifact requested, ``pytest_sessionfinish`` fails an otherwise successful run on accounting violations, including an unapproved skip in a mapped authority case whose backend declares the capability; the accounting judges only the suites a run selected, so a partial run passes on its own cases, and it refuses xdist, whose workers would each reconcile the whole collection against their own reports.
 """
 
 from __future__ import annotations
@@ -188,7 +188,7 @@ def pytest_collection_finish(session: pytest.Session) -> None:
 
 # ── outcome-based per-backend skip accounting ───────────────
 
-_ACCOUNTING_ENV = "HERMES_CONTRACT_ACCOUNTING"
+_ACCOUNTING_ENV = "SLAVE_CONTRACT_ACCOUNTING"
 
 
 def _backend_of(nodeid: str) -> Optional[str]:
@@ -316,7 +316,7 @@ def _authority_accounting() -> dict[str, Any]:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Write accounting JSON when HERMES_CONTRACT_ACCOUNTING names a path and reports or backend-bound collected nodes exist; fail an otherwise successful run on accounting violations.
+    """Write accounting JSON when SLAVE_CONTRACT_ACCOUNTING names a path and reports or backend-bound collected nodes exist; fail an otherwise successful run on accounting violations.
 
     Enforcement is tied to the artifact request: without the env var this hook returns without computing violations, writing an artifact, or changing the exit status. With the env var, violations turn a successful exit status into failure. Collected backend-bound nodes produce an artifact even when zero reports arrived (``missing_report``); with neither reports nor backend-bound collected nodes, no artifact is written.
     """

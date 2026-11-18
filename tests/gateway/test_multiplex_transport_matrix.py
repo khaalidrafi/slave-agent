@@ -1,6 +1,6 @@
 """The intake / delivery transport matrix (#88715 phase 4; gateway/AGENTS.md § Profile scope).
 
-Real ``GatewayRunner`` resolvers against a temp ``HERMES_HOME`` with three served profiles:
+Real ``GatewayRunner`` resolvers against a temp ``SLAVE_HOME`` with three served profiles:
 ``default`` (shared bot), ``ops`` (satellite routed through the shared bot) and ``team_b`` (its own
 bot). Every row is asserted in one fixture so the two historical fixes (#69246 shared transport
 preserved, #70625 route-override egress) cannot drift apart again.
@@ -58,7 +58,7 @@ def mux(tmp_path, monkeypatch):
     home = tmp_path / "hh"
     for name in ("ops", "team_b"):
         (home / "profiles" / name).mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     served = [("default", home), ("ops", home / "profiles" / "ops"), ("team_b", home / "profiles" / "team_b")]
     rig = _runner(multiplex=True, routes=[
         # shared credential → satellite (#69246)
@@ -70,10 +70,10 @@ def mux(tmp_path, monkeypatch):
          "bot_profile": "team_b"},
     ])
     rig.home = home
-    with patch("hermes_cli.profiles.profiles_to_serve", return_value=served), \
-            patch("hermes_cli.profiles.get_profile_dir",
+    with patch("slave_cli.profiles.profiles_to_serve", return_value=served), \
+            patch("slave_cli.profiles.get_profile_dir",
                   side_effect=lambda n: home if n == "default" else home / "profiles" / n), \
-            patch("hermes_cli.profiles.profile_exists", return_value=True):
+            patch("slave_cli.profiles.profile_exists", return_value=True):
         yield rig
 
 
@@ -149,7 +149,7 @@ def test_restored_rows_fail_closed_on_intake_and_deliver_only_via_a_unique_owner
 
     solo_home = tmp_path / "solo"
     solo_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(solo_home))
+    monkeypatch.setenv("SLAVE_HOME", str(solo_home))
     solo = _runner(multiplex=False)
     bare = SessionSource(platform=Platform.TELEGRAM, chat_id="42", chat_type="dm", user_id="42")
     assert solo.runner._intake_adapter_for(bare) is solo.runner._delivery_adapter_for(bare) is solo.primary
@@ -203,13 +203,13 @@ async def test_secondary_bot_route_runs_in_the_routed_runtime_scope(mux):
     does: that runtime's authority admits the turn, so a later completion wake finds the committed
     turn on the same ledger (#139726). The bot's own traffic keeps the bot profile's scope."""
     from gateway.platforms.event import MessageEvent
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     r = mux.runner
     scopes = []
 
     async def _handle_message(event):
-        scopes.append(get_hermes_home())
+        scopes.append(get_slave_home())
 
     r._handle_message = _handle_message
     handler = r._make_profile_message_handler("team_b")

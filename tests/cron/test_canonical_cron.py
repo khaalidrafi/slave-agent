@@ -7,7 +7,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 
 
 def test_agent_cron_is_transport_only_and_refuses_without_owner(monkeypatch):
-    from hermes_cli import gateway_client
+    from slave_cli import gateway_client
     calls = []
 
     @asynccontextmanager
@@ -27,12 +27,12 @@ def test_agent_cron_is_transport_only_and_refuses_without_owner(monkeypatch):
 def test_owner_ticker_uses_direct_admission_without_loopback(monkeypatch):
     from gateway import session_cron
     from types import SimpleNamespace
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     import threading
 
     async def probe():
-        authority = SimpleNamespace(db=SimpleNamespace(db_path=str(get_hermes_home() / 'state.db')),
-                                    persistence=storage_handle(get_hermes_home()))
+        authority = SimpleNamespace(db=SimpleNamespace(db_path=str(get_slave_home() / 'state.db')),
+                                    persistence=storage_handle(get_slave_home()))
         session_cron.bind_owner(authority)
         calls = []
 
@@ -60,8 +60,8 @@ def test_owner_ticker_uses_direct_admission_without_loopback(monkeypatch):
 
 def test_lost_cron_ack_retains_identity_instead_of_reporting_failure(tmp_path, monkeypatch):
     from cron.scheduler_authority import run_canonical_job, CronExecutionUnknown
-    from hermes_cli import gateway_client
-    from hermes_constants import get_hermes_home
+    from slave_cli import gateway_client
+    from slave_constants import get_slave_home
     import json
     import pytest
 
@@ -76,6 +76,6 @@ def test_lost_cron_ack_retains_identity_instead_of_reporting_failure(tmp_path, m
     monkeypatch.setattr(gateway_client, 'connect_gateway', connected)
     with pytest.raises(CronExecutionUnknown):
         run_canonical_job({'id': 'job'}, execution_id='fire')
-    records = list((get_hermes_home() / 'cron' / 'admissions').glob('*.json'))
+    records = list((get_slave_home() / 'cron' / 'admissions').glob('*.json'))
     assert len(records) == 1
     assert json.loads(records[0].read_text())['params']['request_id'] == 'fire'

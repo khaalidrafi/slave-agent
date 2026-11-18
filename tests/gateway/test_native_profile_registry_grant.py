@@ -34,7 +34,7 @@ def test_registry_grant_renames_and_deletes_only_its_own_served_profile(tmp_path
         (home / 'profiles' / name / 'config.yaml').write_text(json.dumps(model))
     root = Path(__file__).resolve().parents[2]
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                PYTHONUNBUFFERED='1')
     with (tmp_path / 'gateway.log').open('w+') as log:
         process = subprocess.Popen([sys.executable, '-m', 'gateway.run'], cwd=root, env=env,
@@ -56,7 +56,7 @@ def test_registry_grant_renames_and_deletes_only_its_own_served_profile(tmp_path
                 return str(home.resolve() if profile == 'default' else (home / 'profiles' / profile).resolve())
 
             def grant(profile, purpose):
-                return {'X-Hermes-Gateway-Ticket': control(home, 'session-ticket', {
+                return {'X-Slave-Gateway-Ticket': control(home, 'session-ticket', {
                     'profile_id': home_of(profile), 'purpose': purpose,
                     'instance_id': control(home, 'identify')['instance_id']})['ticket']}
 

@@ -265,7 +265,7 @@ def _format_elicitation_schema_summary(schema: dict, server_name: str) -> str:
 def _accepted_consent_content(schema: dict) -> Optional[dict]:
     """Translate a binary approval into a safe, schema-valid consent form.
 
-    Hermes' approval surfaces can answer yes/no, not collect arbitrary form
+    slave-agent’ approval surfaces can answer yes/no, not collect arbitrary form
     fields.  A required single boolean is unambiguous.  A required single
     enum is only unambiguous when it offers the conventional one-shot
     ``allow_once`` choice; choosing a session-wide grant would silently

@@ -22,7 +22,7 @@ from gateway.platforms import api_server_runs as _api_runs
 from gateway.platforms.api_server import APIServerAdapter
 from gateway.platforms.api_server_run_idempotency import RunIdempotencyStore
 from gateway.run import _INTERRUPT_REASON_GATEWAY_SHUTDOWN
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.fixtures.storage_seed import seed_session
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
 from tests.gateway.restart_test_helpers import make_restart_runner
@@ -274,7 +274,7 @@ def _parked_agent(loop, started: asyncio.Event, release: threading.Event) -> Mag
     agent.session_completion_tokens = 0
     agent.session_total_tokens = 0
     agent._last_compaction_in_place = False
-    agent._hermes_api_runtime = {}
+    agent._slave_api_runtime = {}
 
     def _park(user_message=None, conversation_history=None, task_id=None):
         loop.call_soon_threadsafe(started.set)
@@ -562,7 +562,7 @@ class TestShutdownInterruptReachesEveryApiTurn:
         runner, _adapter = make_restart_runner()
         api = APIServerAdapter(PlatformConfig(enabled=True))
         session_db = storage_handle(tmp_path)
-        api._home_stores[str(get_hermes_home())] = session_db
+        api._home_stores[str(get_slave_home())] = session_db
         api_store(session_db)
         runner.adapters = {Platform.API_SERVER: api}
         app = _make_admission_app(api)

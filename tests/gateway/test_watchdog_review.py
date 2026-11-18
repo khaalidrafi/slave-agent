@@ -13,7 +13,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent.session_activity import ActivityProvenance, build_activity_snapshot
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.core.errors import StoreContention
 from tests.fixtures.storage_read import session_row
 from tests.fixtures.storage_seed import seed_messages, seed_session

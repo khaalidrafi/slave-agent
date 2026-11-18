@@ -30,7 +30,7 @@ class _Conn:
 @pytest.mark.asyncio
 async def test_acp_prompt_settles_a_voice_stopped_reply_as_an_ended_turn(tmp_path, monkeypatch):
     from agent.i18n import t
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     agent = GatewayACPAgent()
     agent._gateway = _VoiceStoppedClient()
     agent._conn = _Conn()

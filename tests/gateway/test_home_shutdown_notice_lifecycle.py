@@ -20,7 +20,7 @@ HOME_CHAT = "home-42"
 
 @pytest.fixture
 def runner(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr("gateway.drain_control.drain_notification_suppressed", lambda: False)
     runner, adapter = make_restart_runner()
     runner.config.platforms[Platform.TELEGRAM].home_channel = HomeChannel(

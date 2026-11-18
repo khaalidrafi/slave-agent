@@ -1,6 +1,6 @@
 """A failed macOS packaged update keeps what tells its causes apart.
 
-The stable rehearsal rc.1-v0.23.2 showed "Hermes Agent quit unexpectedly" after
+The stable rehearsal rc.1-v0.23.2 showed "slave-agent quit unexpectedly" after
 Update now, and its artifact could not say whether OLD crashed on quit, NEW
 crashed at launch, or ShipIt never swapped: none of ShipIt's log, the crash
 reports or the installed bundle's state were kept.
@@ -33,20 +33,20 @@ def test_collects_shipit_logs_new_crash_reports_and_installed_state(tmp_path):
     shipit = runner / "Library/Caches/com.nousresearch.hermes-bundled.ShipIt"
     _write(shipit / "ShipIt_stderr.log", "ShipIt: install failed: code object is not signed\n")
     _write(shipit / "ShipItState.plist", "<plist/>")
-    staged = _write(shipit / "update.Xy/Hermes Agent.app/Contents/Resources/payload.bin", "x" * 4096)
+    staged = _write(shipit / "update.Xy/slave-agent.app/Contents/Resources/payload.bin", "x" * 4096)
     reports = runner / "Library/Logs/DiagnosticReports"
-    _write(reports / "Hermes Agent-before.ips", '{"app_name":"Hermes Agent","app_version":"0.21.0"}\n', mtime=now - 3600)
-    _write(reports / "Hermes Agent-after.ips", '{"app_name":"Hermes Agent","app_version":"0.22.0"}\n')
+    _write(reports / "slave-agent-before.ips", '{"app_name":"slave-agent","app_version":"0.21.0"}\n', mtime=now - 3600)
+    _write(reports / "slave-agent-after.ips", '{"app_name":"slave-agent","app_version":"0.22.0"}\n')
     _write(reports / "Retired/ShipIt-after.ips", '{"app_name":"ShipIt"}\n')
-    hermes_home = sandbox / ".hermes"
-    _write(hermes_home / "logs/desktop.log", "[updater] quitAndInstall\n")
-    app = tmp_path / "Applications/Hermes Agent.app"
+    slave_home = sandbox / ".slave"
+    _write(slave_home / "logs/desktop.log", "[updater] quitAndInstall\n")
+    app = tmp_path / "Applications/slave-agent.app"
     _write(app / "Contents/Resources/install-stamp.json", '{"tag": "v0.22.0"}')
 
     out = tmp_path / "evidence"
     result = subprocess.run(
         ["bash", str(COLLECTOR), "--out", str(out), "--since", str(since), "--app", str(app),
-         "--home", str(sandbox), "--home", str(runner), "--hermes-home", str(hermes_home)],
+         "--home", str(sandbox), "--home", str(runner), "--slave-home", str(slave_home)],
         capture_output=True, text=True, timeout=60, check=False,
     )
 
@@ -60,9 +60,9 @@ def test_collects_shipit_logs_new_crash_reports_and_installed_state(tmp_path):
     # The collector also reads the host's /Library/Logs/DiagnosticReports, where
     # a CI runner's own tools can drop reports mid-test, so check only ours.
     copied_reports = {p.name for p in (out / "crash-reports").iterdir()}
-    assert {"Hermes Agent-after.ips", "ShipIt-after.ips"} <= copied_reports
-    assert "Hermes Agent-before.ips" not in copied_reports
-    assert (out / "hermes-logs/desktop.log").read_text() == "[updater] quitAndInstall\n"
+    assert {"slave-agent-after.ips", "ShipIt-after.ips"} <= copied_reports
+    assert "slave-agent-before.ips" not in copied_reports
+    assert (out / "slave-logs/desktop.log").read_text() == "[updater] quitAndInstall\n"
     assert '"tag": "v0.22.0"' in (out / "installed-app.txt").read_text()
     assert "code object is not signed" in result.stdout
     assert '"app_version":"0.22.0"' in result.stdout

@@ -45,10 +45,10 @@ def _emit_supervised_output(container: str) -> None:
     )
     code = (
         "from pathlib import Path; "
-        "from hermes_cli.service_manager import S6ServiceManager; "
+        "from slave_cli.service_manager import S6ServiceManager; "
         "directory = Path('/opt/data/console-probe-bin'); "
         "directory.mkdir(); "
-        "executable = directory / 'hermes'; "
+        "executable = directory / 'slave'; "
         f"executable.write_text({script!r}, encoding='utf-8'); "
         "executable.chmod(0o755); "
         "manager = S6ServiceManager(); "

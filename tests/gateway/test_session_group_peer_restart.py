@@ -66,7 +66,7 @@ async def test_restart_stop_requires_the_members_exact_confirmation(
     member_home.mkdir()
     client, adapters, store, owner, unknown, follower, executed, tasks = (
         await _restarted_api_runs(member_home, monkeypatch))
-    monkeypatch.setenv('HERMES_HOME', str(gateway.home))
+    monkeypatch.setenv('SLAVE_HOME', str(gateway.home))
     peer._save_receipt(dispatch, run_id=unknown['request_id'], session_id='api-session')
     run_path = '/v1/runs/' + unknown['request_id']
     original, requests = peer._request, []

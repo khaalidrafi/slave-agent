@@ -52,7 +52,7 @@ class TestCodeConsumerBodyVisibleToLifecycleScan:
         command = (
             "python3 - <<'PY'\n"
             "import os\n"
-            'os.system("launchctl bootout gui/$(id -u)/ai.hermes.gateway")\n'
+            'os.system("launchctl bootout gui/$(id -u)/ai.slave.gateway")\n'
             "PY"
         )
         assert guard(command, cwd="/tmp") is True
@@ -60,7 +60,7 @@ class TestCodeConsumerBodyVisibleToLifecycleScan:
     def test_osascript_do_shell_script_blocks(self):
         command = (
             "osascript <<'EOF'\n"
-            'do shell script "launchctl bootout gui/501/ai.hermes.gateway"\n'
+            'do shell script "launchctl bootout gui/501/ai.slave.gateway"\n'
             "EOF"
         )
         assert guard(command, cwd="/tmp") is True
@@ -75,7 +75,7 @@ class TestCodeConsumerBodyVisibleToLifecycleScan:
         """#88336 semantics unchanged: a cat-owned body is documentation, not a command."""
         command = (
             "cat > /tmp/runbook.txt <<'EOF'\n"
-            "a human can run: hermes gateway restart\n"
+            "a human can run: slave gateway restart\n"
             "EOF"
         )
         assert guard(command, cwd="/tmp") is False
@@ -95,7 +95,7 @@ def test_mentioned_data_file_that_cannot_be_scanned_is_not_a_verdict(tmp_path, m
     in 64+ remote-read misses (a markdown table of paths) or be a live SQLite database: each is
     "nothing to scan", never a block (#113944). The same file *executed* still fails closed."""
     from cron import lifecycle_guard
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     minified = tmp_path / "minified.json"
     minified.write_text("[" + "1," * 40000 + "1]", encoding="utf-8")
@@ -138,7 +138,7 @@ def test_unscannable_own_cron_script_raises_named_refusal(tmp_path, shape):
     """A cron job whose OWN script is oversized or a live SQLite database fails closed with the
     named "could not scan" refusal, never the misattributed "contains a gateway lifecycle command"."""
     from cron.lifecycle_guard import GatewayLifecycleBlocked, check_gateway_lifecycle
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     if shape == "oversized":
         script, conn = _big_file(tmp_path), None

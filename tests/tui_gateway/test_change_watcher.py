@@ -1,7 +1,7 @@
 """The generalized change watcher (#73618): cheap on-disk signatures →
 ``pet.changed`` / ``cron.changed`` / ``sessions.changed`` global broadcasts.
 
-Behavior contracts, exercised against a real temp HERMES_HOME (no mocks on the
+Behavior contracts, exercised against a real temp SLAVE_HOME (no mocks on the
 filesystem path): first sighting seeds silently, a moved signature broadcasts
 once, the sessions floor coalesces a write burst but keeps its trailing edge,
 and the pet signature only moves for a *renderable* pet.
@@ -21,7 +21,7 @@ def watcher_home(tmp_path, monkeypatch):
     (tmp_path / "config.yaml").write_text("display: {}\n")
     (tmp_path / "cron").mkdir()
 
-    monkeypatch.setattr(server, "_hermes_home", str(tmp_path))
+    monkeypatch.setattr(server, "_slave_home", str(tmp_path))
     monkeypatch.setattr(server, "_cfg_cache", None)
     monkeypatch.setattr(server, "_change_sigs", {})
     monkeypatch.setattr(server, "_change_checked_at", {})
@@ -157,7 +157,7 @@ def test_unreadable_store_keeps_last_digest(watcher_home):
 def test_projects_db_move_broadcasts_projects_changed(watcher_home):
     """#53046 / #56757: the CLI and other windows write projects.db directly, in
     processes that never touch this gateway's transports. Without a watch, a
-    `hermes projects create` (or a set_primary / folder edit from another
+    `slave projects create` (or a set_primary / folder edit from another
     window) leaves the Desktop's project tree stale until an unrelated refresh."""
     home, events = watcher_home
     server._broadcast_watched_changes(now=0.0)
@@ -175,7 +175,7 @@ def test_served_profile_projects_db_move_broadcasts_projects_changed(watcher_hom
     coder_home = home / "profiles" / "coder"
     coder_home.mkdir(parents=True)
     monkeypatch.setattr(server, "_served_profile_homes", set())
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir", lambda name: home / "profiles" / name)
+    monkeypatch.setattr("slave_cli.profiles.get_profile_dir", lambda name: home / "profiles" / name)
     assert server._profile_home("coder") == coder_home
     server._broadcast_watched_changes(now=0.0)
 
@@ -204,7 +204,7 @@ def test_served_profile_store_move_broadcasts_sessions_changed(watcher_home, mon
     bot_home = home / "profiles" / "bot"
     bot_home.mkdir(parents=True)
     monkeypatch.setattr(server, "_served_profile_homes", set())
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir", lambda name: home / "profiles" / name)
+    monkeypatch.setattr("slave_cli.profiles.get_profile_dir", lambda name: home / "profiles" / name)
     assert server._profile_home("bot") == bot_home
     server._broadcast_watched_changes(now=0.0)
 
@@ -262,12 +262,12 @@ def test_pairing_probe_reuses_live_profile_roots_until_the_profile_set_moves(wat
     """The per-profile liveness probe (~14 stats each) runs once per profiles/ mtime + TTL, not
     on every 2 s tick (#114041 §2); ledger writes under known roots are still seen each tick,
     and a newly created profile is picked up because creating it bumps the parent's mtime."""
-    import hermes_constants
+    import slave_constants
 
     home, events = watcher_home
     live_calls = []
-    real_live = hermes_constants.named_profile_is_live
-    monkeypatch.setattr(hermes_constants, "named_profile_is_live",
+    real_live = slave_constants.named_profile_is_live
+    monkeypatch.setattr(slave_constants, "named_profile_is_live",
                         lambda p: live_calls.append(p.name) or real_live(p))
 
     def _profile(name):
@@ -506,14 +506,14 @@ def test_skill_installed_from_another_terminal_broadcasts_skills_changed(watcher
 
 def test_a_skill_installed_in_another_sessions_repo_broadcasts_skills_changed(watcher_home, monkeypatch, tmp_path):
     """The gateway runs in repo A; a session's catalog resolved under repo B (its workspace, via the
-    session cwd). Installing a skill in B's ``.hermes/skills`` must still notify viewers: the watcher
+    session cwd). Installing a skill in B's ``.slave/skills`` must still notify viewers: the watcher
     signs every scope a session resolved commands in, not only the launch repo."""
     import json
     import agent.skill_commands as sc
     import tools.skills_tool as st
     from agent.runtime_cwd import reset_session_cwd, set_session_cwd
     home, events = watcher_home
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     (home / "skills").mkdir()
     monkeypatch.setattr(st, "SKILLS_DIR", home / "skills")
     monkeypatch.setattr(sc, "_skill_commands_by_key", {})
@@ -521,7 +521,7 @@ def test_a_skill_installed_in_another_sessions_repo_broadcasts_skills_changed(wa
     repo_a, repo_b = tmp_path / "repo-a", tmp_path / "repo-b"
     for repo in (repo_a, repo_b):
         (repo / ".git").mkdir(parents=True)
-        (repo / ".hermes" / "skills").mkdir(parents=True)
+        (repo / ".slave" / "skills").mkdir(parents=True)
     (home / "config.yaml").write_text(json.dumps({"skills": {"trusted_project_dirs": [str(repo_a), str(repo_b)]}}))
     monkeypatch.chdir(repo_a)
     st.clear_skills_cache()
@@ -533,7 +533,7 @@ def test_a_skill_installed_in_another_sessions_repo_broadcasts_skills_changed(wa
     server._broadcast_watched_changes(now=0.0)
     assert not [e for e in events if e[0] == "skills.changed"]
 
-    skill = repo_b / ".hermes" / "skills" / "workspace-only"
+    skill = repo_b / ".slave" / "skills" / "workspace-only"
     skill.mkdir()
     (skill / "SKILL.md").write_text("---\nname: workspace-only\ndescription: d\n---\nbody\n")
     server._broadcast_watched_changes(now=10.0)

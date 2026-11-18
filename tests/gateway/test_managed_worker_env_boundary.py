@@ -7,17 +7,17 @@ import pytest
 
 @pytest.mark.parametrize("multiplex", [True, False])
 def test_secondary_profile_worker_gets_no_launch_credentials(tmp_path, monkeypatch, multiplex):
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     sec = launch / "profiles" / "l106742sec"
     sec.mkdir(parents=True)
     (launch / ".env").write_text("OPENROUTER_API_KEY=LAUNCH-or\nMY_SERVICE_TOKEN=LAUNCH-mysvc\n")
     (sec / ".env").write_text("OPENROUTER_API_KEY=SEC-or\n")
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     for key, value in {"OPENROUTER_API_KEY": "LAUNCH-or", "MY_SERVICE_TOKEN": "LAUNCH-mysvc",
                        "NOUS_API_KEY": "LAUNCH-nous", "VAULT_ONLY_TOKEN": "LAUNCH-vault"}.items():
         monkeypatch.setenv(key, value)
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     monkeypatch.setitem(env_loader._SECRET_SOURCES, "VAULT_ONLY_TOKEN", "bitwarden")
     from agent import secret_scope
     from gateway.session_managed_worker import _worker_env
@@ -38,13 +38,13 @@ def test_launch_profile_worker_keeps_env_only_tool_credentials_under_multiplex(t
     """Under multiplex the launch profile's own worker resolves what its owner resolves for that
     profile (``launch_secret_scope``): a tool key injected only into the launch environment
     (systemd ``Environment=``, ``op run``) reaches it, while a secondary's worker never sees it."""
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".slave"
     sec = launch / "profiles" / "l106742sec"
     sec.mkdir(parents=True)
     (launch / ".env").write_text("OPENROUTER_API_KEY=LAUNCH-or\n")
     (sec / ".env").write_text("OPENROUTER_API_KEY=SEC-or\n")
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setenv("FIRECRAWL_API_KEY", "ENVONLY-fc")
     monkeypatch.setenv("AUXILIARY_VISION_API_KEY", "ENVONLY-aux")
     from agent.secret_scope import get_secret, set_multiplex_active
@@ -59,7 +59,7 @@ def test_launch_profile_worker_keeps_env_only_tool_credentials_under_multiplex(t
     finally:
         set_multiplex_active(False)
     assert own["FIRECRAWL_API_KEY"] == "ENVONLY-fc" and own["OPENROUTER_API_KEY"] == "LAUNCH-or"
-    assert "AUXILIARY_VISION_API_KEY" not in own  # Hermes-internal secrets never reach a child
+    assert "AUXILIARY_VISION_API_KEY" not in own  # Slave-internal secrets never reach a child
     assert "FIRECRAWL_API_KEY" not in other and other["OPENROUTER_API_KEY"] == "SEC-or"
     assert sorted(k for k, v in other.items() if "ENVONLY" in str(v) or "LAUNCH" in str(v)) == []
 

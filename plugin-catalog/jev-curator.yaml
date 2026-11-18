@@ -3,10 +3,10 @@ repo: https://github.com/anpicasso/hermes-jev-curator
 sha: ed2f40d33743c315f3e9de9579841750a28f5b78
 subdir: plugin
 description: >-
-  TypeSafe Jev semantic governance for Hermes' native Curator: classifies
+  TypeSafe Jev semantic governance for slave-agent’ native Curator: classifies
   relationships between complete skill packages, produces content-hash-bound,
   fail-closed consolidation plans, and locally guards background destructive
-  skill_manage calls while Hermes retains control of backups and mutations. A
+  skill_manage calls while slave-agent retains control of backups and mutations. A
   profile-scoped 60-second lifecycle debounce coalesces skill changes into dry
   refreshes. Disclosure — no egress occurs by default; after
   allow_content_egress is explicitly enabled, redacted bounded skill content is

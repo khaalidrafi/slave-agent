@@ -73,11 +73,11 @@ class TestSessionIsolationKeying:
         _disable_isolation(monkeypatch)
         # The default profile's home stays on the shared "default" key (a named-profile
         # home would take the profile path, so run from a real default root).
-        import hermes_constants
+        import slave_constants
 
-        root = hermes_constants._get_platform_default_hermes_home()  # conftest's per-test native root
+        root = slave_constants._get_platform_default_slave_home()  # conftest's per-test native root
         root.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(root))
+        monkeypatch.setenv("SLAVE_HOME", str(root))
         assert terminal_tool._resolve_container_task_id("tui:sess-1") == "default"
 
     def test_persistent_false_keys_by_session(self, monkeypatch):
@@ -144,7 +144,7 @@ class TestRoutedScopeQualification:
 
     def test_colliding_session_id_is_isolated_per_routed_profile(self, monkeypatch, tmp_path):
         from agent import secret_scope
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from slave_constants import reset_slave_home_override, set_slave_home_override
 
         _enable_isolation(monkeypatch)
         raw = "api-9a5f7809eec0aac1"
@@ -157,7 +157,7 @@ class TestRoutedScopeQualification:
         try:
             keys, cwds = {}, {}
             for name in ("research", "default", "research"):  # A → B → A
-                token = set_hermes_home_override(str(homes[name]))
+                token = set_slave_home_override(str(homes[name]))
                 try:
                     keys[name] = terminal_tool._resolve_container_task_id(raw)
                     terminal_tool.register_container_alias(f"child-{name}", raw)
@@ -167,20 +167,20 @@ class TestRoutedScopeQualification:
                         terminal_tool.record_session_cwd(raw, f"/workspace/{name}")
                     cwds[name] = terminal_tool.get_session_cwd(raw)
                 finally:
-                    reset_hermes_home_override(token)
+                    reset_slave_home_override(token)
             assert keys["research"] == f"profile:research:{raw}"
             assert keys["default"] == f"default:{raw}"
             assert cwds == {"research": "/workspace/research", "default": "/workspace/default"}
-            token = set_hermes_home_override(str(homes["default"]))
+            token = set_slave_home_override(str(homes["default"]))
             try:
                 terminal_tool.clear_session_cwd(raw)
             finally:
-                reset_hermes_home_override(token)
-            token = set_hermes_home_override(str(homes["research"]))
+                reset_slave_home_override(token)
+            token = set_slave_home_override(str(homes["research"]))
             try:
                 assert terminal_tool.get_session_cwd(raw) == "/workspace/research"
             finally:
-                reset_hermes_home_override(token)
+                reset_slave_home_override(token)
         finally:
             secret_scope.set_multiplex_active(False)
 

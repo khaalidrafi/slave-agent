@@ -46,7 +46,7 @@ def _event(route=_OR, **overrides):
 
 
 def test_resume_restores_the_stored_window(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = _open(tmp_path)
     try:
         seed_session(db, "s1", "cli")
@@ -72,7 +72,7 @@ def test_a_compaction_committed_before_the_restart_keeps_the_saved_clock_invalid
     """In-place /compress archives rows without touching the saved clock. The event keeps the
     generation it was recorded at, so a reopened session (whose compressor count restarts at 0)
     cannot revive the pre-compaction window."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = _open(tmp_path)
     try:
         seed_session(db, "s1", "cli")
@@ -98,7 +98,7 @@ def test_a_resumed_first_pure_read_keeps_the_saved_proven_tier(tmp_path, monkeyp
     agent keeps the proven 12h coverage (and its fixed deadline) instead of overwriting it with 30m."""
     import agent.prompt_cache_clock as clock
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     route = ("openai-api", "https://api.openai.com/v1", "gpt-5.6-luna")
     db = _open(tmp_path)
     try:
@@ -127,7 +127,7 @@ def test_a_failed_store_read_never_loses_the_reply_and_reports_unknown(tmp_path,
     from persistence.sqlite.conversation import usage as sqlite_usage
     from run_agent import AIAgent
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = _open(tmp_path)
     agent = AIAgent(api_key="k", base_url=_OR[1], provider=_OR[0], api_mode="chat_completions", model=_OR[2],
                     session_id="s1", platform="cli", session_db=db, persistence=db, quiet_mode=True,
@@ -158,7 +158,7 @@ def test_a_managed_worker_clock_carries_the_owner_generation(tmp_path, monkeypat
     agentless read sees the fresh window as warm, not compacted."""
     from agent.runtime_session_store import RuntimeSessionStore
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = _open(tmp_path)
     try:
         seed_session(db, "s1", "cli")

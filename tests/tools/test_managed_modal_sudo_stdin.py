@@ -27,8 +27,8 @@ def _askpass_command(command: str) -> str:
 
 @pytest.fixture(autouse=True)
 def _clean_sudo_state(monkeypatch):
-    for name in ("SUDO_PASSWORD", "HERMES_INTERACTIVE", "HERMES_SINGLE_QUERY_SESSION",
-                 "HERMES_GATEWAY_SESSION"):
+    for name in ("SUDO_PASSWORD", "SLAVE_INTERACTIVE", "SLAVE_SINGLE_QUERY_SESSION",
+                 "SLAVE_GATEWAY_SESSION"):
         monkeypatch.delenv(name, raising=False)
     tts._reset_cached_sudo_passwords()
     tt.set_sudo_password_callback(None)
@@ -81,7 +81,7 @@ def _exec_payloads(monkeypatch, command, stdin_data):
 
 
 def test_prompted_password_goes_on_the_stdin_field_ahead_of_caller_stdin(monkeypatch):
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
     monkeypatch.setattr(tts, "_prompt_for_sudo_password",
                         lambda timeout_seconds=45, *, command="": PROMPTED)
 

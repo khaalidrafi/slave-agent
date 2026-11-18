@@ -1,21 +1,21 @@
-# Nous Hermes plugin catalog entry — second-hands
+# Nous slave-agent plugin catalog entry — second-hands
 #
 # OWNER-SUBMITTED (rule 5): the PR author (zaxcoraider) owns the repo.
-# Exact-SHA pin at a commit that passes `hermes plugins validate` (manifest,
+# Exact-SHA pin at a commit that passes `slave plugins validate` (manifest,
 # loadable, declared tools/hooks match registrations, security scan safe, no
 # core override, desktop surface inside the SDK). No self-updating code (rule 3).
 name: second-hands
 repo: https://github.com/zaxcoraider/hermes-second-hands
 sha: "b9cd7437726b8452ea697d226174fdaf8597ea03"
 description: >-
-  Hands-on task coach: a live camera pane in Hermes Desktop watches your hands
+  Hands-on task coach: a live camera pane in slave-agent Desktop watches your hands
   step by step and says STOP (on screen, out loud, in chat) before a costly or
   dangerous mistake. Mistakes must repeat across frames and high-risk STOPs are
   double-checked by a second model. Demo mode needs no camera or model calls.
   Disclosure — camera frames (downscaled JPEGs, ~every 2 s while a session is
   live) and step text go to the user's configured model provider through
   ctx.llm on the plugin's own auxiliary slots; optional web research uses
-  Hermes's own web_search/web_extract tools; one background thread per live
+  slave-agent’s own web_search/web_extract tools; one background thread per live
   session (stops on finish or after 30 idle minutes); files only under
   plugin-data/second-hands; no network calls of its own, no shell, no
   credentials, no telemetry, no self-update.

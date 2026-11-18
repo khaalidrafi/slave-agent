@@ -1,6 +1,6 @@
 """Provider error bodies observed in real sessions, through the real SDK exception types.
 
-Every row is a body Hermes actually received (relay traces + agent.log, scrubbed of request ids
+Every row is a body slave-agent actually received (relay traces + agent.log, scrubbed of request ids
 and account data), raised as the exception class the OpenAI SDK / httpx raises for it, so a
 classifier change is checked against what providers really send rather than hand-written
 strings. Add a row whenever a new production body shows up in a bug report or trace.

@@ -5,7 +5,7 @@ Chrome draws no compositor frame for a hidden tab, and some remotes (Browser Use
 for its full 60 s IPC timeout. Its ``new_tab()`` and its daemon both create tabs with ``background=True``,
 so the tab the agent drives is often hidden. browser_harness is a pinned third-party dependency; this
 module is loaded by file path inside the harness process (``harness_command()``), so it imports nothing
-from Hermes and touches the harness only through the helpers module it is given.
+from slave-agent and touches the harness only through the helpers module it is given.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from typing import Any, Callable
 PNG_DEADLINE_S = 10.0
 JPEG_DEADLINE_S = 60.0
 _HARNESS_MODULE = "browser_harness.helpers"
-_log = logging.getLogger("hermes_browser_use_shot")
+_log = logging.getLogger("slave_browser_use_shot")
 
 
 def _default_shot_path() -> str:
@@ -115,7 +115,7 @@ def _is_harness_helper(fn: Any) -> bool:
 
 # Which browser the tabs may be activated on, decided by browser_exec from the route it resolved.
 ACTIVATE_NEVER = "never"        # local, connected or real-profile Chrome: a human may be looking at it
-ACTIVATE_ALWAYS = "always"      # a cloud provider's session whose CDP endpoint Hermes itself resolved
+ACTIVATE_ALWAYS = "always"      # a cloud provider's session whose CDP endpoint Slave itself resolved
 ACTIVATE_IF_CLOUD = "if-cloud"  # BU_AUTOSPAWN: the harness picks the browser (a listening local Chrome wins)
 
 
@@ -150,7 +150,7 @@ def install(helpers: Any, activate: str = ACTIVATE_NEVER) -> None:
 _HARNESS_MODULE_ARGS = ["-m", "browser_harness.run"]
 _LAUNCHER = """\
 import importlib.util, runpy
-spec = importlib.util.spec_from_file_location('hermes_browser_use_shot', {path!r})
+spec = importlib.util.spec_from_file_location('slave_browser_use_shot', {path!r})
 shot = importlib.util.module_from_spec(spec); spec.loader.exec_module(shot)
 import browser_harness.helpers
 shot.install(browser_harness.helpers, activate={activate!r})
@@ -161,7 +161,7 @@ runpy.run_module('browser_harness.run', run_name='__main__', alter_sys=True)
 def harness_command(cmd: list[str], activate: str) -> list[str]:
     """``python -m browser_harness.run`` as a launcher that installs these helpers first. The model's code
     still arrives untouched on stdin (no preamble shifting its traceback line numbers). This file is loaded
-    by path: the harness interpreter has no Hermes checkout on sys.path."""
+    by path: the harness interpreter has no slave-agent checkout on sys.path."""
     if cmd[1:] != _HARNESS_MODULE_ARGS:
         return cmd
     return [cmd[0], "-c", _LAUNCHER.format(path=os.path.abspath(__file__), activate=activate)]

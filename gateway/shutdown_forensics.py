@@ -89,7 +89,7 @@ def snapshot_shutdown_context(received_signal: Any = None) -> dict[str, Any]:
         if os.environ.get(env_key):
             ctx[ctx_key] = os.environ[env_key]
     # Supervision is read from what the supervisor stamps (systemd: INVOCATION_ID; our launchd
-    # plist: the ai.hermes job label), never from ppid==1: on macOS every orphan (a Desktop- or
+    # plist: the ai.slave job label), never from ppid==1: on macOS every orphan (a Desktop- or
     # terminal-started gateway whose parent quit) is reparented to launchd, pid 1, so ppid==1 read
     # "under_systemd=yes" on a gateway nothing would revive (#103236).
     ctx["under_systemd"] = bool(os.environ.get("INVOCATION_ID"))
@@ -106,14 +106,14 @@ def snapshot_shutdown_context(received_signal: Any = None) -> dict[str, Any]:
     # --replace instance is killing us". Filenames mirror gateway.status; literals keep the signal-
     # handler path import-light.
     with contextlib.suppress(Exception):
-        hermes_home_str = os.path.expanduser(os.environ.get("HERMES_HOME", ""))
-        if hermes_home_str:
-            raw = _read_marker(Path(hermes_home_str) / ".gateway-takeover.json")
+        slave_home_str = os.path.expanduser(os.environ.get("SLAVE_HOME", ""))
+        if slave_home_str:
+            raw = _read_marker(Path(slave_home_str) / ".gateway-takeover.json")
             if raw is not None:
                 ctx["takeover_marker"] = raw[:300]
                 ctx["takeover_marker_for_self"] = (f'"target_pid": {pid}' in raw
                                                    or f"'target_pid': {pid}" in raw)
-            raw = _read_marker(Path(hermes_home_str) / ".gateway-planned-stop.json")
+            raw = _read_marker(Path(slave_home_str) / ".gateway-planned-stop.json")
             if raw is not None:
                 ctx["planned_stop_marker"] = raw[:300]
     return ctx
@@ -207,7 +207,7 @@ def check_systemd_timing_alignment(
     drain_timeout: float, cron_drain_timeout: float = DEFAULT_GATEWAY_CRON_DRAIN_TIMEOUT
 ) -> Optional[dict[str, Any]]:
     """At startup, sanity-check that systemd's TimeoutStopSec covers stop. A stale unit file
-    (upgraded without re-running ``hermes setup``) can have ``TimeoutStopSec`` below the stop
+    (upgraded without re-running ``slave setup``) can have ``TimeoutStopSec`` below the stop
     budget, so systemd SIGKILLs the cgroup mid-drain (a phantom ``code=killed status=9`` in the
     journal). ``None`` when aligned OR undeterminable (not under systemd, no ``systemctl``);
     otherwise a dict with ``timeout_stop_sec``/``drain_timeout``/``expected_min``/``mismatch``.
@@ -232,7 +232,7 @@ def check_systemd_timing_alignment(
 
 
 def _systemd_timeout_stop_us(unit_name: str) -> Optional[int]:
-    """``TimeoutStopUSec`` of ``unit_name`` in microseconds; ``--user`` first (hermes' usual)."""
+    """``TimeoutStopUSec`` of ``unit_name`` in microseconds; ``--user`` first (slave' usual)."""
     for flag in (["--user"], []):
         try:
             result = subprocess.run(
@@ -255,7 +255,7 @@ def _systemd_timeout_stop_us(unit_name: str) -> Optional[int]:
 def parse_systemd_duration_to_us(raw: str) -> Optional[int]:
     """Parse 'TimeoutStopUSec=1min 30s' / '90s' style values to microseconds. Covers us, ms, s, min,
     h, d, w, month, y; a bare number is seconds. None on anything unexpected; never raises. Public: also consumed by
-    hermes_cli.gateway's restart-wait sizing.
+    slave_cli.gateway's restart-wait sizing.
     """
     if not raw:
         return None

@@ -48,7 +48,7 @@ function fault(match, code, failures = Infinity) {
 function previousProduct() {
   const out = join(root, 'native-deps')
   mkdirSync(out)
-  writeFileSync(join(out, '.hermes-product'), 'hermes-frontend-product-v1\n')
+  writeFileSync(join(out, '.hermes-product'), 'slave-frontend-product-v1\n')
   writeFileSync(join(out, 'old.txt'), 'old')
   return out
 }

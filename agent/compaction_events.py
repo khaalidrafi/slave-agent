@@ -1,8 +1,8 @@
-"""Content-free ``hermes.compaction`` v1 records for every history rewrite, and their fan-out.
+"""Content-free ``slave.compaction`` v1 records for every history rewrite, and their fan-out.
 
 One record per ``compress_context`` attempt (built from the attempt telemetry seam), per
 micro-compaction pass, per committed proactive tool-result prune, and per Codex-native thread
-compaction Hermes observes. A persistence-detached fork (background review) shares the live session id
+compaction slave-agent observes. A persistence-detached fork (background review) shares the live session id
 but rewrites only its own throwaway transcript, so it publishes nothing. The payload is flat because OpenTelemetry exporters flatten only top-level
 keys; every categorical field except the free-form ``summarizer_provider`` / ``summarizer_model`` identifiers
 comes from a closed set with an ``other`` fallback; no field carries message, summary, focus-topic, error or
@@ -22,7 +22,7 @@ from agent.model_metadata import estimate_messages_tokens_rough
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_NAME = "hermes.compaction"
+SCHEMA_NAME = "slave.compaction"
 SCHEMA_VERSION = "1"
 # Relay's reserved mark name: it resets the owning agent scope's LLM-history freshness, so it is used only
 # for a committed rewrite of what the model will see next. Everything else is an ordinary attempt mark.
@@ -95,14 +95,14 @@ _warned = False
 
 @functools.cache
 def _failure_classes() -> frozenset[str]:
-    from hermes_cli.observability.shared_metrics_contract import COMPRESSION_FAILURE_CLASSES
+    from slave_cli.observability.shared_metrics_contract import COMPRESSION_FAILURE_CLASSES
 
     return COMPRESSION_FAILURE_CLASSES | _EXTRA_FAILURE_CLASSES
 
 
 @functools.cache
 def _skip_classes() -> frozenset[str]:
-    from hermes_cli.observability.shared_metrics_contract import COMPRESSION_SKIP_CLASSES
+    from slave_cli.observability.shared_metrics_contract import COMPRESSION_SKIP_CLASSES
 
     return COMPRESSION_SKIP_CLASSES
 
@@ -135,7 +135,7 @@ def event_name(payload: dict[str, Any]) -> str:
 
 def _payload(**values: Any) -> dict[str, Any]:
     payload = dict.fromkeys(_FIELDS)
-    payload.update(values, harness="hermes")
+    payload.update(values, harness="slave")
     payload["kind"] = _closed(payload["kind"], _KINDS)
     payload["scope"] = _closed(payload["scope"], _SCOPES)
     payload["method"] = _closed(payload["method"], _METHODS) or "none"
@@ -195,7 +195,7 @@ def attempt_payload(record: dict[str, Any], *, compression_count: Any = None) ->
         has_focus_topic=record.get("has_focus_topic") if isinstance(record.get("has_focus_topic"), bool) else None,
     )
     if codex:
-        values["cache_break"] = None  # the Codex thread's provider cache is not Hermes's prompt cache
+        values["cache_break"] = None  # the Codex thread's provider cache is not Slave's prompt cache
     return _payload(**values)
 
 
@@ -229,7 +229,7 @@ def prune_payload(
 
 
 def provider_native_payload(*, session_id: str, compression_count: Any = None) -> dict[str, Any]:
-    """A compaction the provider ran on its own thread and Hermes only observed."""
+    """A compaction the provider ran on its own thread and slave-agent only observed."""
     return _payload(
         kind="provider_native", scope="provider", official=False, trigger="provider", outcome="committed",
         method="provider", failure_class="none", session_id=session_id, compression_count=_int(compression_count),
@@ -241,7 +241,7 @@ def fire_post_compaction(
     before_tokens: int | None, after_tokens: int | None, messages_removed: int | None,
 ) -> None:
     """The ``post_compaction`` plugin hook, gated on a listener. Callbacks are isolated by the dispatcher."""
-    from hermes_cli.lifecycle import has_hook, invoke_hook
+    from slave_cli.lifecycle import has_hook, invoke_hook
 
     if has_hook("post_compaction"):
         invoke_hook(
@@ -275,7 +275,7 @@ def _publish(
             from agent.relay_compaction import compaction_target_available
 
             relay = compaction_target_available(require_target_session_id, turn_session_id=turn_session_id)
-        from hermes_cli.lifecycle import has_hook
+        from slave_cli.lifecycle import has_hook
 
         hook = has_hook("post_compaction")
         if not (relay or hook):
@@ -335,7 +335,7 @@ def publish_prune(agent: Any, messages: list, pruned: list, tool_results_pruned:
 
 
 def publish_provider_native(agent: Any) -> None:
-    """Publish one provider-native compaction Hermes observed but did not run."""
+    """Publish one provider-native compaction slave-agent observed but did not run."""
     if _publishes_for(agent):
         _publish(
             provider_native_payload, session_id=getattr(agent, "session_id", None) or "",

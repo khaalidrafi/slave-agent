@@ -5,7 +5,7 @@ angle-bracketed chat role name (the placeholder shape reported in #132504)
 lands in every later request of the session; OpenRouter's gateway classifies
 it as role-tag injection and 403s the whole conversation. Document such
 placeholders in brace form instead, matching the precedent in
-skills/autonomous-ai-agents/hermes-agent/references/native-mcp.md.
+skills/autonomous-ai-agents/slave-agent/references/native-mcp.md.
 
 The pattern is assembled from fragments so this file never contains the literal.
 """

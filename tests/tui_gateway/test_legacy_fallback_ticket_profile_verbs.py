@@ -18,8 +18,8 @@ def homes(tmp_path, monkeypatch):
     launch = tmp_path / 'root'
     bee = launch / 'profiles' / 'bee'
     bee.mkdir(parents=True)
-    monkeypatch.setenv('HERMES_HOME', str(launch))
-    monkeypatch.setattr(server, '_hermes_home', launch)
+    monkeypatch.setenv('SLAVE_HOME', str(launch))
+    monkeypatch.setattr(server, '_slave_home', launch)
     return server, launch, bee
 
 
@@ -34,22 +34,22 @@ def _call(server, profile_id, method, params):
 
 
 def test_secondary_ticket_runs_connectors_and_billing_in_its_own_profile(homes, monkeypatch):
-    import hermes_cli.nous_billing
+    import slave_cli.nous_billing
     import tools.connectors
     import tools.connectors.managed
     import tools.managed_tool_gateway
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     server, launch, bee = homes
     seen = []
 
     def rec(label):
-        seen.append((label, Path(str(get_hermes_home())).resolve()))
+        seen.append((label, Path(str(get_slave_home())).resolve()))
 
     monkeypatch.setattr(tools.connectors, 'connectors_available', lambda *a, **k: True)
     monkeypatch.setattr(tools.managed_tool_gateway, 'read_nous_access_token', lambda: 'token')
     monkeypatch.setattr(tools.connectors.managed, 'managed_client',
                         lambda **_: types.SimpleNamespace(list_connectors=lambda: rec('list') or []))
-    monkeypatch.setattr(hermes_cli.nous_billing, 'post_charge', lambda **k: rec('charge') or {'chargeId': 'c'})
+    monkeypatch.setattr(slave_cli.nous_billing, 'post_charge', lambda **k: rec('charge') or {'chargeId': 'c'})
     for method, params in (('connectors.list', {'owner': {'type': 'account'}}), ('billing.charge', {'amount_usd': 5})):
         _call(server, bee, method, params)
     assert {label for label, _ in seen} == {'list', 'charge'}, seen

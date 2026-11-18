@@ -3,7 +3,7 @@ title: Language Lock
 repo: https://github.com/salch-cred/language-lock
 sha: 6984ae80f21535c97a14a069f3222e038ac32a7a
 description: >-
-  Your agent answers in your language, and stays there (hermes-agent#130117).
+  Your agent answers in your language, and stays there (slave-agent#130117).
   Learns your language from your recent messages or a setting, detects each
   reply's language without a model (20 languages, by script and common words,
   ignoring code and links), and after a reply drifts tells the agent to switch

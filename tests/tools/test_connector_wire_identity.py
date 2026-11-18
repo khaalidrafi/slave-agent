@@ -7,7 +7,7 @@ import logging
 import pytest
 
 from gateway.session_context import clear_session_vars, set_session_vars
-from hermes_cli.config import get_config_path
+from slave_cli.config import get_config_path
 from tools.connectors.gateway.client import ConnectorClient
 from tools.managed_gateway_identity import CallRef, connector_headers, user_agent
 
@@ -66,7 +66,7 @@ def test_user_agent_names_the_session_surface(platform, bound, surface):
         platform(bound)
     agent = user_agent()
     product, _, rest = agent.partition(" ")
-    assert product.startswith("hermes-agent/") and len(product) > len("hermes-agent/")
+    assert product.startswith("slave-agent/") and len(product) > len("slave-agent/")
     assert rest.startswith(f"({surface}; ") and rest.endswith(")")
     assert rest[len(surface) + 3:-1] in {"linux", "macos", "windows", "unknown"}
 
@@ -80,14 +80,14 @@ def test_correlation_ids_go_only_with_send_consent(send):
     client.schemas(["GMAIL_SEND_EMAIL"])
 
     first, second = (sent["headers"] for sent in transport.sent)
-    assert first["User-Agent"].startswith("hermes-agent/")
-    correlation = {k for k in first if k.startswith("x-nous-hermes-") or k == "x-request-id"}
+    assert first["User-Agent"].startswith("slave-agent/")
+    correlation = {k for k in first if k.startswith("x-nous-slave-") or k == "x-request-id"}
     if not send:
         assert correlation == set()
         return
-    assert first["x-nous-hermes-turn"] == "turn-1" and first["x-nous-hermes-tool-call"] == "call-1"
+    assert first["x-nous-slave-turn"] == "turn-1" and first["x-nous-slave-tool-call"] == "call-1"
     assert first["x-request-id"] != second["x-request-id"]  # one id per HTTP attempt
-    assert not any(k.startswith("x-hermes-") for k in first)  # the gateway strips only x-nous-
+    assert not any(k.startswith("x-slave-") for k in first)  # the gateway strips only x-nous-
 
 
 def test_session_header_is_the_conversation_root(monkeypatch):
@@ -96,7 +96,7 @@ def test_session_header_is_the_conversation_root(monkeypatch):
     _consent(True)
     token = set_conversation_context("root-session")
     try:
-        assert connector_headers()["x-nous-hermes-session"] == "root-session"
+        assert connector_headers()["x-nous-slave-session"] == "root-session"
     finally:
         reset_conversation_context(token)
 
@@ -253,5 +253,5 @@ def test_try_again_keeps_the_opening_calls_ids(monkeypatch, caplog):
     with caplog.at_level(logging.DEBUG, logger="tools.managed_gateway_identity"):
         assert reissue(operation, ["gmail"]) is None
     headers = transport.sent[0]["headers"]
-    assert headers["x-nous-hermes-turn"] == "turn-7" and headers["x-nous-hermes-tool-call"] == "call-7"
+    assert headers["x-nous-slave-turn"] == "turn-7" and headers["x-nous-slave-tool-call"] == "call-7"
     assert _outcomes(caplog)[-1][1].endswith("dispatch=call-7")

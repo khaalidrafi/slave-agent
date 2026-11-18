@@ -1,7 +1,7 @@
-"""A Bedrock model call makes ONE HTTP attempt; Hermes's retry loop owns retries and backoff.
+"""A Bedrock model call makes ONE HTTP attempt; slave-agent’s retry loop owns retries and backoff.
 
 botocore's default retry policy (5 attempts) re-sent a Converse read timeout, so a hung call took
-~5x the configured request timeout to surface, and re-sent throttles under Hermes's own rate-limit
+~5x the configured request timeout to surface, and re-sent throttles under slave-agent’s own rate-limit
 backoff. These tests drive the real boto3 client the adapter builds against a local fake endpoint
 and count the requests that reach it.
 """
@@ -86,7 +86,7 @@ def fake_bedrock(monkeypatch):
 
 
 def _use_config(monkeypatch, cfg):
-    monkeypatch.setattr("hermes_cli.config.load_config_readonly", lambda: cfg)
+    monkeypatch.setattr("slave_cli.config.load_config_readonly", lambda: cfg)
 
 
 def test_hung_converse_fails_after_one_read_timeout_not_five(fake_bedrock, monkeypatch):
@@ -100,7 +100,7 @@ def test_hung_converse_fails_after_one_read_timeout_not_five(fake_bedrock, monke
     assert classify_api_error(excinfo.value, provider="bedrock", model=MODEL).retryable
 
 
-def test_throttle_reaches_hermes_retry_loop_on_first_refusal_with_default_timeouts(fake_bedrock, monkeypatch):
+def test_throttle_reaches_slave_retry_loop_on_first_refusal_with_default_timeouts(fake_bedrock, monkeypatch):
     _use_config(monkeypatch, {})
     fake_bedrock["mode"] = "throttle"
     client = _get_bedrock_runtime_client(REGION, MODEL)
@@ -108,7 +108,7 @@ def test_throttle_reaches_hermes_retry_loop_on_first_refusal_with_default_timeou
     with pytest.raises(botocore_exceptions.ClientError) as excinfo:
         client.converse(modelId=MODEL, messages=MESSAGES)
 
-    assert len(fake_bedrock["hits"]) == 1, "botocore retried the throttle under Hermes's own backoff"
+    assert len(fake_bedrock["hits"]) == 1, "botocore retried the throttle under slave-agent’s own backoff"
     assert client.meta.config.read_timeout == 60, "unset config keeps botocore's own timeouts"
     classified = classify_api_error(excinfo.value, provider="bedrock", model=MODEL)
     assert (classified.reason, classified.retryable) == (FailoverReason.rate_limit, True)

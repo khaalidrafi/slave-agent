@@ -3,7 +3,7 @@
 Regression coverage for #49561: in the Docker image the install tree
 (/opt/hermes/scripts/whatsapp-bridge) is read-only, so `npm install` fails
 with EACCES. The resolver must detect the read-only install dir and mirror the
-bridge source into a writable HERMES_HOME location instead.
+bridge source into a writable SLAVE_HOME location instead.
 """
 import importlib
 from pathlib import Path
@@ -20,20 +20,20 @@ def _seed_install_tree(install_bridge: Path) -> None:
     (install_bridge / "package.json").write_text('{"name": "whatsapp-bridge"}\n')
 
 
-def test_readonly_install_mirrors_to_hermes_home(tmp_path, monkeypatch):
-    """A read-only install tree is mirrored into a writable HERMES_HOME."""
+def test_readonly_install_mirrors_to_slave_home(tmp_path, monkeypatch):
+    """A read-only install tree is mirrored into a writable SLAVE_HOME."""
     install_root = tmp_path / "install"
     install_bridge = install_root / "scripts" / "whatsapp-bridge"
     _seed_install_tree(install_bridge)
 
-    hermes_home = tmp_path / "hermes_home"
-    hermes_home.mkdir()
+    slave_home = tmp_path / "slave_home"
+    slave_home.mkdir()
 
     monkeypatch.setattr(
-        "hermes_cli._startup_fast.project_root_str", lambda: str(install_root)
+        "slave_cli._startup_fast.project_root_str", lambda: str(install_root)
     )
     monkeypatch.setattr(
-        "hermes_constants.get_hermes_home", lambda: hermes_home
+        "slave_constants.get_slave_home", lambda: slave_home
     )
 
     # Simulate a read-only install tree. chmod(0o555) is unreliable under
@@ -50,7 +50,7 @@ def test_readonly_install_mirrors_to_hermes_home(tmp_path, monkeypatch):
 
     resolved = whatsapp_common.resolve_whatsapp_bridge_dir()
 
-    expected = hermes_home / "scripts" / "whatsapp-bridge"
+    expected = slave_home / "scripts" / "whatsapp-bridge"
     assert resolved == expected
     # Source was mirrored, not symlinked.
     assert (expected / "bridge.js").read_text() == "// bridge\n"
@@ -66,14 +66,14 @@ def test_existing_mirror_is_refreshed_from_the_install_tree_and_keeps_its_deps(t
     install_bridge = install_root / "scripts" / "whatsapp-bridge"
     _seed_install_tree(install_bridge)
     (install_bridge / "bridge_auth.js").write_text("// new auth\n")
-    hermes_home = tmp_path / "hermes_home"
-    mirror = hermes_home / "scripts" / "whatsapp-bridge"
+    slave_home = tmp_path / "slave_home"
+    mirror = slave_home / "scripts" / "whatsapp-bridge"
     (mirror / "node_modules" / "dep").mkdir(parents=True)
     (mirror / "node_modules" / "dep" / "index.js").write_text("// installed\n")
     (mirror / "bridge.js").write_text("// stale bridge\n")
 
-    monkeypatch.setattr("hermes_cli._startup_fast.project_root_str", lambda: str(install_root))
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("slave_cli._startup_fast.project_root_str", lambda: str(install_root))
+    monkeypatch.setattr("slave_constants.get_slave_home", lambda: slave_home)
     _real_touch = Path.touch
 
     def _fake_touch(self, *a, **kw):

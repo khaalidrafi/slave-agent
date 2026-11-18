@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 def reserved_profile_homes(runner):
     """``(name, home)`` pairs this process reserved: launch home first, then served secondaries."""
-    from hermes_constants import get_hermes_home
-    launch = get_hermes_home().resolve()
+    from slave_constants import get_slave_home
+    launch = get_slave_home().resolve()
     homes = [(getattr(runner, '_primary_profile_name', None) or 'default', launch)]
     if getattr(runner.config, 'multiplex_profiles', False):
         reserved = getattr(runner.config, '_runtime_profile_homes', None) or ()
@@ -161,8 +161,8 @@ def refuse_parked_scope(runner):
     retryably (``runtime_draining``, a 503 with ``Retry-After``), not with the final
     ``profile_mismatch`` of a profile this gateway does not serve."""
     from gateway.session_authorities import served_profile_name
-    from hermes_constants import get_hermes_home
-    name = served_profile_name(get_hermes_home())
+    from slave_constants import get_slave_home
+    name = served_profile_name(get_slave_home())
     if profile_parked(runner, name):
         from gateway.parked_route_refusal import ParkedProfileRefusal
         raise ParkedProfileRefusal(name)
@@ -588,8 +588,8 @@ async def start_gateway_runtime_api(runner):
     from gateway.webapp_listener import (
         STARTING, BrowserCredentialError, browser_session_token, dial_origin, listener_plan, register_control_verbs,
     )
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     # The bootstrap registered these before its control socket answered; a runner started without it
     # (an embedded gateway) gets them here, before the listener's slow start.
     register_control_verbs(runner, home)
@@ -658,13 +658,13 @@ async def _recover_profile_bot_mailbox(runner, authority):
             # settle, but the profile leaves the served set, so later boot never starts it.
             _withdraw_profile_home(runner, home)
             park_profile(runner, name, f'startup recovery failed; ownership retained (a control-socket rescan, '
-                                       f'`hermes -p {name} gateway run`, serves it once its writer stops): {exc}')
+                                       f'`slave -p {name} gateway run`, serves it once its writer stops): {exc}')
             return
         registry.remove(home)
         _publish_served_set(runner)
         release_profile_home(runner, home)
         park_profile(runner, name, f'startup recovery failed (a control-socket rescan, '
-                                   f'`hermes -p {name} gateway run`, serves it again): {exc}')
+                                   f'`slave -p {name} gateway run`, serves it again): {exc}')
 
 
 async def recover_gateway_native_sessions(runner):

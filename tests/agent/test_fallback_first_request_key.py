@@ -40,7 +40,7 @@ def _add_pool_key(provider, entry_id, key, base_url, priority):
 def _setup(provider, env_var, url, strategy=None, bench_model=None):
     """``.env`` key spent and benched (for ``bench_model`` only, when given), a higher-priority key for
     another endpoint, a healthy key for ``url``."""
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     (home / ".env").write_text(f"{env_var}={_ENV_KEY}\n")
     if strategy:
         (home / "config.yaml").write_text(f"credential_pool_strategies:\n  {provider}: {strategy}\n")
@@ -80,11 +80,11 @@ def test_a_pick_that_is_not_sent_leaves_the_pool_unchanged(monkeypatch):
 
     _setup(_TOKEN_PLAN, "ALIBABA_TOKEN_PLAN_API_KEY", _TOKEN_PLAN_URL, strategy="round_robin")
     _add_pool_key(_TOKEN_PLAN, "healthy-2", "sk-second-healthy-key", _TOKEN_PLAN_URL, priority=11)
-    auth = Path(os.environ["HERMES_HOME"], "auth.json")
+    auth = Path(os.environ["SLAVE_HOME"], "auth.json")
     before = auth.read_bytes()
 
     readiness = resolve_route_entry_client({"provider": _TOKEN_PLAN, "model": "some-model"}, _TOKEN_PLAN, "some-model")
-    assert readiness.client.api_key == _POOL_KEY  # `hermes fallback check --live` builds the same client
+    assert readiness.client.api_key == _POOL_KEY  # `slave fallback check --live` builds the same client
 
     agent = _agent({"provider": "custom", "model": "primary-model"})
     agent._voice_turn_pending, agent.reasoning_config = True, None
@@ -105,7 +105,7 @@ def test_a_provider_whose_endpoint_follows_from_the_key_keeps_its_env_key():
     key the endpoint was derived from, as on main."""
     from agent.route_binding import resolve_route_entry_client
 
-    Path(os.environ["HERMES_HOME"], ".env").write_text(f"KIMI_API_KEY={_ENV_KEY}\n")
+    Path(os.environ["SLAVE_HOME"], ".env").write_text(f"KIMI_API_KEY={_ENV_KEY}\n")
     _add_pool_key("kimi-coding", "kimi-code", "sk-kimi-pooled-key", "https://api.moonshot.ai/v1", priority=0)
     load_pool("kimi-coding").mark_exhausted_and_rotate(
         status_code=429, api_key_hint=_ENV_KEY, failure_reason="insufficient_quota")

@@ -1,7 +1,7 @@
 """/memory and /skills review verbs on a LOCAL session match the classic CLI (#138901).
 
 The classic CLI hands every /memory argument (and /skills review word) to
-``hermes_cli.write_approval_commands.handle_pending_subcommand``; a local session must give each
+``slave_cli.write_approval_commands.handle_pending_subcommand``; a local session must give each
 subcommand that handler serves the same reach: its listings are reads, its writes are controls."""
 import asyncio
 import json
@@ -23,9 +23,9 @@ _REVIEW_VERBS = {'memory': {'pending': 'read', **_WRITES}, 'skills': {'pending':
 
 @pytest.mark.parametrize('subsystem', ['memory', 'skills'])
 def test_each_review_subcommand_the_cli_serves_keeps_its_reach_on_a_local_session(tmp_path, monkeypatch, subsystem):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     from gateway.session_commands import command_verdict
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from slave_cli.write_approval_commands import handle_pending_subcommand
     for verb, reach in _REVIEW_VERBS[subsystem].items():
         # The CLI answers it (an empty queue, an unknown id, an invalid switch value): it is a review verb.
         assert handle_pending_subcommand(subsystem, [verb, 'x']) is not None, verb
@@ -35,9 +35,9 @@ def test_each_review_subcommand_the_cli_serves_keeps_its_reach_on_a_local_sessio
 
 
 def test_memory_has_no_diff_like_the_cli(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     from gateway.session_commands import command_verdict
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from slave_cli.write_approval_commands import handle_pending_subcommand
     assert handle_pending_subcommand('memory', ['diff', 'x']) is None
     assert command_verdict('memory', 'diff x') == 'refused'
 
@@ -66,7 +66,7 @@ def test_skills_reads_only_its_first_word_like_its_handler(arg, reach):
 
 
 def test_kanban_with_an_unclosed_quote_is_refused_by_name():
-    """/kanban parses with shlex (hermes_cli/kanban.py ``run_slash``), so an unclosed quote can't run
+    """/kanban parses with shlex (slave_cli/kanban.py ``run_slash``), so an unclosed quote can't run
     there either: the client gets ``invalid_params`` naming the argument, not an internal error."""
     from gateway.session_commands import command_verdict
     from persistence.core.errors import AuthorityRefusal
@@ -109,7 +109,7 @@ def test_local_session_reviews_staged_memory_writes(tmp_path):
         'model': {'provider': 'custom', 'default': 'review-model', 'base_url': url},
         'auxiliary': {'title_generation': {'enabled': False}}}))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out, config = {}, {}
     commands = ('memory approve keepme01', 'memory reject dropme02', 'memory approval on',

@@ -1,7 +1,7 @@
 """Inbound files from a ``--local`` telegram-bot-api whose storage is mounted elsewhere on this host (#55698).
 
 A ``--local`` server answers getFile with ITS OWN absolute path (``/var/lib/telegram-bot-api/<token>/
-videos/file_7.MOV``) and serves nothing over HTTP. When Hermes runs in another container/host, PTB
+videos/file_7.MOV``) and serves nothing over HTTP. When slave-agent runs in another container/host, PTB
 cannot stat that path, so it prefixes ``base_file_url`` and GETs it: 404 ``Not Found: method not
 found``. ``extra.local_bot_api_root`` names where that storage is mounted here; the file is read from
 ``<root>/<token>/<rest>`` (or ``<root>/<rest>``) with two stats, no directory walk.

@@ -3,15 +3,15 @@
 
 - Status: DONE
 - Source: upload/6892306c-3b70-4a0c-81bb-6124f2d3c4ee.org — * Agent section,
-  task #26 turns ("Now #26: kill the HERMES block-art logo" through the green
+  task #26 turns ("Now #26: kill the SLAVE-AGENT block-art logo" through the green
   banner test run and the CI drawn-logo guard); corroborated by HANDOFF.org
-  ("The ~HERMES AGENT~ block-art logo is dead in both hosts").
+  ("The ~SLAVE-AGENT~ block-art logo is dead in both hosts").
 
 * Problem
 
 The startup banner spelled the product name in six rows of Unicode block
-glyphs (~██╗ ██╗…~) in two places — ~hermes_cli/banner.py~
-(~HERMES_AGENT_LOGO~) and ~ui-tui/src/banner.ts~ (~LOGO_ART~). A rule over
+glyphs (~██╗ ██╗…~) in two places — ~slave_cli/banner.py~
+(~SLAVE_AGENT_LOGO~) and ~ui-tui/src/banner.ts~ (~LOGO_ART~). A rule over
 words cannot see a shape: the generator could not rewrite the drawn name, so
 the branded branch would ship a banner still spelling the upstream name
 (FORK.org gap 1: "Needs regenerated art (or art derived from ~brand.CLI~)
@@ -19,7 +19,7 @@ plus a rule/test that fails if the old art returns").
 
 * Requirements
 
-1. ~hermes_cli/banner.py~: delete the ~HERMES_AGENT_LOGO~ block-art constant
+1. ~slave_cli/banner.py~: delete the ~SLAVE_AGENT_LOGO~ block-art constant
    and render the nameplate through a new function ~_brand_wordmark()~
    spelled from ~brand.PRODUCT~ and ~brand.TAGLINE~ (the wordmark is
    ~brand.TAGLINE~'s first consumer — it was unused before), keeping the
@@ -27,17 +27,17 @@ plus a rule/test that fails if the old art returns").
    existing ≥95-column display gate (rendered width 50, so it prints on
    normal terminals).
 2. ~import brand~ moves to banner.py's top import block (first-party, next to
-   ~from hermes_constants import get_hermes_home~).
-3. ~hermes_cli/skin_engine.py~: update the comment that referenced
-   ~HERMES_AGENT_LOGO~ to name the new function. Skins keep their own
+   ~from slave_constants import get_slave_home~).
+3. ~slave_cli/skin_engine.py~: update the comment that referenced
+   ~SLAVE_AGENT_LOGO~ to name the new function. Skins keep their own
    block-art logos — they spell the *skin's* name (ARES, etc.) plus "AGENT",
    which is brand-safe and must not be touched.
 4. ~ui-tui/src/banner.ts~: replace the six-row ~LOGO_ART~ with a ~3~-row
-   nameplate built from a quoted literal (~'Hermes Agent'~ on the dev
+   nameplate built from a quoted literal (~'slave-agent'~ on the dev
    branch) that the brand tier's ~rewrite_js~ quoted-region engine CAN
    rewrite on the branded branch; adjust ~LOGO_GRADIENT~ to ~[0, 1, 2]~;
    ~LOGO_WIDTH~ stays computed from the art (only used as a default width).
-5. Add a regression test to ~tests/hermes_cli/test_banner.py~
+5. Add a regression test to ~tests/slave_cli/test_banner.py~
    (~test_default_logo_is_spelled_from_brand_not_drawn_in_glyphs~): strip
    rich markup from ~_brand_wordmark()~ and assert it contains
    ~brand.PRODUCT~ and ~brand.TAGLINE~ and contains no run of full-block
@@ -53,12 +53,12 @@ plus a rule/test that fails if the old art returns").
 
 * Acceptance criteria
 
-1. ~rg -n "██╗" hermes_cli/banner.py ui-tui/src/banner.ts~ finds no
+1. ~rg -n "██╗" slave_cli/banner.py ui-tui/src/banner.ts~ finds no
    name-drawing art (skin art in ~skin_engine.py~ is allowed).
 2. Rendering the Python plate (~_brand_wordmark()~) prints a nameplate
    derived from ~brand.PRODUCT~ / ~brand.TAGLINE~ (transcript: verified, width
    50).
-3. ~HERMES_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh tests/hermes_cli/test_banner.py~ green — transcript records 6 passed
+3. ~SLAVE_PYTHON=$PWD/.venv/bin/python scripts/run_tests.sh tests/slave_cli/test_banner.py~ green — transcript records 6 passed
    (5 pre-existing + 1 new).
 4. The full row-1 signature grep is empty over the tracked tree.
 5. No JS test referenced the logo art (checked in session; none broke).
@@ -67,10 +67,10 @@ plus a rule/test that fails if the old art returns").
 
 - TUI side was not typechecked locally (no ~node_modules~ in ~ui-tui~); CI
   owns that check.
-- The env-var name ~HERMES_AGENT_LOGO~ documented in
+- The env-var name ~SLAVE_AGENT_LOGO~ documented in
   ~website/docs/reference/environment-variables.md~ is stale either way (no
   code reads it); renaming the constant is safe — noted, not acted on.
-- The caduceus mark (~HERMES_CADUCEUS~) is deliberately kept; its replacement
+- The caduceus mark (~SLAVE_CADUCEUS~) is deliberately kept; its replacement
   is task #34 (our own mark — see specs/004 notes and TODOs.org).
 - Landed in the ~ai/light-core~ brand commit ~e3edc4e6d3~ (interleaved hunks
   disclosed in the P0-tail commit) — not yet verifiable in this repo

@@ -4,7 +4,7 @@ Regression tests for the stale-bridge trap: ``connect()`` reused any
 already-running bridge with ``status: connected`` unconditionally, and
 ``disconnect()`` only kills bridges the adapter spawned itself.  A
 long-lived bridge process therefore survived gateway restarts AND
-``hermes update``, serving pre-update bridge.js behavior forever (e.g.
+``slave update``, serving pre-update bridge.js behavior forever (e.g.
 no inbound media download → images/voice notes arrive as placeholders).
 
 The fix: bridge.js reports a hash of its own source in ``/health``
@@ -100,7 +100,7 @@ def _mock_health(json_data, raise_on=None, *, knows_token=True, reflects_bearer=
         if raise_on == "headers":
             raise TimeoutError
         if url.endswith("/auth-proof"):
-            challenge = headers.get("X-Hermes-Bridge-Challenge", "")
+            challenge = headers.get("X-Slave-Bridge-Challenge", "")
             token = _TEST_TOKEN if knows_token else headers.get("Authorization", "").removeprefix("Bearer ")
             payload = {"authProof": _bridge_auth_proof(token, challenge)} if token else {}
         else:
@@ -286,7 +286,7 @@ class TestStaleBridgeHandshake:
 
         mock_popen.assert_called_once()
         # The fresh bridge gets a fresh token (persisted for cron), so whatever the impostor saw is already dead.
-        spawned_token = mock_popen.call_args.kwargs["env"]["HERMES_WHATSAPP_BRIDGE_TOKEN"]
+        spawned_token = mock_popen.call_args.kwargs["env"]["SLAVE_WHATSAPP_BRIDGE_TOKEN"]
         assert spawned_token != _TEST_TOKEN and len(spawned_token) >= 32
         assert (tmp_path / "session" / ".bridge-token").read_text(encoding="utf-8") == spawned_token
         assert all("Authorization" not in headers for _url, headers in mock_client.requests), mock_client.requests
@@ -412,9 +412,9 @@ class TestCacheDirEnvPassthrough:
             get_document_cache_dir,
             get_image_cache_dir,
         )
-        assert env["HERMES_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
-        assert env["HERMES_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
-        assert env["HERMES_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())
+        assert env["SLAVE_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
+        assert env["SLAVE_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
+        assert env["SLAVE_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())
         assert env["WHATSAPP_SEND_READ_RECEIPTS"] == "true"
 
 
@@ -596,7 +596,7 @@ class TestConfigFingerprintAdoption:
         "WHATSAPP_MODE", "WHATSAPP_DM_POLICY", "WHATSAPP_GROUP_POLICY", "WHATSAPP_ALLOWED_USERS",
         "WHATSAPP_GROUP_ALLOWED_USERS", "WHATSAPP_REPLY_PREFIX", "WHATSAPP_SEND_READ_RECEIPTS", "WHATSAPP_DEBUG",
         "WHATSAPP_FORWARD_OWNER_MESSAGES", "WHATSAPP_MAX_MESSAGE_LENGTH", "WHATSAPP_CHUNK_DELAY_MS",
-        "WHATSAPP_SEND_TIMEOUT_MS", "HERMES_IMAGE_CACHE_DIR", "HERMES_AUDIO_CACHE_DIR", "HERMES_DOCUMENT_CACHE_DIR",
+        "WHATSAPP_SEND_TIMEOUT_MS", "SLAVE_IMAGE_CACHE_DIR", "SLAVE_AUDIO_CACHE_DIR", "SLAVE_DOCUMENT_CACHE_DIR",
     ])
     def test_every_key_bridge_js_reads_at_startup_is_fingerprinted(self, key):
         from plugins.platforms.whatsapp.adapter import _bridge_config_fingerprint

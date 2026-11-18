@@ -5,7 +5,7 @@ import time
 import psutil
 import pytest
 
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 from agent.runtime_session_store import RuntimeSessionStore
 from persistence.core.errors import AuthorityRefusal
 from tests.fixtures.storage_holder import raw_holder

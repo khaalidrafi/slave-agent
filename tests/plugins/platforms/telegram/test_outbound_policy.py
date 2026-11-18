@@ -24,11 +24,11 @@ def test_factory_reads_notifications_mode_from_config_yaml(tmp_path, monkeypatch
     if yaml_mode is not None:
         (tmp_path / "config.yaml").write_text(
             f"display:\n  platforms:\n    telegram:\n      notifications: {yaml_mode}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     if env_mode is None:
-        monkeypatch.delenv("HERMES_TELEGRAM_NOTIFICATIONS", raising=False)
+        monkeypatch.delenv("SLAVE_TELEGRAM_NOTIFICATIONS", raising=False)
     else:
-        monkeypatch.setenv("HERMES_TELEGRAM_NOTIFICATIONS", env_mode)
+        monkeypatch.setenv("SLAVE_TELEGRAM_NOTIFICATIONS", env_mode)
 
     adapter = _build_adapter(PlatformConfig(enabled=True, token="1:x"))
 

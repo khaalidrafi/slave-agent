@@ -221,7 +221,7 @@ class TestSessionTitleLineage:
     def test_projected_tip_inherits_root_title_when_untitled(self, db):
         """A rotation that ended the root before the title carry ran leaves the name on the
         root only; the projected lineage row must still surface it (exact-title lookups such as
-        `hermes peer dm` -> canonical "Bot Chat", #106165). A titled tip keeps its own title."""
+        `slave peer dm` -> canonical "Bot Chat", #106165). A titled tip keeps its own title."""
         import time as _time
         self._make_compression_chain(db, _time.time() - 3600)
         set_session_title(db, "root", "Bot Chat")

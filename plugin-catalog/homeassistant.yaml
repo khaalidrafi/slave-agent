@@ -4,7 +4,7 @@ sha: e7a218f26db88426ab3e7376f0e000b6e356f5e7
 subdir: homeassistant
 description: 'Home Assistant gateway platform (state-change events in, persistent notifications and cron notify
   delivery out) plus the homeassistant toolset (ha_list_entities, ha_get_state, ha_list_services, ha_call_service).
-  Formerly built into Hermes core; existing users are migrated automatically.'
+  Formerly built into slave-agent core; existing users are migrated automatically.'
 maintainer: NousResearch
 tier: official
 category: platform

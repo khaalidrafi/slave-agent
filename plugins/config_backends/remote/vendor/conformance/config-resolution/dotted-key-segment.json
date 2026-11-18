@@ -9,7 +9,7 @@
         "monitoring": {
           "gateway_health_export": {
             "resource_attributes": {
-              "service.name": "hermes",
+              "service.name": "slave",
               "deployment.environment.name": "prod"
             }
           }
@@ -54,7 +54,7 @@
       "monitoring": {
         "gateway_health_export": {
           "resource_attributes": {
-            "service.name": "hermes",
+            "service.name": "slave",
             "deployment.environment.name": "staging"
           }
         }

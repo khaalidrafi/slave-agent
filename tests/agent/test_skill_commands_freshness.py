@@ -1,7 +1,7 @@
 """CFG-8: a skill installed from another terminal reaches the long-lived gateway's slash map.
 
 The one gateway owns every local session for its whole lifetime, so a process-lifetime memo of the
-skill command map left ``hermes skills install`` (or a dropped SKILL.md) invisible to Ink's
+skill command map left ``slave skills install`` (or a dropped SKILL.md) invisible to Ink's
 ``/command`` lookup and completion until ``/reload-skills`` or a gateway restart.
 """
 from unittest.mock import patch

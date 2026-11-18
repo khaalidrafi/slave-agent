@@ -20,7 +20,7 @@ async def test_completion_uses_logical_owner_after_route_restore(tmp_path, monke
     from gateway.session_authority import SessionAuthority, initialize_session_authority
     from gateway.session_automation import completion_admission
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from plugins.platforms.discord.adapter import DiscordAdapter
     from plugins.platforms.telegram.adapter import TelegramAdapter
     from tests.gateway.test_completion_admission import pending
@@ -39,7 +39,7 @@ async def test_completion_uses_logical_owner_after_route_restore(tmp_path, monke
                                   chat_type='group' if platform == 'telegram' else 'dm',
                                   thread_id='7' if platform == 'telegram' else None, user_id='42')
     human = MessageEvent(text='human', source=source, message_id='human')
-    with native_callback(runner, human, get_hermes_home()):
+    with native_callback(runner, human, get_slave_home()):
         receipt = await authority.admit_native(human)
     key = runner.session_store._generate_session_key(source)
     # run_turn_prepare caches the inbound source before a turn can start a delegation.

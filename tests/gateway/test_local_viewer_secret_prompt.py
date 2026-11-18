@@ -51,12 +51,12 @@ def test_local_viewer_turn_prompts_and_saves_the_secret(monkeypatch):
     from gateway.session_secret_prompt import secret_prompt_scope
     from tools.skills_tool_setup import _capture_required_environment_variables
     saved = []
-    from hermes_cli import config
+    from slave_cli import config
     monkeypatch.setattr(config, 'save_env_value_secure',
                         lambda key, value: saved.append((key, value)) or {'success': True, 'stored_as': key,
                                                                           'validated': False})
-    monkeypatch.setenv('HERMES_GATEWAY_SESSION', '1')  # a gateway surface: the hint path before this fix
-    monkeypatch.delenv('HERMES_INTERACTIVE', raising=False)
+    monkeypatch.setenv('SLAVE_GATEWAY_SESSION', '1')  # a gateway surface: the hint path before this fix
+    monkeypatch.delenv('SLAVE_INTERACTIVE', raising=False)
     turn, peer = _turn(Platform.LOCAL)
     out = {}
     with secret_prompt_scope(turn, SimpleNamespace()):
@@ -96,8 +96,8 @@ def test_skipped_secret_stays_missing(monkeypatch):
 def test_messaging_turn_keeps_the_unsupported_hint(monkeypatch, platform):
     from gateway.session_secret_prompt import secret_prompt_scope
     from tools.skills_tool_setup import _capture_required_environment_variables
-    monkeypatch.setenv('HERMES_GATEWAY_SESSION', '1')
-    monkeypatch.delenv('HERMES_INTERACTIVE', raising=False)
+    monkeypatch.setenv('SLAVE_GATEWAY_SESSION', '1')
+    monkeypatch.delenv('SLAVE_INTERACTIVE', raising=False)
     turn, peer = _turn(platform)
     with secret_prompt_scope(turn, SimpleNamespace()):
         out = _capture_required_environment_variables('hab-skill', [{'name': 'HAB_KEY', 'prompt': 'p'}])

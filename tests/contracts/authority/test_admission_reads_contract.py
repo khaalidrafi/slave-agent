@@ -169,7 +169,7 @@ def test_compact_api_payloads_rewrites_the_settled_candidates(backend, scope_a):
     assert store.admissions.api_compaction_candidates() == ids[:2]
     # CONTRACT: each given row still a candidate is rewritten in the one write; a responses: history, a queued row and an unknown id stay as they are.
     assert store.admissions.compact_api_payloads(admission_ids=[*ids, queued.admission_id, "absent"]) == 2
-    retained = {"type": "image_url", "image_url": {"url": "hermes-retained:" + digest}}
+    retained = {"type": "image_url", "image_url": {"url": "slave-retained:" + digest}}
     assert store.admissions.get(admission_id=ids[0]).payload == {**inline, "text": [look, retained, other]}
     assert store.admissions.get(admission_id=ids[1]).payload == {**history, "api_turn_v1": {"history": None}}
     assert store.admissions.get(admission_id=ids[2]).payload == responses

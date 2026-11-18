@@ -1,6 +1,6 @@
 import { PassThrough } from 'stream'
 
-import { renderSync } from '@hermes/ink'
+import { renderSync } from '@slave-agent/ink'
 import React, { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -19,7 +19,7 @@ interface Owner {
 const SESSION = { info: { cwd: '/w', model: 'test', skills: {}, tools: {} }, messages: [], session_id: 's1' }
 const mounted: ReturnType<typeof renderSync>[] = []
 
-// `hermes --tui` attaches to the profile's shared gateway, which mints no session for a blank install:
+// `slave --tui` attaches to the profile's shared gateway, which mints no session for a blank install:
 // the TUI asks it whether a provider is configured before creating one.
 function mountCanonicalLifecycle({ providerConfigured, resume = 'resumes', runtimeCheck }: Owner) {
   let api: null | ReturnType<typeof useSessionLifecycle> = null
@@ -135,14 +135,14 @@ describe('a blank install on the shared gateway', () => {
 })
 
 // A keyless `providers:` endpoint saves no `model:` block, so `setup.status` calls the profile
-// unconfigured while `hermes --tui --provider local -m qwen`, and sessions stored on that route, work.
+// unconfigured while `slave --tui --provider local -m qwen`, and sessions stored on that route, work.
 describe('an unconfigured profile with a working route', () => {
   it.each([
     ['the launch', 'qwen', null],
     ['the profile', undefined, 'qwen']
   ])('creates on the launch provider with a model from %s', async (_from, launchModel, profileModel) => {
-    vi.stubEnv('HERMES_TUI_PROVIDER', 'local')
-    vi.stubEnv('HERMES_MODEL', launchModel)
+    vi.stubEnv('SLAVE_TUI_PROVIDER', 'local')
+    vi.stubEnv('SLAVE_MODEL', launchModel)
 
     const { api, created, panel } = mountCanonicalLifecycle({
       providerConfigured: false,
@@ -162,8 +162,8 @@ describe('an unconfigured profile with a working route', () => {
     ['does not resolve', 'local', 'qwen', { model: null, ok: false }],
     ['is not named', undefined, 'qwen', { model: 'qwen', ok: true }]
   ])('opens Setup Required when the launch provider %s', async (_case, provider, model, runtimeCheck) => {
-    vi.stubEnv('HERMES_TUI_PROVIDER', provider)
-    vi.stubEnv('HERMES_MODEL', model)
+    vi.stubEnv('SLAVE_TUI_PROVIDER', provider)
+    vi.stubEnv('SLAVE_MODEL', model)
 
     const { api, methods, panel } = mountCanonicalLifecycle({ providerConfigured: false, runtimeCheck })
 

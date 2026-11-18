@@ -51,7 +51,7 @@ def _make_local(doomed):
 
 @pytest.mark.parametrize("native", ["1", "0"], ids=["native-read", "shell-read"])
 def test_local_read_of_relative_path_in_deleted_cwd_errors_instead_of_reading_ancestor(tmp_path, monkeypatch, native):
-    monkeypatch.setenv("HERMES_NATIVE_FILE_READ", native)
+    monkeypatch.setenv("SLAVE_NATIVE_FILE_READ", native)
     doomed = _dead_cwd_with_ancestor_readme(tmp_path)
     env = _make_local(doomed)
     try:

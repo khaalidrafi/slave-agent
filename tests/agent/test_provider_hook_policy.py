@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 HOST = "https://api.hookpolicy.test/v1"
-CARRIER = "hermes.native_assistant"
+CARRIER = "slave.native_assistant"
 
 
 @pytest.fixture

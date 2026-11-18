@@ -1,4 +1,4 @@
-"""``session.prune``: the owner runs `hermes sessions prune` for its own store.
+"""``session.prune``: the owner runs `slave sessions prune` for its own store.
 
 The CLI computes the filters and shows the preview from a read-only view; the delete itself is
 this owner's write, through the same ``prune_sessions`` / ``retire_prunable`` path housekeeping
@@ -42,7 +42,7 @@ async def prune(connection, ref, params):
 
 
 async def _apply(authority, filters, never_active):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from gateway.session_ingress_media import native_inputs_root
     from gateway.session_mutations import retire_live_sessions
     from gateway.session_persistence import authority_persistence
@@ -50,7 +50,7 @@ async def _apply(authority, filters, never_active):
     from session_retention import after_sessions_removed
     store = authority_persistence(authority)
     # Same transcript dir the CLI's local prune unlinks under (dispatch runs in the owner's scope).
-    sessions_dir = Path(get_hermes_home()) / 'sessions'
+    sessions_dir = Path(get_slave_home()) / 'sessions'
     media_root = str(native_inputs_root())
 
     def prune_never_active():

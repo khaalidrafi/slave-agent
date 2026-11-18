@@ -49,7 +49,7 @@ def test_non_bot_chat_tokens_pass_through():
 
 
 def test_unknown_profile_resolves_to_none():
-    with mock.patch("hermes_cli.profiles.profile_exists", return_value=False):
+    with mock.patch("slave_cli.profiles.profile_exists", return_value=False):
         assert _resolve_bot_chat_target({"id": "j1"}, "ghost") is None
 
 
@@ -85,7 +85,7 @@ def test_preflight_still_blocks_unknown_platforms():
 def test_create_validation_rejects_unknown_profile():
     from tools.cronjob_tools import _validate_bot_chat_deliver
 
-    with mock.patch("hermes_cli.profiles.profile_exists", return_value=False):
+    with mock.patch("slave_cli.profiles.profile_exists", return_value=False):
         err = _validate_bot_chat_deliver("bot-chat:ghost")
     assert err is not None
 
@@ -96,7 +96,7 @@ def test_create_validation_accepts_bare_and_existing():
     assert _validate_bot_chat_deliver("bot-chat") is None
     assert _validate_bot_chat_deliver(None) is None
     assert _validate_bot_chat_deliver("telegram:-100") is None
-    with mock.patch("hermes_cli.profiles.profile_exists", return_value=True):
+    with mock.patch("slave_cli.profiles.profile_exists", return_value=True):
         assert _validate_bot_chat_deliver("bot-chat:research") is None
 
 
@@ -106,7 +106,7 @@ def test_deliver_message_carries_cron_attribution(tmp_path, monkeypatch):
     """The admitted turn self-identifies as scheduled output, not the user."""
     from tools import bot_live_delivery as mailbox
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     captured = {}
 
     def fake_deliver(home, owner, message, *, delivery_id, notification_category="result"):
@@ -126,7 +126,7 @@ def test_failure_notice_reaches_the_owner_as_a_diagnostic(tmp_path, monkeypatch)
     the owner transport (R1/R2 minor: the category was accepted but dropped)."""
     from tools import bot_live_delivery as mailbox
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     seen = []
 
     def fake_deliver(home, owner, message, *, delivery_id, notification_category="result"):
@@ -148,7 +148,7 @@ def test_deliver_without_authority_is_parked_not_a_second_writer(tmp_path, monke
     import subprocess
     from tools import bot_live_delivery as mailbox
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(subprocess, "run", mock.Mock(side_effect=AssertionError("no local inference fallback")))
     monkeypatch.setattr(mailbox, "find_canonical_live_owner",
                         mock.Mock(side_effect=ValueError("profile authority is not ready")))
@@ -162,7 +162,7 @@ def test_failure_notice_to_a_profile_hiding_warnings_is_suppressed_not_sent(tmp_
     requested (non-failure) result is never gated."""
     from tools import bot_live_delivery as mailbox
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("display: {suppress_warning_notifications: true}\n")
     admitted = []
 
@@ -189,7 +189,7 @@ def test_failure_notice_to_a_profile_hiding_warnings_is_suppressed_not_sent(tmp_
 # ── delivery-targets listing (UI pickers) ────────────────────────────────────
 
 def test_delivery_targets_include_local_profiles():
-    with mock.patch("hermes_cli.profiles.list_profile_names",
+    with mock.patch("slave_cli.profiles.list_profile_names",
                     return_value=["default", "research"]):
         targets = sched_delivery.cron_delivery_targets()
     ids = [t["id"] for t in targets]
@@ -213,12 +213,12 @@ def test_tick_hands_legacy_pending_records_to_the_live_owner_once(tmp_path, monk
     from cron import scheduler_authority
     from tools import bot_live_delivery as mailbox
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(J, "HERMES_DIR", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setattr(J, "SLAVE_DIR", tmp_path)
     monkeypatch.setattr(J, "CRON_DIR", tmp_path / "cron")
     monkeypatch.setattr(J, "JOBS_FILE", tmp_path / "cron" / "jobs.json")
     monkeypatch.setattr(J, "OUTPUT_DIR", tmp_path / "cron" / "output")
-    monkeypatch.setattr(S, "_hermes_home", tmp_path)
+    monkeypatch.setattr(S, "_slave_home", tmp_path)
     monkeypatch.setattr(S, "_sweep_mcp_orphans", lambda: None)
     monkeypatch.setattr(scheduler_authority, "reconcile_pending", lambda *, allow_connect=True: None)
     (tmp_path / "state.db").write_text("")

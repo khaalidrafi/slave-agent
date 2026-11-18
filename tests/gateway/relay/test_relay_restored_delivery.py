@@ -48,9 +48,9 @@ def gateway_home(tmp_path, monkeypatch):
     home.mkdir()
     # Multiplexed authorization reads the receiving bot's home; standalone reads the env.
     (home / ".env").write_text(f"DISCORD_ALLOWED_USERS={OWNER}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", OWNER)
-    monkeypatch.setattr(gateway_run, "_hermes_home", home)
+    monkeypatch.setattr(gateway_run, "_slave_home", home)
     return home
 
 
@@ -140,7 +140,7 @@ async def test_restored_delivery_never_takes_the_relay_over_a_native_bot_or_for_
     # A lane received by a secondary profile's bot, now offline, never borrows the primary's Relay.
     secondary = gateway_home / "profiles" / "team_b"
     secondary.mkdir(parents=True)
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir",
+    monkeypatch.setattr("slave_cli.profiles.get_profile_dir",
                         lambda name: gateway_home if name == "default" else gateway_home / "profiles" / name)
     key = _interrupt_relayed_session(gateway_home, multiplex=True)
     runner, relay, _ = _runner(gateway_home, multiplex=True)

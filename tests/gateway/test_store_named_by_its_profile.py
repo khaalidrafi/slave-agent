@@ -17,27 +17,27 @@ def test_the_session_store_keeps_one_handle_per_profile_however_its_folder_is_sp
                                                                                        store_elsewhere):
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     real = tmp_path / "home"
     real.mkdir()
     link = tmp_path / "link"
     link.symlink_to(real, target_is_directory=True)
-    monkeypatch.setenv("HERMES_HOME", str(link))
+    monkeypatch.setenv("SLAVE_HOME", str(link))
     store = SessionStore(tmp_path / "sessions", GatewayConfig())
     try:
-        token = set_hermes_home_override(real.resolve())  # a profile turn's scope names the canonical folder
+        token = set_slave_home_override(real.resolve())  # a profile turn's scope names the canonical folder
         try:
             assert store._scoped_persistence() is store._routing_persistence
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
         assert list(store._db_handles) == [real.resolve()]
     finally:
         store.close_all_db_handles()
 
 
 def _home():
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     return home
 
@@ -65,7 +65,7 @@ async def test_the_editor_lists_and_attaches_through_the_profile(monkeypatch, st
     listed = await agent.list_sessions(cwd=str(home))
     assert [row.session_id for row in listed.sessions] == ["s"]
     fields = await agent._session_fields("s", {}, "editor")
-    assert fields["field_meta"]["hermes"]["sessionProvenance"]
+    assert fields["field_meta"]["slave"]["sessionProvenance"]
 
 
 def test_a_wake_finds_the_session_in_its_profiles_store(tmp_path, store_elsewhere):
@@ -80,7 +80,7 @@ def test_a_wake_finds_the_session_in_its_profiles_store(tmp_path, store_elsewher
 def test_approvals_suggest_reads_the_current_profiles_store(store_elsewhere, capsys):
     import json
     from argparse import Namespace
-    from hermes_cli.approvals_suggest import suggest_command
+    from slave_cli.approvals_suggest import suggest_command
     home = _home()
     _seed(home, "s", "cli")
     assert suggest_command(Namespace(db=None, days=0, min_count=1, limit=20, apply_indices=None, json=True)) == 0
@@ -89,15 +89,15 @@ def test_approvals_suggest_reads_the_current_profiles_store(store_elsewhere, cap
 
 def test_a_recreated_worktree_is_locked_for_the_profiles_store(tmp_path, monkeypatch, store_elsewhere):
     import subprocess
-    from hermes_cli.tui_worktree_resume import record_tui_worktree, recreate_tui_worktree
-    from hermes_cli.worktree_ops import _retained_store
+    from slave_cli.tui_worktree_resume import record_tui_worktree, recreate_tui_worktree
+    from slave_cli.worktree_ops import _retained_store
     _seed(_home(), "s", "tui")
     repo = tmp_path / "repo"
     git = ["git", "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "-C", str(repo)]
     subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
     subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "fixture"], check=True)
     tree = repo / ".worktrees" / "kept"
-    record_tui_worktree({"path": str(tree), "branch": "hermes/kept", "repo_root": str(repo)})
+    record_tui_worktree({"path": str(tree), "branch": "slave/kept", "repo_root": str(repo)})
     assert recreate_tui_worktree(str(tree), "s") == str(tree)
     listing = subprocess.run([*git, "worktree", "list", "--porcelain"], capture_output=True, text=True,
                              check=True).stdout
@@ -139,7 +139,7 @@ def test_an_unopenable_profile_store_is_named_by_the_file_that_holds_it(tmp_path
 
 
 def test_the_clis_session_lookups_read_the_current_profiles_store(store_elsewhere):
-    from hermes_cli import main
+    from slave_cli import main
     _seed(_home(), "s", "cli")
     assert main._resolve_last_session(source="cli") == "s"
 
@@ -147,7 +147,7 @@ def test_the_clis_session_lookups_read_the_current_profiles_store(store_elsewher
 def test_the_gateway_backed_clis_reader_reads_the_current_profiles_store(store_elsewhere):
     from types import SimpleNamespace
 
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from slave_cli.gateway_session_store import GatewaySessionStore
     _seed(_home(), "s", "cli")
     store = GatewaySessionStore(SimpleNamespace(final=False))
     try:

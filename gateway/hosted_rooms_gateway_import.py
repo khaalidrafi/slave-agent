@@ -1,6 +1,6 @@
 """Hand the standalone backend's Group Chats to the gateway that owns the profile (WA-19).
 
-A native Desktop on a standalone ``hermes serve``/``hermes dashboard`` (no session authority) keeps
+A native Desktop on a standalone ``slave serve``/``slave dashboard`` (no session authority) keeps
 its rooms in the root ``shared-state.db`` and drives them in that process (``tui_gateway``
 route), while the gateway keeps its own in the profile's ``state.db`` (owner claim and epoch fence
 in the room insert's transaction). Once a gateway serves the profile, the standalone backend

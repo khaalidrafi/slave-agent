@@ -12,8 +12,8 @@ async def _owner(home, monkeypatch):
     from gateway.session import SessionStore
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
-    monkeypatch.setattr(run, '_hermes_home', home)
-    monkeypatch.setenv('HERMES_HOME', str(home))  # a single-profile owner: this IS the launch home
+    monkeypatch.setattr(run, '_slave_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))  # a single-profile owner: this IS the launch home
     store = SessionStore(home / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,
                              _cached_agent_for=lambda route: None, _adapter_for_source=lambda source: None,
@@ -68,7 +68,7 @@ async def test_exact_create_retry_after_an_env_rotation_returns_the_original_ses
     from gateway.run import _load_gateway_config
     from gateway.session_local import create_local_session
     from gateway.session_policy import restore_policy
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     home = tmp_path / 'home'
     home.mkdir()
     (home / 'config.yaml').write_text(
@@ -104,7 +104,7 @@ async def test_new_alias_session_uses_the_current_profile_env(tmp_path, monkeypa
     ``config.yaml`` edits."""
     from gateway.session_local import create_local_session
     from gateway.session_policy import restore_policy
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     home = tmp_path / 'home'
     home.mkdir()
     (home / 'config.yaml').write_text(

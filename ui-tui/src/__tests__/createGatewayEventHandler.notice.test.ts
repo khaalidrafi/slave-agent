@@ -399,7 +399,7 @@ describe('createGatewayEventHandler', () => {
         python: 'gateway ensure',
         stderr_tail:
           'Command failed: python gateway_bootstrap.py --start\ngateway incompatible: runtime_protocol\n' +
-          "gateway incompatible: another Hermes install's gateway owns this profile; stop it there: hermes gateway stop"
+          "gateway incompatible: another slave-agent install's gateway owns this profile; stop it there: slave gateway stop"
       },
       type: 'gateway.start_timeout'
     } as any)
@@ -407,7 +407,7 @@ describe('createGatewayEventHandler', () => {
     const messages = getTurnState().activity.map(a => a.text)
 
     expect(messages).toContain('gateway incompatible: runtime_protocol')
-    expect(messages.some(m => m.includes('another Hermes install'))).toBe(true)
+    expect(messages.some(m => m.includes('another slave-agent install'))).toBe(true)
     expect(messages.some(m => m.startsWith('Command failed'))).toBe(false)
   })
 })

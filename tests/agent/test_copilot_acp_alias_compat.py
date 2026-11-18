@@ -188,7 +188,7 @@ _FORMER_SURFACE = (
     "_jsonrpc_result", "_legacy_session_model_ids", "_model_config_option", "_model_selection_request",
     "_render_message_content", "_render_tool_bridge_sections", "_resolve_args", "_resolve_command",
     "_resolve_home_dir", "_session_model_ids", "contextlib", "get_nt_namespace_error", "get_read_block_error",
-    "get_write_denied_error", "hermes_subprocess_env", "is_write_approval_required", "json", "logger", "logging",
+    "get_write_denied_error", "slave_subprocess_env", "is_write_approval_required", "json", "logger", "logging",
     "os", "queue", "re", "redact_sensitive_text", "resolve_agent_cwd", "shlex", "subprocess", "tempfile",
     "threading", "time", "deque",
 )
@@ -206,7 +206,7 @@ def test_alias_serves_its_whole_former_surface_and_warns_once(monkeypatch):
     assert len(deprecations) == 1 and "agent.acp_client.ACPClient" in deprecations[0]
     assert alias._session_model_ids({"models": {"availableModels": [
         {"modelId": "a"}, {"modelId": "b", "_meta": {"copilotEnablement": "disabled"}}]}}) == ["a"]
-    for name in ("HERMES_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH", "HERMES_COPILOT_ACP_ARGS"):
+    for name in ("SLAVE_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH", "SLAVE_COPILOT_ACP_ARGS"):
         monkeypatch.delenv(name, raising=False)
     assert (alias._resolve_command(), alias._resolve_args()) == ("copilot", ["--acp", "--stdio"])
     monkeypatch.setenv("COPILOT_CLI_PATH", "/opt/copilot")

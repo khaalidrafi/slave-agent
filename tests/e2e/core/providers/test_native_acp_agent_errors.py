@@ -1,7 +1,7 @@
 """ACP agent wire conformance, part 2: ACP error responses and agent crashes.
 
 The agent (``tests/fakes/providers/fake_acp_agent.py``, behind the ``fake-acp`` user plugin provider) answers ``session/prompt`` with JSON-RPC errors from
-the ACP / JSON-RPC 2.0 error space or dies mid-stream. Each row drives one real ``hermes chat -q`` and
+the ACP / JSON-RPC 2.0 error space or dies mid-stream. Each row drives one real ``slave chat -q`` and
 asserts the retry semantics the user sees:
 
 * transient failures (``-32603`` internal error, a crash after a partial chunk) are retried with a
@@ -55,8 +55,8 @@ CRASH_STDERR = "fatal: agent segfaulted (fake)"
 
 # Red on current main for a tracked, open bug: key -> (the bug's own failure-message pattern, reason).
 KNOWN: dict[str, tuple[str, str]] = {
-    "auth_remedy": (r"^remedy 'hermes [^']+' is a dead end for an external_process provider: ",
-                    "#121290 an ACP provider's auth failure tells the user to run a hermes command that cannot "
+    "auth_remedy": (r"^remedy 'slave [^']+' is a dead end for an external_process provider: ",
+                    "#121290 an ACP provider's auth failure tells the user to run a slave command that cannot "
                     "handle it (agent/turn_failure_copy.py oauth_relogin_command names `auth add <slug> --type oauth` "
                     "for a profile with no auth_handler)"),
 }
@@ -109,7 +109,7 @@ def _alive(pid: int) -> bool:
 def _drive(root: Path, row: Row) -> Outcome:
     fake = acp.AcpFake(root / "acp", row.turns)
     nh = make_home(root, {"provider": acp.PROVIDER, "default": acp.PLACEHOLDER_MODEL}, env_file=fake.env())
-    acp.install_provider_plugin(nh.hermes_home)
+    acp.install_provider_plugin(nh.slave_home)
     return Outcome(nh, fake, run_chat(nh, "Answer the question, please."))
 
 
@@ -147,7 +147,7 @@ def test_acp_failure_is_retried_per_semantics_and_surfaced_once(outcomes, name):
     wait_until(lambda: not [p for p in pids if _alive(p)], 10.0, f"agent processes {pids} to exit")
 
 
-REMEDY_RE = re.compile(r"`(hermes [^`]+)`")
+REMEDY_RE = re.compile(r"`(slave [^`]+)`")
 
 
 # What a remedy command says when it cannot do anything for this provider.
@@ -156,12 +156,12 @@ DEAD_END_MARKERS = ("not implemented", "cannot be handled")
 
 def test_auth_failure_remedy_is_an_actionable_command(outcomes):
     """The sign-in remedy printed for an ACP ``Authentication required`` must not be a dead end: any
-    ``hermes ...`` command it names has to be implemented for this provider (here an ``external_process``
+    ``slave ...`` command it names has to be implemented for this provider (here an ``external_process``
     plugin profile whose agent subprocess owns its own sign-in)."""
     out = outcomes["auth_required_not_retried"]
     assert out.run.returncode != 0 and "Authentication required" in out.run.stdout, out.run.describe()
     for command in REMEDY_RE.findall(out.run.stdout):
-        argv = [sys.executable, "-m", "hermes_cli.main", *command.split()[1:]]
+        argv = [sys.executable, "-m", "slave_cli.main", *command.split()[1:]]
         proc = subprocess.run(argv, cwd=out.nh.project, env=out.nh.env(), capture_output=True, text=True,
                               timeout=60, stdin=subprocess.DEVNULL, check=False)
         said = (proc.stdout + proc.stderr).lower()

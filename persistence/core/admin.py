@@ -19,7 +19,7 @@ PHYSICAL_ADMIN = "physical_admin"
 
 # What ``StoreAdmin.write_health_reason`` answers when it skipped the probe: the notice the doctor prints for it.
 WRITE_PROBE_SKIPPED = ("state.db write-health probe skipped: store is held by a live writer and larger than 1 GB "
-                       "(run 'hermes doctor --fix' to probe it)")
+                       "(run 'slave doctor --fix' to probe it)")
 
 # How long ``StoreAdmin.reconcile_drift_for_browse`` may hold a profile's maintenance lock for its schema catch-up,
 # and the purpose that lock records; a gateway booting meanwhile waits the budget out.

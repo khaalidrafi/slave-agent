@@ -2,7 +2,7 @@ name: research-notes
 repo: https://github.com/Adebisi1111/hermes-research-notes
 sha: "200e099690c0896dba7cf24aeddd35f2720ae3a2"
 description: >
-  Research notes for Hermes: fetch web pages as text, save notes with tags,
+  Research notes for slave-agent: fetch web pages as text, save notes with tags,
   search notes, list notes, and delete notes. All data stored locally in JSON.
 maintainer: Adebisi1111
 tier: community

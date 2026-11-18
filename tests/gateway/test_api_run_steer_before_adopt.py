@@ -24,7 +24,7 @@ class Agent(InterruptControlMixin):
 
 @pytest.mark.asyncio
 async def test_run_steer_before_adoption_reaches_the_turns_agent_not_the_cached_one(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     store = SessionStore(tmp_path / "sessions", GatewayConfig())
     db = storage_handle(tmp_path)
     stale, fresh = Agent(), Agent()

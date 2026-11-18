@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_exec_approval_view(discord, base, *, unauthorized):
-    """Return the ``ExecApprovalView`` class on ``base`` (the adapter's shared ``_HermesView``)."""
+    """Return the ``ExecApprovalView`` class on ``base`` (the adapter's shared ``_SlaveView``)."""
     class ExecApprovalView(base):
         """Allow Once / Allow Session / Always Allow / Deny buttons for a dangerous command.
         Clicks call ``resolve_gateway_approval()`` — the same mechanism as the text ``/approve`` flow."""

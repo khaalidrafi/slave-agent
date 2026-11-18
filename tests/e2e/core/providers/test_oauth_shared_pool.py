@@ -1,4 +1,4 @@
-"""Two real ``hermes -z`` processes share one auth.json pool row and hit its expiry at the same moment.
+"""Two real ``slave -z`` processes share one auth.json pool row and hit its expiry at the same moment.
 
 Both processes load the same Anthropic OAuth pool row (single-use refresh
 token) and both get the vendor's 401 for the expired access token. The first to
@@ -8,7 +8,7 @@ auth.json and adopt it instead of presenting the refresh token that was just
 spent. Expected: exactly one refresh grant, no ``invalid_grant``, both turns
 answered with the new bearer, and the refresh token on disk still live.
 
-Everything is real Hermes (pool, persistence, locking, the Anthropic OAuth
+Everything is real slave-agent (pool, persistence, locking, the Anthropic OAuth
 refresh over TLS through the intercepting proxy); only the vendor endpoints are
 loopback fakes. The single-process variant of the stale-writer bug (#120815, fixed)
 is pinned by test_oauth_anthropic_refresh.py.

@@ -30,7 +30,7 @@ def _clean_state():
 
 @pytest.fixture
 def db_path():
-    return Path(os.environ["HERMES_HOME"]) / "state.db"
+    return Path(os.environ["SLAVE_HOME"]) / "state.db"
 
 
 @pytest.fixture
@@ -111,7 +111,7 @@ class TestAccountingQueueAcrossClose:
         holder.close()
         assert holder._conn is None
 
-        with caplog.at_level(logging.WARNING, logger="hermes_state"):
+        with caplog.at_level(logging.WARNING, logger="slave_state"):
             _queue(holder, 1)
 
         assert not holder._token_queue, "a delta queued after close() must not park on a stopped queue"
@@ -213,7 +213,7 @@ class TestWriteLockReplay:
         finally:
             sibling.join(10.0)
         text = str(excinfo.value)
-        assert text.startswith("database is locked (another Hermes process held the state.db write lock")
+        assert text.startswith("database is locked (another slave-agent process held the state.db write lock")
         assert "the database itself is healthy" in text
         assert holder.get_meta("k") is None
 
@@ -261,20 +261,20 @@ class TestReadOnlyHolder:
 
 class TestOpenFailureLatch:
     def test_a_failed_open_is_the_last_open_failure_the_notice_names(self, db_path, monkeypatch):
-        from persistence.sqlite._state import guard as hermes_state_guard
+        from persistence.sqlite._state import guard as slave_state_guard
         import storage_user_copy
 
         monkeypatch.setattr(storage_user_copy, "_last_init_error", None)
-        monkeypatch.setattr(hermes_state_guard, "_last_init_error", None)
+        monkeypatch.setattr(slave_state_guard, "_last_init_error", None)
         with pytest.raises(sqlite3.OperationalError) as excinfo:
             StoreHolder(db_path, read_only=True)
         assert storage_user_copy.get_last_init_error() == f"OperationalError: {excinfo.value}"
-        assert hermes_state_guard.get_last_init_error() is None
+        assert slave_state_guard.get_last_init_error() is None
 
 
 class TestReadWithOwnTimeout:
     """A read that keeps a legacy call site's own lock wait (``timeout=2`` in main's
-    hermes_cli/worktree_ops.py reads) on the holder's pooled reader, and gives the reader its budget back."""
+    slave_cli/worktree_ops.py reads) on the holder's pooled reader, and gives the reader its budget back."""
 
     def test_the_block_waits_the_given_time_and_the_reader_gets_its_budget_back(self, holder):
         with holder._read_ctx_with_timeout(2) as conn:

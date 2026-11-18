@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -24,7 +24,7 @@ const info = (sid: string) => ({ model: 'test', skills: {}, tools: {}, stored_se
 
 function mount(gw: any) {
   const home = mkdtempSync(join(tmpdir(), 'ink-bg-prompts-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   let lifecycle!: ReturnType<typeof useSessionLifecycle>
 
   function Harness() {

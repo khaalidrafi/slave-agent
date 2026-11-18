@@ -20,10 +20,10 @@ provider = _conformance_provider
 def test_hosted_terminal_never_reads_a_named_script_on_the_host(provider, monkeypatch, tmp_path):
     import tools.process_registry as processes
     monkeypatch.setattr(processes, "_is_supervised_gateway_process", lambda: True)
-    host_dir = tmp_path / "host-workspace"  # apart from the test's HERMES_HOME
+    host_dir = tmp_path / "host-workspace"  # apart from the test's SLAVE_HOME
     host_dir.mkdir()
     script = host_dir / "deploy.sh"
-    script.write_text("#!/bin/sh\nsystemctl --user restart hermes-gateway\n")
+    script.write_text("#!/bin/sh\nsystemctl --user restart slave-gateway\n")
     with c._watch_host(host_dir) as touched, bind_state(A):
         result = c.call_tool("terminal", {"command": f"bash {script}"}, task_id="t")
     assert not touched, f"the hosted command's script was read on this host: {touched}"

@@ -12,17 +12,17 @@ import httpx
 import pytest
 
 from session_rules.onboarding_flow import Facts
-from hermes_cli import anon_auth, install_state
-from tests.hermes_cli.anon_portal import as_local_desktop_backend, install_portal
+from slave_cli import anon_auth, install_state
+from tests.slave_cli.anon_portal import as_local_desktop_backend, install_portal
 from tui_gateway import server
 
 
 @pytest.fixture
 def root(tmp_path, monkeypatch) -> Path:
-    home = tmp_path / "hermes-root"
+    home = tmp_path / "slave-root"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr("agent.onboarding_facts.read_facts", lambda **kw: Facts(os="macos", arch="arm64"))
     return home
@@ -63,7 +63,7 @@ def test_a_rerun_on_a_first_install_never_claims(portal, monkeypatch):
 
 
 def test_a_failed_claim_opens_nothing_and_the_next_launch_tries_again(portal, monkeypatch):
-    from hermes_cli import free_tier_bootstrap
+    from slave_cli import free_tier_bootstrap
 
     as_local_desktop_backend(monkeypatch)
     free_tier_bootstrap.run_bootstrap(announce=False)  # the first boot latches the install as due
@@ -86,7 +86,7 @@ def test_a_trial_another_install_took_first_opens_no_chat_it_cannot_run(portal, 
     """Two installs answered "due" before either claimed. The first takes the trial; the second start
     opens no chat with no model behind it, so the desktop lands on provider setup and sign-in. The
     install stays due: once a provider is set, the next start runs onboarding on it."""
-    from hermes_cli import free_tier_bootstrap
+    from slave_cli import free_tier_bootstrap
 
     as_local_desktop_backend(monkeypatch)
     free_tier_bootstrap.run_bootstrap(announce=False)
@@ -133,10 +133,10 @@ def test_only_the_local_desktop_backend_opens_onboarding_by_itself(portal, root,
 
 
 def test_eligible_follows_the_default_profile_not_the_launch_profile(portal, root, monkeypatch):
-    from hermes_cli import profiles
+    from slave_cli import profiles
     work = profiles.create_profile("work", no_alias=True)
-    monkeypatch.setenv("HERMES_HOME", str(work))
-    monkeypatch.setattr(server, "_hermes_home", str(work))
+    monkeypatch.setenv("SLAVE_HOME", str(work))
+    monkeypatch.setattr(server, "_slave_home", str(work))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     (root / ".env").write_text("OPENROUTER_API_KEY=sk-or-test\n", encoding="utf-8")
     as_local_desktop_backend(monkeypatch)
@@ -146,7 +146,7 @@ def test_eligible_follows_the_default_profile_not_the_launch_profile(portal, roo
 
 
 def test_a_claim_refreshes_the_setup_record(portal, monkeypatch):
-    from hermes_cli import free_tier_bootstrap
+    from slave_cli import free_tier_bootstrap
     as_local_desktop_backend(monkeypatch)
     free_tier_bootstrap.run_bootstrap(announce=False)
 
@@ -166,7 +166,7 @@ def test_the_dev_fresh_install_switch_treats_a_used_machine_as_new(portal, monke
 
 
 def test_the_due_answer_is_worked_out_at_boot_and_served_from_there(portal, monkeypatch):
-    from hermes_cli import auth, free_tier_bootstrap
+    from slave_cli import auth, free_tier_bootstrap
 
     as_local_desktop_backend(monkeypatch)
     free_tier_bootstrap.run_bootstrap(announce=False)
@@ -182,8 +182,8 @@ def test_the_due_answer_is_worked_out_at_boot_and_served_from_there(portal, monk
 
 
 def _connector_guest_from_another_profile(_managed: Path) -> None:
-    from hermes_cli.auth_nous import _write_shared_nous_state
-    from tests.hermes_cli.anon_portal import PORTAL
+    from slave_cli.auth_nous import _write_shared_nous_state
+    from tests.slave_cli.anon_portal import PORTAL
 
     _write_shared_nous_state({"auth_method": anon_auth.ANON_AUTH_METHOD, "account_tier": anon_auth.ANON_ACCOUNT_TIER,
                               "anon_token": "anon_other", "client_id": anon_auth.ANON_CLIENT_ID,
@@ -199,11 +199,11 @@ ELSEWHERE = {
 
 @pytest.mark.parametrize("change", list(ELSEWHERE))
 def test_the_cached_due_answer_follows_shared_auth_and_the_managed_layer(portal, monkeypatch, tmp_path, change):
-    from hermes_cli import free_tier_bootstrap
+    from slave_cli import free_tier_bootstrap
 
     managed = tmp_path / "managed"
     managed.mkdir()
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", str(managed))
     as_local_desktop_backend(monkeypatch)
     free_tier_bootstrap.run_bootstrap(announce=False)
     cached = _call("onboarding.state")["result"]

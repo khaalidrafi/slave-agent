@@ -487,7 +487,7 @@ async def prepare_branch_editor(authority, ref, servers, gate):
     request_id = 'branch:' + uuid.uuid4().hex
     child = local_session_id(saved.profile_id, saved.principal_id, request_id)
     policy, _ = await asyncio.to_thread(rebind_editor_mcp, authority, child, parent, servers)
-    # Hashed as the child is stored: a branch starts at Default (hermes_state_mutation_branch._child_policy).
+    # Hashed as the child is stored: a branch starts at Default (slave_state_mutation_branch._child_policy).
     policy = _child_secret_ref(authority, child, parent, replace(policy, edit_approval_policy='ask'))
     return {**gated, 'request_id': request_id, 'child': child, 'parent_editor_mcp_json': parent.editor_mcp_json,
             'editor_mcp_json': policy.editor_mcp_json, 'toolsets': list(policy.toolsets),

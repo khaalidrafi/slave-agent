@@ -174,7 +174,7 @@ def _file_problem(path: Path, rel: str) -> str | None:
 
 def _shipped_files(plugin_dir: Path) -> list[Path]:
     """Files the pinned commit ships. In a git checkout that is the tracked set: the
-    catalog gate runs `hermes plugins validate` (which imports the plugin) before this
+    catalog gate runs `slave plugins validate` (which imports the plugin) before this
     scan, so untracked `__pycache__/*.pyc` it wrote must not read as committed bytecode."""
     try:
         out = subprocess.run(["git", "-C", str(plugin_dir), "ls-files", "-z"],

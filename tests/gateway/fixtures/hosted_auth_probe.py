@@ -1,8 +1,8 @@
 """Loopback OIDC/model boundaries; daemon, auth, tickets and room controls are real.
 
-Hermes is single-user: every signed-in Webapp tab is the machine owner, whichever IdP account it
+slave-agent is single-user: every signed-in Webapp tab is the machine owner, whichever IdP account it
 signed in with, so two tabs share one Group Chat list and either may stop or approve. Who may sign in
-is the login provider's app configuration, not Hermes's.
+is the login provider's app configuration, not slave-agent’s.
 """
 import asyncio
 import base64
@@ -25,7 +25,7 @@ from tests.gateway.fixtures.local_recovery_probe import child_env, daemon, rpc
 from tests.waiting import async_wait_until
 
 
-#: Two signed-in Webapp tabs, each acting as the machine owner (Hermes is single-user).
+#: Two signed-in Webapp tabs, each acting as the machine owner (Slave is single-user).
 TABS = ('tab1', 'tab2')
 
 
@@ -178,7 +178,7 @@ def probe(tmp_path):
     # The named profile's gateway runs beside the host: `gateway.standalone: true` is the opt-out
     # (`multiplex_profiles: false` is retired and rewritten to true at boot).
     (target / 'config.yaml').write_text(json.dumps(cfg | {'gateway': {'standalone': True}}))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
         PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=base, PYTHONUNBUFFERED='1')
     members = [{'member_id': 'one', 'profile': 'default', 'handle': 'one'},
                {'member_id': 'two', 'profile': 'two', 'handle': 'two'}]
@@ -266,7 +266,7 @@ def probe(tmp_path):
             return {'actors': oidc.logins, 'rooms': rooms, 'shared_views': shared, 'owner_stops': 2}
 
     try:
-        with daemon(root, target, env | {'HERMES_HOME': str(target)}, barrier=False), daemon(
+        with daemon(root, target, env | {'SLAVE_HOME': str(target)}, barrier=False), daemon(
                 root, home, env, barrier=False) as (_, desc), ExitStack() as stack:
             clients = [stack.enter_context(httpx.Client(base_url=desc['api_origin'],
                 follow_redirects=False, trust_env=False, timeout=20)) for _ in range(2)]

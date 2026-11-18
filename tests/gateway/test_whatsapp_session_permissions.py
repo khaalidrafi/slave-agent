@@ -31,10 +31,10 @@ def _mode(path) -> int:
 @pytest.fixture
 def host(tmp_path, monkeypatch):
     """Unmanaged, non-container host with the 022 umask the issue reproduces under."""
-    import hermes_constants
+    import slave_constants
 
-    monkeypatch.delenv("HERMES_MANAGED", raising=False)
-    monkeypatch.setattr(hermes_constants, "_container_or_chmod_skipped", lambda: False)
+    monkeypatch.delenv("SLAVE_MANAGED", raising=False)
+    monkeypatch.setattr(slave_constants, "_container_or_chmod_skipped", lambda: False)
     previous = os.umask(0o022)
     bridge = tmp_path / "bridge" / "bridge.js"
     bridge.parent.mkdir()
@@ -111,13 +111,13 @@ async def test_adopting_a_running_bridge_tightens_its_existing_log(host, tmp_pat
 
 
 def test_dashboard_pairing_tightens_an_existing_world_readable_session(host, tmp_path, monkeypatch):
-    import hermes_constants
+    import slave_constants
     from gateway.platforms import whatsapp_common
-    from hermes_cli.web_routers import messaging
+    from slave_cli.web_routers import messaging
 
     monkeypatch.setattr(whatsapp_common, "resolve_whatsapp_bridge_dir", lambda: host.parent)
     monkeypatch.setattr(messaging, "_ensure_whatsapp_bridge_dependencies", lambda path: None)
-    monkeypatch.setattr(hermes_constants, "find_node_executable", lambda name: sys.executable)
+    monkeypatch.setattr(slave_constants, "find_node_executable", lambda name: sys.executable)
     session = tmp_path / "platforms" / "whatsapp" / "session"
     session.mkdir(parents=True, mode=0o755)  # what an earlier version left behind
 
@@ -128,23 +128,23 @@ def test_dashboard_pairing_tightens_an_existing_world_readable_session(host, tmp
 
 
 def test_cli_pairing_writes_the_session_owner_only(host, tmp_path, monkeypatch):
-    """`hermes whatsapp` runs the pairing child itself, so its creds need the store's umask too."""
+    """`slave whatsapp` runs the pairing child itself, so its creds need the store's umask too."""
     from types import SimpleNamespace
 
-    import hermes_constants
+    import slave_constants
     from gateway.platforms import whatsapp_common
-    from hermes_cli import main_platform_setup as setup
+    from slave_cli import main_platform_setup as setup
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("WHATSAPP_MODE", "bot")
     monkeypatch.setenv("WHATSAPP_ALLOWED_USERS", "15550001111")
     monkeypatch.setattr("builtins.input", lambda _prompt="": "n")
-    monkeypatch.setattr("hermes_cli.main._require_tty", lambda *_a, **_kw: None)
+    monkeypatch.setattr("slave_cli.main._require_tty", lambda *_a, **_kw: None)
     monkeypatch.setattr(whatsapp_common, "resolve_whatsapp_bridge_dir", lambda: host.parent)
     monkeypatch.setattr(setup, "_whatsapp_install_bridge", lambda path: True)
-    monkeypatch.setattr(hermes_constants, "find_node_executable", lambda name: sys.executable)
+    monkeypatch.setattr(slave_constants, "find_node_executable", lambda name: sys.executable)
 
     setup.cmd_whatsapp(SimpleNamespace())
 
@@ -152,11 +152,11 @@ def test_cli_pairing_writes_the_session_owner_only(host, tmp_path, monkeypatch):
 
 
 def test_managed_install_keeps_its_group_share_modes(host, tmp_path, monkeypatch):
-    """NixOS/systemd installs share HERMES_HOME with a group on purpose (#77579): the store and the
+    """NixOS/systemd installs share SLAVE_HOME with a group on purpose (#77579): the store and the
     child's files follow the service umask instead of being forced owner-only."""
-    import hermes_constants
+    import slave_constants
 
-    monkeypatch.setenv("HERMES_MANAGED", "nixos")
+    monkeypatch.setenv("SLAVE_MANAGED", "nixos")
     session = tmp_path / "session"
-    assert hermes_constants.ensure_private_store(session, home=tmp_path) == -1
+    assert slave_constants.ensure_private_store(session, home=tmp_path) == -1
     assert _mode(session) == 0o755

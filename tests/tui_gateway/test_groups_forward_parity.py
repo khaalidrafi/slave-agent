@@ -18,17 +18,17 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 import tui_gateway.server as srv
 from tui_gateway import methods_groups, owner_forward
 
-MEMBERS = [{"member_id": "default", "profile": "default", "handle": "hermes"},
+MEMBERS = [{"member_id": "default", "profile": "default", "handle": "slave"},
            {"member_id": "ops", "profile": "ops", "handle": "ops"}]
 ENDPOINT = object()
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    path = tmp_path / ".hermes"
+    path = tmp_path / ".slave"
     (path / "profiles" / "ops").mkdir(parents=True)
     (path / "profiles" / "ops" / "config.yaml").write_text("{}\n")
-    monkeypatch.setenv("HERMES_HOME", str(path))
+    monkeypatch.setenv("SLAVE_HOME", str(path))
     methods_groups.stop_hosted_room_service(timeout=1.0)
     methods_groups.start_hosted_room_service()
     yield path
@@ -36,7 +36,7 @@ def home(tmp_path, monkeypatch):
 
 
 def _gateway(monkeypatch, state: str) -> None:
-    from hermes_cli import gateway_runtime
+    from slave_cli import gateway_runtime
 
     def discover(home, *, timeout=2.0):
         return gateway_runtime.GatewayDiscovery(state, endpoint=ENDPOINT if state == "ready" else None)
@@ -124,7 +124,7 @@ def test_a_download_larger_than_the_default_frame_crosses_the_owner_socket(tmp_p
 
     from websockets.asyncio.server import serve
 
-    from hermes_cli import gateway_client
+    from slave_cli import gateway_client
 
     data = base64.b64encode(bytes(range(256)) * (3 * 2 ** 20 // 256)).decode()
     ready, stop = threading.Event(), None

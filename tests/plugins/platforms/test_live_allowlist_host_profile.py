@@ -19,9 +19,9 @@ from tests.plugins.platforms.test_live_allowlist_edits import GATE_VARS, USER_ID
 def _home(tmp_path, monkeypatch):
     home = tmp_path / "default"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     for var in GATE_VARS:  # setenv first so teardown also removes what the loader bridges in
-        for name in (var, f"HERMES_BRIDGED_{var}"):
+        for name in (var, f"SLAVE_BRIDGED_{var}"):
             monkeypatch.setenv(name, "")
             monkeypatch.delenv(name)
     from gateway import config_loader
@@ -151,7 +151,7 @@ def test_a_frozen_bridged_list_the_bridge_did_not_retract_is_kept(_home, multipl
     _freeze()
     monkeypatch.setenv("TELEGRAM_ALLOWED_USERS", "333")
     if drop_marker:
-        monkeypatch.delenv("HERMES_BRIDGED_TELEGRAM_ALLOWED_USERS")
+        monkeypatch.delenv("SLAVE_BRIDGED_TELEGRAM_ALLOWED_USERS")
     assert (_decision_under_host_scope(_home, "111"), _decision_under_host_scope(_home, "333")) == (True, False)
 
 

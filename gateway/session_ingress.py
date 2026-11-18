@@ -9,7 +9,7 @@ from gateway.platforms.event import MessageEvent, ProcessingOutcome
 from gateway.session_envelope import restore_native
 from gateway.session_producer_lifecycle import (
     close_observed_turn, close_producer_turn, close_settled_turn, producer_turn)
-from hermes_cli.observability.shared_metrics_busy import (
+from slave_cli.observability.shared_metrics_busy import (
     busy_turn_started, note_busy_admitted, note_busy_parked, settle_busy_arrival)
 from gateway.session_persistence import authority_persistence
 from persistence.authority.vocabulary import ADMITTED_REQUEST_CONFLICT
@@ -38,7 +38,7 @@ _CONTENT_CLAUSES = frozenset({
 QUEUE_FULL_REPLY = ('⏳ Too many messages are already waiting in this conversation; '
                     'send this again after the current reply.')
 # Nothing new was committed: the message id is already admitted with other content.
-ALREADY_ADMITTED_REPLY = ('⚠️ Hermes already received a different message under this message id, so this '
+ALREADY_ADMITTED_REPLY = ('⚠️ slave-agent already received a different message under this message id, so this '
                           'version was not saved. Send it again as a new message to continue.')
 
 
@@ -60,7 +60,7 @@ async def admit_message(authority, event):
             # The reply reaches the whole chat, so only content clauses are named; trust and provenance
             # clauses (and any new one) stay generic, and gateway.log keeps the clause (``_refuse``).
             named = f'{exc.reason}: {exc.field}' if exc.field in _CONTENT_CLAUSES else exc.reason
-            return (f'⚠️ Hermes refused this message ({named}), so it was not saved '
+            return (f'⚠️ slave-agent refused this message ({named}), so it was not saved '
                     'or answered. Ask the operator to check gateway.log.')
         runner = authority.runner
         if exc.reason == 'runtime_draining' and runner._draining:
@@ -111,7 +111,7 @@ async def admit_message(authority, event):
         row = admissions.get(admission_id=receipt.admission_id)
         if row is not None and row.status == 'terminal':
             # The drain refused this head (``_refuse_head``): cancelled, not saved behind a pause.
-            return (f'⚠️ Hermes did not answer this message ({exc.reason}): the conversation it was '
+            return (f'⚠️ slave-agent did not answer this message ({exc.reason}): the conversation it was '
                     'queued for moved, so it was dropped. Send it again to continue.')
         if row is not None:
             note_busy_parked(event)  # still queued (saved): answered after the pause, not dropped
@@ -144,7 +144,7 @@ async def _hand_over_turn_marker(authority, admission_id, event):
     adopter = _marker_adopters(authority).get(admission_id)
     if adopter is not None:
         _move_marker(event, adopter)
-        adopter._hermes_run_generation = getattr(event, '_hermes_run_generation', None)
+        adopter._slave_run_generation = getattr(event, '_slave_run_generation', None)
         return
     if admission_id in authority.pending_deliveries:
         # Released by ``deliver_settled``, also when settlement failed and dropped the delivery.
@@ -266,7 +266,7 @@ def pause_notice(authority, ref, reason):
     live.pause_notified = True
     if reason == 'runtime_draining':
         # Transient: the row runs when the restarted owner drains it, so /reset would be wrong advice.
-        return '⏳ Hermes is restarting — your message is saved and will be answered when it is back.'
+        return '⏳ slave-agent is restarting — your message is saved and will be answered when it is back.'
     if reason == 'session_busy':
         # Transient: queued behind work already running on this conversation (a worker execution).
         return '⏳ Your message is saved and will be answered when the work running in this conversation finishes.'
@@ -276,7 +276,7 @@ def pause_notice(authority, ref, reason):
         # Slack registers no native /discard (its slash cap): the umbrella `/hermes discard` reaches it.
         slack = getattr(getattr(live.source, 'platform', None), 'value', None) == 'slack'
         discard = '/hermes discard' if slack else '/discard'
-        return ('⏸️ This conversation is paused: a previous turn did not finish when Hermes restarted, '
+        return ('⏸️ This conversation is paused: a previous turn did not finish when slave-agent restarted, '
                 f'and only you know whether to send it again. Your message is saved. Send {discard} to drop '
                 'the lost turn and continue (it is not re-run), or /reset to start a fresh conversation.')
     cause = f'a queued message could not be re-authorized ({reason})'
@@ -481,7 +481,7 @@ async def deliver_settled(authority, admission_id):
         adopter = _marker_adopters(authority).get(admission_id)
         if held is not None and adopter is not None:
             _move_marker(held, adopter)
-            adopter._hermes_run_generation = getattr(held, '_hermes_run_generation', None)
+            adopter._slave_run_generation = getattr(held, '_slave_run_generation', None)
             held = None
         delivery = None
     if delivery is None:

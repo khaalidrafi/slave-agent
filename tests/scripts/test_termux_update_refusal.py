@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.steward import COMMIT_BUILD_UPDATE_MESSAGE
+from slave_cli.steward import COMMIT_BUILD_UPDATE_MESSAGE
 
 
 @pytest.mark.platforms("posix")
@@ -46,20 +46,20 @@ def artifact(tmp_path, request):
 
 @pytest.mark.platforms("posix")
 def test_validator_accepts_real_cli_refusal_for_installed_identity(artifact, monkeypatch, capsys):
-    from hermes_cli import main
+    from slave_cli import main
     from scripts.termux.validate_installed import validate_update_refusal
 
     root, source = artifact
     monkeypatch.setattr(main, "PROJECT_ROOT", root)
-    monkeypatch.delenv("HERMES_MANAGED", raising=False)
+    monkeypatch.delenv("SLAVE_MANAGED", raising=False)
 
     # The installed identity is what the CLI itself must speak: a release package names
     # its package manager, a commit build names nobody.
     main.cmd_update(SimpleNamespace())
     output = capsys.readouterr()
-    expected = COMMIT_BUILD_UPDATE_MESSAGE if source == "commit-build" else "pkg upgrade hermes-agent"
+    expected = COMMIT_BUILD_UPDATE_MESSAGE if source == "commit-build" else "pkg upgrade slave-agent"
     assert expected in output.out + output.err
-    validate_update_refusal(root, subprocess.CompletedProcess(["hermes", "update"], 0, output.out, output.err))
+    validate_update_refusal(root, subprocess.CompletedProcess(["slave", "update"], 0, output.out, output.err))
     marker = "COMMIT_BUILD_UPDATE_REFUSAL_OK" if source == "commit-build" else "APT_UPDATE_REFUSAL_OK"
     assert marker in capsys.readouterr().out
 
@@ -69,12 +69,12 @@ def test_validator_rejects_wrong_refusal_or_exit_status(artifact):
     from scripts.termux.validate_installed import validate_update_refusal
 
     root, source = artifact
-    expected = COMMIT_BUILD_UPDATE_MESSAGE if source == "commit-build" else "pkg upgrade hermes-agent"
-    other = "pkg upgrade hermes-agent" if source == "commit-build" else COMMIT_BUILD_UPDATE_MESSAGE
+    expected = COMMIT_BUILD_UPDATE_MESSAGE if source == "commit-build" else "pkg upgrade slave-agent"
+    other = "pkg upgrade slave-agent" if source == "commit-build" else COMMIT_BUILD_UPDATE_MESSAGE
     # Only the identity's own message at a clean exit passes; a nonzero status (a crash, or
     # a mutation path that grew back) and a foreign steward's text are both failures.
-    validate_update_refusal(root, subprocess.CompletedProcess(["hermes", "update"], 0, expected, ""))
+    validate_update_refusal(root, subprocess.CompletedProcess(["slave", "update"], 0, expected, ""))
     for status, message in ((2, expected), (1, other), (0, other), (0, "unrelated startup failure")):
-        result = subprocess.CompletedProcess(["hermes", "update"], status, message, "")
+        result = subprocess.CompletedProcess(["slave", "update"], status, message, "")
         with pytest.raises(RuntimeError, match="wrong update refusal"):
             validate_update_refusal(root, result)

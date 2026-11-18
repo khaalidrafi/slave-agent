@@ -30,9 +30,9 @@ def _write_plugin(home: Path, body: str) -> None:
 
 
 def test_reload_during_a_held_turn_cannot_skip_the_final_rewrite(monkeypatch):
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     gate = types.ModuleType("hold_reload_gate")
     gate.reload, gate.entered, gate.release = threading.Event(), threading.Event(), threading.Event()
     monkeypatch.setitem(sys.modules, gate.__name__, gate)
@@ -75,9 +75,9 @@ def test_reload_during_a_held_turn_cannot_skip_the_final_rewrite(monkeypatch):
 
 
 def test_held_transform_that_raises_withholds_the_reply():
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     with FakeLLMServer([Text(RAW)]) as server:
         redactor_home(home, server.base_url, hold=True)
         _write_plugin(home, (
@@ -104,10 +104,10 @@ def _assistant_commentary(request: dict) -> list:
 
 def test_held_commentary_stays_out_of_history_but_in_the_model_context():
     from gateway.session_controls import display_projection
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from persistence_assembly import open_persistence, profile_scope
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     with FakeLLMServer(redactor_turn() + [Text("ok")]) as server:
         redactor_home(home, server.base_url, hold=True)
         plugins._reset_plugin_managers_for_tests()
@@ -140,10 +140,10 @@ def test_held_commentary_stays_out_of_history_but_in_the_model_context():
 def test_codex_reply_that_failed_after_its_text_is_still_rewritten(monkeypatch):
     from agent.transports.codex_app_server_session import CodexAppServerSession, TurnResult
     from gateway.session_controls import display_projection
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from tests.agent.test_codex_app_server_integration import _make_codex_agent
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     redactor_home(home, "http://127.0.0.1:9/v1", hold=True)
     plugins._reset_plugin_managers_for_tests()
 
@@ -172,22 +172,22 @@ def test_codex_reply_that_failed_after_its_text_is_still_rewritten(monkeypatch):
 def test_a_failed_turn_after_a_lapsed_primary_login_is_rewritten_whole():
     """The primary's sign-in lead joins a failed backup turn's reply before the held transform runs, so
     the plugin sees, and can rewrite, the whole reply the user gets."""
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from tests.fakes.fake_llm_provider import Error
 
     from agent.primary_auth_fallback import PrimaryAuthFailure, attach_primary_auth_failure
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     with FakeLLMServer([Error(status=401, message="invalid api key")] * 4) as server:
         redactor_home(home, server.base_url, hold=True)
         plugins._reset_plugin_managers_for_tests()
         try:
             agent = _agent(server, max_iterations=2)
             attach_primary_auth_failure(agent, PrimaryAuthFailure(
-                provider="nous", error="Portal refused token SECRET-999", relogin="hermes portal", backup="custom"))
+                provider="nous", error="Portal refused token SECRET-999", relogin="slave portal", backup="custom"))
             result = agent.run_conversation("show config")
         finally:
             plugins._reset_plugin_managers_for_tests()
     assert result["failed"] is True
-    assert "hermes portal" in result["final_response"]
+    assert "slave portal" in result["final_response"]
     assert "SECRET-999" not in result["final_response"]

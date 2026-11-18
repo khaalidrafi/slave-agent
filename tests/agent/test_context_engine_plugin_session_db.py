@@ -1,4 +1,4 @@
-"""A plugin context engine binds the deprecated ``hermes_state.SessionDB`` over the agent's profile, the object main
+"""A plugin context engine binds the deprecated ``slave_state.SessionDB`` over the agent's profile, the object main
 handed it as ``session_db``, and gets the agent's store as ``persistence`` in each hook that accepts that keyword; the
 built-in compressor keeps the agent's store handle."""
 
@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_state
+import slave_state
 from agent.context_engine import ContextEngine
 from agent.conversation_compression import _adopt_live_compression_child
 from persistence_assembly import open_persistence, profile_scope
@@ -74,7 +74,7 @@ def store():
 
 
 def test_a_plugin_engine_binds_the_deprecated_session_db_and_reads_mains_answer(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", False)
+    monkeypatch.setattr(slave_state, "_warned", False)
     engine = _PluginEngine()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
@@ -84,7 +84,7 @@ def test_a_plugin_engine_binds_the_deprecated_session_db_and_reads_mains_answer(
     assert f"{__name__}._PluginEngine" in text and "persistence=" in text and "v0.27.0" in text
     try:
         [(session_db, row)] = engine.bound
-        assert isinstance(session_db, hermes_state.SessionDB)
+        assert isinstance(session_db, slave_state.SessionDB)
         assert row == store.sessions.get("s1").as_session_row()
         assert (row["id"], row["source"], row["model"], row["title"]) == ("s1", "cli", "m1", "alpha plan")
     finally:
@@ -92,7 +92,7 @@ def test_a_plugin_engine_binds_the_deprecated_session_db_and_reads_mains_answer(
 
 
 def test_compression_adoption_hands_a_plugin_engine_the_same_session_db(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", True)
+    monkeypatch.setattr(slave_state, "_warned", True)
     store.sessions.end("s1", "compression")
     seed_session(store, "s1-child", "cli", parent_session_id="s1")
     seed_messages(store, "s1-child", {"role": "user", "content": "compacted tail"})
@@ -111,7 +111,7 @@ def test_compression_adoption_hands_a_plugin_engine_the_same_session_db(monkeypa
 
 
 def test_compression_adoption_binds_an_engine_without_on_session_start_with_the_agents_store(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", True)
+    monkeypatch.setattr(slave_state, "_warned", True)
     store.sessions.end("s1", "compression")
     seed_session(store, "s1-child", "cli", parent_session_id="s1")
     seed_messages(store, "s1-child", {"role": "user", "content": "compacted tail"})
@@ -127,26 +127,26 @@ def test_compression_adoption_binds_an_engine_without_on_session_start_with_the_
 
 
 def test_a_plugin_engine_whose_hooks_take_persistence_is_not_warned(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", False)
+    monkeypatch.setattr(slave_state, "_warned", False)
     engine = _StorePluginEngine()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         agent = _agent(store, "s1", engine)
     try:
         assert [w for w in caught if w.category is DeprecationWarning] == []
-        assert hermes_state._warned is False
-        assert isinstance(engine.bound[0][0], hermes_state._SessionDB)
+        assert slave_state._warned is False
+        assert isinstance(engine.bound[0][0], slave_state._SessionDB)
     finally:
         agent.close()
 
 
 def test_a_plugin_engine_whose_bind_names_persistence_gets_the_agents_store(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", True)
+    monkeypatch.setattr(slave_state, "_warned", True)
     engine = _StorePluginEngine()
     agent = _agent(store, "s1", engine)
     try:
         [(session_db, row)] = engine.bound
-        assert isinstance(session_db, hermes_state.SessionDB)
+        assert isinstance(session_db, slave_state.SessionDB)
         assert engine.stores == [store]
         assert row == store.sessions.get("s1").as_session_row()
     finally:
@@ -154,18 +154,18 @@ def test_a_plugin_engine_whose_bind_names_persistence_gets_the_agents_store(monk
 
 
 def test_the_built_in_compressor_keeps_the_agents_store_handle(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", False)
+    monkeypatch.setattr(slave_state, "_warned", False)
     agent = _agent(store, "s1")
     try:
         assert agent.context_compressor._session_db is store
         assert agent.context_compressor._persistence is store
-        assert hermes_state._warned is False
+        assert slave_state._warned is False
     finally:
         agent.close()
 
 
 def test_a_reset_rebinds_a_plugin_engine_to_the_same_session_db(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", True)
+    monkeypatch.setattr(slave_state, "_warned", True)
     seed_session(store, "s2", "cli", model="m2")
     engine = _PluginEngine()
     agent = _agent(store, "s1", engine)
@@ -180,7 +180,7 @@ def test_a_reset_rebinds_a_plugin_engine_to_the_same_session_db(monkeypatch, sto
 
 
 def test_a_reset_hands_a_plugin_engine_whose_bind_names_persistence_the_agents_store(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", True)
+    monkeypatch.setattr(slave_state, "_warned", True)
     seed_session(store, "s2", "cli", model="m2")
     engine = _StorePluginEngine()
     agent = _agent(store, "s1", engine)
@@ -196,7 +196,7 @@ def test_a_reset_hands_a_plugin_engine_whose_bind_names_persistence_the_agents_s
 
 
 def test_the_plugin_engines_session_db_closes_with_the_agent(monkeypatch, store):
-    monkeypatch.setattr(hermes_state, "_warned", True)
+    monkeypatch.setattr(slave_state, "_warned", True)
     engine = _PluginEngine()
     agent = _agent(store, "s1", engine)
     [(session_db, _row)] = engine.bound
@@ -234,7 +234,7 @@ def test_a_plugin_engine_subclassing_the_built_in_compressor_binds_the_deprecate
     agent = _agent(store, "s1", engine)
     try:
         session_db, row = engine.bound
-        assert isinstance(session_db, hermes_state.SessionDB)
+        assert isinstance(session_db, slave_state.SessionDB)
         assert row["model"] == "m1"
     finally:
         agent.close()

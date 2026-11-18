@@ -51,7 +51,7 @@ def _as_container_browser(udd, pid: int) -> None:
 
 
 def _record(udd, pid: int, tag: str, ns: str, start_time: int, devtools) -> Path:
-    """The launch record a Hermes in namespace ``ns`` wrote for its browser ``pid`` on ``udd``."""
+    """The launch record a slave-agent in namespace ``ns`` wrote for its browser ``pid`` on ``udd``."""
     path = launcher._shared_state_dir(str(udd)) / f"{launcher._profile_digest(str(udd))[:16]}-{pid}{tag}.json"
     data = {"owner_pid": pid + 1, "owner_start_time": 1, "pid": pid, "start_time": start_time,
             "user_data_dir": str(udd), "home_key": "elsewhere", "ephemeral": False, "ns": ns}

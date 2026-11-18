@@ -132,7 +132,7 @@ def _slack_button(extra):
 
     def answer(uid):
         body = {"message": {"ts": "1.2", "blocks": []}, "channel": {"id": "C1"}, "user": {"name": uid, "id": uid}}
-        asyncio.run(adapter._handle_approval_action(AsyncMock(), body, {"action_id": "hermes_approve_once", "value": key}))
+        asyncio.run(adapter._handle_approval_action(AsyncMock(), body, {"action_id": "slave_approve_once", "value": key}))
         return entry.result == "once"
     return answer
 
@@ -157,7 +157,7 @@ def _feishu_card(extra, monkeypatch):
         return SimpleNamespace(add_done_callback=lambda *_a, **_k: None)
 
     def answer(uid):
-        data = fx._make_card_action_data({"hermes_action": "approve_once", "approval_id": 1}, chat_id="oc_1", open_id=uid)
+        data = fx._make_card_action_data({"slave_action": "approve_once", "approval_id": 1}, chat_id="oc_1", open_id=uid)
         with patch("asyncio.run_coroutine_threadsafe", side_effect=submit):
             response = adapter._on_card_action_trigger(data)
         if entry.result is None:  # refused: the card keeps its buttons (Greptile 4504999357)

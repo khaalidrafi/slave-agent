@@ -78,7 +78,7 @@ def relay(monkeypatch):
 
 def _committed(session_id: str) -> dict[str, Any]:
     return compaction_events.attempt_payload(
-        {"session_id": session_id, "commit_status": "committed", "route": "hermes", "trigger_source": "pre_api"}
+        {"session_id": session_id, "commit_status": "committed", "route": "slave", "trigger_source": "pre_api"}
     )
 
 

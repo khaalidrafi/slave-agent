@@ -7715,8 +7715,8 @@
     },
     "session_id": "wire-snapshot",
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>",
+     "product=slave-agent",
+     "client=slave-client-v<VERSION>",
      "conversation=wire-snapshot"
     ]
    },
@@ -7813,8 +7813,8 @@
    "extra_body": {
     "session_id": "wire-snapshot",
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>",
+     "product=slave-agent",
+     "client=slave-client-v<VERSION>",
      "conversation=wire-snapshot"
     ]
    },
@@ -7914,8 +7914,8 @@
     },
     "session_id": "wire-snapshot",
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>",
+     "product=slave-agent",
+     "client=slave-client-v<VERSION>",
      "conversation=wire-snapshot"
     ]
    },

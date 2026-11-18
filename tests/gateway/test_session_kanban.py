@@ -9,16 +9,16 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 
 
 def test_claim_freezes_task_policy_and_rejects_forgery(tmp_path, monkeypatch):
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
     from gateway.session_contract import SessionActor
     from persistence.core.errors import AuthorityRefusal
-    monkeypatch.setenv('HERMES_KANBAN_HOME', str(tmp_path))
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_KANBAN_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
-    monkeypatch.delenv('HERMES_KANBAN_DB', raising=False)
-    monkeypatch.delenv('HERMES_DELEGATED_CHILD', raising=False)
-    monkeypatch.setattr('hermes_cli.profiles.resolve_profile_env', lambda name: str(tmp_path) if name == 'default' else str(tmp_path / name))
+    monkeypatch.delenv('SLAVE_KANBAN_DB', raising=False)
+    monkeypatch.delenv('SLAVE_DELEGATED_CHILD', raising=False)
+    monkeypatch.setattr('slave_cli.profiles.resolve_profile_env', lambda name: str(tmp_path) if name == 'default' else str(tmp_path / name))
     workspace = tmp_path / 'workspace'
     workspace.mkdir()
     (workspace / 'pyproject.toml').write_text('[project]\nname = "task"\n')  # a code worktree
@@ -64,7 +64,7 @@ def test_real_dispatcher_lifecycle(tmp_path, mode):
     repo = Path(__file__).resolve().parents[2]
     from tests.gateway.fixtures.local_recovery_probe import child_env
     env = child_env()
-    env.update(HOME=str(tmp_path / 'home'), USERPROFILE=str(tmp_path / 'home'), HERMES_HOME=str(tmp_path / 'state'), PYTHONPATH=str(repo), KANBAN_PROBE_MODE=mode)
+    env.update(HOME=str(tmp_path / 'home'), USERPROFILE=str(tmp_path / 'home'), SLAVE_HOME=str(tmp_path / 'state'), PYTHONPATH=str(repo), KANBAN_PROBE_MODE=mode)
     result = subprocess.run([sys.executable, str(Path(__file__).parent / 'fixtures' / 'kanban_owner_probe.py')],
         env=env, cwd=repo, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=150, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -82,12 +82,12 @@ def test_real_dispatcher_lifecycle(tmp_path, mode):
 
 def test_late_launcher_cannot_stamp_replacement_claim(tmp_path, monkeypatch):
     from contextlib import closing
-    from hermes_cli import kanban_db as kb, kanban_db_dispatch as dispatch
-    from hermes_cli.kanban_db_connect import connect
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
-    monkeypatch.setenv('HERMES_KANBAN_HOME', str(tmp_path))
-    monkeypatch.delenv('HERMES_KANBAN_DB', raising=False)
-    monkeypatch.delenv('HERMES_DELEGATED_CHILD', raising=False)
+    from slave_cli import kanban_db as kb, kanban_db_dispatch as dispatch
+    from slave_cli.kanban_db_connect import connect
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_KANBAN_HOME', str(tmp_path))
+    monkeypatch.delenv('SLAVE_KANBAN_DB', raising=False)
+    monkeypatch.delenv('SLAVE_DELEGATED_CHILD', raising=False)
     kb.create_board('owned')  # explicit creation; connect() never creates a board (#43243)
     with closing(connect(board='owned')) as conn:
         tid = kb.create_task(conn, title='Owned race', assignee='default')
@@ -105,16 +105,16 @@ def test_claim_reclaimed_before_admission_marker_is_refused(tmp_path, monkeypatc
     transaction is refused: no owner_admitted row, no resume, no submit."""
     import asyncio
     from contextlib import closing
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
     from gateway.session_contract import SessionActor
     from persistence.core.errors import AuthorityRefusal
-    monkeypatch.setenv('HERMES_KANBAN_HOME', str(tmp_path))
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_KANBAN_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
-    monkeypatch.delenv('HERMES_KANBAN_DB', raising=False)
-    monkeypatch.delenv('HERMES_DELEGATED_CHILD', raising=False)
-    monkeypatch.setattr('hermes_cli.profiles.resolve_profile_env', lambda name: str(tmp_path) if name == 'default' else str(tmp_path / name))
+    monkeypatch.delenv('SLAVE_KANBAN_DB', raising=False)
+    monkeypatch.delenv('SLAVE_DELEGATED_CHILD', raising=False)
+    monkeypatch.setattr('slave_cli.profiles.resolve_profile_env', lambda name: str(tmp_path) if name == 'default' else str(tmp_path / name))
     workspace = tmp_path / 'workspace'
     workspace.mkdir()
     kb.create_board('owned')  # explicit creation; connect() never creates a board (#43243)

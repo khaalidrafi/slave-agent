@@ -14,7 +14,7 @@ from agent.prompt_builder import PLATFORM_HINTS
 from agent.system_prompt import platform_hint
 from gateway.platform_registry import platform_registry
 from gateway.session_context import _VAR_MAP
-from hermes_cli.plugins import discover_plugins
+from slave_cli.plugins import discover_plugins
 
 EXTRA = "Always attach the report as a .pdf."
 
@@ -25,9 +25,9 @@ def _agent(platform, overrides=None):
 
 @pytest.fixture
 def deliver_to(monkeypatch):
-    var = _VAR_MAP["HERMES_CRON_AUTO_DELIVER_PLATFORM"]
+    var = _VAR_MAP["SLAVE_CRON_AUTO_DELIVER_PLATFORM"]
     token = var.set("slack")
-    monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+    monkeypatch.delenv("SLAVE_DESKTOP_TERMINAL", raising=False)
     discover_plugins()  # messaging hints ship on each plugin's PlatformEntry
     yield
     var.reset(token)
@@ -44,5 +44,5 @@ def test_cron_agent_gets_delivery_channel_hint_with_its_override(deliver_to):
 
 def test_delivery_target_only_applies_to_cron_agents(deliver_to):
     assert platform_hint(_agent("telegram")) == platform_registry.get("telegram").platform_hint
-    _VAR_MAP["HERMES_CRON_AUTO_DELIVER_PLATFORM"].set("")
+    _VAR_MAP["SLAVE_CRON_AUTO_DELIVER_PLATFORM"].set("")
     assert platform_hint(_agent("cron")) == PLATFORM_HINTS["cron"]

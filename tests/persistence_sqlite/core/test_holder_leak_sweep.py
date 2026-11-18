@@ -1,6 +1,6 @@
 """Suite-wide store holder leak-closing contract (OOM incident 20260816).
 
-A raw single-process ``pytest tests/hermes_cli/`` used to accumulate every
+A raw single-process ``pytest tests/slave_cli/`` used to accumulate every
 store handle a test constructed and forgot to close: writer connection,
 pooled read connections, and (once token accounting ran) an ``atexit``
 registration pinning the instance alive: ballooning to 16-25 GB RSS.
@@ -9,7 +9,7 @@ The fix is two-sided:
 
 * ``guard_module._register_test_instance`` adds every successfully
   constructed store holder to a WeakSet registry when the
-  ``HERMES_TEST_ISOLATION`` marker is set (test-isolation runs only).
+  ``SLAVE_TEST_ISOLATION`` marker is set (test-isolation runs only).
 * the autouse ``_close_leaked_session_dbs`` fixture in ``tests/conftest.py``
   closes everything in the registry at each test's teardown.
 

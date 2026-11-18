@@ -90,12 +90,12 @@ class TestIsBotMentioned:
         assert self.adapter._is_bot_mentioned("hey @hermes:example.org help")
 
     def test_localpart_in_body(self):
-        assert self.adapter._is_bot_mentioned("hermes can you help?")
+        assert self.adapter._is_bot_mentioned("slave can you help?")
 
 
     def test_matrix_pill_in_formatted_body(self):
-        html = '<a href="https://matrix.to/#/@hermes:example.org">Hermes</a> help'
-        assert self.adapter._is_bot_mentioned("Hermes help", html)
+        html = '<a href="https://matrix.to/#/@hermes:example.org">slave-agent</a> help'
+        assert self.adapter._is_bot_mentioned("slave-agent help", html)
 
 
     # m.mentions.user_ids — MSC3952 / Matrix v1.7 authoritative mentions
@@ -113,8 +113,8 @@ class TestStripMention:
 
     def test_localpart_preserved(self):
         """Bare localpart (no @) is preserved — avoids false positives in paths."""
-        result = self.adapter._strip_mention("hermes help me")
-        assert result == "hermes help me"
+        result = self.adapter._strip_mention("slave help me")
+        assert result == "slave help me"
 
 
 # ---------------------------------------------------------------------------
@@ -381,7 +381,7 @@ def test_yaml_bridge_respects_scope_and_existing_env(monkeypatch, existing, seco
     """A secondary profile's scope is never bridged; an operator's ``.env`` value wins (#109032)."""
     import os
     from agent.secret_scope import set_multiplex_active, set_secret_scope, reset_secret_scope
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     from plugins.platforms.matrix.adapter import _apply_yaml_config
 
     expected = {"MATRIX_REQUIRE_MENTION": "false", "MATRIX_AUTO_THREAD": "false",

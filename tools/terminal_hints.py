@@ -92,7 +92,7 @@ def _wrapper_cd_hint(output: str) -> Optional[str]:
     m = _WRAPPER_CD_FAILURE.fullmatch(last_line)
     if not m:
         return None
-    return (f"The command never ran: Hermes could not enter its working directory {m.group(1)} "
+    return (f"The command never ran: slave-agent could not enter its working directory {m.group(1)} "
             f"({m.group(2)}) before running it, so a `cd` inside the command cannot help. Pass "
             "`workdir` set to an accessible directory (on each call while this one stays unusable).")
 

@@ -2,9 +2,9 @@
 
 Provider profiles can live in three places:
 
-1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with hermes-agent)
-2. User plugins: ``$HERMES_HOME/plugins/model-providers/<name>/``
-3. Pip-installed plugins: distributions exposing a ``hermes_agent.plugins``
+1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with slave-agent)
+2. User plugins: ``$SLAVE_HOME/plugins/model-providers/<name>/``
+3. Pip-installed plugins: distributions exposing a ``slave_agent.plugins``
    entry point (``module:func`` callable or a self-registering ``module``)
 
 Each plugin directory contains:
@@ -13,7 +13,7 @@ Each plugin directory contains:
 
 Discovery is lazy: the first call to ``get_provider_profile()`` or
 ``list_providers()`` imports the bundled and pip-installed plugins once per
-process; the ``$HERMES_HOME`` plugins of the profile home bound at lookup time
+process; the ``$SLAVE_HOME`` plugins of the profile home bound at lookup time
 load into that home's own layer, so one process serving several profiles
 (multiplex gateway, Desktop ``serve``) resolves each profile's installs. User
 plugins override bundled plugins on name collision, so third parties can
@@ -47,7 +47,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from hermes_cli.plugins import get_bundled_plugins_dir
+from slave_cli.plugins import get_bundled_plugins_dir
 from providers.base import ProviderProfile
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 _REGISTRY: dict[str, ProviderProfile] = {}
 _ALIASES: dict[str, str] = {}
 # Where the CURRENT registration of each name came from: "bundled" / "user" (a
-# ``$HERMES_HOME`` plugin dir) / "runtime" (entry point, legacy module, direct call).
+# ``$SLAVE_HOME`` plugin dir) / "runtime" (entry point, legacy module, direct call).
 _SOURCES: dict[str, str] = {}
 _current_source: str | None = None
 _PROVIDER_LIST_CACHE: list[ProviderProfile] | None = None
@@ -72,13 +72,13 @@ _PLUGIN_DIR_MTIME_TICK_NS = 2_000_000_000
 
 @dataclass
 class _HomeLayer:
-    """The ``$HERMES_HOME/plugins`` providers of ONE profile home.
+    """The ``$SLAVE_HOME/plugins`` providers of ONE profile home.
 
     One process serves many profiles (multiplex gateway, Desktop ``serve``) and each profile installs
     its own plugins, so user plugins are keyed by the home bound at lookup time instead of the home
     that happened to be bound at first discovery — that made a plugin installed in a secondary
     profile ``Unknown provider`` in Desktop while the same profile worked in a terminal (#88143).
-    ``stamps`` are the plugin dirs' mtimes: a directory added by ``hermes plugins install`` while the
+    ``stamps`` are the plugin dirs' mtimes: a directory added by ``slave plugins install`` while the
     process runs changes them, and the next lookup imports it without a restart.
     """
     registry: dict[str, ProviderProfile] = field(default_factory=dict)
@@ -103,9 +103,9 @@ class _HomeLayer:
 
 _HOME_LAYERS: dict[str, _HomeLayer] = {}
 _HOME_LAYERS_LOCK = threading.Lock()
-# The layer a ``$HERMES_HOME`` plugin import registers into. A ContextVar, not a module global:
+# The layer a ``$SLAVE_HOME`` plugin import registers into. A ContextVar, not a module global:
 # two turn threads scanning two profile homes at once must not cross-register. Never a lock held
-# across the import itself — a thread mid-``import hermes_cli.auth`` (whose import calls
+# across the import itself — a thread mid-``import slave_cli.auth`` (whose import calls
 # ``list_providers()``) would block on it while the scanning thread waits on that module's import lock.
 _REGISTRATION_TARGET: ContextVar[_HomeLayer | None] = ContextVar("_provider_registration_target", default=None)
 # Set by :func:`bundled_profiles`: registrations made in this context are collected, nothing else.
@@ -119,20 +119,20 @@ _BUNDLED_PLUGINS_DIR = get_bundled_plugins_dir() / "model-providers"
 
 
 def _sync_auth_registry() -> None:
-    """Mirror profiles into the ``hermes_cli`` snapshots (auth registry, picker catalog) that are loaded.
+    """Mirror profiles into the ``slave_cli`` snapshots (auth registry, picker catalog) that are loaded.
 
-    ``hermes_cli.auth`` takes its own snapshot of ``list_providers()`` when it is imported. If a
+    ``slave_cli.auth`` takes its own snapshot of ``list_providers()`` when it is imported. If a
     plugin's imports pull that module in while :func:`_discover_providers` is still running, the
     snapshot is partial and later plugins never reach the auth registry ("Unknown provider",
     #102123). Calling back into auth once discovery is complete closes that window. Looked up via
-    ``sys.modules`` on purpose: this layer must never import ``hermes_cli`` (that would run auth's
+    ``sys.modules`` on purpose: this layer must never import ``slave_cli`` (that would run auth's
     top-level code mid-scan and risk a circular import). Never raises: registration must not fail
     because of the auth mirror.
     """
     for module, attr in (
-        ("hermes_cli.auth", "sync_plugin_provider_registry"),
-        ("hermes_cli.models_catalog_static", "sync_plugin_provider_catalog"),
-        ("hermes_cli.config_provider_env", "sync_registered_providers"),
+        ("slave_cli.auth", "sync_plugin_provider_registry"),
+        ("slave_cli.models_catalog_static", "sync_plugin_provider_catalog"),
+        ("slave_cli.config_provider_env", "sync_registered_providers"),
     ):
         sync = getattr(sys.modules.get(module), attr, None)
         if sync is None:
@@ -147,9 +147,9 @@ def register_provider(profile: ProviderProfile) -> None:
     """Register a provider profile by name and aliases.
 
     Later registrations with the same name replace earlier ones — so user
-    plugins under ``$HERMES_HOME/plugins/model-providers/`` can override
+    plugins under ``$SLAVE_HOME/plugins/model-providers/`` can override
     bundled profiles without editing repo code. A registration made while a
-    ``$HERMES_HOME`` plugin is being imported lands in that home's layer.
+    ``$SLAVE_HOME`` plugin is being imported lands in that home's layer.
     """
     global _PROVIDER_LIST_CACHE, _REGISTRY_GENERATION
     collect = _COLLECT.get()
@@ -178,8 +178,8 @@ def register_provider(profile: ProviderProfile) -> None:
 def provider_source(name: str) -> str | None:
     """Discovery source of the profile currently registered under *name* (see ``_SOURCES``), or None.
 
-    ``"user"`` is what lets a ``$HERMES_HOME`` plugin re-registering a bundled name win in
-    ``hermes_cli.auth.PROVIDER_REGISTRY`` too — a bundled profile never rewrites a built-in row.
+    ``"user"`` is what lets a ``$SLAVE_HOME`` plugin re-registering a bundled name win in
+    ``slave_cli.auth.PROVIDER_REGISTRY`` too — a bundled profile never rewrites a built-in row.
     """
     layer = _home_layer()
     canonical = layer.aliases.get(name) or _ALIASES.get(name, name)
@@ -202,7 +202,7 @@ _NAMED_CUSTOM_MEMO_NO_SIG = object()
 
 def _has_named_custom_provider(name: str, home: Path | None, hkey: str) -> bool:
     """``has_named_custom_provider`` memoized on the home's config cache version."""
-    from hermes_cli.config_backend import config_cache_version
+    from slave_cli.config_backend import config_cache_version
 
     try:
         sig = config_cache_version(home / "config.yaml") if home is not None else None
@@ -215,7 +215,7 @@ def _has_named_custom_provider(name: str, home: Path | None, hkey: str) -> bool:
         _NAMED_CUSTOM_MEMO_SIG[hkey] = sig
     if name in memo:
         return memo[name]
-    from hermes_cli.runtime_provider_custom import has_named_custom_provider
+    from slave_cli.runtime_provider_custom import has_named_custom_provider
 
     memo[name] = has_named_custom_provider(name)
     return memo[name]
@@ -295,7 +295,7 @@ def routed_model_rejects_vision_tool_messages(provider: str, model: str) -> bool
     # Routing aggregators accept a ``vendor/model`` identifier while the request is sent
     # to the aggregator; the target provider can have stricter message-shape support than
     # the aggregator's generic OpenAI-compatible transport profile.
-    from hermes_cli.providers import is_routing_aggregator
+    from slave_cli.providers import is_routing_aggregator
     if not is_routing_aggregator(provider_name):
         return False
 
@@ -336,7 +336,7 @@ def profile_for_host(url: str, *, metadata: bool = False) -> ProviderProfile | N
     """The registered profile whose declared ``hostnames`` match *url*'s host (exact or subdomain).
 
     *metadata* also matches ``metadata_hostnames``. Resolved against the bound home's providers, so a
-    ``$HERMES_HOME`` plugin installed after import (or in another profile) is seen; memoized per
+    ``$SLAVE_HOME`` plugin installed after import (or in another profile) is seen; memoized per
     (home, host) until the registry changes, because wire paths ask on every request.
     """
     from agent.safe_worker_policy import safe_worker_enabled
@@ -366,7 +366,7 @@ def profile_for_host(url: str, *, metadata: bool = False) -> ProviderProfile | N
 
 def list_providers() -> list[ProviderProfile]:
     """Return all registered provider profiles (one per canonical name); the bound home's
-    ``$HERMES_HOME`` plugins shadow process-wide profiles of the same name."""
+    ``$SLAVE_HOME`` plugins shadow process-wide profiles of the same name."""
     from agent.safe_worker_policy import safe_worker_enabled
 
     if safe_worker_enabled():
@@ -411,7 +411,7 @@ def unlisted_provider_names() -> set[str]:
 def bound_profile_resolver():
     """``resolve(name) -> (home plugin profile, process-wide profile)`` for the home bound now.
 
-    *name* may be an alias. For process-wide mirrors read per home (``hermes_cli.auth``'s
+    *name* may be an alias. For process-wide mirrors read per home (``slave_cli.auth``'s
     ``PROVIDER_REGISTRY``), so cheap enough per lookup: no discovery, no miss re-scan; only the
     periodic plugin-dir stamp check, skipped mid-scan so a plugin reading the mirror while it imports
     cannot re-enter its own scan.
@@ -442,10 +442,10 @@ def refresh_bound_home() -> None:
 
 def _bound_home_layer() -> tuple[_HomeLayer, Path | None, str]:
     try:
-        from hermes_constants import get_hermes_home, hermes_home_key
+        from slave_constants import get_slave_home, slave_home_key
 
-        home = Path(get_hermes_home())
-        key = hermes_home_key(home)
+        home = Path(get_slave_home())
+        key = slave_home_key(home)
     except Exception:
         home, key = None, ""
     with _HOME_LAYERS_LOCK:
@@ -500,7 +500,7 @@ def _skipped_plugin_enabled(layer: _HomeLayer) -> bool:
     """Whether ``plugins.disabled`` moved since a scan skipped a plugin; config is read only in that case."""
     if layer.disabled is None:
         return False
-    from hermes_cli.plugins_discovery import _get_disabled_plugins
+    from slave_cli.plugins_discovery import _get_disabled_plugins
 
     return frozenset(_get_disabled_plugins()) != layer.disabled
 
@@ -522,27 +522,27 @@ def _plugin_dir_stamps_settled(stamps: tuple) -> bool:
 
 
 def _user_plugins_dir() -> Path | None:
-    """Return ``$HERMES_HOME/plugins/model-providers/`` if it exists."""
+    """Return ``$SLAVE_HOME/plugins/model-providers/`` if it exists."""
     try:
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
 
-        d = get_hermes_home() / "plugins" / "model-providers"
+        d = get_slave_home() / "plugins" / "model-providers"
         return d if d.is_dir() else None
     except Exception:
         return None
 
 
 def _installed_plugins_dir() -> Path | None:
-    """Return ``$HERMES_HOME/plugins/`` if it exists.
+    """Return ``$SLAVE_HOME/plugins/`` if it exists.
 
-    This is where ``hermes plugins install`` clones a plugin — flat, one
+    This is where ``slave plugins install`` clones a plugin — flat, one
     directory per plugin, NOT under ``model-providers/``. See
     :func:`_discover_installed_provider_plugins`.
     """
     try:
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
 
-        d = get_hermes_home() / "plugins"
+        d = get_slave_home() / "plugins"
         return d if d.is_dir() else None
     except Exception:
         return None
@@ -559,7 +559,7 @@ def _manifest_field(plugin_dir: Path, key: str) -> str | None:
             text = manifest.read_text(encoding="utf-8", errors="replace")
         except OSError:
             return None
-        from hermes_yaml import YAMLError
+        from slave_yaml import YAMLError
         from utils import fast_safe_load
         try:
             data = fast_safe_load(text)
@@ -588,8 +588,8 @@ def _declares_model_provider_kind(plugin_dir: Path) -> bool:
 def _scan_home_layer(layer: _HomeLayer, key: str) -> None:
     """Import the bound home's not-yet-imported provider plugins into *layer*.
 
-    ``$HERMES_HOME/plugins/model-providers/<name>/`` first, then plugins cloned flat by
-    ``hermes plugins install`` into ``$HERMES_HOME/plugins/<name>/`` that declare
+    ``$SLAVE_HOME/plugins/model-providers/<name>/`` first, then plugins cloned flat by
+    ``slave plugins install`` into ``$SLAVE_HOME/plugins/<name>/`` that declare
     ``kind: model-provider`` (PluginManager owns every other kind there). Per-home module names
     let two profiles carry the same plugin without aliasing each other's registrations.
     """
@@ -617,7 +617,7 @@ def _scan_home_layer(layer: _HomeLayer, key: str) -> None:
 def _plugin_disabled(plugin_dir: Path) -> bool:
     """Whether ``plugins.disabled`` names this plugin, so its import-time code never runs (#137671).
     Names mirror ``gate_manifest``: the manifest name, the dir, and ``model-providers/<dir>``."""
-    from hermes_cli.plugins import _get_disabled_plugins
+    from slave_cli.plugins import _get_disabled_plugins
 
     disabled = _get_disabled_plugins()
     if not disabled:
@@ -633,7 +633,7 @@ def _plugin_disabled(plugin_dir: Path) -> bool:
 
 def _user_module_name(plugin_dir: Path, home_key: str) -> str:
     digest = hashlib.sha1(home_key.encode("utf-8")).hexdigest()[:10]
-    return f"_hermes_user_provider_{digest}_{plugin_dir.name.replace('-', '_')}"
+    return f"_slave_user_provider_{digest}_{plugin_dir.name.replace('-', '_')}"
 
 
 def _import_plugin_dir(plugin_dir: Path, source: str, *, home_key: str = "") -> None:
@@ -655,7 +655,7 @@ def _import_plugin_dir(plugin_dir: Path, source: str, *, home_key: str = "") -> 
 
 
 def _import_user_plugin_dir(plugin_dir: Path, source: str, module_name: str) -> None:
-    """Import a ``$HERMES_HOME`` plugin: into the layer being scanned through ``providers.plugin_reload``,
+    """Import a ``$SLAVE_HOME`` plugin: into the layer being scanned through ``providers.plugin_reload``,
     which also swaps in an updated tree whole (#153300); outside a scan (``plugin_dev``) directly."""
     if _REGISTRATION_TARGET.get() is not None:
         from providers.plugin_reload import import_into_layer
@@ -666,7 +666,7 @@ def _import_user_plugin_dir(plugin_dir: Path, source: str, module_name: str) -> 
 
 def _import_user_module(plugin_dir: Path, source: str, module_name: str, code_dir: Path | None = None) -> None:
     """*code_dir*: where in-process code is imported from (a frozen copy of *plugin_dir*), default the dir."""
-    from hermes_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
+    from slave_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
     if isolation_mode() == ISOLATION_HOST:  # the plugin's code runs in the plugin host
         _import_hosted_plugin_dir(plugin_dir, source, module_name, code_dir=code_dir)
     else:
@@ -680,7 +680,7 @@ def _import_hosted_plugin_dir(plugin_dir: Path, source: str, module_name: str, *
     so it never takes its hosted siblings down with it. The host is keyed by *plugin_dir*; that in-process
     import reads *code_dir* (a frozen copy) when given."""
     global _current_source
-    from hermes_cli.plugin_host_profiles import load_hosted_profiles
+    from slave_cli.plugin_host_profiles import load_hosted_profiles
     layer = _REGISTRATION_TARGET.get()
     if layer is not None and module_name in layer.hosted:
         return  # already imported into this home's layer
@@ -737,7 +737,7 @@ def _exec_plugin_module(plugin_dir: Path, source: str, module_name: str) -> None
 
 
 def _note_load_result(plugin_dir: Path, exc: BaseException | None) -> None:
-    """Record (or clear) a ``$HERMES_HOME`` plugin's import error on the home layer importing it: the
+    """Record (or clear) a ``$SLAVE_HOME`` plugin's import error on the home layer importing it: the
     general plugin manager lists a model-provider dir with no error, so this is the only record of why it
     registered nothing."""
     layer = _REGISTRATION_TARGET.get()
@@ -755,13 +755,13 @@ def plugin_load_error(plugin: str) -> str:
 
 
 def _discover_entry_point_providers() -> None:
-    """Import pip-installed provider plugins via the ``hermes_agent.plugins``
+    """Import pip-installed provider plugins via the ``slave_agent.plugins``
     entry-point group so they self-register.
 
     A distribution ships::
 
-        [project.entry-points."hermes_agent.plugins"]
-        acme-inference = "acme_hermes_plugin:register"
+        [project.entry-points."slave_agent.plugins"]
+        acme-inference = "acme_slave_plugin:register"
 
     The target may be either a **callable** (``module:func`` — invoked with no
     args; typically calls ``register_provider(profile)``) or a **module**
@@ -775,14 +775,14 @@ def _discover_entry_point_providers() -> None:
       general PluginManager enforces — a pip package is never imported just
       because it is installed. An entry point whose name is not enabled is
       skipped without loading.
-    * **Provider targets only.** The ``hermes_agent.plugins`` group is shared
+    * **Provider targets only.** The ``slave_agent.plugins`` group is shared
       with general plugins whose target is ``register(ctx)``. Callables that
       require arguments are skipped here (the PluginManager owns them);
       provider registration hooks take no arguments by contract.
 
     Failures are swallowed per-entry (a broken third-party package must not
     break provider discovery) and logged at warning level. This scan runs
-    first, so filesystem plugins (bundled + ``$HERMES_HOME``) keep their
+    first, so filesystem plugins (bundled + ``$SLAVE_HOME``) keep their
     documented override precedence via last-writer-wins in
     ``register_provider()`` — a pip package cannot hijack a first-party
     provider name.
@@ -795,7 +795,7 @@ def _discover_entry_point_providers() -> None:
     # Same opt-in gate as the general PluginManager: only entry points named
     # in ``plugins.enabled`` load, and ``plugins.disabled`` always wins.
     try:
-        from hermes_cli.plugins import _get_disabled_plugins, _get_enabled_plugins
+        from slave_cli.plugins import _get_disabled_plugins, _get_enabled_plugins
 
         enabled = _get_enabled_plugins()  # None = nothing enabled yet (opt-in default)
         disabled = _get_disabled_plugins()
@@ -804,7 +804,7 @@ def _discover_entry_point_providers() -> None:
     if not enabled:
         return
 
-    group = "hermes_agent.plugins"
+    group = "slave_agent.plugins"
     try:
         eps = _md.entry_points()
         # Python 3.10+ exposes .select(); older returns a dict-like mapping.
@@ -822,7 +822,7 @@ def _discover_entry_point_providers() -> None:
                 "entry-point provider %r skipped: not enabled in config", ep.name
             )
             continue
-        from hermes_cli.plugin_isolation import in_process_import_refusal
+        from slave_cli.plugin_isolation import in_process_import_refusal
         refusal = in_process_import_refusal(f"pip-installed model-provider plugin {ep.name!r}")
         if refusal:
             logger.warning("%s", refusal)
@@ -897,7 +897,7 @@ def bundled_profiles() -> list[ProviderProfile]:
             init = child / "__init__.py"
             if not child.is_dir() or child.name.startswith(("_", ".")) or not init.exists():
                 continue
-            name = f"_hermes_provider_catalog_{child.name.replace('-', '_')}"
+            name = f"_slave_provider_catalog_{child.name.replace('-', '_')}"
             spec = importlib.util.spec_from_file_location(name, init, submodule_search_locations=[str(child)])
             if spec is None or spec.loader is None:
                 continue
@@ -920,7 +920,7 @@ def _discover_providers() -> None:
       2. Legacy per-file modules at ``providers/<name>.py`` (back-compat)
 
     Each step imports its plugins, which call ``register_provider()`` at
-    module-level. Later steps win on name collision. ``$HERMES_HOME`` plugins are
+    module-level. Later steps win on name collision. ``$SLAVE_HOME`` plugins are
     per profile home and load through :func:`_home_layer` at lookup time.
     """
     from agent.safe_worker_policy import safe_worker_enabled
@@ -936,14 +936,14 @@ def _discover_providers() -> None:
         _run_discovery_steps()
     finally:
         _discovering = False
-        # hermes_cli.auth may have been imported by a plugin during discovery and snapshotted a
+        # slave_cli.auth may have been imported by a plugin during discovery and snapshotted a
         # partial profile list — hand it the complete one (no-op unless auth is already loaded).
         _sync_auth_registry()
 
 
 def _run_discovery_steps() -> None:
     """The discovery passes, in precedence order (see :func:`_discover_providers`)."""
-    # 0. Pip-installed plugins — entry points in the ``hermes_agent.plugins``
+    # 0. Pip-installed plugins — entry points in the ``slave_agent.plugins``
     #    group (the same group the general PluginManager uses). The manager
     #    records model-provider manifests for introspection but deliberately
     #    does NOT import them — provider lifecycle is owned here — so without
@@ -952,14 +952,14 @@ def _run_discovery_steps() -> None:
     #
     #    Discovered FIRST, i.e. lowest precedence: because
     #    ``register_provider()`` is last-writer-wins, running this before the
-    #    filesystem steps means a bundled or ``$HERMES_HOME`` profile of the
+    #    filesystem steps means a bundled or ``$SLAVE_HOME`` profile of the
     #    same name always overrides a pip-installed one. That prevents a
     #    third-party package from silently hijacking a first-party provider
     #    name (e.g. ``openrouter``) while still letting pip packages add
     #    genuinely new providers.
     _discover_entry_point_providers()
 
-    # 1. Bundled plugins — shipped with hermes-agent.
+    # 1. Bundled plugins — shipped with slave-agent.
     if _BUNDLED_PLUGINS_DIR.is_dir():
         for child in sorted(_BUNDLED_PLUGINS_DIR.iterdir()):
             if not child.is_dir() or child.name.startswith(("_", ".")):

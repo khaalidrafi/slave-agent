@@ -1,4 +1,4 @@
-"""Local viewers (Ink, Desktop, ``hermes tern``) get ``status.update {kind: "compacting"}`` only for a
+"""Local viewers (Ink, Desktop, ``slave tern``) get ``status.update {kind: "compacting"}`` only for a
 real compaction. A warning that mentions compression drew a "Compacting context" divider for a
 compaction that never ran."""
 from __future__ import annotations

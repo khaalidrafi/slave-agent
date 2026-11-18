@@ -37,7 +37,7 @@ def test_restart_publishes_addressed_pass_once_without_reexecuting(
         room_id="room-1",
         name="Release room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
     )

@@ -347,7 +347,7 @@ def publish_canary_appinstaller(root: Path, *, tag: str, variant: str, bundle: P
                                identity: str, publisher: str, version: str, public_base: str) -> None:
     """Native SDK work is complete; verify its identity before writing a feed."""
     from scripts.releases.r2 import put
-    from hermes_cli.release_channels import is_canary_tag
+    from slave_cli.release_channels import is_canary_tag
 
     if not is_canary_tag(tag):
         raise ValueError("Only canary feeds publish directly; stable requires accepted candidates")
@@ -419,7 +419,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--out", type=Path)
     parser.add_argument("--tag", default=os.environ.get("RELEASE_TAG"))
-    parser.add_argument("--archive", default=os.environ.get("HERMES_ARCHIVE_TAG"),
+    parser.add_argument("--archive", default=os.environ.get("SLAVE_ARCHIVE_TAG"),
                         help="Attempt ref the release archive is keyed under when the payload tag is plain vX.Y.Z")
     # A stable run dispatches from the default branch, so GITHUB_SHA is not the admitted claim commit.
     parser.add_argument("--commit", default=os.environ.get("RELEASE_COMMIT") or os.environ.get("GITHUB_SHA"))

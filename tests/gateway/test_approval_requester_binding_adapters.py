@@ -42,7 +42,7 @@ def test_feishu_card_click(approvers, allowed, monkeypatch):
     monkeypatch.setattr(fx.feishu_module, "P2CardActionTriggerResponse", fx._FakeP2Response)
     monkeypatch.setattr(fx.feishu_module, "CallBackCard", fx._FakeCallBackCard)
     monkeypatch.setattr(fx.feishu_module, "CallBackToast", SimpleNamespace, raising=False)
-    data = fx._make_card_action_data({"hermes_action": "approve_once", "approval_id": 1}, chat_id="oc_1", open_id="ou_bob")
+    data = fx._make_card_action_data({"slave_action": "approve_once", "approval_id": 1}, chat_id="oc_1", open_id="ou_bob")
 
     def _submit(coro, _loop):
         asyncio.run(coro)
@@ -74,7 +74,7 @@ async def test_teams_card_click(approvers, allowed, monkeypatch):
     monkeypatch.setattr(teams_mod, "TextBlock", lambda **kw: kw)  # the mocked SDK leaves it None
     ctx = SimpleNamespace(activity=SimpleNamespace(
         from_=SimpleNamespace(aad_object_id="aad-bob", id="29:bob"),
-        value=SimpleNamespace(action=SimpleNamespace(data={"hermes_action": "approve_once", "session_key": "sess-t",
+        value=SimpleNamespace(action=SimpleNamespace(data={"slave_action": "approve_once", "session_key": "sess-t",
                                                   "request_id": entry.data["request_id"]}))))
 
     response = await adapter._on_card_action(ctx)

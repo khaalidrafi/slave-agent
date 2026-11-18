@@ -10,16 +10,16 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 # Build identity recolours the desktop icons; the committed ones carry none.
-export HERMES_PAYLOAD_TAG='' HERMES_BUILD_COMMIT=''
+export SLAVE_PAYLOAD_TAG='' SLAVE_BUILD_COMMIT=''
 if [ "${GITHUB_ACTIONS:-}" = true ]; then
     changed() { git status --porcelain --untracked-files=all; }
 else
     # The renderer runs isolated (-I, no PYTHONPATH), so it needs an interpreter that carries
     # Pillow and resvg-py itself: the runtime venv, not the toolchain `python` on PATH. No
     # trailing newline: on Windows print() ends in CRLF, and $(...) strips only the LF.
-    HERMES_PYTHON="$(scripts/hermes-python -c \
+    SLAVE_PYTHON="$(scripts/hermes-python -c \
         'from pathlib import Path; from pm.environments import project_python; print(project_python(Path(".")), end="")')"
-    export HERMES_PYTHON
+    export SLAVE_PYTHON
     index="$(mktemp)"
     trap 'rm -f "$index"' EXIT
     cp "$(git rev-parse --git-path index)" "$index"

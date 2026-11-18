@@ -1,4 +1,4 @@
-"""`hermes pm environment`: the shell entry skills use for a named side environment."""
+"""`slave pm environment`: the shell entry skills use for a named side environment."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ PROJECT = Path(cli.__file__).resolve().parents[1]
 
 @pytest.fixture(autouse=True)
 def _in_pm_runtime(monkeypatch):
-    # The command body as it runs once `hermes pm` is inside PM's runtime;
+    # The command body as it runs once `slave pm` is inside PM's runtime;
     # repo_root() would consult the worktree manifest under the real home.
     monkeypatch.setattr(runtime, "is_runtime", lambda: True)
     monkeypatch.setattr(cli, "repo_root", lambda: PROJECT)

@@ -1,6 +1,6 @@
 """The gateway's own listener, behind the sign-in gate, takes the deployment static token as serve does.
 
-``dashboard.public_url`` gates the gateway's private listener, and ``HERMES_DASHBOARD_SESSION_TOKEN``
+``dashboard.public_url`` gates the gateway's private listener, and ``SLAVE_DASHBOARD_SESSION_TOKEN``
 registers the bundled session-token provider. A remote client presenting that token as a bearer gets
 the dashboard API; a wrong or missing token gets 401. On a multiplexed gateway the same token with a
 profile selector reads that profile's own config, not the launch profile's.
@@ -50,8 +50,8 @@ def gated_gateway(tmp_path_factory):
     }))
     root = Path(__file__).resolve().parents[2]
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
-               PYTHONUNBUFFERED='1', HERMES_DASHBOARD_SESSION_TOKEN=TOKEN)
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
+               PYTHONUNBUFFERED='1', SLAVE_DASHBOARD_SESSION_TOKEN=TOKEN)
     with (tmp / 'gateway.log').open('w+') as log:
         process = subprocess.Popen([sys.executable, '-m', 'gateway.run'], cwd=root, env=env,
                                    stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)

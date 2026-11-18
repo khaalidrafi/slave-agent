@@ -1,8 +1,8 @@
 """The side-environment setup blocks shipped in the document skills, run as written.
 
-Each block picks ``$PY`` for the helper scripts: Hermes's PM environment when ``hermes`` is on
+Each block picks ``$PY`` for the helper scripts: slave-agent’s PM environment when ``slave`` is on
 PATH, otherwise a venv it builds and publishes under ``$HOME/.cache`` (a Docker sandbox has no
-Hermes). Every block is executed by bash against stub interpreters, so these tests need no
+slave-agent). Every block is executed by bash against stub interpreters, so these tests need no
 network and no real pip.
 """
 from pathlib import Path
@@ -18,12 +18,12 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 TOOLS = ("bash", "mkdir", "mktemp", "readlink", "ln", "rm", "chmod", "cat")
 BLOCKS = [  # (document, the venv name its sandbox branch publishes under $HOME/.cache)
-    ("skills/productivity/microsoft-office/SKILL.md", "hermes-docs-venv"),
-    ("skills/productivity/pdf/SKILL.md", "hermes-docs-venv"),
-    ("optional-skills/finance/excel-author/SKILL.md", "hermes-docs-venv"),
-    ("optional-skills/finance/pptx-author/SKILL.md", "hermes-docs-venv"),
-    ("skills/productivity/pdf/references/ocr-extraction.md", "hermes-pdf-pymupdf-venv"),
-    ("skills/productivity/pdf/references/ocr-extraction.md", "hermes-pdf-marker-venv"),
+    ("skills/productivity/microsoft-office/SKILL.md", "slave-docs-venv"),
+    ("skills/productivity/pdf/SKILL.md", "slave-docs-venv"),
+    ("optional-skills/finance/excel-author/SKILL.md", "slave-docs-venv"),
+    ("optional-skills/finance/pptx-author/SKILL.md", "slave-docs-venv"),
+    ("skills/productivity/pdf/references/ocr-extraction.md", "slave-pdf-pymupdf-venv"),
+    ("skills/productivity/pdf/references/ocr-extraction.md", "slave-pdf-marker-venv"),
 ]
 
 pytestmark = [
@@ -33,7 +33,7 @@ pytestmark = [
 
 
 def _system_path():
-    """Only the directories of the POSIX tools the blocks use, so no real hermes/python leaks in."""
+    """Only the directories of the POSIX tools the blocks use, so no real slave/python leaks in."""
     return os.pathsep.join(dict.fromkeys(os.path.dirname(shutil.which(tool)) for tool in TOOLS))
 
 
@@ -45,7 +45,7 @@ def _setup_block(document, venv):
             continue
         lines = code.splitlines()
         start = next(i for i, line in enumerate(lines)
-                     if line.startswith(('python -c "import', "if command -v hermes")))
+                     if line.startswith(('python -c "import', "if command -v slave")))
         end = max(i for i, line in enumerate(lines) if line in ("fi", "export PY"))
         return "\n".join(lines[start:end + 1]) + "\n"
     raise AssertionError(f"{document}: no setup block publishes {venv}")
@@ -62,13 +62,13 @@ def _venv(directory, healthy):
     _script(directory / "bin" / "python", "exit 0\n" if healthy else "exit 1\n")
 
 
-def _sandbox(tmp_path, *, hermes=None, before_stage=""):
+def _sandbox(tmp_path, *, slave=None, before_stage=""):
     """A HOME and a PATH for one block: ``python`` lacks every library and ``python3 -m venv``
     makes a stub venv. ``before_stage`` runs inside the block's ``$HOME/.cache`` right before it
     creates its private stage, i.e. after its own import check failed."""
     system_path = _system_path()
-    if shutil.which("hermes", path=system_path):
-        pytest.skip("a hermes on the system PATH would take the PM branch")
+    if shutil.which("slave", path=system_path):
+        pytest.skip("a slave on the system PATH would take the PM branch")
     home, stubs = tmp_path / "home", tmp_path / "stubs"
     home.mkdir()
     stubs.mkdir()
@@ -78,8 +78,8 @@ def _sandbox(tmp_path, *, hermes=None, before_stage=""):
         exec {shlex.quote(sys.executable)} "$@"
         """))
     _script(stubs / "mktemp", f"{before_stage}\nexec {shlex.quote(shutil.which('mktemp'))} \"$@\"\n")
-    if hermes is not None:
-        _script(stubs / "hermes", f"echo {hermes}\n")
+    if slave is not None:
+        _script(stubs / "slave", f"echo {slave}\n")
     return home, {"HOME": str(home), "PATH": f"{stubs}{os.pathsep}{system_path}", "LC_ALL": "C"}
 
 
@@ -94,7 +94,7 @@ def _run(script, env, cwd):
 def test_block_exports_py_for_the_next_terminal_call(tmp_path, document, venv):
     # The terminal tool carries only `export -p` into the next call, so an unexported PY is
     # empty there and every `"$PY" scripts/...` line fails.
-    home, env = _sandbox(tmp_path, hermes="/side-env/bin/python")
+    home, env = _sandbox(tmp_path, slave="/side-env/bin/python")
     exported = _run(_setup_block(document, venv) + "export -p\n", env, home)
     assert "PY=" in exported and "/side-env/bin/python" in exported, exported
 

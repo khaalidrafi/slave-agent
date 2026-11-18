@@ -8,8 +8,8 @@ import sys
 import textwrap
 
 from agent.system_prompt import build_system_prompt, invalidate_system_prompt
-from hermes_cli import plugins
-from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
+from slave_cli import plugins
+from slave_cli.plugins import PluginContext, PluginManager, PluginManifest
 from run_agent import AIAgent
 
 
@@ -100,8 +100,8 @@ def test_fresh_process_resume_restores_identical_full_prompt_without_callback(tm
 
         from agent.conversation_loop import _restore_or_build_system_prompt
         from agent.system_prompt import build_system_prompt, invalidate_system_prompt
-        from hermes_cli import plugins
-        from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
+        from slave_cli import plugins
+        from slave_cli.plugins import PluginContext, PluginManager, PluginManifest
         from persistence.conversation.sessions import NewSession
         from persistence_assembly import open_persistence, profile_scope
         from run_agent import AIAgent
@@ -172,7 +172,7 @@ def test_fresh_process_resume_restores_identical_full_prompt_without_callback(tm
     for phase in ("first", "resume"):
         env = os.environ.copy()
         env.update(
-            HERMES_HOME=str(tmp_path / "hermes-home"),
+            SLAVE_HOME=str(tmp_path / "slave-home"),
             TEST_DB=str(db_path),
             TEST_CALLS=str(calls_path),
             TEST_PHASE=phase,

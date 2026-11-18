@@ -27,13 +27,13 @@ Measured findings (transcript, 2026-10-15):
    docs — gets rewritten to ~nousresearch/slave-agent~, a nonexistent image;
    this breaks docker builds/runs and the release push. KEEP_RE is
    case-sensitive → bug in the protection, same repo, same owner.
-2. ~pkg uninstall hermes-agent~ (Termux APT) and "remove ~hermes-agent~ from
+2. ~pkg uninstall slave-agent~ (Termux APT) and "remove ~slave-agent~ from
    your flake" (Nix) get rewritten to ~slave-agent~ — defensible only if the
    branded fork actually publishes those channels; today they are upstream's
    real packages.
 3. Other NousResearch repos/models found as ~nousresearch/<token>~ hits:
-   ~hermes-sandbox~ (32 refs), ~NousResearch/hermes-example-plugins~,
-   ~hermes-nvidia~, ~nousresearch/hermes-4-405b~ (a model ID),
+   ~slave-sandbox~ (32 refs), ~NousResearch/hermes-example-plugins~,
+   ~slave-nvidia~, ~nousresearch/hermes-4-405b~ (a model ID),
    ~NousResearch/Hermes-3-Llama-3.1-70B~, ~NousResearch/atropus~,
    ~NousResearch/api~, ~NousResearch/pokemon-agent~. Rewriting model IDs
    breaks inference endpoints and links.
@@ -52,10 +52,10 @@ Measured findings (transcript, 2026-10-15):
 2. Encode the blessed list as *shape rules* in ~KEEP_RE~ in
    ~scripts/rebrand.py~ with tests (agent-team board scope):
    - at minimum, protect the lowercase Docker Hub path so
-     ~(?:NousResearch|nousresearch)/hermes-agent~ both survive;
+     ~(?:NousResearch|nousresearch)/slave-agent~ both survive;
    - a general rule is preferred over enumeration: any slash-form
      ~nousresearch/<token>~ path or model-identifier shape
-     (~hermes-N~ followed by digits/version) is a third-party fact → keep.
+     (~slave-N~ followed by digits/version) is a third-party fact → keep.
 3. Extend ~test_names_we_do_not_own_survive_both_tiers~ in
    ~tests/scripts/test_rebrand_brand_agreement.py~ with the lowercase image
    path (and each newly blessed keep) once the decision lands.

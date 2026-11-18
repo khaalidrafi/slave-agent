@@ -3,7 +3,7 @@ name: Sandbox desktop image
 # nousresearch/hermes-sandbox:desktop is the terminal-backend sandbox base
 # (nikolaik/python-nodejs) plus a display stack; Bot Screen, computer_use and
 # the bot's browser run inside it when terminal.backend is docker/ssh/etc.
-# It contains NO Hermes code, so it does not need to track main.
+# It contains NO slave-agent code, so it does not need to track main.
 #
 # Triggers: a PR that edits the Dockerfile/smoke (build + smoke, no push),
 # a successful Stable Release (publish :<tag>-desktop and roll :desktop), a
@@ -180,7 +180,7 @@ jobs:
         env:
           # Stable Release's run-name is "Stable release rc.<N>-v<version>" (claim_run_title in
           # scripts/releases/stable.py; the tag grammar is _ATTEMPT_REF_RE in
-          # scripts/releases/versioning.py + STABLE_TAG_RE in hermes_cli/update_channel.py);
+          # scripts/releases/versioning.py + STABLE_TAG_RE in slave_cli/update_channel.py);
           # the release is v<version>.
           RUN_TITLE: ${{ github.event.workflow_run.display_title }}
         run: |

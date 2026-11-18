@@ -6,14 +6,14 @@ description: >-
   Policy-driven guard for what leaves the agent. A pre_tool_call hook redacts credentials in
   tool arguments and sends shell commands that upload data to non-allowlisted destinations
   (curl/wget uploads, scp/rsync, cloud copies, gist create, git push to a URL, python/node
-  upload one-liners) to Hermes's approval prompt, showing a masked preview of the command
+  upload one-liners) to slave-agent’s approval prompt, showing a masked preview of the command
   (fail-closed when nobody can approve). transform_tool_result and transform_llm_output
   suppress small counts in tables, including complementary cells and percentages so hidden
   values cannot be recovered (statistical disclosure control). Presets, an optional strict
   network mode, and a /guard command (status, report, dry-run check). Disclosure: no network
   access, subprocesses or tools; reads its policy from EGRESS_GUARD_POLICY,
-  ~/.hermes/egress-guard.yaml or the bundled default, and its own audit log for /guard report;
-  appends masked audit lines (never raw values) to ~/.hermes/egress-guard/audit.jsonl; never
+  ~/.slave/egress-guard.yaml or the bundled default, and its own audit log for /guard report;
+  appends masked audit lines (never raw values) to ~/.slave/egress-guard/audit.jsonl; never
   auto-approves.
 maintainer: moussetea315
 tier: community

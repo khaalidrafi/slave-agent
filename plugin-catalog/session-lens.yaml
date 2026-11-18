@@ -1,9 +1,9 @@
 name: session-lens
-title: Hermes Session Lens
+title: slave-agent Session Lens
 repo: https://github.com/abualnassr/hermes-session-lens
 sha: 69bc2b183fd376acf27256cd9b43f578a16388ae
 version: "0.53.2"
-description: "Read-only observability for Hermes Desktop: what each session cost and why, its full trace, recurring tool failures, every profile at a glance, provider quotas and service balances, model comparison with cheaper-route evidence, and instruction-rule grading. Disclosure — reads every profile's state.db read-only plus agent logs, cron/gateway state, config.yaml and .env (key names, and the values of keys an adapter uses); with the credentials Hermes' own resolvers return, calls only each configured vendor's usage or balance endpoint (hosts listed in the README), sending Grok CLI client headers to cli-chat-proxy.grok.com and a Claude Code user-agent to api.anthropic.com; Hermes' resolvers may renew Hermes' Codex, Nous and xAI logins and, when Hermes holds no other Anthropic credential, Claude Code's login; runs the local monid CLI when installed; an Anthropic one-token Claude Haiku probe is off by default; writes no Hermes state itself and sends no session content anywhere."
+description: "Read-only observability for slave-agent Desktop: what each session cost and why, its full trace, recurring tool failures, every profile at a glance, provider quotas and service balances, model comparison with cheaper-route evidence, and instruction-rule grading. Disclosure — reads every profile's state.db read-only plus agent logs, cron/gateway state, config.yaml and .env (key names, and the values of keys an adapter uses); with the credentials slave-agent’ own resolvers return, calls only each configured vendor's usage or balance endpoint (hosts listed in the README), sending Grok CLI client headers to cli-chat-proxy.grok.com and a Claude Code user-agent to api.anthropic.com; slave-agent’ resolvers may renew slave-agent’ Codex, Nous and xAI logins and, when slave-agent holds no other Anthropic credential, Claude Code's login; runs the local monid CLI when installed; an Anthropic one-token Claude Haiku probe is off by default; writes no slave-agent state itself and sends no session content anywhere."
 maintainer: abualnassr
 tier: community
 category: desktop

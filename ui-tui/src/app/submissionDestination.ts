@@ -30,11 +30,11 @@ function canonicalHome(path: string): string {
 
 export function captureDestination(): SubmissionDestination {
   const { sid, info } = getUiState()
-  const profileHome = canonicalHome(resolve(process.env.HERMES_HOME ?? join(homedir(), '.hermes')))
-  // An explicit HERMES_TUI_GATEWAY_URL may serve another home or machine: its receipts name the
-  // owner's profile_id (from the session snapshot), not this client's HERMES_HOME (C22). The local
+  const profileHome = canonicalHome(resolve(process.env.SLAVE_HOME ?? join(homedir(), '.slave')))
+  // An explicit SLAVE_TUI_GATEWAY_URL may serve another home or machine: its receipts name the
+  // owner's profile_id (from the session snapshot), not this client's SLAVE_HOME (C22). The local
   // home still keys the offline journal and image cache.
-  const owner = process.env.HERMES_TUI_GATEWAY_URL?.trim() ? (info as { profile_id?: unknown } | null)?.profile_id : undefined
+  const owner = process.env.SLAVE_TUI_GATEWAY_URL?.trim() ? (info as { profile_id?: unknown } | null)?.profile_id : undefined
 
   return Object.freeze({
     sid,

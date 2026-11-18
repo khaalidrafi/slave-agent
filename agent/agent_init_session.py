@@ -21,7 +21,7 @@ def _publish_session_id(session_id: str) -> None:
         except Exception:
             delegated_child = False
         if not delegated_child:
-            os.environ["HERMES_SESSION_ID"] = session_id
+            os.environ["SLAVE_SESSION_ID"] = session_id
 
 
 def writer_interface(persistence, store):
@@ -32,12 +32,12 @@ def writer_interface(persistence, store):
 
 
 def stand_in_interface(session_db):
-    """The storage interface handle a writable ``hermes_state.SessionDB`` forwards to, when ``session_db`` is one, else
+    """The storage interface handle a writable ``slave_state.SessionDB`` forwards to, when ``session_db`` is one, else
     None. The stand-in carries only the plugin guide's methods, so an agent given it alone writes through the handle;
-    no stand-in exists before ``hermes_state`` is imported. The agent borrows the handle the SessionDB holds when the
+    no stand-in exists before ``slave_state`` is imported. The agent borrows the handle the SessionDB holds when the
     agent is built, so the caller keeps that SessionDB open for the agent's life: its close() releases the handle, and
     its reopen after close() gives the agent no new one."""
-    stand_in = sys.modules.get("hermes_state")
+    stand_in = sys.modules.get("slave_state")
     if stand_in is None or not isinstance(session_db, stand_in._SessionDB) or session_db.read_only:
         return None
     return session_db._store

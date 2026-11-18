@@ -23,17 +23,17 @@ def _wait_parked(ex, n=1):
 
 
 def test_a_reused_worker_sees_none_of_the_previous_turns_thread_state():
-    from hermes_constants import get_hermes_home, set_hermes_home_override
+    from slave_constants import get_slave_home, set_slave_home_override
     from tools import interrupt, terminal_tool
     from tools import terminal_tool_sudo as sudo
 
-    fresh_home = contextvars.Context().run(get_hermes_home)
+    fresh_home = contextvars.Context().run(get_slave_home)
     ex = _UnboundedThreadExecutor("reuse-probe")
     try:
         def turn_one():
             interrupt.set_interrupt(True, reason="user pressed stop")
             terminal_tool._callback_tls.approval = "session-a approval callback"
-            set_hermes_home_override("/profiles/session-a")  # left set: the turn never resets it
+            set_slave_home_override("/profiles/session-a")  # left set: the turn never resets it
             sudo._sudo_password_cache[f"thread:{threading.get_ident()}"] = "session-a sudo password"
             return threading.get_ident()
 
@@ -46,7 +46,7 @@ def test_a_reused_worker_sees_none_of_the_previous_turns_thread_state():
                 interrupted=interrupt.is_interrupted(),
                 reason=interrupt.get_interrupt_reason(),
                 approval=getattr(terminal_tool._callback_tls, "approval", None),
-                home=get_hermes_home(),
+                home=get_slave_home(),
                 sudo=sudo._sudo_password_cache.get(f"thread:{threading.get_ident()}"),
             )
 
@@ -88,12 +88,12 @@ def test_submit_to_a_parked_worker_starts_no_thread_and_shutdown_releases_it(mon
 def test_a_reused_worker_does_not_log_as_the_previous_turns_session():
     import logging
 
-    import hermes_logging
+    import slave_logging
 
     ex = _UnboundedThreadExecutor("reuse-probe")
     try:
         def turn_one():
-            hermes_logging.set_session_context("session-a")  # build_turn_context does this, never clears it
+            slave_logging.set_session_context("session-a")  # build_turn_context does this, never clears it
             return threading.get_ident()
 
         first = ex.submit(turn_one).result(5)

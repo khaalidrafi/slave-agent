@@ -84,7 +84,7 @@ def finish_result(store, *, epoch, row, response, outcome, result=None, prepared
     if current.result is not None:
         return admission_row(current.record), current.result['result'].get('final_response') or ''
     outcome, stored = prepared or prepare_result(row, response, outcome, result)
-    # A turn the owner's restart/stop interrupted: its reason commits as a Hermes transcript notice
+    # A turn the owner's restart/stop interrupted: its reason commits as a Slave transcript notice
     # in this same write, so a viewer that reconnects after the restart reads why (#134889 GW-21);
     # the live ``message.complete.warning`` carries the same copy. A retry that finds the row
     # terminal returns above, so the notice is written once.

@@ -179,7 +179,7 @@ def test_queued_delivery_error_settled_onto_job_is_length_bounded(tmp_path, monk
     from cron import delivery_queue, jobs, scheduler
     from cron.jobs_error_text import MAX_PERSISTED_ERROR_CHARS
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(scheduler, "run_job", lambda job, **kw: (True, "raw", "the result", None))
     job = jobs.create_job(prompt="p", schedule="every 1h", deliver="telegram:fixture")
     scheduler.run_one_job(job)
@@ -199,7 +199,7 @@ def test_unknown_admission_reason_is_redacted_and_still_lifts_its_pause(tmp_path
     import json
 
     from cron import executions, jobs, scheduler, scheduler_authority
-    from hermes_cli import gateway_client
+    from slave_cli import gateway_client
 
     with jobs.use_cron_store(tmp_path / "cron"):
         job = jobs.create_job(prompt="report", schedule="every 1h", deliver="local")
