@@ -10,6 +10,12 @@ endpoint").  This file is the mobile contract: what ships now, what is
 scoped, and what stays OPEN with its blocking fact named (AGENTS.md
 docs-first law).
 
+Owner 2026-11-18 #hq: "For Slave Agent Android version, it shouldn't
+be Termux-based since the masses wouldn't want it.  It should be an
+optimized version fit for Android.  Ours shouldn't just be a remote
+control for the desktop app, though.  First, think if it's worth it to
+make that."  The formal answer below is that thinking.
+
 * Law (unchanged by mobile)
 
 - Mobile is a PROFILE + bootstrap of the same packages — never a fork.
@@ -20,7 +26,73 @@ docs-first law).
   a server — the mobile profile stores tokens in Termux/android
   keystore where available, never in plaintext config.
 
-* Phase 1 — Termux bootstrap (shippable NOW)
+* The formal answer (Owner 2026-11-18) — is a native Android app worth it?
+
+Verdict: YES — worth building, as Phase 2 exactly as scoped below, and
+for reasons the upstream cannot give us for free.
+
+What "mobile" means elsewhere, checked against the source of truth:
+
+- Upstream Hermes has NO native Android app.  Its mobile story is the
+  Termux APT channel plus the TUI (upstream README, "Android / Termux:
+  a signed APT repository for aarch64 devices").  ~apps/~ holds the
+  Electron desktop shell and the Tauri bootstrap installer, nothing
+  phone-shaped — and this fork cut ~apps/~ in P1 anyway.  There is no
+  native precedent to inherit; if we want one, we build it.
+- A Termux bootstrap (Phase 1) is the right shape for exactly one
+  audience: developers and power users on their own hardware.  The
+  masses will not install F-Droid, a POSIX shell and a package manager
+  to get an assistant — the Owner's call is correct, and Phase 1 is
+  hereby demoted from "shippable now" to "the developer lane".
+- A pure remote-control app (a chat UI pointed at a desktop or cloud
+  instance) is rejected, and the analysis agrees with the rejection:
+  an agent whose tools, files and memory live on another machine
+  cannot do phone work (notifications, local files, sensors,
+  battery-aware scheduling) and it dies whenever the host sleeps.  It
+  is a viewer, not an agent.  We already ship its zero-build cousin —
+  the specs/015 networked preset pointing a panel at ~slave serve~ —
+  and that stays a stopgap for panel users, not the mobile answer.
+
+What the real thing is: the agent CORE — orchestration, tools,
+memory, persona — running on the device inside an APK, calling cloud
+models over the API.  The intelligence was never on-device even on the
+desktop; every build calls an LLM endpoint.  So "optimized for
+Android" means: lean local core (the P1-P9 cuts are the mobile
+enablement), keystore-held secrets, a foreground service for long
+turns, loopback IPC to the UI — the Phase 2 list below.
+
+Why it is worth it here specifically:
+
+1. The vehicle already exists.  The AdminEverywhere app (Tauri 2 +
+   Svelte 5) ships an Android universal APK today, and specs/014's
+   in-process seam (~admineverywhere[agent]~, the persona library) is
+   the designed embedding path.  We are not choosing between "build a
+   mobile app" and "don't" — the embedding surface is specified,
+   audited (107 packages classified; only cffi, cryptography,
+   pycparser need bionic rebuilds) and waiting on one spike.
+2. The product asks for it.  slave-agent's positioning is a
+   customizable agent for personal, business and developer moulds
+   (specs/013).  A business assistant locked to a desk misses the
+   phone — where the user actually is; the brandability contract means
+   a business ships ITS branded APK through this same path.
+3. The hardware floor is already law.  The Redmi 8A (2-3 GB RAM) is
+   the floor target; "keep everything light" is standing law.  A lean
+   Python core plus a Svelte UI fits that class of device; heavy
+   optional plugins simply do not ship in the mobile profile.
+
+Honest costs and the kill criteria: the remaining big lifts are the
+Rust JNI bridge (CPython bundled, since Chaquopy is Gradle-only and
+does not drop into Tauri), the foreground service + notification
+channel, keystore-backed secrets, and the three bionic rebuilds
+tracking upstream dependency drift.  If the JNI spike cannot bundle
+CPython and import the persona seam on a real device within its effort
+budget, or the bionic rebuilds cannot be kept current, the fallback is
+the networked preset already shipped — decided on evidence from the
+spike, not on preference.  First executable step is board row
+mobile/01 (Phase-2 JNI bridge spike); design by the Software
+Architect, execution dispatched per DOD.
+
+* Phase 1 — Termux bootstrap (the developer lane)
 
 The model already runs in the cloud; the agent core is orchestration
 + tools, which a modern handset carries.  Phase 1 = agent ON the
@@ -62,8 +134,9 @@ runtime in that apk so the phone needs nothing else:
   Audit completed: 107 packages classified; 3 have platform wheels
   requiring bionic rebuild (cffi, cryptography, pycparser), all others
   are pure-Python (py3-none-any wheels).
-- [ ] Phase-2 JNI bridge spike — BLOCKED on the audit landing; no
-  code may start before the dependency map says what must be rebuilt.
+- [ ] Phase-2 JNI bridge spike — unblocked by the formal answer and
+  the green dependency audit; dispatched as board row mobile/01.  No
+  further code starts before the spike reports.
 - [ ] Mobile profile toolset list sign-off (Owner) — proposed: shop
   (read-only) + admin MCP equivalents + memory/Org; terminal and
   desktop tools excluded.
