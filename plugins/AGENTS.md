@@ -27,6 +27,15 @@ command. A hook with no concrete consumer is speculative infrastructure and is r
   never a `plugins.memory.<name>` import. New
   backends ship as standalone repos implementing the same `MemoryProvider` ABC, discovered through
   the same path, integrated via `hermes memory setup` / `post_setup()`.
+- **Shop storefront (Nov 2026 → `plugin-catalog/shop.yaml`, external repo
+  khaalidrafi/slave-agent-plugins; specs/017).** The whole `plugins/shop`
+  payload (adapter ABC + REST implementation, four tools, `hermes shop`,
+  `/shop`) left the tree for the external plugins repo — light core ships
+  integration payloads nowhere, and a PR adding one under `plugins/` is
+  wrong by definition. A home that configured a shop gets the catalog
+  plugin installed automatically (`hermes_cli/left_core_migration.py::`
+  `LEFT_CORE` row `shop`); the storefront itself stays configuration
+  (`plugins.entries.shop.settings`, unchanged).
 - **Other features that leave core** (Home Assistant platform + toolset, Oct 2026 →
   `plugin-catalog/homeassistant.yaml`; Spotify toolset → `plugin-catalog/spotify.yaml`; Singularity
   terminal backend → `plugin-catalog/singularity.yaml`) keep their

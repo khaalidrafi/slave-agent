@@ -74,7 +74,13 @@ from a literal (TypeScript cannot import ~brand.py~, and a visible literal is wh
 generator can rewrite). Six rows of glyphs survived every rename the generator performed,
 because a rule over words cannot see ~██╗  ██╗~.
 
-** Storefront capability
+** Storefront capability — MOVING OUT of the core (specs/017)
+
+Owner ruling 2026-11-22 (specs/017): shop is not relevant to the
+slave-agent core. ~plugins/shop~ moves to the external plugins repo
+(~khaalidrafi/slave-agent-plugins~); the core keeps plugin machinery
+only. Until the removal lands, this section describes the payload as
+it exists in-tree:
 
 ~plugins/shop/~ gives the agent a *read-only* view of a real shop: a ~StorefrontAdapter~ ABC
 plus a REST implementation, four tools (~shop_queue~, ~shop_orders~, ~shop_order~,

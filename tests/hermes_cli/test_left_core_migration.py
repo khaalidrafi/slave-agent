@@ -479,3 +479,46 @@ def test_old_langfuse_plugin_key_keeps_naming_the_catalog_plugin(tmp_path, monke
     # The old key in plugins.disabled still names the plugin, so with the new key enabled both lists do.
     assert gate_manifest(manifest, {"observability/langfuse"}, {"langfuse"}).error == IN_BOTH_LISTS
     assert gate_manifest(manifest, {"observability/langfuse"}, None).error == "disabled via config"
+
+
+def test_shop_in_use_is_a_configured_entry_or_the_toolset(tmp_path):
+    """A home ran the storefront toolset when it configured a shop (the plugin's own
+    settings surface) or selected the shop toolset for a platform / top level."""
+    for config in (
+        "plugins:\n  entries:\n    shop:\n      settings:\n        base_url: https://shop.example/api\n",
+        "platform_toolsets:\n  cli: [web, shop]\n",
+        "toolsets: [web, shop]\n",
+    ):
+        assert lcm.shop_in_use(_home(tmp_path, name="h1", config=config)), config
+
+
+def test_shop_not_in_use(tmp_path):
+    for env, config in (
+        ("", ""),
+        ("", "plugins:\n  entries:\n    shop: {}\n"),
+        ("", "plugins:\n  entries:\n    other:\n      settings:\n        a: b\n"),
+        ("", "platform_toolsets:\n  cli: [web, terminal]\n"),
+        ("SHOP_API_TOKEN=tok\n", ""),
+    ):
+        home = _home(tmp_path, name="h2", env=env, config=config)
+        assert not lcm.shop_in_use(home), (env, config)
+
+
+def test_shop_home_gets_the_plugin_installed_once(tmp_path):
+    home = _home(tmp_path, config=(
+        "plugins:\n  entries:\n    shop:\n      settings:\n"
+        "        base_url: https://shop.example/api\n"))
+    calls, said = [], []
+
+    def install(name):
+        calls.append(name)
+        (home / "plugins" / name).mkdir(parents=True)
+        return {"ok": True}
+
+    assert lcm.migrate_home(home, install=install, say=said.append) == ["shop"]
+    assert calls == ["shop"]
+    assert "Shop storefront moved out of core" in said[0]
+    # Installed now: a second pass is a no-op and silent.
+    said.clear()
+    assert lcm.migrate_home(home, install=install, say=said.append) == []
+    assert calls == ["shop"] and said == []

@@ -84,7 +84,12 @@
    - Source: FORK.org "TODO Decisions still open"; T1 (caduceus kept while
      #34 open). Cross-ref: specs/002 notes, specs/004 notes.
 
-* Shop storefront plugin (slave-agent) — see specs/005
+* Shop storefront plugin → EXTERNAL (moved out of the core) — see specs/017
+
+The Owner ruling (2026-11-22, specs/017): shop is NOT relevant to the
+slave-agent core. The payload moves to the external plugins repo
+(khaalidrafi/slave-agent-plugins); the core keeps plugin machinery
+only.
 
 ** DONE plugins/shop read-only storefront adapter + 4 tools (#19/#29)
    - ~StorefrontAdapter~ ABC + REST impl; ~shop_queue~, ~shop_orders~,
@@ -94,6 +99,15 @@
      ~51e1d196c8~.
    - Source: T1 (commit session); HANDOFF.org "Storefront capability";
      docs/INTEGRATION-ADMINEVERYWHERE.org. Cross-ref: specs/005.
+
+** DONE Move plugins/shop out of the core (specs/017 execution)
+   - Payload (plugin.yaml, __init__.py, adapter.py + full test suite)
+     transferred to khaalidrafi/slave-agent-plugins at b42de08;
+     ~plugin-catalog/shop.yaml~ pins the transfer sha; a LEFT_CORE row
+     (~shop~, with ~shop_in_use~ predicate + tests) gives configured
+     homes the automatic install and old-surface hints; the core tree
+     drops ~plugins/shop~ + ~tests/plugins/test_shop_plugin.py~.
+   - Source: specs/017 (Owner order 2026-11-22).
 
 ** TODO Four shop-deployment credentials still owed (Owner)
    - Recorded as owed in the session's private handoff; names not
@@ -106,6 +120,47 @@
      channels stay out of scope.
    - Source: HANDOFF.org; docs/INTEGRATION-ADMINEVERYWHERE.org guardrails.
      Cross-ref: specs/005 req. 2.
+
+* Light core: integrations as external plugins — see specs/017
+
+The Owner ruling (2026-11-22): "slave-agent shouldn't have wa, tg etc.
+integrations built-in, rather user will add them via plugins as they
+wish. That's light core." Every integration payload leaves the core
+tree for khaalidrafi/slave-agent-plugins; the core ships plugin
+machinery only (specs/017).
+
+** DONE Publish the external plugins repo (khaalidrafi/slave-agent-plugins)
+   - Public repo created 2026-11-23 (default branch ai/main): plugin
+     contract README + seeded entries. shop transferred (b42de08);
+     whatsapp/telegram are charters until their code moves.
+   - Source: specs/017 (Owner order 2026-11-22: "publish them externally
+     in plugins dir").
+
+** IN-PROGRESS Exodus tranche 1: shop + whatsapp + whatsapp_cloud + telegram
+   - The Owner-named integrations move first, riding the left-core
+     pattern: payload → plugins repo; plugin-catalog/<name>.yaml pins
+     the sha; a LEFT_CORE row per plugin (in_use predicate, env
+     classification, platform name, toolsets) gives existing homes the
+     automatic install and old-surface hints; CLI wizards
+     (~slave whatsapp~, ~slave whatsapp-cloud~) become plugin commands
+     with old-spelling redirects; platform-specific tests move with
+     their plugins, shared machinery tests keep running on the
+     platforms that remain in-tree. SHOP DONE; WA/WA-cloud/TG next.
+   - Source: specs/017 req. 3.
+
+** TODO Exodus tranches 2+: the remaining plugins/platforms/ adapters
+   - discord, slack, matrix, signal, irc, email, sms, a2a, bluebubbles,
+     buzz, dingtalk, feishu, google_chat, line, mattermost, ntfy,
+     photon, qqbot, raft, simplex, teams, wecom, weixin — one tranche
+     per dispatch, same pattern; shared machinery tests move with the
+     final tranche.
+   - Source: specs/017 req. 3–4.
+
+** TODO Codify the no-payload law in the core's review path
+   - A change adding an integration payload under the core's ~plugins/~
+     must fail review the way a hand-edited brand string does (FORK.org);
+     encode as a check or review rule.
+   - Source: specs/017 req. 1–3, Decision 1.
 
 * Light core / bloat removal (slave-agent) — see specs/006
 

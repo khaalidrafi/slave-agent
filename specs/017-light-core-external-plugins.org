@@ -1,0 +1,143 @@
+#+TITLE: Spec 017 — Light core: integrations are external plugins; shop leaves the core
+#+STARTUP: overview
+
+- Status: ACTIVE (doctrine landed; execution started on ai/main — see
+  TODOs.org "Light core: integrations as external plugins")
+- Source: Owner order (2026-11-22, IM session): "slave-agent shouldn't
+  have wa, tg etc. integrations built-in, rather user will add them via
+  plugins as they wish. That's light core. Agent code never goes to AE.
+  The apps just BRIDGE with the slave agent. What the hell is
+  shop/storefront stuffs in slave-agent?" — followed by: "Is shop any
+  relevant for slave-agent? Keep/remove after reconsidering that.
+  Yeah, publish them externally in plugins dir."
+- Supersedes, for the capability classes it names: specs/016's
+  "capability edges stay plugins ... in-tree" reading (the edges stay
+  plugins — they stop being IN-TREE plugins), and the in-process AE
+  seam of specs/014/015 (see Decision 3).
+
+* Problem
+
+The light-core doctrine (FORK.org, HUMANS.md) says capability lives at
+the edges — but the edges are still *inside the tree*: ~plugins/~
+holds in-tree plugin dirs plus ~plugins/platforms/~ with platform
+adapters (WhatsApp, WhatsApp Cloud, Telegram, Discord, Slack, Matrix,
+Signal, IRC, email, SMS and the rest) and ~plugins/shop~. "A plugin
+shipped in the core" is a contradiction of the Owner's law: the user
+must *choose* every integration, and choosing means installing
+something the core does not carry. The same ruling closes the
+AdminEverywhere embedding question: AE (and any external app) bridges
+the agent; agent code never enters the app.
+
+* Decision 1 — no built-in integrations, ever
+
+1. The core ships the plugin *machinery* only: the loader, the
+   ~plugins.entries.*~ settings surface, ~agent.secret_scope~, the tool
+   registration API, the platform registry. Zero integration payloads
+   in-tree.
+2. Messaging (WhatsApp, Telegram, anything else), storefronts, platform
+   adapters and every other "merely useful" capability are
+   user-installed from an EXTERNAL plugins directory — a separate
+   repo (~khaalidrafi/slave-agent-plugins~), not a subdirectory of
+   the core.
+3. Nothing about this is advisory: a change adding an integration
+   payload under ~plugins/~ in the core tree is wrong by definition,
+   the same way a hand-edited brand string is (FORK.org). Review must
+   fail it.
+
+* Decision 2 — shop: REMOVE from the core, publish externally
+
+Reconsidered on the Owner's order. The verdict: *shop is NOT relevant to
+the slave-agent core* — it moves out with everything else. Rationale:
+
+1. *It is a business integration, not agent machinery.* An order-queue
+   adapter serves a deployment (a shop with a REST API); a general agent
+   core ships none of that. The purity law (INTEGRATION-ADMINEVERYWHERE)
+   already keeps client specifics out; this finishes the thought — the
+   *capability class* leaves too, not just the client names.
+2. *"Plugin-shaped" is not "external".* Spec 005 did the design right
+   (config-driven, read-only, money never through the model) — but the
+   plugin landed in-tree, which is "built-in" under the Owner's law.
+   The design survives the move unchanged; only its address changes.
+3. *The publication story simplifies.* Spec 007's reword decision for
+   ~51e1d196c8~ existed because its message leaks commercial framing.
+   With shop out of the public core repo, that class of leak stops
+   being generated.
+4. *The bloat math agrees.* ~plugins/platforms/~ + ~plugins/shop~ are
+   megabytes of merge surface the core defends for zero core value.
+
+What stays in the core: nothing shop-specific. What moves: the whole
+~plugins/shop~ payload → ~plugins/shop/~ in the external plugins repo,
+where a deployment that configured a shop installs it. A customer shop
+remains a configuration of that external plugin (purity law unchanged).
+
+* Decision 3 — external apps BRIDGE; agent code never enters AE
+
+1. AdminEverywhere (and every future host app) reaches the agent through
+   the generic bridge surfaces only: the OpenAI-compatible serve wire
+   (the ~gateway~ serve platform; the AE preset points at
+   ~http://127.0.0.1:8642/v1~ per specs/015 seam 2) and slave-acp
+   (ACP stdio) for editor-class hosts.
+2. The in-process library seam (specs/014, specs/015 seam 1:
+   ~admineverywhere[agent]~ extra, the panel importing the persona seam)
+   is CLOSED by this order for host apps: it puts agent code inside the
+   app, which the Owner's law forbids. The landed seam is not deleted
+   from history; it is not a path forward for AE. A host needing
+   something the surfaces lack widens the surface on the agent side
+   (INTEGRATION-ADMINEVERYWHERE already states this; it is now Owner
+   law, not preference).
+
+* Requirements
+
+1. External plugins directory: a public repo separate from the core —
+   ~khaalidrafi/slave-agent-plugins~ — one directory per plugin, each
+   carrying ~plugin.yaml~, its code, its tests and a README stating
+   configuration (~plugins.entries.<name>.settings~) and secrets (env
+   var NAMES only, read at call time through ~agent.secret_scope~).
+   CREATED 2026-11-23 (public, default branch ~ai/main~).
+2. Seeded entries at publication: ~shop~ (the storefront adapter,
+   transferred from the core), ~whatsapp~ and ~telegram~ (messaging;
+   code transferred with their tests). Charters exist for anything not
+   yet transferred; no stub code ships.
+3. Exodus mechanics ride the established left-core pattern, per plugin:
+   the payload lands in the plugins repo; a ~plugin-catalog/<name>.yaml~
+   entry pins it (repo + sha + subdir); a
+   ~hermes_cli/left_core_migration.py::LEFT_CORE~ row gives existing
+   homes the automatic install and the old-surface hints; the core
+   removal lands as its own commit. Order: the Owner-named integrations
+   first (~shop~, ~whatsapp~, ~whatsapp_cloud~, ~telegram~), the
+   remaining ~plugins/platforms/~ adapters after them, one tranche per
+   dispatch.
+4. The core's ~plugins/~ after the full exodus carries machinery only
+   (verified by ~git ls-tree~; the remaining non-messaging plugin dirs
+   — browser, computer_use, memory, ... — are a separate Owner
+   decision, not this spec's scope).
+5. Docs touched by this ruling cite this spec: TODOs.org (shop section
+   + new workstream), HANDOFF.org (storefront section),
+   docs/INTEGRATION-ADMINEVERYWHERE.org (shop offering + bridge law),
+   plugins/AGENTS.md (in-tree policy).
+
+* Acceptance criteria
+
+1. This spec exists and states all three decisions with the Owner quote
+   as source.
+2. The external plugins repo exists with the ~shop~, ~whatsapp~ and
+   ~telegram~ entries and the plugin contract README. (DONE 2026-11-23;
+   code transfers follow this spec's execution commits.)
+3. No slave-agent doc still presents ~plugins/shop~ or the platform
+   adapters as a core offering.
+4. The core tree's ~plugins/~ carries machinery only once the exodus
+   completes (tranche 1 = shop + whatsapp + whatsapp_cloud + telegram
+   IN PROGRESS; the rest OPEN — tracked in TODOs.org).
+
+* Notes / OPEN QUESTIONS
+
+- The plugins repo's CI story mirrors the core's law (run-tests parity,
+  brand lint) once real code lands; charters-only entries need none.
+- Whether the plugins repo later grows a plugin *registry/index* format
+  (a list the CLI can search beyond the core's catalog) is a future
+   Owner decision; not required by this spec.
+- Shared core tests that use platform adapters as fixtures
+  (~tests/plugins/platforms/test_live_allowlist_*~ and friends) stay in
+  the core while other in-tree platforms remain to exercise them; their
+  platform-specific cases move with each tranche, and the whole files
+  move with the final tranche.

@@ -26,24 +26,26 @@ profiles. This file is the integration contract.
 - slave-acp — the ACP stdio server (acp_adapter.entry:main); Emacs
   reaches the agent through it today, a panel host can tomorrow.
   Session resume via session/list + session/load (FORK.org, R1).
-- IN-PROCESS library surface (Owner 2026-11-05 17:01 Asia/Dhaka #hq —
-  "slave-agent inside admin apps, no separate app or serving
-  endpoint"): the agent core is consumed as a Python library through
-  an optional extra (admineverywhere[agent]); the panel's existing
-  Ctrl+K chat route calls the turn loop directly, no second process
-  and no HTTP hop.  In-process tools may call the Django ORM/services
-  under the logged-in admin's own permissions, so panel RBAC applies
-  free of charge.  The former OpenAI-compatible serving-endpoint
-  board item is RETIRED by this order.  ACP stays the first-class
-  external surface (Emacs et al).
+- BRIDGE LAW (Owner 2026-11-22, specs/017): "Agent code never goes to
+  AE. The apps just BRIDGE with the slave agent." AdminEverywhere (and
+  every host app) reaches the agent through the networked bridge only:
+  the OpenAI-compatible serve wire (the AE preset points at
+  http://127.0.0.1:8642/v1, specs/015 seam 2). The earlier in-process
+  library seam (admineverywhere[agent] extra, Owner order 2026-11-05,
+  specs/014/015 seam 1) is CLOSED by the newer order: it puts agent
+  code inside the app. ACP stays the first-class external surface for
+  editor-class hosts (Emacs et al). If a host needs something the
+  surfaces do not offer, the surface is widened on the agent side.
 - Mobile: the handset story rides docs/MOBILE-PORT.org — phase 1
   Termux bootstrap (mobile/bootstrap-termux.sh) ships now; the
   CPython-in-apk port is the scoped phase 2.
-- plugins/shop — a read-only, config-driven REST storefront adapter
-  (StorefrontAdapter ABC, plugins/shop/adapter.py): base_url, path
-  layout, filter names, status vocabulary and page shape are all
-  profile settings. Money never routes through a model; read-only by
-  construction until an approve-before-send gate exists.
+- plugins/shop → EXTERNAL (Owner ruling 2026-11-22, specs/017): a
+  read-only, config-driven REST storefront adapter (StorefrontAdapter
+  ABC) — moved to khaalidrafi/slave-agent-plugins with the rest of
+  the integration payloads; base_url, path layout, filter names,
+  status vocabulary and page shape stay profile settings. Money never
+  routes through a model; read-only by construction until an
+  approve-before-send gate exists.
 - Profile config + secret scopes — per-deployment persona and
   credentials, consumed as env var NAMES at call time, never at import.
 - Org as the memory substrate — notes, memory and task state are Org

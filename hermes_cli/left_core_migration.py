@@ -479,6 +479,22 @@ def _no_notice(home: Path, *, process_env: bool = False) -> str:
     return ""
 
 
+def shop_in_use(home: Path, *, process_env: bool = False) -> bool:
+    """What made core run the shop toolset for *home*: a configured shop plugin entry
+    (``plugins.entries.shop`` carrying settings -- the plugin's own configuration surface,
+    unchanged by the move) or the ``shop`` toolset selected for a platform or in the top-level
+    ``toolsets`` list. The storefront itself is configuration (base_url and friends in
+    ``settings``); the code that served it moved to the external plugins repo (specs/017)."""
+    config = _read_config(home)
+    plugins = config.get("plugins")
+    entries = plugins.get("entries") if isinstance(plugins, dict) else None
+    entry = entries.get("shop") if isinstance(entries, dict) else None
+    if (isinstance(entry, dict) and isinstance(entry.get("settings"), dict)
+            and entry["settings"]):
+        return True
+    return _toolset_listed(config, frozenset({"shop"}))
+
+
 @dataclass(frozen=True)
 class LeftCoreFeature:
     plugin: str                               # catalog entry name == installed plugin name
@@ -643,6 +659,16 @@ LEFT_CORE: tuple[LeftCoreFeature, ...] = (
         toolsets=("yuanbao",), off_platforms=_YUANBAO_OFF_PLATFORMS,
         legacy_toolsets=("hermes-yuanbao", "hermes-gateway"),
         platform="yuanbao", enable_env=("YUANBAO_APP_ID", "YUANBAO_APP_SECRET"), notice=_yuanbao_notice,
+    ),
+    LeftCoreFeature(
+        # The storefront toolset (specs/005) shipped as a bundled plugin until specs/017 moved the
+        # payload to the external plugins repo (khaalidrafi/slave-agent-plugins). A home that
+        # configured a shop (plugins.entries.shop with settings, or the toolset selected anywhere)
+        # gets the catalog plugin installed automatically; the shop itself stays configuration.
+        plugin="shop", label="Shop storefront", in_use=shop_in_use,
+        unchanged="your plugins.entries.shop settings, the shop toolset and the shop_* tool names "
+                  "are unchanged; `hermes shop` is now the plugin's own command",
+        toolsets=("shop",),
     ),
 )
 

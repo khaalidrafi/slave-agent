@@ -1,0 +1,26 @@
+name: shop
+repo: https://github.com/khaalidrafi/slave-agent-plugins
+sha: b42de0812d6316669b2a1db5aabe60f6ed3c62df
+subdir: plugins/shop
+description: 'Read-only, config-driven REST storefront adapter: four tools (shop_queue, shop_orders,
+  shop_order, shop_catalog) over one adapter contract, plus `hermes shop` and `/shop`. The shop''s
+  URL, path layout, filter names, status vocabulary and page shape are all settings, so one plugin
+  serves any REST-shaped order queue. Money never routes through a model; read-only by construction.
+  Formerly built into slave-agent core; existing users are migrated automatically.'
+maintainer: khaalidrafi
+tier: official
+category: tools
+requires_hermes: ">=0.0.0"
+version: "0.1.0"
+docs_url: https://github.com/khaalidrafi/slave-agent-plugins/tree/ai/main/plugins/shop
+platforms: []
+capabilities:
+  provides_tools:
+    - shop_queue
+    - shop_orders
+    - shop_order
+    - shop_catalog
+  provides_hooks: []
+  provides_middleware: []
+  requires_env:
+    - SHOP_API_TOKEN
