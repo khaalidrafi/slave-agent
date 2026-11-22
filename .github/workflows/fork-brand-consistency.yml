@@ -25,7 +25,10 @@ permissions:
 
 jobs:
   lint:
-    if: github.repository != 'NousResearch/hermes-agent'
+    # The dev-branch gate only: on the generated branch (ai/slave-agent) every
+    # rewritten word reads as hand-typed by definition -- the artifact job below
+    # owns that branch. Without this exclusion the lint is red by design there.
+    if: github.repository != 'NousResearch/hermes-agent' && github.ref != 'refs/heads/ai/slave-agent'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1

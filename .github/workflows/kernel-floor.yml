@@ -33,4 +33,9 @@ jobs:
         run: python3 scripts/ci/kernel_floor.py --check-imports --quiet
 
       - name: the checker's own logic
-        run: python3 -m pytest -q tests/scripts/test_kernel_floor.py
+        # setup-python's hosted toolcache no longer carries pytest; install it
+        # (this step has been red on every push since 2026-11-18 for exactly
+        # that reason -- 'No module named pytest').
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest -q tests/scripts/test_kernel_floor.py
