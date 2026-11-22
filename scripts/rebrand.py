@@ -251,7 +251,12 @@ SELF_PATHS = {"brand.py", "scripts/rebrand.py",
 # vocabulary *on purpose* (FORK.org: you resolve real code, never brand noise), so a
 # hand-typed brand is a second spelling no pass regenerates and one more hunk that
 # conflicts on the next upstream merge. ``--lint`` is that rule, executable.
-BRAND_LITERAL_ALLOW = SELF_PATHS | {"scripts/fork-sync.sh", "FORK.org", "HANDOFF.org",
+BRAND_LITERAL_ALLOW = SELF_PATHS | {
+    # The repo's own human guide and the per-dir AGENTS.md law files name
+    # the product because they are ABOUT the product (same class as AGENTS.md).
+    "HUMANS.md", "plugins/AGENTS.md",
+    # ... kept as the original set:
+    "scripts/fork-sync.sh", "FORK.org", "HANDOFF.org",
     # Lead-owned team infra + board/doctrine docs — the repo name appears
     # there on purpose (same doctrine as FORK.org/HANDOFF.org above):
     ".github/workflows/agent-team.yml",
@@ -506,8 +511,12 @@ def hand_brands() -> list[str]:
     produces, so finding one in the working tree means someone wrote the output rather
     than the rule.
     """
-    words = [brand.SLUG, brand.MODULE, f"{brand.CLI.upper()}_"]
-    argv = ["git", "-C", str(ROOT), "grep", "-n", "-I", "-F"]
+    # PCRE so the product slug can exclude the EXTERNAL PLUGINS REPO's name
+    # (khaalidrafi/slave-agent-plugins contains the product name as a
+    # substring; mentioning that repo is not typing our brand by hand).
+    words = [f"{re.escape(brand.SLUG)}(?!-plugins)", re.escape(brand.MODULE),
+             re.escape(f"{brand.CLI.upper()}_")]
+    argv = ["git", "-C", str(ROOT), "grep", "-n", "-I", "-P"]
     for word in words:
         argv += ["-e", word]
     hits = subprocess.run(argv + ["--", "."], capture_output=True, text=True).stdout

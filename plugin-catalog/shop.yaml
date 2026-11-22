@@ -6,7 +6,7 @@ description: 'Read-only, config-driven REST storefront adapter: four tools (shop
   shop_order, shop_catalog) over one adapter contract, plus `hermes shop` and `/shop`. The shop''s
   URL, path layout, filter names, status vocabulary and page shape are all settings, so one plugin
   serves any REST-shaped order queue. Money never routes through a model; read-only by construction.
-  Formerly built into slave-agent core; existing users are migrated automatically.'
+  Formerly built into the core; existing users are migrated automatically.'
 maintainer: khaalidrafi
 tier: official
 category: tools
