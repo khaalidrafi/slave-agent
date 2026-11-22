@@ -43,7 +43,7 @@ from persistence.sqlite._state.common import stat_db_file_identity as _stat_db_f
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard, typed only
     from persistence.sqlite._holder import StoreHolder
 
-logger = logging.getLogger("hermes_state_registry")
+logger = logging.getLogger("slave_state_registry")
 
 
 class _TeardownBarrier:
@@ -403,7 +403,7 @@ def _release_header_probes_under(root: Path) -> None:
     the inode is rescanned inside ``offline_file_access``, which blocks tracked opens through any
     spelling (a hard link too) until the close. An untracked ``sqlite3.connect`` that opens between
     the scan and the close is not covered."""
-    from hermes_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
+    from slave_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
     from persistence.sqlite._state.dbfile import (
         close_header_probe_if_unchanged, header_probes_under, inodes_with_other_descriptors,
     )

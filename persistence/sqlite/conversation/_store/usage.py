@@ -279,7 +279,7 @@ def auxiliary_usage_by_task(holder: StoreHolder, session_id: str) -> dict[str, d
         return {}
     chain = _session_lineage_root_to_tip(holder, session_id)
     # An explicit ``/branch`` copy owns its spend: cut the walk at the nearest branch node so a
-    # resumed branch never absorbs aux rows billed to its source (hermes_state_messages does the same).
+    # resumed branch never absorbs aux rows billed to its source (slave_state_messages does the same).
     for i in range(len(chain) - 1, -1, -1):
         if _is_explicit_branch_session(holder, chain[i]):
             chain = chain[i:]

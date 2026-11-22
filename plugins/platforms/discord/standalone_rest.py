@@ -1,4 +1,4 @@
-"""Discord REST pacing for the out-of-process sender (``hermes send``, the send_message tool, cron).
+"""Discord REST pacing for the out-of-process sender (``slave send``, the send_message tool, cron).
 
 Without the live client there is no discord.py rate-limit bucket, so a long text sent as many
 messages (a reply whose file upload Discord refused) must honour Discord's limits itself: a 429

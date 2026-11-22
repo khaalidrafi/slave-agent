@@ -1,10 +1,10 @@
 """Tests for the WAL→DELETE journal-mode fallback on NFS / SMB / FUSE.
 
 When ``PRAGMA journal_mode=WAL`` raises ``OperationalError("locking protocol")``
-(SQLITE_PROTOCOL — typical on NFS/SMB), Hermes must fall back to
+(SQLITE_PROTOCOL — typical on NFS/SMB), slave-agent must fall back to
 ``journal_mode=DELETE`` so ``state.db`` / ``kanban.db`` remain usable.
 
-Without this fallback, users on NFS-mounted ``HERMES_HOME`` silently lose
+Without this fallback, users on NFS-mounted ``SLAVE_HOME`` silently lose
 ``/resume``, ``/title``, ``/history``, ``/branch``, session search, and the
 kanban dispatcher — because ``StoreHolder()`` init propagates the error and
 every caller swallows it, leaving ``_session_db = None``.
@@ -117,7 +117,7 @@ class TestApplyWalWithFallback:
     def test_falls_back_to_delete_on_locking_protocol(self, tmp_path, caplog):
         """NFS-style ``locking protocol`` error → DELETE mode + one ERROR."""
         conn, _ = _open_blocking(tmp_path / "nfs.db", isolation_level=None)
-        with caplog.at_level("ERROR", logger="hermes_state"):
+        with caplog.at_level("ERROR", logger="slave_state"):
             mode = apply_wal_with_fallback(conn, db_label="test.db")
 
         assert mode == "delete"
@@ -158,7 +158,7 @@ class TestApplyWalWithFallback:
         conn = sqlite3.connect(
             str(tmp_path / "macnfs.db"), factory=factory, isolation_level=None
         )
-        with caplog.at_level("ERROR", logger="hermes_state"):
+        with caplog.at_level("ERROR", logger="slave_state"):
             mode = apply_wal_with_fallback(conn, db_label="kanban.db")
 
         assert mode == "delete", "must report the true mode, not a false 'wal'"
@@ -210,7 +210,7 @@ class TestApplyWalWithFallback:
         conn, attempts = _open_blocking(
             tmp_path / "zfs.db", reason="disk I/O error", isolation_level=None
         )
-        with caplog.at_level("ERROR", logger="hermes_state"):
+        with caplog.at_level("ERROR", logger="slave_state"):
             mode = apply_wal_with_fallback(conn, db_label="zfs.db")
         assert mode == "delete"
         assert attempts[0] >= 3, "must retry before concluding EIO is persistent"
@@ -330,12 +330,12 @@ class TestApplyWalWithFallback:
         """Repeated calls with the same db_label log exactly ONE error.
 
         Prevents log spam when NFS users run kanban (which opens a fresh
-        connection on every operation — see hermes_cli/kanban_db.py).
+        connection on every operation — see slave_cli/kanban_db.py).
         Regression guard: the fix for #22032 ran apply_wal_with_fallback()
         on every kb.connect() call; without dedup, errors.log fills with
         hundreds of identical errors per hour.
         """
-        with caplog.at_level("ERROR", logger="hermes_state"):
+        with caplog.at_level("ERROR", logger="slave_state"):
             # Three separate connections to "the same DB" via the same label
             for i in range(3):
                 conn, _ = _open_blocking(tmp_path / f"dup-{i}.db", isolation_level=None)
@@ -385,7 +385,7 @@ class TestApplyWalWithFallback:
             factory=_DeletePragmaFailsConnection,
             isolation_level=None,
         )
-        with caplog.at_level("WARNING", logger="hermes_state"):
+        with caplog.at_level("WARNING", logger="slave_state"):
             mode = apply_wal_with_fallback(conn, db_label="apfs-test.db")
 
         assert mode == "delete"
@@ -429,7 +429,7 @@ class TestApplyWalWithFallback:
             isolation_level=None,
         )
         conn.execute("PRAGMA journal_mode=MEMORY")
-        with caplog.at_level("WARNING", logger="hermes_state"):
+        with caplog.at_level("WARNING", logger="slave_state"):
             mode = apply_wal_with_fallback(conn, db_label="readback.db")
 
         assert mode == "memory"
@@ -456,7 +456,7 @@ class TestApplyWalWithFallback:
                     raise sqlite3.OperationalError("disk I/O error")
                 return super().execute(sql, *args, **kwargs)
 
-        with caplog.at_level("WARNING", logger="hermes_state"):
+        with caplog.at_level("WARNING", logger="slave_state"):
             for i in range(3):
                 conn = sqlite3.connect(
                     str(tmp_path / f"apfs-dup-{i}.db"),
@@ -478,7 +478,7 @@ class TestApplyWalWithFallback:
 
     def test_error_fires_independently_per_db_label(self, tmp_path, caplog):
         """Different db_labels each get their own one error (not globally dedup'd)."""
-        with caplog.at_level("ERROR", logger="hermes_state"):
+        with caplog.at_level("ERROR", logger="slave_state"):
             conn1, _ = _open_blocking(tmp_path / "a.db", isolation_level=None)
             apply_wal_with_fallback(conn1, db_label="state.db")
             conn1.close()
@@ -638,7 +638,7 @@ class TestSessionDbUsesWalFallback:
             return real_connect(str(target), factory=factory, **kwargs)
 
         with patch("persistence.sqlite._state.dbfile.sqlite3.connect", side_effect=gated_connect):
-            with caplog.at_level("ERROR", logger="hermes_state"):
+            with caplog.at_level("ERROR", logger="slave_state"):
                 db = StoreHolder(db_path=target)
 
         try:

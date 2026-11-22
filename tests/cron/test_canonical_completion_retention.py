@@ -13,7 +13,7 @@ def _fire(job_id, eid, *, retire_journal=True):
 
 
 def test_completion_ids_retire_with_their_journal(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path / 'home'))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path / 'home'))
     with jobs.use_cron_store(tmp_path / 'cron'):
         job_id = jobs.create_job(prompt='report', schedule='every 1m', deliver='local')['id']
         _fire(job_id, 'pending', retire_journal=False)  # a tail that crashed before unlinking

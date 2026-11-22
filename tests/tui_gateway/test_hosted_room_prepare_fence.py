@@ -74,7 +74,7 @@ class _HandoffLock:
 
 @pytest.fixture
 def preparation(tmp_path, monkeypatch, nested):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     peer = _Peer()
     with open_persistence(profile_scope(home=tmp_path)) as db:
         seeded = _peer_service(db, peer)

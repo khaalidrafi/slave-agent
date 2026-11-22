@@ -22,14 +22,14 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple
 
 # split_command_line, not shlex: shlex eats Windows path backslashes.
-from hermes_cli._subprocess_compat import IS_WINDOWS, kill_process_tree, split_command_line, windows_hide_flags
+from slave_cli._subprocess_compat import IS_WINDOWS, kill_process_tree, split_command_line, windows_hide_flags
 
 try:
     import fcntl  # POSIX only; Windows falls back to best-effort without flock.
 except ImportError:  # pragma: no cover
     fcntl = None  # type: ignore[assignment]
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ _skip_logged: set[tuple[str, str, str]] = set()
 
 
 def _home_key() -> str:
-    return str(get_hermes_home().expanduser().resolve())
+    return str(get_slave_home().expanduser().resolve())
 
 
 def _forget_home_registrations(registry: set[tuple], lock: threading.Lock) -> None:
@@ -90,7 +90,7 @@ def _payload_fields(kwargs: dict[str, Any]) -> dict[str, Any]:
         cwd = str(Path.cwd())
     except OSError:
         cwd = ""
-    from hermes_cli.profiles import get_active_profile_name
+    from slave_cli.profiles import get_active_profile_name
     from agent.delegation_context import owned_kanban_task
     extra = {k: v for k, v in kwargs.items() if k not in _TOP_LEVEL_PAYLOAD_KEYS}
     # Resolve in the firing execution before the descendant environment is scrubbed.
@@ -164,7 +164,7 @@ def register_from_config(cfg: Optional[dict[str, Any]], *, accept_hooks: bool = 
     specs, _complete = _hook_specs(cfg)
     if not specs:
         return []
-    from hermes_cli.plugins import get_plugin_manager  # lazy: avoids import cycle
+    from slave_cli.plugins import get_plugin_manager  # lazy: avoids import cycle
     manager, home_key = get_plugin_manager(), _home_key()
     with _registered_lock:  # an already-wired hook is never re-asked for (main checked this first)
         specs = [spec for spec in specs if _key(home_key, spec) not in _registered]
@@ -176,7 +176,7 @@ def register_from_config(cfg: Optional[dict[str, Any]], *, accept_hooks: bool = 
             consented.append(spec)
         else:
             logger.warning("shell hook for %s (%s) not allowlisted in %s — skipped. Use --accept-hooks / "
-                           "HERMES_ACCEPT_HOOKS=1 / hooks_auto_accept: true, or approve it at a CLI prompt "
+                           "SLAVE_ACCEPT_HOOKS=1 / hooks_auto_accept: true, or approve it at a CLI prompt "
                            "for this profile.", spec.event, spec.command, allowlist_path())
     with _registered_lock:
         return _wire(manager, home_key, consented)
@@ -187,12 +187,12 @@ def sync_from_config(load_cfg: Callable[[], dict[str, Any]]) -> None:
     consent, for a long-lived process (the gateway) that must behave as a new process would: hooks
     configured and consented since start register, hooks removed from config or revoked are
     unregistered. Consent is the allowlist, an opt-in in force (``hooks_auto_accept`` /
-    ``HERMES_ACCEPT_HOOKS`` / this process's own ``--accept-hooks``), or a launch's ``--accept-hooks``
+    ``SLAVE_ACCEPT_HOOKS`` / this process's own ``--accept-hooks``), or a launch's ``--accept-hooks``
     whose allowlist write failed (``accept_for_launch``). Never prompts or writes. An empty config
     (a loader that failed open), a malformed ``hooks:`` entry or an unreadable allowlist must never
     disarm a ``fail_closed`` guard, so each adds but never removes. Config and allowlist are read
     under the same lock as the apply, so the last sync to run always applies the newest state."""
-    from hermes_cli.plugins import get_plugin_manager  # lazy: avoids import cycle
+    from slave_cli.plugins import get_plugin_manager  # lazy: avoids import cycle
     with _sync_lock:
         cfg = load_cfg()
         specs, complete = _hook_specs(cfg)
@@ -212,7 +212,7 @@ def sync_from_config(load_cfg: Callable[[], dict[str, Any]]) -> None:
             elif (home_key, spec.event, spec.command) not in _skip_logged:  # once per process, not per open
                 _skip_logged.add((home_key, spec.event, spec.command))
                 logger.warning("shell hook for %s (%s) not allowlisted in %s — skipped. Approve it at a CLI "
-                               "prompt for this profile, or use --accept-hooks / HERMES_ACCEPT_HOOKS=1 / "
+                               "prompt for this profile, or use --accept-hooks / SLAVE_ACCEPT_HOOKS=1 / "
                                "hooks_auto_accept: true.", spec.event, spec.command, allowlist_path())
         manager = get_plugin_manager()
         with _registered_lock:
@@ -254,7 +254,7 @@ def accept_for_launch(cfg: Optional[dict[str, Any]]) -> None:
     """A launch's ``--accept-hooks`` on the gateway: record every configured hook in the allowlist,
     and keep the consent in memory when that write fails, so it still registers
     the hook at the next ``sync_from_config`` (main registered it in memory). Only an unsaved approval
-    is held, so a later ``hermes hooks revoke`` of a saved one takes effect."""
+    is held, so a later ``slave hooks revoke`` of a saved one takes effect."""
     specs = record_consent_from_config(cfg, accept_hooks=True)
     if not specs:
         return
@@ -265,8 +265,8 @@ def accept_for_launch(cfg: Optional[dict[str, Any]]) -> None:
 
 
 def accept_for_process() -> None:
-    """This process's own ``--accept-hooks`` (``hermes gateway run --accept-hooks``): an opt-in in
-    force for its lifetime, as ``HERMES_ACCEPT_HOOKS`` would be, without exporting that variable to
+    """This process's own ``--accept-hooks`` (``slave gateway run --accept-hooks``): an opt-in in
+    force for its lifetime, as ``SLAVE_ACCEPT_HOOKS`` would be, without exporting that variable to
     every tool subprocess."""
     global _process_accept
     _process_accept = True
@@ -280,8 +280,8 @@ def _hook_specs(cfg: Optional[dict[str, Any]]) -> tuple[Optional[list[ShellHookS
     from utils import env_var_enabled
     if safe_worker_enabled() or not isinstance(cfg, dict):
         return None, True
-    if env_var_enabled("HERMES_SAFE_MODE"):  # hooks are user customizations too — fire zero user-configured code
-        logger.info("HERMES_SAFE_MODE=1 — shell-hook registration skipped")
+    if env_var_enabled("SLAVE_SAFE_MODE"):  # hooks are user customizations too — fire zero user-configured code
+        logger.info("SLAVE_SAFE_MODE=1 — shell-hook registration skipped")
         return None, True
     return _parse_hooks(cfg.get("hooks"))
 
@@ -331,7 +331,7 @@ def _consented(spec: ShellHookSpec, accept: bool, allowed: set[tuple[str, str]],
 
 
 def iter_configured_hooks(cfg: Optional[dict[str, Any]]) -> list[ShellHookSpec]:
-    """Parse config hooks without registering (``hermes hooks list`` / doctor)."""
+    """Parse config hooks without registering (``slave hooks list`` / doctor)."""
     return _parse_hooks_block(cfg.get("hooks")) if isinstance(cfg, dict) else []
 
 
@@ -344,13 +344,13 @@ def re_register_config_hooks() -> None:
     startup (they are config-owned, not plugin-owned, so the ledger cannot restore them). Clear the
     idempotence set and re-run ``register_from_config()`` so hooks are wired again (#60036 / PR #60267;
     tracking #64178 — salvaged from PR #64188).
-    Only the idempotence keys for the *current* Hermes home are cleared — ``discover_and_load(force=True)``
+    Only the idempotence keys for the *current* slave-agent home are cleared — ``discover_and_load(force=True)``
     only unloads the manager scoped to that one home, so clearing every home's keys would make a
     force-reload in profile A drop profile B's still-live registration from the ledger and duplicate it on
     B's next registration call (#92682 review).
     """
     _forget_home_registrations(_registered, _registered_lock)
-    from hermes_cli.config import load_config
+    from slave_cli.config import load_config
     register_from_config(load_config())
 
 
@@ -374,7 +374,7 @@ def _parse_hooks_block(hooks_cfg: Any) -> list[ShellHookSpec]:
 def _parse_hooks(hooks_cfg: Any) -> tuple[list[ShellHookSpec], bool]:
     """``(specs, complete)``: ``complete`` is False when an entry was dropped as malformed (a typo
     must not read as a deliberate removal); an absent or empty ``hooks:`` is complete."""
-    from hermes_cli.plugins import SHELL_UNSUPPORTED_HOOKS, VALID_HOOKS
+    from slave_cli.plugins import SHELL_UNSUPPORTED_HOOKS, VALID_HOOKS
     if hooks_cfg is None:
         return [], True
     if not isinstance(hooks_cfg, dict):
@@ -457,7 +457,7 @@ _POPEN_ERRORS = ((FileNotFoundError, "command not found"), (PermissionError, "co
 
 # A hook configured as a bare script path runs on POSIX because the kernel reads its shebang.
 # CreateProcess has no such mechanism and answers WinError 193 ("%1 is not a valid Win32
-# application") for a text file, so every ``command: "~/.hermes/agent-hooks/x.sh"`` example in
+# application") for a text file, so every ``command: "~/.slave/agent-hooks/x.sh"`` example in
 # the hooks docs — the canonical shape — fails on Windows while the same config works everywhere
 # else. Map the suffixes that shape uses to their interpreter; unmapped suffixes keep the OS
 # failure so a typo still reads as "command not found" rather than a mystery interpreter error.
@@ -503,7 +503,7 @@ def _spawn(spec: ShellHookSpec, stdin_json: str) -> dict[str, Any]:
     # / taskkill /T). Hooks that finish in time keep detached helpers alive.
     # detached-spawn: ok — awaited hook; its timeout kills the whole group (kill_process_tree)
     popen_kwargs: dict[str, Any] = {"creationflags": windows_hide_flags()} if IS_WINDOWS else {"process_group": 0}
-    # HERMES_HOME follows the routed profile (the import-time environ holds the launch profile's), and
+    # SLAVE_HOME follows the routed profile (the import-time environ holds the launch profile's), and
     # under multiplexing os.environ carries the DEFAULT profile's secrets, which a secondary's hook
     # script must not inherit; single-profile runs keep the process env byte-for-byte as before.
     from agent.secret_scope import is_multiplex_active
@@ -581,7 +581,7 @@ def _evaluate_result(
       block instead of silently contributing nothing.
 
     Shared by the live callback path (:func:`_make_callback`) and the CLI
-    test helper (:func:`run_once`) so ``hermes hooks test`` reflects
+    test helper (:func:`run_once`) so ``slave hooks test`` reflects
     production behaviour exactly.
     """
     blocking_event = spec.event in _BLOCKING_EVENTS
@@ -639,8 +639,8 @@ def _block_message(primary: Any, secondary: Any) -> str:
     return raw if isinstance(raw, str) and raw else _DEFAULT_BLOCK_MESSAGE
 
 
-# pre_tool_call dialects in check order — Hermes ``action`` then Claude-Code ``decision`` — as (verb key,
-# block-message primary, secondary, modify payload key); both translate to the canonical Hermes shape.
+# pre_tool_call dialects in check order — Slave ``action`` then Claude-Code ``decision`` — as (verb key,
+# block-message primary, secondary, modify payload key); both translate to the canonical Slave shape.
 _PRE_TOOL_DIALECTS = (("action", "message", "reason", "args"), ("decision", "reason", "message", "tool_input"))
 
 
@@ -651,7 +651,7 @@ def _parse_pre_tool_call(data: dict[str, Any]) -> Optional[dict[str, Any]]:
     for verb, _, _, payload in _PRE_TOOL_DIALECTS:
         if data.get(verb) == "modify" and isinstance(data.get(payload), dict):
             return {"action": "modify", "args": data[payload]}
-    # Hermes-only escalation to the human-approval gate (#92553). Claude-Code's ``decision:
+    # Slave-only escalation to the human-approval gate (#92553). Claude-Code's ``decision:
     # approve`` means auto-ALLOW, so it is deliberately not mapped onto this.
     if data.get("action") == "approve":
         directive: dict[str, Any] = {"action": "approve"}
@@ -664,7 +664,7 @@ def _parse_pre_tool_call(data: dict[str, Any]) -> Optional[dict[str, Any]]:
 
 
 def _parse_pre_verify(data: dict[str, Any]) -> Optional[dict[str, Any]]:
-    # "continue" (Hermes) / "block" (Claude-Code Stop) both mean keep going; no message is a no-op.
+    # "continue" (Slave) / "block" (Claude-Code Stop) both mean keep going; no message is a no-op.
     action = str(data.get("action") or data.get("decision") or "").strip().lower()
     message = data.get("message") or data.get("reason")
     if action in {"continue", "block"} and isinstance(message, str) and message.strip():
@@ -691,7 +691,7 @@ _RESPONSE_PARSERS: dict[str, Callable[[dict[str, Any]], Optional[dict[str, Any]]
 
 
 def _parse_response(event: str, stdout: str) -> Optional[dict[str, Any]]:
-    """Translate stdout JSON into a Hermes wire-shape dict, or ``None``."""
+    """Translate stdout JSON into a slave-agent wire-shape dict, or ``None``."""
     stdout = (stdout or "").strip()
     if not stdout:
         return None
@@ -707,7 +707,7 @@ def _parse_response(event: str, stdout: str) -> Optional[dict[str, Any]]:
 
 def allowlist_path() -> Path:
     """Path to the per-user shell-hook allowlist file."""
-    return get_hermes_home() / ALLOWLIST_FILENAME
+    return get_slave_home() / ALLOWLIST_FILENAME
 
 
 def _read_allowlist() -> tuple[dict[str, Any], bool]:
@@ -775,7 +775,7 @@ def _prompt_and_record(event: str, command: str, *, accept_hooks: bool) -> bool:
     if not sys.stdin.isatty():
         return False
     print(
-        f"\n⚠ Hermes is about to register a shell hook that will run a\n  command on your behalf.\n\n"
+        f"\n⚠ slave-agent is about to register a shell hook that will run a\n  command on your behalf.\n\n"
         f"    Event:   {event}\n    Command: {command}\n\n"
         f"  Commands run with your full user credentials.  Only approve\n  commands you trust."
     )
@@ -819,16 +819,16 @@ def _command_script_path(command: str) -> str:
 
 
 def _resolve_effective_accept(cfg: dict[str, Any], accept_hooks_arg: bool) -> bool:
-    """Any truthy opt-in channel wins: explicit arg, this process's --accept-hooks, HERMES_ACCEPT_HOOKS,
+    """Any truthy opt-in channel wins: explicit arg, this process's --accept-hooks, SLAVE_ACCEPT_HOOKS,
     hooks_auto_accept."""
     from utils import env_var_enabled
-    if accept_hooks_arg or _process_accept or env_var_enabled("HERMES_ACCEPT_HOOKS"):
+    if accept_hooks_arg or _process_accept or env_var_enabled("SLAVE_ACCEPT_HOOKS"):
         return True
     cfg_val = cfg.get("hooks_auto_accept", False)
     return cfg_val if isinstance(cfg_val, bool) else isinstance(cfg_val, str) and cfg_val.strip().lower() in _TRUTHY
 
 
-# --- Introspection (used by `hermes hooks` CLI) ---
+# --- Introspection (used by `slave hooks` CLI) ---
 
 def allowlist_entry_for(event: str, command: str) -> Optional[dict[str, Any]]:
     """Return the allowlist record for this pair, if any."""
@@ -857,7 +857,7 @@ def script_is_executable(command: str) -> bool:
 
 
 def run_once(spec: ShellHookSpec, kwargs: dict[str, Any]) -> dict[str, Any]:
-    """Fire one hook with a synthetic payload (``hermes hooks test`` / doctor) through the production path."""
+    """Fire one hook with a synthetic payload (``slave hooks test`` / doctor) through the production path."""
     result = _spawn(spec, _serialize_payload(spec.event, kwargs))
     result["parsed"] = _evaluate_result(spec, result)
     return result

@@ -1,7 +1,7 @@
 """The agent keeps the storage interface handle it is given and closes it with a store it owns."""
 from types import SimpleNamespace
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from run_agent import AIAgent
 
 
@@ -23,7 +23,7 @@ def test_constructed_agent_keeps_the_handle_and_opens_nothing():
     agent = _agent(persistence=handle)
     try:
         assert agent.persistence is handle
-        assert not (get_hermes_home() / "state.db").exists()
+        assert not (get_slave_home() / "state.db").exists()
     finally:
         agent.close()
     assert handle.closed == 0  # a caller-supplied store and its handle stay the caller's
@@ -60,8 +60,8 @@ def test_recall_opens_a_writer_handle_and_holds_it_as_its_store():
     try:
         store = agent._get_session_db_for_recall()
         assert store is agent.persistence and agent._owns_session_db is True and not store.read_only
-        assert store.scope.profile_dir == get_hermes_home().resolve()
-        assert (get_hermes_home() / "state.db").exists()  # opened eagerly, so a failure answers at the open
+        assert store.scope.profile_dir == get_slave_home().resolve()
+        assert (get_slave_home() / "state.db").exists()  # opened eagerly, so a failure answers at the open
     finally:
         agent.close()
     assert agent.persistence is None and agent._owns_session_db is False
@@ -84,9 +84,9 @@ def test_recall_has_no_store_when_the_handle_cannot_open(monkeypatch):
 
 def test_lookup_reader_yields_the_label_reader_when_its_handle_cannot_open(monkeypatch):
     import persistence_assembly
-    from hermes_cli import main
+    from slave_cli import main
 
-    persistence_assembly.open_persistence(persistence_assembly.profile_scope(home=get_hermes_home()), eager=True).close()
+    persistence_assembly.open_persistence(persistence_assembly.profile_scope(home=get_slave_home()), eager=True).close()
 
     def fail(*args, **kwargs):
         raise ValueError("unknown persistence provider 'nope'")

@@ -3,7 +3,7 @@
 The owner unwinds at once, but the streamed summary runs in an isolated daemon whose chunk consumer only
 checked the total ceiling and the host deadline, so the provider stream kept generating (and billing) until
 that deadline, up to ten minutes later. It must close at the next chunk. Real HTTP path against a loopback
-server that trickles a chunk every 50 ms, with a temp ``HERMES_HOME``.
+server that trickles a chunk every 50 ms, with a temp ``SLAVE_HOME``.
 """
 
 import json
@@ -79,7 +79,7 @@ def trickle_endpoint():
 
 def test_hard_cancel_closes_the_streamed_summary_at_its_next_chunk(tmp_path, monkeypatch, trickle_endpoint):
     url, sent_some, client_closed = trickle_endpoint
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
     _write_config(tmp_path, {"auxiliary": {"compression": {
         "provider": "custom", "base_url": url, "api_key": "dummy", "model": "slow-summarizer"}}})

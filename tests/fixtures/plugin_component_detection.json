@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "doc": "Which halves a plugin folder ships. Both inspectors read these cases: the gateway's (hermes_cli/plugins_cmd_inspect.py detect_components) and native Desktop's (apps/desktop/electron/desktop-plugin-install.ts detectPluginComponents). A rule changed in one must change in both, and here. Each case is a folder named 'root' holding 'files'; agent_name falls back to that folder's name.",
+  "doc": "Which halves a plugin folder ships. Both inspectors read these cases: the gateway's (slave_cli/plugins_cmd_inspect.py detect_components) and native Desktop's (apps/desktop/electron/desktop-plugin-install.ts detectPluginComponents). A rule changed in one must change in both, and here. Each case is a folder named 'root' holding 'files'; agent_name falls back to that folder's name.",
   "cases": [
     {
       "name": "yaml manifest with a package is an agent half named by the manifest",
@@ -53,8 +53,8 @@
     {
       "name": "a manifest-only language pack is an agent half",
       "root": "lang-pack",
-      "files": { "plugin.yaml": "name: hermes-lang-xx\nprovides_locales:\n  - id: xx\n    endonym: Xx\n", "locales/xx.yaml": "common.save: Xx\n" },
-      "expect": { "agent": true, "desktop": false, "agent_name": "hermes-lang-xx" }
+      "files": { "plugin.yaml": "name: slave-lang-xx\nprovides_locales:\n  - id: xx\n    endonym: Xx\n", "locales/xx.yaml": "common.save: Xx\n" },
+      "expect": { "agent": true, "desktop": false, "agent_name": "slave-lang-xx" }
     },
     {
       "name": "declared locales without a locales folder are not an agent half",

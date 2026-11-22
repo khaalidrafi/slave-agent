@@ -9,7 +9,7 @@ import ast
 import pathlib
 import pytest
 
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 GATEWAY_DIR = REPO_ROOT / current_path("gateway")

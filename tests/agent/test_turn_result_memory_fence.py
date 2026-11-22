@@ -57,11 +57,11 @@ def _run(content: str) -> dict:
 
 
 def test_echoed_memory_block_is_not_in_final_response():
-    result = _run(f"Auth restored, Hermes Agent is live.\n\n{ECHOED_BLOCK}")
+    result = _run(f"Auth restored, slave-agent is live.\n\n{ECHOED_BLOCK}")
 
     assert SENTINEL not in result["final_response"]
     assert "memory-context" not in result["final_response"]
-    assert result["final_response"] == "Auth restored, Hermes Agent is live."
+    assert result["final_response"] == "Auth restored, slave-agent is live."
 
 
 def test_leading_memory_block_is_not_in_final_response():
@@ -91,7 +91,7 @@ def test_transformed_reply_original_drops_echoed_memory_block(monkeypatch):
     def invoke_hook(hook_name, **kwargs):
         return [kwargs["response_text"] + "\n\n-- footer"] if hook_name == "transform_llm_output" else []
 
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", invoke_hook)
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", invoke_hook)
     result = _run(f"Auth restored.\n\n{ECHOED_BLOCK}")
 
     assert result["response_transformed"] is True

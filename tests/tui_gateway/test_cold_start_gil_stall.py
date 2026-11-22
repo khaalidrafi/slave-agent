@@ -2,7 +2,7 @@
 
 The Desktop/TUI cold start could stall the event loop for ~14s because
 synchronous CPU-bound work ran on the loop thread during the window
-between ``HERMES_BACKEND_READY`` and the first prompt. Fix 1 (the Copilot
+between ``SLAVE_BACKEND_READY`` and the first prompt. Fix 1 (the Copilot
 ``gh auth token`` skip) is tested with the github-copilot plugin; here:
 
 2. ``tui_gateway.ws.handle_ws`` runs ``resolve_skin()`` via

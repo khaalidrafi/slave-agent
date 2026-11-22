@@ -22,11 +22,11 @@ from tools.environments import streams
 # What the launcher writes (sandbox-side paths, so a leak into a local env is unambiguous).
 LAUNCHER_VALUES = {
     "DISPLAY": ":20",
-    "XAUTHORITY": "/sbx/hermes-bot-desktop/default/Xauthority",
-    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/sbx/hermes-bot-desktop/default/bus",
-    "XDG_CONFIG_HOME": "/sbx/hermes-bot-desktop/default/xdg/config",
-    "XDG_CACHE_HOME": "/sbx/hermes-bot-desktop/default/xdg/cache",
-    "XDG_DATA_HOME": "/sbx/hermes-bot-desktop/default/xdg/data",
+    "XAUTHORITY": "/sbx/slave-bot-desktop/default/Xauthority",
+    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/sbx/slave-bot-desktop/default/bus",
+    "XDG_CONFIG_HOME": "/sbx/slave-bot-desktop/default/xdg/config",
+    "XDG_CACHE_HOME": "/sbx/slave-bot-desktop/default/xdg/cache",
+    "XDG_DATA_HOME": "/sbx/slave-bot-desktop/default/xdg/data",
 }
 EXTRA_LINES = {
     "LD_PRELOAD": "/sbx/lib/extra.so",
@@ -51,9 +51,9 @@ def _env_file(values: dict[str, str]) -> bytes:
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     (home / "bot-desktop").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(runtime, "state_dir", lambda: home / "bot-desktop")
     monkeypatch.setattr(runtime, "_profile_name", lambda: "default")
     monkeypatch.setattr(sandbox_host, "_REPORTED_DROPS", set(), raising=False)
@@ -81,7 +81,7 @@ def backend(monkeypatch):
 def sandbox_screen(home, backend, monkeypatch):
     """A sandbox-hosted screen: the host-side marker exists and the terminal environment is registered."""
     env = _FakeSandbox()
-    sandbox_host._marker().write_text(json.dumps({"display": ":20", "dir": "/sbx/hermes-bot-desktop/default",
+    sandbox_host._marker().write_text(json.dumps({"display": ":20", "dir": "/sbx/slave-bot-desktop/default",
                                                   "profile": "default", "backend": "DockerEnvironment",
                                                   "container": env._container_id, "docker": "docker"}))
     monkeypatch.setattr(runtime, "_sandbox_env", lambda *, create: env)
@@ -142,10 +142,10 @@ def test_every_line_the_launcher_writes_is_read_back(tmp_path, home, caplog):
     env_file = tmp_path / "env"
     subprocess.run(["bash", str(Path(sandbox_host.__file__).with_name("launcher.sh"))], check=True, timeout=30,
                    stdin=subprocess.DEVNULL, capture_output=True,
-                   env={"PATH": str(bindir), "HOME": str(tmp_path), "HERMES_BD_PROFILE": "t",
-                        "HERMES_BD_DISPLAY_NUM": "99", "HERMES_BD_SOCKET": str(tmp_path / "rfb.sock"),
-                        "HERMES_BD_XAUTH": str(tmp_path / "Xauthority"), "HERMES_BD_ENV_FILE": str(env_file),
-                        "HERMES_BD_CONFIG_HOME": str(tmp_path / "xdg")})
+                   env={"PATH": str(bindir), "HOME": str(tmp_path), "SLAVE_BD_PROFILE": "t",
+                        "SLAVE_BD_DISPLAY_NUM": "99", "SLAVE_BD_SOCKET": str(tmp_path / "rfb.sock"),
+                        "SLAVE_BD_XAUTH": str(tmp_path / "Xauthority"), "SLAVE_BD_ENV_FILE": str(env_file),
+                        "SLAVE_BD_CONFIG_HOME": str(tmp_path / "xdg")})
     written = dict(line.split("=", 1) for line in env_file.read_text(encoding="utf-8").splitlines())
     with caplog.at_level(logging.WARNING, logger=sandbox_host.logger.name):
         assert sandbox_host.parse_published(env_file.read_text(encoding="utf-8")) == written

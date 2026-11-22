@@ -1,4 +1,4 @@
-import type { SessionUsageResponse } from '@hermes/shared/gateway-types'
+import type { SessionUsageResponse } from '@slave-agent/shared/gateway-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { sessionCommands } from '../app/slash/commands/session.js'

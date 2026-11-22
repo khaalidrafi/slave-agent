@@ -92,7 +92,7 @@ def test_cancel_is_the_senders_own_and_reaches_the_owner(tmp_path, monkeypatch):
     with live._locked(target) as root:  # the owner's receipt records who sent it
         path = root / f"{ack['delivery_id']}.json"
         record = json.loads(path.read_text(encoding="utf-8-sig"))
-        live._write(path, {**record, "author": {"id": "bot:default", "name": "hermes", "is_bot": True}})
+        live._write(path, {**record, "author": {"id": "bot:default", "name": "slave", "is_bot": True}})
     rpcs = []
     monkeypatch.setattr(live, "_authority_rpc", lambda h, method, params: rpcs.append((method, params)) or
                         {"delivery_id": params["id"], "status": "cancelled", "receipt_status": "cancelled"})

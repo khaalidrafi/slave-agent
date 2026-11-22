@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Optional
 
 from agent.terminal_env_provider import TerminalEnvironmentProvider
-from hermes_scope import Principal, Scope
+from slave_scope import Principal, Scope
 from tools.environments.sandbox_scope import CrossAgentHandleRefused, ProcessRef, ProcessStream, SandboxIdentity
 
 STUB_BACKEND = "recording_sandbox"
@@ -537,9 +537,9 @@ def check_media_never_read_on_host(provider: RecordingSandboxProvider, a: Scope,
     its sandbox and never on this host: not a workspace-looking path, and not the profile's media
     cache either (that cache is the profile's, not the agent's)."""
     import asyncio
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools.image_source import ImageResolutionError, ResolveContext, resolve_image_source
-    cache = get_hermes_home() / "cache" / "images"
+    cache = get_slave_home() / "cache" / "images"
     cache.mkdir(parents=True, exist_ok=True)
     planted = [host_dir / "photo.png", cache / f"inbound-{uuid.uuid4().hex[:8]}.png"]
     for path in planted:

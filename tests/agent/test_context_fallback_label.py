@@ -1,4 +1,4 @@
-"""A context window Hermes only defaulted to is labelled "fallback" wherever it is shown, so an operator can
+"""A context window slave-agent only defaulted to is labelled "fallback" wherever it is shown, so an operator can
 tell it from a known or detected limit (field report: GPT-6.1 Terra on Bedrock showed "128K (detected)")."""
 from __future__ import annotations
 
@@ -85,17 +85,17 @@ class TestFallbackMarker:
     def test_profiles_keep_their_own_label(self, tmp_path, defaulted_first):
         """Greptile: a multiplexed gateway resolves for several profiles; one profile's answer is not another's."""
         from agent.context_pin import context_window_marker
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from slave_constants import reset_slave_home_override, set_slave_home_override
         homes = {"defaulted": tmp_path / "a", "confirmed": tmp_path / "b"}
         for home in homes.values():
             home.mkdir()
 
         def in_home(name, fn):
-            token = set_hermes_home_override(homes[name])
+            token = set_slave_home_override(homes[name])
             try:
                 return fn()
             finally:
-                reset_hermes_home_override(token)
+                reset_slave_home_override(token)
 
         def confirmed():
             with patch("agent.model_metadata.get_cached_context_length", return_value=128_000):
@@ -146,7 +146,7 @@ class TestFallbackIsLabelledOnSurfaces:
         runner = GatewayRunner.__new__(GatewayRunner)
         (tmp_path / "config.yaml").write_text("model:\n  default: acme.unknown-model-v1\n  provider: bedrock\n")
         runtime = {"provider": "bedrock", "base_url": RUNTIME_URL, "api_key": "aws-sdk"}
-        with patch("gateway.run._hermes_home", tmp_path), \
+        with patch("gateway.run._slave_home", tmp_path), \
                 patch("gateway.run._resolve_gateway_model", return_value="acme.unknown-model-v1"), \
                 patch("gateway.run._resolve_runtime_agent_kwargs", return_value=runtime):
             info = runner._format_session_info()
@@ -156,8 +156,8 @@ class TestFallbackIsLabelledOnSurfaces:
 
     def _cli_with_bedrock_agent(self, model="acme.unknown-model-v1", context_length=128_000):
         from datetime import datetime, timedelta
-        from cli import HermesCLI
-        cli_obj = HermesCLI.__new__(HermesCLI)
+        from cli import SlaveCLI
+        cli_obj = SlaveCLI.__new__(SlaveCLI)
         cli_obj.model = model
         cli_obj.session_start = datetime.now() - timedelta(minutes=3)
         cli_obj.conversation_history = [{"role": "user", "content": "hi"}]
@@ -189,7 +189,7 @@ class TestFallbackIsLabelledOnSurfaces:
         assert "/128K fallback" in text
 
     def test_banner_marks_the_fallback_window(self):
-        from hermes_cli.banner import _banner_left_lines
+        from slave_cli.banner import _banner_left_lines
         lines = _banner_left_lines("acme.unknown-model-v1", "/tmp", None, 128_000, "bedrock", accent="#fff",
                                    dim="#888", context_marker="fallback")
         assert any("128K context (fallback)" in str(x) for x in lines)
@@ -209,7 +209,7 @@ class TestFallbackIsLabelledOnSurfaces:
 
     def test_cli_model_switch_marks_the_fallback_window(self, monkeypatch):
         import cli as cli_mod
-        from hermes_cli.model_switch import ModelSwitchResult
+        from slave_cli.model_switch import ModelSwitchResult
         captured: list[str] = []
         monkeypatch.setattr(cli_mod, "_cprint", lambda s, *a, **k: captured.append(str(s)))
         stub = SimpleNamespace(agent=None, base_url="", api_key="", config={}, _pending_model_switch_note="")
@@ -219,7 +219,7 @@ class TestFallbackIsLabelledOnSurfaces:
             provider_label="AWS Bedrock", resolved_via_alias=False, capabilities=None, model_info=None,
             is_global=False,
         )
-        from hermes_cli.cli_model_switch_mixin import _print_switch_summary
+        from slave_cli.cli_model_switch_mixin import _print_switch_summary
         _print_switch_summary(stub, result, "us.openai.gpt-6-sol", one_turn=False, strict_context=True)
         line = next(x for x in captured if "128,000" in x)
         assert "(fallback)" in line

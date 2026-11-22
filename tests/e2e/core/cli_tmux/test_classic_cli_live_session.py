@@ -1,6 +1,6 @@
 """The classic CLI's long live session, with a per-process witness (#134889 T24).
 
-Ported from the local dogfood harness used on #106742 (``dogfood/drive.py``): one real ``hermes``
+Ported from the local dogfood harness used on #106742 (``dogfood/drive.py``): one real ``slave``
 (``display.interface: cli``) session in tmux against a loopback ``FakeLLMServer`` keyed on the
 ``LIVEnn`` marker in the latest user message (zero spend), driven through tool turns, approval and
 clarify modals, a background process, delegation, a sweep of slash commands, side tasks
@@ -183,7 +183,7 @@ def test_classic_cli_live_session_runs_every_turn_in_the_gateway(tmp_path: Path)
     s = Session(pane)
     with llm:
         ch.write(llm.base_url, EXTRA_CONFIG)
-        ch.extra_env = {"PYTHONPATH": f"{ch.env()['PYTHONPATH']}:{WITNESS_DIR}", "HERMES_E2E_WITNESS": str(witness)}
+        ch.extra_env = {"PYTHONPATH": f"{ch.env()['PYTHONPATH']}:{WITNESS_DIR}", "SLAVE_E2E_WITNESS": str(witness)}
         (ch.work / "notes.txt").write_text("fixture line one\nfixture line two\n", encoding="utf-8")
         (ch.work / "other.md").write_text("# other fixture\n", encoding="utf-8")
         try:

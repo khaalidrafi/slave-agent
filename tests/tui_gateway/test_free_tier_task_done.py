@@ -1,5 +1,5 @@
 """A finished task on the free tier: a turn that completed on its own with a reply arms the sign-in
-offer (``hermes_cli.free_tier_offer``); any user intervention while it ran disqualifies it."""
+offer (``slave_cli.free_tier_offer``); any user intervention while it ran disqualifies it."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import types
 import pytest
 
 from tui_gateway import server
-from hermes_cli import anon_auth, free_tier_offer
+from slave_cli import anon_auth, free_tier_offer
 from tui_gateway.free_tier_task_done import note_task_done
 
 CLEAN = {"completed": True, "final_response": "Here is your plan.", "user_intervened": False}
@@ -17,7 +17,7 @@ CLEAN = {"completed": True, "final_response": "Here is your plan.", "user_interv
 
 @pytest.fixture(autouse=True)
 def free_tier(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(anon_auth, "free_inference_active", lambda state=None: True)
     monkeypatch.setattr(anon_auth, "is_anonymous_agent", lambda agent: getattr(agent, "anonymous", True))
     monkeypatch.setattr(free_tier_offer, "_clock", lambda: 5_000.0)

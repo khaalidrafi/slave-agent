@@ -20,7 +20,7 @@ _ENV_VALUE_RULES = {
 }
 
 DASHBOARD_CARD = dict(
-    dashboard_description="Use Hermes from Slack via Socket Mode. Add allowed Slack member IDs so connected bots can respond.",
+    dashboard_description="Use slave-agent from Slack via Socket Mode. Add allowed Slack member IDs so connected bots can respond.",
     docs_url="https://api.slack.com/apps",
     dashboard_env_vars=("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_ALLOWED_USERS"),
     env_value_rules=_ENV_VALUE_RULES,

@@ -30,11 +30,11 @@ def _app(api):
 
 
 async def _post(client, session_id, *, key='once', content='same body'):
-    body = {'model': 'hermes-agent', 'messages': [{'role': 'user', 'content': content}]}
+    body = {'model': 'slave-agent', 'messages': [{'role': 'user', 'content': content}]}
     response = await client.post(
         '/v1/chat/completions', json=body,
         headers={'Authorization': 'Bearer ' + _API_KEY, 'Idempotency-Key': key,
-                 'X-Hermes-Session-Id': session_id})
+                 'X-Slave-Session-Id': session_id})
     return response.status, await response.json()
 
 

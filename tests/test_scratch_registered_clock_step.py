@@ -11,11 +11,11 @@ from pathlib import Path
 import psutil
 import pytest
 
-from hermes_cli.data_cleanup_holders import _refuse_backend_writers
-from hermes_cli.process_identity import (
+from slave_cli.data_cleanup_holders import _refuse_backend_writers
+from slave_cli.process_identity import (
     _ledger_path, boot_start, install_id, ledger_entries, reap_orphaned_mcp_helpers, register_self,
 )
-from hermes_constants import get_scratch_dir, prune_scratch_dir
+from slave_constants import get_scratch_dir, prune_scratch_dir
 from tests.waiting import wait_until
 
 
@@ -26,7 +26,7 @@ def test_prune_keeps_a_registered_gateways_shell_after_a_clock_step(tmp_path, mo
     wall clock then steps by ``step`` seconds, which moves psutil's epoch ``create_time`` of every
     process on Linux. The gateway is still the same process: the prune must keep owning it, never
     kill its shell or delete the entry the shell works in."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     scratch = get_scratch_dir(tmp_path, prune=False)
     lane = scratch / "gateway-lane"
     lane.mkdir()
@@ -35,10 +35,10 @@ def test_prune_keeps_a_registered_gateways_shell_after_a_clock_step(tmp_path, mo
     gateway = subprocess.Popen(
         [sys.executable, "-c",
          f"import sys, subprocess, time; sys.path.insert(0, {repo!r}); "
-         "from hermes_cli.process_identity import register_self; assert register_self('gateway'); "
+         "from slave_cli.process_identity import register_self; assert register_self('gateway'); "
          f"shell = subprocess.Popen(['sleep', '60'], cwd={str(lane)!r}); "
          f"open({str(shell_pidfile)!r}, 'w').write(str(shell.pid)); time.sleep(60)"],
-        stdin=subprocess.DEVNULL, env={**os.environ, "HERMES_HOME": str(tmp_path)})
+        stdin=subprocess.DEVNULL, env={**os.environ, "SLAVE_HOME": str(tmp_path)})
     try:
         shell = int(wait_until(lambda: shell_pidfile.exists() and shell_pidfile.read_text().strip(),
                                timeout=20, what="registered gateway started its shell"))
@@ -65,9 +65,9 @@ def test_ledger_never_vouches_for_an_earlier_boot_or_an_exited_backend(tmp_path,
     services are deterministic) names a stranger, and its spawner is gone, so the orphan reaper
     must leave the stranger alone. Older epoch-only serve entries (written before boot ticks) keep
     main's epoch match: one whose backend has exited (a zombie its parent has not reaped yet) and
-    one whose pid the stranger now holds no longer own HERMES_HOME. No row survives the next
+    one whose pid the stranger now holds no longer own SLAVE_HOME. No row survives the next
     ledger write."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     stranger = subprocess.Popen(["sleep", "60"], stdin=subprocess.DEVNULL)
     backend = subprocess.Popen(["true"], stdin=subprocess.DEVNULL)
     spawner = subprocess.Popen(["true"], stdin=subprocess.DEVNULL)

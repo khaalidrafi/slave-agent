@@ -36,7 +36,7 @@ from tests.fixtures.storage_seed import seed_session
 # Behavioral contract: reset yields a clean next-turn transcript
 # ---------------------------------------------------------------------------
 def _make_store(tmp_path):
-    # The store keeps per-session_id transcripts in the test HERMES_HOME's
+    # The store keeps per-session_id transcripts in the test SLAVE_HOME's
     # state.db, never the developer's real one.
     return SessionStore(sessions_dir=tmp_path, config=GatewayConfig())
 

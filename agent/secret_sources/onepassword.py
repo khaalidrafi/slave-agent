@@ -3,9 +3,9 @@
 Users map env-var names to ``op://vault/item/field`` references in
 ``secrets.onepassword.env``; each is resolved with one ``op read -- <ref>``
 call using whatever auth the user's ``op`` already has (``OP_SERVICE_ACCOUNT_TOKEN``
-headless, ``OP_SESSION_*`` interactive) — Hermes never authenticates on the
+headless, ``OP_SESSION_*`` interactive) — slave-agent never authenticates on the
 user's behalf, and failures never block startup. Complete pulls are cached
-in-process and under ``<hermes_home>/op_cache.json`` (values only; auth
+in-process and under ``<slave_home>/op_cache.json`` (values only; auth
 material is fingerprinted, never stored).
 """
 
@@ -24,7 +24,7 @@ from agent.secret_sources.base import (
     ErrorKind, FetchResult, SecretSource, classify_cli_error, coerce_float,
     build_minimal_provider_env, get_source_environment, is_valid_env_name, run_cli,
 )
-from hermes_constants import is_launch_only_env_key
+from slave_constants import is_launch_only_env_key
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ _OP_ENV_ALLOWLIST = (
     "OP_LOAD_DESKTOP_APP_SETTINGS",
 )
 
-# L1 key folds in str(home_path) so a HERMES_HOME switch inside one long-lived
+# L1 key folds in str(home_path) so a SLAVE_HOME switch inside one long-lived
 # process (the gateway) can't return another profile's secrets. The disk key
 # omits home because the file already lives in that home.
 _CacheKey = tuple[str, str, str, str]  # (auth_fp, account, home, refs_fp)
@@ -220,7 +220,7 @@ def apply_onepassword_secrets(
     override_existing: bool = True, cache_ttl_seconds: float = 300, home_path: Optional[Path] = None,
 ) -> FetchResult:
     """Resolve configured ``op://`` references and set them on ``os.environ``
-    (``hermes secrets onepassword sync --apply``). Never raises. Refs already
+    (``slave secrets onepassword sync --apply``). Never raises. Refs already
     satisfied by the env (when ``override_existing`` is false) and the token var
     are skipped *before* fetching, so ``op`` never runs for a discarded value."""
     result = FetchResult()
@@ -279,7 +279,7 @@ class OnePasswordSource(SecretSource):
     # override_existing defaults True: an explicit VAR→op:// binding is the
     # strongest user intent; a stale .env line must not silently defeat it.
     override_existing_default = True
-    _AUTH_HINT = ("Run `hermes secrets onepassword token` to paste a fresh service-account token "
+    _AUTH_HINT = ("Run `slave secrets onepassword token` to paste a fresh service-account token "
                   "({token_env}), or `op signin` for an interactive session.")
     remediation_hints = {ErrorKind.AUTH_FAILED: _AUTH_HINT, ErrorKind.AUTH_EXPIRED: _AUTH_HINT,
                          ErrorKind.BINARY_MISSING: _MISSING_BINARY_HINT}

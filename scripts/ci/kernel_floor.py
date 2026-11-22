@@ -41,7 +41,7 @@ BASELINE = ROOT / "scripts" / "ci" / "kernel_floor.json"
 # Directories that ARE the core, per FORK.org. Everything else (apps/, web/, ui-tui/, locales/,
 # website/, skills/, plugins/, evals/, tests/) is either an edge surface or not shipped, and is
 # reported but not ratcheted -- growth there is the user's install choice, not our schema cost.
-CORE_DIRS = ("agent", "tools", "gateway", "cron", "hermes_cli", "hermes_platform", "acp_adapter", "pm")
+CORE_DIRS = ("agent", "tools", "gateway", "cron", "slave_cli", "slave_platform", "acp_adapter", "pm")
 
 # Relative imports (`from . import x`) resolve inside a package we already validate by its own
 # absolute imports, so a leading dot is skipped rather than parsed.

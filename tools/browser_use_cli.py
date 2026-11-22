@@ -1,5 +1,5 @@
 """``browser_exec``: drive a real browser through the Browser Use CLI engine (browser-harness,
-https://browser-use.com), Hermes' only core browser tool.
+https://browser-use.com), slave-agent’ only core browser tool.
 
 The harness speaks CDP to whatever ``tools.browser_session`` resolved for the call: an operator
 ``BU_CDP_*`` endpoint, a ``/browser connect`` override, a cloud provider's session, or a local browser
@@ -23,9 +23,9 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
-from hermes_cli.process_identity import (
+from slave_cli.process_identity import (
     own_process_groups, register_child, release_process_group_once_empty, spawn_env, spawned_by_this_process)
-from hermes_constants import get_hermes_home, hermes_home_key
+from slave_constants import get_slave_home, slave_home_key
 from tools.browser_harness_dirs import (
     daemon_env, daemon_identity, harness_current_target, harness_pid_file, namespace_harness_dirs)
 from tools.browser_lightpanda import merge_sane_path
@@ -42,24 +42,24 @@ _SESSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 # Set on the env dict by the CDP resolvers when the resolved browser is EXCLUSIVE to this named session
 # (per-name provider / named BU cloud / Lightpanda). Popped before the subprocess launches — never exported.
-_PRIVATE_BROWSER_SENTINEL = "_HERMES_BU_PRIVATE_BROWSER"
+_PRIVATE_BROWSER_SENTINEL = "_SLAVE_BU_PRIVATE_BROWSER"
 # Internal route provenance: this exec resolved to a browser on the Bot Desktop display and must use
 # the same human-control lease fence as the built-in browser tools. Popped before launching the CLI.
-_BOT_DESKTOP_BROWSER_SENTINEL = "_HERMES_BU_BOT_DESKTOP_BROWSER"
+_BOT_DESKTOP_BROWSER_SENTINEL = "_SLAVE_BU_BOT_DESKTOP_BROWSER"
 # The note when the consented real profile could not load (the route fell back). Popped before launch.
-_REAL_PROFILE_FALLBACK_SENTINEL = "_HERMES_BU_REAL_PROFILE_FALLBACK"
+_REAL_PROFILE_FALLBACK_SENTINEL = "_SLAVE_BU_REAL_PROFILE_FALLBACK"
 # local=True whose real profile could not load: run on the local sidecar browser. Popped before launch.
-_LOCAL_FALLBACK_SENTINEL = "_HERMES_BU_LOCAL_FALLBACK"
+_LOCAL_FALLBACK_SENTINEL = "_SLAVE_BU_LOCAL_FALLBACK"
 # Where new/hidden tabs may be brought to the front: a browser_use_shot.ACTIVATE_* mode. Popped before launch.
-_CLOUD_BROWSER_SENTINEL = "_HERMES_BU_CLOUD_BROWSER"
+_CLOUD_BROWSER_SENTINEL = "_SLAVE_BU_CLOUD_BROWSER"
 
 # Prepended to the model's code for named sessions on SHARED browsers (a /browser connect CDP override): the
 # harness daemon attaches to the first existing page at startup, so two fresh named daemons can land on the
 # SAME tab. Steering each onto a tab it created prevents clobbering. Runs once per daemon (marker keyed by
 # BU_NAME + daemon pid).
 _OWN_TAB_PREAMBLE = """\
-# hermes: pin this named session to its own tab (once per daemon process)
-def _hermes_ensure_own_tab():
+# slave: pin this named session to its own tab (once per daemon process)
+def _slave_ensure_own_tab():
     import os as _os, tempfile as _tf
     _name = _os.environ.get("BU_NAME", "default")
     try:
@@ -72,7 +72,7 @@ def _hermes_ensure_own_tab():
         _dpid = "0"
     _uid = _os.getuid() if hasattr(_os, "getuid") else 0
     _marker = _os.path.join(
-        _tf.gettempdir(), "hermes-bu-owntab-%s-%s-%s" % (_uid, _name, _dpid)
+        _tf.gettempdir(), "slave-bu-owntab-%s-%s-%s" % (_uid, _name, _dpid)
     )
     if _os.path.exists(_marker):
         return
@@ -89,8 +89,8 @@ def _hermes_ensure_own_tab():
         _os.close(_os.open(_marker, _os.O_WRONLY | _os.O_CREAT | getattr(_os, "O_NOFOLLOW", 0), 0o600))
     except OSError:
         pass
-_hermes_ensure_own_tab()
-del _hermes_ensure_own_tab
+_slave_ensure_own_tab()
+del _slave_ensure_own_tab
 """
 
 _DEFAULT_TIMEOUT_S = 300
@@ -184,7 +184,7 @@ def _base_subprocess_env() -> dict:
     from tools.browser_session import build_browser_env
     env = build_browser_env()
     env.update(_harness_credentials())
-    # The harness runs on Hermes's own interpreter, but a bundled Desktop install boots that
+    # The harness runs on Slave's own interpreter, but a bundled Desktop install boots that
     # interpreter with its site dir on PYTHONPATH (no venv to activate), and the harness's daemon
     # re-runs sys.executable. Point PYTHONPATH at the harness's site dir, replacing whatever the
     # agent process inherited, so both the CLI and its daemon import the same packages.
@@ -199,7 +199,7 @@ def _base_subprocess_env() -> dict:
     env.setdefault("ANONYMIZED_TELEMETRY", "false")
     # The harness reuses any live daemon of a BU_NAME in its runtime dir, and that dir is per OS user:
     # every profile (served, CLI, cron) gets its own, or one drives another's attached browser (#149829).
-    namespace_harness_dirs(env, hermes_home_key())
+    namespace_harness_dirs(env, slave_home_key())
     # A daemon the CLI starts inherits this tag; _own_harness_daemon owns only one that names us.
     env.update(spawn_env("browser-harness-daemon"))
     return env
@@ -216,7 +216,7 @@ def _read_browser_cfg() -> dict:
 
 
 def _use_gateway(browser_cfg: dict) -> bool:
-    """True when the browser section selects the Nous Tool Gateway — by the current ``hermes tools``
+    """True when the browser section selects the Nous Tool Gateway — by the current ``slave tools``
     picker row (``cloud_provider: nous``) or the pre-picker ``use_gateway: true`` flag. Reading only
     the legacy flag missed every picker-configured gateway, and the direct-API branch it fell into
     holds no credentials in managed mode (#108310)."""
@@ -241,14 +241,14 @@ def is_legacy_browser_use_cloud_config(browser_cfg: dict) -> bool:
 
 
 def _browser_use_api_key_set() -> bool:
-    """BROWSER_USE_API_KEY for the served profile: the only credential Hermes autospawns BU cloud with.
+    """BROWSER_USE_API_KEY for the served profile: the only credential slave-agent autospawns BU cloud with.
     Profile-scoped so a multiplexed secondary never inherits the default's cloud mode."""
     from agent.secret_scope import get_secret
     return bool(get_secret("BROWSER_USE_API_KEY", ""))
 
 
 def _harness_site_dir() -> Optional[str]:
-    """The site dir Hermes's interpreter imports ``browser_harness`` from, or None."""
+    """The site dir slave-agent’s interpreter imports ``browser_harness`` from, or None."""
     spec = importlib.util.find_spec("browser_harness")
     if spec is None or not spec.origin:
         return None
@@ -256,7 +256,7 @@ def _harness_site_dir() -> Optional[str]:
 
 
 def _find_cli() -> Optional[list[str]]:
-    """The Browser Use CLI's engine (browser-harness) is a core dependency of Hermes's own venv,
+    """The Browser Use CLI's engine (browser-harness) is a core dependency of slave-agent’s own venv,
     so every install, the Desktop bundle included, runs it on the current interpreter."""
     if _harness_site_dir() is None:
         return None
@@ -274,7 +274,7 @@ def _workspace_dir(task_id: Optional[str]) -> Optional[str]:
         return os.environ["BH_AGENT_WORKSPACE"]
     try:
         safe = _TASK_ID_SAFE_RE.sub("_", str(task_id or "default"))[:80] or "default"
-        path = Path(get_hermes_home()) / "cache" / "browser-use" / "workspace" / safe
+        path = Path(get_slave_home()) / "cache" / "browser-use" / "workspace" / safe
         path.mkdir(parents=True, exist_ok=True)
         return str(path)
     except Exception as e:
@@ -320,8 +320,8 @@ def _served_profile_tag() -> str:
     """``""`` outside a served-profile scope (every legacy key stays byte-identical); under a
     multiplexed turn, the routed profile's home key — one profile's browser must never be handed
     to another that happens to use the same session name or task id (#110032)."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    return "" if get_hermes_home_override() is None else hermes_home_key()
+    from slave_constants import get_slave_home_override, slave_home_key
+    return "" if get_slave_home_override() is None else slave_home_key()
 
 
 def _backend_cache_key(task_id: Optional[str], session_name: str = "", sidecar: bool = False) -> str:
@@ -377,10 +377,10 @@ def _resolve_local_cdp(env: dict, task_id: Optional[str], session_name: str = ""
 
     if _quiet(using_lightpanda_engine, False):
         fail = lambda e: (f"Lightpanda could not be started: {e} Set browser.engine to auto "
-                          "to use local Chrome, or switch backends via `hermes tools` → Browser Automation.")
+                          "to use local Chrome, or switch backends via `slave tools` → Browser Automation.")
     else:
         fail = lambda e: (f"The local browser could not be started: {e} "
-                          "Run `hermes tools` → Browser Automation to (re)install Chromium, or switch backends.")
+                          "Run `slave tools` → Browser Automation to (re)install Chromium, or switch backends.")
     err = _export_session_cdp(env, _session_info, key, fail, "The local browser session returned no CDP endpoint.")
     if err is None:
         _mark_local_browser(env, session, key)
@@ -394,7 +394,7 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
     Precedence: (1) ``BU_CDP_WS``/``BU_CDP_URL`` already in env (operator override); (2) ``BROWSER_CDP_URL``
     env / ``browser.cdp_url`` (``/browser connect``); (3) a cloud provider via ``browser_session.get_session_info``
     (per-key cache, expiry, reaper, atexit; a provider failure falls back to a local browser);
-    (4) the local engine — ``browser.engine: lightpanda`` or Hermes' packaged Chromium via the launcher
+    (4) the local engine — ``browser.engine: lightpanda`` or slave-agent’ packaged Chromium via the launcher
     (never the harness's own discovery of the user's installed Chrome); (5) BU direct-API configs WITH
     ``BROWSER_USE_API_KEY`` → None (checked before (3)): the CLI reaches BU cloud natively (BU_AUTOSPAWN); a
     keyless ``browser-use`` provider (managed-gateway autodetect, or a selection missing its key) takes (3).
@@ -446,9 +446,9 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
     err = _export_session_cdp(
         env, _session_info, key,
         lambda e: (f"Cloud browser provider {provider_name} failed to provide a session: {e}. "
-                   "Fix the provider configuration or switch backends via `hermes tools` → Browser Automation."),
+                   "Fix the provider configuration or switch backends via `slave tools` → Browser Automation."),
         f"Cloud browser provider {provider_name} returned no CDP endpoint, so browser_exec "
-        "cannot drive it. Pick a CDP-capable provider via `hermes tools` → Browser Automation.",
+        "cannot drive it. Pick a CDP-capable provider via `slave tools` → Browser Automation.",
     )
     if session.get("fallback_from_cloud"):
         # The provider failed (rate limit, quota, outage) and the session layer fell back to a LOCAL
@@ -470,7 +470,7 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
 
 def _resolve_real_profile_cdp(env: dict, force_local: bool) -> Optional[str]:
     """Point the harness at the user's real-profile copy-browser (a SNAPSHOT of their default Chromium
-    profile, hermes_cli.browser_connect) when consented. Two ways in: the effective backend is already local
+    profile, slave_cli.browser_connect) when consented. Two ways in: the effective backend is already local
     (no provider, CDP override, or legacy BU cloud config) → silent upgrade; or ``force_local`` (consent-gated
     ``local`` arg) → the user's browser even under a cloud backend. Operator overrides (BU_CDP_* env,
     /browser connect, ``browser.cdp_url``) own the session either way. A launch error is returned;
@@ -556,7 +556,7 @@ def _group_popen_kwargs() -> dict:
     timeout can take down every process that inherited the capture pipes, not just the CLI
     child. Windows also hides the console window."""
     def _flags() -> dict:
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from slave_cli._subprocess_compat import windows_hide_flags
         si = subprocess.STARTUPINFO()
         si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         return {"creationflags": windows_hide_flags() | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
@@ -581,7 +581,7 @@ def _kill_cli_process_group(proc) -> None:
     """SIGKILL the CLI's whole process group (POSIX; ``start_new_session`` made pgid == pid) or,
     on Windows, its process tree via ``taskkill /T /F`` — the only group-wide kill it offers."""
     if os.name == "nt":
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from slave_cli._subprocess_compat import windows_hide_flags
         with contextlib.suppress(OSError, subprocess.SubprocessError):
             subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], stdin=subprocess.DEVNULL,
                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
@@ -652,7 +652,7 @@ def _published_daemon_pid(env: dict) -> Optional[int]:
 def _own_harness_daemon_until_owned(env: dict) -> Optional[bool]:
     """Periodic check while browser_exec runs: own the daemon as soon as it publishes its pid, then
     stop (False). It also stops once the daemon can never be ours (Windows, a managed worker, a daemon
-    another Hermes started), instead of re-checking every tick for the whole call."""
+    another slave-agent started), instead of re-checking every tick for the whole call."""
     return None if _own_harness_daemon(env) is None else False
 
 
@@ -673,7 +673,7 @@ def _reload_daemons(daemons) -> None:  # each ``daemon_identity`` daemon, with i
 # Daemon identity (``daemon_identity``: its dirs + BU_NAME) -> process group of the harness daemon this
 # process owns. The harness starts its daemon with start_new_session so it outlives each CLI call (that
 # is how a session persists across browser_exec calls), which also means it outlives a SIGKILLed or
-# OOM-killed Hermes forever (#121095). Its group goes to this process's owner-death supervisor, so it
+# OOM-killed Slave forever (#121095). Its group goes to this process's owner-death supervisor, so it
 # dies with us however we die.
 _owned_daemon_groups: dict[tuple[str, ...], int] = {}
 _owned_daemon_groups_lock = threading.Lock()
@@ -685,12 +685,12 @@ def _own_harness_daemon(env: dict) -> Optional[bool]:
     The harness publishes its daemon pid in its runtime dir (``harness_pid_file``: JSON
     ``{"pid", "started"}`` or a bare pid). The daemon is accepted only while it is this user's live
     ``browser_harness.daemon`` leading its own session and its spawn tag names this process, so a
-    stale or planted pid file, or a daemon another Hermes started, never reaches the supervisor.
+    stale or planted pid file, or a daemon another slave-agent started, never reaches the supervisor.
     Runs after every browser_exec (and while a long one runs, until the daemon is owned): a pid
     already owned for this daemon costs one file read.
 
     Returns True once the daemon is owned, False when it can never be (Windows, a managed worker, a
-    daemon another Hermes started), None when there is nothing to own yet."""
+    daemon another slave-agent started), None when there is nothing to own yet."""
     if os.name != "posix":
         return False  # Windows: the harness daemon is outside this process's job; nothing to register.
     from agent.runtime_session_store import is_worker_process
@@ -715,7 +715,7 @@ def _own_harness_daemon(env: dict) -> Optional[bool]:
                 or argv[argv.index("-m") + 1] != "browser_harness.daemon"):
             return None
         if not spawned_by_this_process(pid):
-            return False  # another Hermes on the same BU_NAME started it: that Hermes owns it
+            return False  # another Slave on the same BU_NAME started it: that Slave owns it
     except (OSError, ValueError, IndexError, psutil.Error) as exc:
         logger.debug("browser_exec: no harness daemon to supervise for %s: %s", daemon[-1], exc)
         return None
@@ -802,8 +802,8 @@ def browser_exec(code: str, session: str = "", timeout_s: int = _DEFAULT_TIMEOUT
 
     cmd = _find_cli()
     if not cmd:
-        return tool_error("browser-harness is missing from Hermes's Python environment. "
-                          "Run `hermes update` to re-sync it.")
+        return tool_error("browser-harness is missing from slave-agent’s Python environment. "
+                          "Run `slave update` to re-sync it.")
 
     env = _base_subprocess_env()
     if session:
@@ -848,9 +848,9 @@ def browser_exec(code: str, session: str = "", timeout_s: int = _DEFAULT_TIMEOUT
         _attach_vault_supervisor(env, task_id)
         with _driven_daemons_lock:
             daemon = daemon_identity(env)
-            _driven_daemons[daemon] = hermes_home_key()
+            _driven_daemons[daemon] = slave_home_key()
         # The first call starts the daemon and may run long (navigation, user code): own it as soon as
-        # it publishes its pid, so a Hermes killed mid-call takes it along (the call's end owns it too).
+        # it publishes its pid, so a Slave killed mid-call takes it along (the call's end owns it too).
         from agent.periodic_scheduler import schedule
         owning = schedule(lambda: _own_harness_daemon_until_owned(env), _OWN_DURING_CALL_S)
         try:
@@ -988,7 +988,7 @@ def _dynamic_schema_overrides() -> dict:
         props = dict(BROWSER_EXEC_SCHEMA["parameters"]["properties"])
         props["local"] = {
             "type": "boolean", "default": False,
-            "description": ("Drive the user's own local browser (a Hermes-managed copy of their real "
+            "description": ("Drive the user's own local browser (a Slave-managed copy of their real "
                             "default-Chromium profile, logins/cookies included) instead of the configured "
                             "cloud browser backend. Use when the user asks to act as themselves — their "
                             "accounts, their sessions. No-op when the backend is already local. Default false."),
@@ -1001,7 +1001,7 @@ BROWSER_EXEC_SCHEMA = {
     "name": "browser_exec",
     # Static fallback description, used only when the managed CLI is unavailable
     "description": (_HEADER_BASE + _HELPERS_DIGEST
-                    + "\n\n(The browser-use CLI is not installed yet. Install it with `hermes tools` (Browser Automation → Browser Use).)"),
+                    + "\n\n(The browser-use CLI is not installed yet. Install it with `slave tools` (Browser Automation → Browser Use).)"),
     "parameters": {
         "type": "object",
         "properties": {
@@ -1030,7 +1030,7 @@ _exec_local_engine: contextvars.ContextVar[Optional[str]] = contextvars.ContextV
 
 def _handle_browser_exec(args: dict, **kw):
     """Registry handler; each call counts against the backend that served it (shared metrics, opt-in)."""
-    from hermes_cli.observability.shared_metrics_loop import record_browser_call
+    from slave_cli.observability.shared_metrics_loop import record_browser_call
     from tools.browser_session_cloud import browser_backend_name
     token = _exec_local_engine.set(None)
     try:

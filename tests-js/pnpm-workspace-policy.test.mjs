@@ -19,7 +19,7 @@ test('every release-age exclude names exact versions', () => {
   expect(excludes.filter(entry => !exact.test(entry))).toEqual([])
 })
 
-// `hermes pm update --pnpm` drops an exclude once the lock no longer holds its version; one that
+// `slave pm update --pnpm` drops an exclude once the lock no longer holds its version; one that
 // lands any other way exempts nothing and stays until the next refresh. CI runs this after its
 // install, which leaves the file as committed (js-tests.yml checks that).
 test('every release-age exclude is a version the lockfile holds', () => {

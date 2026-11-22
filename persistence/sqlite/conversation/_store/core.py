@@ -10,7 +10,7 @@ from persistence.sqlite.conversation._store.sql_common import escape_like as _es
 from persistence.sqlite._holder import StoreHolder
 
 
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 
 _MAX_SAFE_MESSAGES = 20_000  # resume/export guard default
@@ -25,8 +25,8 @@ class SessionResumeTooLargeError(ValueError):
         super().__init__(
             f"This session is too long to reload safely ({message_count} messages; limit {limit}). "
             "Start a fresh chat and keep a copy with the dashboard Sessions page's Export action or "
-            "`hermes sessions export --format md --session-id <id>` (neither is capped), or raise the limit "
-            "with `hermes config set sessions.max_resume_messages 0`."
+            "`slave sessions export --format md --session-id <id>` (neither is capped), or raise the limit "
+            "with `slave config set sessions.max_resume_messages 0`."
         )
 
 
@@ -209,12 +209,12 @@ def is_kanban_owned_session(holder: StoreHolder, session_id: str) -> bool:
     ``'kanban'``): the transcript of a worker run, not a human conversation (#68779).
 
     Both columns are checked: ``source`` is live routing state the dispatcher tags
-    (``HERMES_SESSION_SOURCE=kanban``) and the legacy retag rewrites, while immutable
+    (``SLAVE_SESSION_SOURCE=kanban``) and the legacy retag rewrites, while immutable
     ``created_source`` survives later surface flips. The lineage is the VERIFIED
     compression chain (``_resume_lineage_ids``) — exactly the rows a resume loads — so a
     worker transcript stays kanban-owned across rotations, while a delegate/branch child
     of a worker (a DIFFERENT conversation) is not swept in. Plain classification, not a
-    gate: the resume-time guard (``hermes_cli/kanban_resume_guard.py``) owns the decision
+    gate: the resume-time guard (``slave_cli/kanban_resume_guard.py``) owns the decision
     and the dispatcher-owned exemption."""
     from persistence.sqlite.conversation._store.messages import _resume_lineage_ids
     lineage = _resume_lineage_ids(holder, session_id)

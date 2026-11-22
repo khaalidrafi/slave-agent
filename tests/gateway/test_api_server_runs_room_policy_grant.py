@@ -1,6 +1,6 @@
 """/v1/runs honours a room execution policy only when it comes from a verified room grant.
 
-Without a ``HermesRoom`` grant the body's ``hosted_room_dispatch`` / ``_room_execution_policy``
+Without a ``SlaveRoom`` grant the body's ``hosted_room_dispatch`` / ``_room_execution_policy``
 are refused, so an API key cannot pick its own toolsets, approval mode or turn limit; the
 operator's ``platform_toolsets.api_server`` config applies to ordinary runs.
 """
@@ -139,7 +139,7 @@ async def test_ordinary_run_uses_operator_toolsets_not_a_room_policy(adapter):
 def test_create_agent_without_room_dispatch_keeps_operator_toolsets(monkeypatch):
     """Even a stray policy kwarg is inert without a verified dispatch."""
     from gateway import run as gateway_run
-    from hermes_cli import tools_config
+    from slave_cli import tools_config
 
     adapter = _make_adapter(api_key="sk-secret")
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", dict)
@@ -184,7 +184,7 @@ async def test_valid_grant_applies_the_server_derived_policy(adapter):
             "capability_digest": catalog["catalog_digest"],
             "execution_policy_digest": catalog["execution_policy"]["policy_digest"],
         }
-        room_headers = {"Authorization": f"HermesRoom {grant}"}
+        room_headers = {"Authorization": f"SlaveRoom {grant}"}
         with patch.object(adapter, "_create_agent", return_value=_agent()) as create:
             response = await cli.post(
                 "/v1/runs",

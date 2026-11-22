@@ -56,7 +56,7 @@ def _toggles():
 
 def _words():
     """key -> (display field, accepted words)."""
-    from hermes_constants import INDICATOR_STYLES
+    from slave_constants import INDICATOR_STYLES
     return {'theme': ('tui_theme', frozenset({'auto', 'light', 'dark'})),
             'indicator': ('tui_status_indicator', frozenset(INDICATOR_STYLES))}
 
@@ -117,7 +117,7 @@ def _set_display(cfg, key, value):
 
 def _set_focus(display, raw):
     """/focus on stashes the configured tool-progress mode and pins it off; off restores it."""
-    from hermes_cli.focus_view import FOCUS_TOOL_PROGRESS_MODE, normalize_tool_progress_mode, resolve_focus_arg
+    from slave_cli.focus_view import FOCUS_TOOL_PROGRESS_MODE, normalize_tool_progress_mode, resolve_focus_arg
     current = bool(display.get('focus_view', False))
     configured = normalize_tool_progress_mode(display.get('tool_progress', 'all'))
     action, target = resolve_focus_arg(raw, current)
@@ -138,7 +138,7 @@ def _set_focus(display, raw):
 
 
 def _managed_refusal(key):
-    """A leaf the administrator's managed scope pins: refused, never written (``hermes config set``
+    """A leaf the administrator's managed scope pins: refused, never written (``slave config set``
     refuses it too, and the next load would reinstate the managed value anyway)."""
     return AuthorityRefusal('permission_denied', field=key, detail='managed by your administrator')
 
@@ -149,7 +149,7 @@ def _write_profile_config(connection, edit):
     managed scope pins refuses the whole edit unsaved, even one set to the value the raw file already
     holds (the managed value still wins). Runs off the loop."""
     from gateway.run import _profile_runtime_scope
-    from hermes_cli.config import atomic_config_replace, get_config_path, read_user_config_raw
+    from slave_cli.config import atomic_config_replace, get_config_path, read_user_config_raw
     with _profile_runtime_scope(Path(connection.authority.profile_id)), _WRITE_LOCK:
         path = get_config_path()
         try:
@@ -158,7 +158,7 @@ def _write_profile_config(connection, edit):
             raise AuthorityRefusal('storage_unavailable') from exc
         before = copy.deepcopy(cfg)
         result, written = edit(cfg)
-        from hermes_cli.managed_scope import managed_config_keys
+        from slave_cli.managed_scope import managed_config_keys
         if pinned := sorted(managed_config_keys().intersection(written)):
             raise _managed_refusal(pinned[0])
         if cfg != before:
@@ -223,7 +223,7 @@ async def _broadcast_skin(connection):
     def resolve():
         import sys
         from gateway.run import _profile_runtime_scope
-        from hermes_cli.config import load_config
+        from slave_cli.config import load_config
         from tui_gateway.change_watcher import skin_payload
         with _profile_runtime_scope(Path(connection.authority.profile_id)):
             payload = skin_payload(load_config())
@@ -248,7 +248,7 @@ def service_tier_options(connection, ref, policy, *, include_ultrafast=True):
     """The session route's speed choices, resolved under its credential scope."""
     from agent.codex_service_tiers import ultrafast_offered
     from gateway.run import _profile_runtime_scope
-    from hermes_cli.models import resolve_fast_mode_overrides
+    from slave_cli.models import resolve_fast_mode_overrides
     with _profile_runtime_scope(Path(connection.authority.profile_id)):
         agent = connection.authority.agent(ref)
         config, model = policy.effective(connection.authority, secrets=False) if policy else ({}, None)
@@ -300,12 +300,12 @@ async def _set_fast(connection, ref, policy, value):
 
 def _set_personality(connection, value):
     """Main's /personality: validated against the profile's personalities and persisted through
-    ``hermes_cli.personality`` (the only sanctioned write). Every next turn of the profile's sessions
+    ``slave_cli.personality`` (the only sanctioned write). Every next turn of the profile's sessions
     resolves its ephemeral prompt from that config, and the changed prompt rebuilds the cached agent."""
     from gateway.run import _profile_runtime_scope
-    from hermes_cli.config import load_config
-    from hermes_cli.managed_scope import is_key_managed
-    from hermes_cli.personality import persist_personality, resolve_personality
+    from slave_cli.config import load_config
+    from slave_cli.managed_scope import is_key_managed
+    from slave_cli.personality import persist_personality, resolve_personality
     with _profile_runtime_scope(Path(connection.authority.profile_id)), _WRITE_LOCK:
         if is_key_managed('display.personality'):  # persist_personality writes it without this check
             raise _managed_refusal('display.personality')
@@ -335,13 +335,13 @@ def _set_profile_leaf(cfg, key, value):
 
 
 def _set_approval_mode(connection, value):
-    """``/approvals <mode>``'s own write (``hermes_cli.approval_mode``) for this profile."""
+    """``/approvals <mode>``'s own write (``slave_cli.approval_mode``) for this profile."""
     from gateway.run import _profile_runtime_scope
-    from hermes_cli.approval_mode import run_approval_mode_command
+    from slave_cli.approval_mode import run_approval_mode_command
     with _profile_runtime_scope(Path(connection.authority.profile_id)), _WRITE_LOCK:
         result = run_approval_mode_command(_word(value) or None)
     if not result.ok:
-        from hermes_cli.managed_scope import is_key_managed
+        from slave_cli.managed_scope import is_key_managed
         if _word(value) in ('manual', 'smart', 'off') and is_key_managed('approvals.mode'):
             raise _managed_refusal('approvals.mode')  # set_config_value refused it: name the key
         raise AuthorityRefusal('invalid_params' if _word(value) not in ('manual', 'smart', 'off')
@@ -378,14 +378,14 @@ async def _set_command_setting(connection, ref, params):
     if not value:
         raise AuthorityRefusal('invalid_params')
     from gateway.run import _profile_runtime_scope
-    from hermes_constants import parse_reasoning_effort
+    from slave_constants import parse_reasoning_effort
     from gateway.slash_commands_model import _REASONING_DISPLAY_TOGGLES
     if value not in _REASONING_DISPLAY_TOGGLES and value != 'reset' and parse_reasoning_effort(value) is None:
         raise AuthorityRefusal('invalid_params')
     if scope == 'global' and parse_reasoning_effort(value) is not None:
         # --global saves agent.reasoning_effort (_save_gateway_config_key, no managed check): a pinned
         # one is refused before the session's level is committed, as the sidecar's config.set refuses it.
-        from hermes_cli.managed_scope import is_key_managed
+        from slave_cli.managed_scope import is_key_managed
         if await asyncio.to_thread(is_key_managed, 'agent.reasoning_effort'):
             raise _managed_refusal('agent.reasoning_effort')
     live, runner = connection.authority.sessions[ref.session_id], connection.authority.runner

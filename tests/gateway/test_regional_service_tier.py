@@ -10,7 +10,7 @@ import pytest
 
 from gateway.config import Platform, StreamingConfig
 from gateway.session import SessionSource
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.gateway.test_run_progress_topics import ProgressCaptureAdapter, _make_runner
 
 
@@ -32,7 +32,7 @@ async def test_configured_tier_reaches_regional_sdk_request(
     import gateway.run as gateway_run
 
     monkeypatch.chdir(tmp_path)
-    home = get_hermes_home()
+    home = get_slave_home()
     (home / ".env").write_text("OPENAI_API_KEY=test-key\n")
     (home / "config.yaml").write_text(json.dumps({
         "model": {"default": "gpt-6.1-sol", "provider": "openai-api",
@@ -64,7 +64,7 @@ async def test_configured_tier_reaches_regional_sdk_request(
         return httpx.Response(200, json=response)
 
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", respond)
-    monkeypatch.setattr(gateway_run, "_hermes_home", home)
+    monkeypatch.setattr(gateway_run, "_slave_home", home)
     runner = _make_runner(ProgressCaptureAdapter())
     runner.config.streaming = StreamingConfig(enabled=False)
     history = [{"role": "user", "content": "Earlier question."},

@@ -10,7 +10,7 @@ import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from gateway.config import Platform, PlatformConfig, load_gateway_config
@@ -21,8 +21,8 @@ from plugins.platforms.discord.adapter import DiscordAdapter
 @pytest.fixture
 def connectable(tmp_path, monkeypatch):
     """A real connect() against a fake bot whose guild has one member holding ``holder["alice"]``."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    for var in ("DISCORD_ALLOWED_USERS", "HERMES_BRIDGED_DISCORD_ALLOWED_USERS"):
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    for var in ("DISCORD_ALLOWED_USERS", "SLAVE_BRIDGED_DISCORD_ALLOWED_USERS"):
         monkeypatch.setenv(var, "")  # setenv first so teardown also removes what the loader bridges in
         monkeypatch.delenv(var)
     monkeypatch.setattr("gateway.status.acquire_scoped_lock", lambda scope, identity, metadata=None: (True, None))
@@ -91,7 +91,7 @@ async def test_a_single_profile_reconnect_then_an_unrelated_save_keeps_the_resol
 async def test_an_operators_own_list_still_wins_over_the_yaml_on_a_reconnect(connectable, tmp_path, monkeypatch):
     """Only the bridge's own value is swapped for the YAML names on connect(): an operator's
     DISCORD_ALLOWED_USERS in ``.env`` keeps beating config.yaml (#109032), on every connection."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     monkeypatch.setattr(env_loader, "_LOADED_DOTENV_KEYS", {"DISCORD_ALLOWED_USERS"})
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", "333")
     _write(tmp_path, {"allow_from": ["alice"]}, 0)
@@ -114,7 +114,7 @@ async def test_a_multiplexed_profiles_own_env_list_wins_over_its_yaml(connectabl
     from gateway.run import _profile_runtime_scope
 
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", "alice")  # the launch profile's bridged YAML value
-    monkeypatch.setenv("HERMES_BRIDGED_DISCORD_ALLOWED_USERS", bridged_env_digest("alice"))
+    monkeypatch.setenv("SLAVE_BRIDGED_DISCORD_ALLOWED_USERS", bridged_env_digest("alice"))
     home = tmp_path / "b"
     home.mkdir()
     _write(home, {"allow_from": ["alice"]}, 0)

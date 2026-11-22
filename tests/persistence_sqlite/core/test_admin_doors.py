@@ -20,7 +20,7 @@ def test_both_doors_open_sqlite_handles_bound_to_their_target_and_touch_no_file(
     repair = persistence_assembly.open_profile_repair(scope, read_only=True)
     assert isinstance(store_admin, SQLiteStoreAdmin) and isinstance(file_admin, SQLiteStoreAdmin)
     assert isinstance(repair, SQLiteProfileRepairAdmin)
-    state_db = Path(scope.hermes_home_key) / "state.db"
+    state_db = Path(scope.slave_home_key) / "state.db"
     assert (store_admin.db_path, store_admin.read_only) == (state_db, True)
     assert (file_admin.db_path, file_admin.read_only) == (file, False)
     assert (repair.db_path, repair.read_only) == (state_db, True)
@@ -30,7 +30,7 @@ def test_both_doors_open_sqlite_handles_bound_to_their_target_and_touch_no_file(
 def test_the_backend_refuses_an_admin_handle_for_a_profile_it_holds_no_store_for(tmp_path):
     served = persistence_assembly.profile_scope(home=tmp_path / "served")
     other = persistence_assembly.profile_scope(home=tmp_path / "other")
-    backend = SQLiteBackend({served.hermes_home_key: tmp_path / "served" / "state.db"})
+    backend = SQLiteBackend({served.slave_home_key: tmp_path / "served" / "state.db"})
     with pytest.raises(ValueError):
         backend.open_store_admin(other)
     with pytest.raises(ValueError):
@@ -58,7 +58,7 @@ def test_a_backend_with_the_capability_opens_the_handle_for_the_target(tmp_path,
     assert persistence_assembly.open_store_admin(scope) == ("store-admin", scope, True)
     assert persistence_assembly.open_store_admin(file, read_only=False) == ("store-admin", file, False)
     assert persistence_assembly.open_profile_repair(scope, read_only=True) == ("profile-repair", scope, True)
-    assert [stores for _, stores, _ in calls][1] == {persistence_assembly.profile_scope(home=file.parent).hermes_home_key: file.resolve()}
+    assert [stores for _, stores, _ in calls][1] == {persistence_assembly.profile_scope(home=file.parent).slave_home_key: file.resolve()}
 
 
 def test_a_backend_without_the_capability_answers_unsupported(tmp_path, monkeypatch):

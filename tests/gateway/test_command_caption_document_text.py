@@ -55,14 +55,14 @@ async def test_whatsapp_cloud_command_caption_on_a_text_file_stays_a_command(tmp
 
 @pytest.mark.asyncio
 async def test_feishu_self_mentioned_command_caption_on_a_text_file_stays_a_command():
-    """``@Hermes /goal ...`` in a post with a text file: the mention is stripped before the command
+    """``@Slave /goal ...`` in a post with a text file: the mention is stripped before the command
     check, so the file body does not become the goal's arguments."""
     import json
     from types import SimpleNamespace
     from plugins.platforms.feishu.adapter import FeishuAdapter
 
     adapter = FeishuAdapter.__new__(FeishuAdapter)
-    adapter._bot_open_id, adapter._bot_user_id, adapter._bot_name = "ou_bot", "", "Hermes"
+    adapter._bot_open_id, adapter._bot_user_id, adapter._bot_name = "ou_bot", "", "slave-agent"
     adapter._download_feishu_message_resources = AsyncMock(return_value=(["/cache/report.txt"], ["text/plain"]))
     adapter._maybe_extract_text_document = AsyncMock(return_value="[Content of report.txt]:\nquarterly numbers: 42")
     adapter._fetch_message_text = AsyncMock(return_value=None)
@@ -73,12 +73,12 @@ async def test_feishu_self_mentioned_command_caption_on_a_text_file_stays_a_comm
     adapter._dispatch_inbound_event = AsyncMock()
     message = SimpleNamespace(
         content=json.dumps({"title": "", "content": [[
-            {"tag": "at", "user_id": "@_user_1", "user_name": "Hermes"},
+            {"tag": "at", "user_id": "@_user_1", "user_name": "slave-agent"},
             {"tag": "text", "text": " /goal summarize the report"},
         ]], "files": [{"file_key": "file_1", "file_name": "report.txt", "is_folder": False}]}),
         message_type="post", message_id="m-goal-file", chat_id="oc_chat", thread_id=None, root_id=None,
         parent_id=None, upper_message_id=None,
-        mentions=[SimpleNamespace(key="@_user_1", id=SimpleNamespace(open_id="ou_bot", user_id=""), name="Hermes")],
+        mentions=[SimpleNamespace(key="@_user_1", id=SimpleNamespace(open_id="ou_bot", user_id=""), name="slave-agent")],
     )
 
     await adapter._process_inbound_message(

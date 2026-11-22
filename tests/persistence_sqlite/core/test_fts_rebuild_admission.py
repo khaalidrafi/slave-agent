@@ -1,7 +1,7 @@
 """Cross-process admission for full structural FTS rebuilds (PR #93200 class).
 
-Several independent Hermes processes routinely share one state.db (gateway,
-Desktop's ``hermes serve`` backend, CLI sessions, the TUI slash worker). Two
+Several independent slave-agent processes routinely share one state.db (gateway,
+Desktop's ``slave serve`` backend, CLI sessions, the TUI slash worker). Two
 of them detecting FTS corruption at once each ran the full FTS5 'rebuild' on
 the same file in parallel, colliding on write and structurally corrupting
 state.db (two documented production incidents, 2026-08-15 and 2026-08-23).
@@ -301,7 +301,7 @@ class TestOrphanedHolderStalenessBreak:
     def test_admission_still_fails_closed_for_live_unrecorded_holder(
         self, db, fast_timeout
     ):
-        """A live holder that wrote no record (pre-fix build, non-Hermes
+        """A live holder that wrote no record (pre-fix build, non-Slave
         tool) is indeterminate — must defer, never break."""
         with _rebuild_lock_held_by_other_process(db.db_path):
             assert rebuild_fts(db) == 0
@@ -451,7 +451,7 @@ class TestNonContentionErrnoFailsFast:
             raise OSError(errno.ENOTSUP, "no locks on this fs")
 
         monkeypatch.setattr(fcntl, "flock", _flock)
-        with caplog.at_level(logging.INFO, logger="hermes_state"):
+        with caplog.at_level(logging.INFO, logger="slave_state"):
             with state_common.fts_rebuild_admission(
                 tmp_path / "state.db"
             ) as admitted:

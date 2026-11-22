@@ -30,7 +30,7 @@ ROUTE = {k: v for k, v in PEER.items() if k != "source"}
 @pytest.fixture
 def store(tmp_path):
     scope = ProfileScope(profile_dir=tmp_path, name="test")
-    backend = SQLiteBackend({scope.hermes_home_key: tmp_path / "test_state.db"})
+    backend = SQLiteBackend({scope.slave_home_key: tmp_path / "test_state.db"})
     try:
         yield backend.open(scope)
     finally:

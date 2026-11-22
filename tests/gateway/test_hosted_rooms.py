@@ -1246,7 +1246,7 @@ def test_interrupted_draft_schema_migration_rolls_back_atomically(
 
 
 def test_gateway_event_budget_leaves_pre_update_snapshot_headroom():
-    from hermes_cli import update_cmd
+    from slave_cli import update_cmd
 
     # SQLite stores room ids and index entries beyond the logical payload
     # accounting, while session data shares the same file. Keep at least an
@@ -1307,13 +1307,13 @@ def test_default_db_path_never_names_the_master_session_store(tmp_path, monkeypa
     is shared across profiles (one file at the install root) but is not the
     session store file the root gateway owns.
     """
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     profile_home = root / "profiles" / "bot1"
     profile_home.mkdir(parents=True)
 
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("SLAVE_HOME", str(profile_home))
     from_profile = rooms.default_db_path()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     from_root = rooms.default_db_path()
 
     assert from_profile == from_root, "one coordination file per install"

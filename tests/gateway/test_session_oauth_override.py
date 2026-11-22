@@ -7,12 +7,12 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from gateway.run import GatewayRunner
-from hermes_cli.auth import PROVIDER_REGISTRY
-from hermes_cli.model_switch import ModelSwitchResult
+from slave_cli.auth import PROVIDER_REGISTRY
+from slave_cli.model_switch import ModelSwitchResult
 
 
 def _runner(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     # Default-route fallback is an external dependency of this invariant, not its subject.
     monkeypatch.setattr("gateway.run._resolve_gateway_model", lambda *_: "default-model")
@@ -98,8 +98,8 @@ async def test_recorded_explicit_routes_keep_their_own_key(tmp_path, monkeypatch
     runner._async_session_store = SimpleNamespace(_store=None, set_model_override=AsyncMock())
     runner._evict_cached_agent = Mock()
     ctx = SimpleNamespace(session_key="session", current_model="old-model", persist_global=False)
-    from hermes_cli.model_switch import DirectAlias
-    monkeypatch.setattr("hermes_cli.model_switch.DIRECT_ALIASES", {
+    from slave_cli.model_switch import DirectAlias
+    monkeypatch.setattr("slave_cli.model_switch.DIRECT_ALIASES", {
         alias: DirectAlias("selected-model", provider, endpoint, api_key="explicit-key")
     } if alias else {})
     result = ModelSwitchResult(
@@ -122,17 +122,17 @@ async def test_recorded_explicit_routes_keep_their_own_key(tmp_path, monkeypatch
     ("xai-oauth", "grok", "grok-fixture"),
 ])
 async def test_catalog_alias_producer_keeps_managed_credential_ownership(tmp_path, monkeypatch, provider, alias, selected):
-    from hermes_cli.model_switch import switch_model
+    from slave_cli.model_switch import switch_model
 
     runner = _runner(monkeypatch, tmp_path)
     endpoint = PROVIDER_REGISTRY[provider].inference_base_url
-    monkeypatch.setattr("hermes_cli.model_switch.DIRECT_ALIASES", {})
-    monkeypatch.setattr("hermes_cli.model_switch.list_provider_models", lambda *_: [selected])
-    monkeypatch.setattr("hermes_cli.models._PROVIDER_MODELS", {})
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.model_switch.get_model_info", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model", lambda *a, **k: {"accepted": True})
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **k: {
+    monkeypatch.setattr("slave_cli.model_switch.DIRECT_ALIASES", {})
+    monkeypatch.setattr("slave_cli.model_switch.list_provider_models", lambda *_: [selected])
+    monkeypatch.setattr("slave_cli.models._PROVIDER_MODELS", {})
+    monkeypatch.setattr("slave_cli.model_switch.get_model_capabilities", lambda *a, **k: None)
+    monkeypatch.setattr("slave_cli.model_switch.get_model_info", lambda *a, **k: None)
+    monkeypatch.setattr("slave_cli.models_validate.validate_requested_model", lambda *a, **k: {"accepted": True})
+    monkeypatch.setattr("slave_cli.runtime_provider.resolve_runtime_provider", lambda **k: {
         "provider": provider, "api_key": "switch-key", "base_url": endpoint, "api_mode": "codex_responses"})
     result = switch_model(alias, provider, "old-model", endpoint, "switch-key")
     assert result.success, result.error_message
@@ -194,10 +194,10 @@ def test_managed_session_route_bypasses_channel_resolution(tmp_path, monkeypatch
 
 
 def test_managed_session_override_on_env_overridden_codex_host_follows_auth_store(tmp_path, monkeypatch):
-    """HERMES_CODEX_BASE_URL moves the managed host; the auth store still owns its bearer."""
+    """SLAVE_CODEX_BASE_URL moves the managed host; the auth store still owns its bearer."""
     runner = _runner(monkeypatch, tmp_path)
     host = "http://127.0.0.1:9/v1"
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", host)
+    monkeypatch.setenv("SLAVE_CODEX_BASE_URL", host)
     (tmp_path / "config.yaml").write_text("model:\n  provider: openrouter\n  default: default-model\n")
     runner._session_model_overrides["session"] = {
         "model": "selected-model", "provider": "openai-codex", "api_key": "account-A",
@@ -210,19 +210,19 @@ def test_managed_session_override_on_env_overridden_codex_host_follows_auth_stor
 
 
 def test_secondary_profile_scoped_codex_host_follows_its_auth_store(tmp_path, monkeypatch):
-    """A profile whose HERMES_CODEX_BASE_URL lives only in its secret scope (the launch profile's
+    """A profile whose SLAVE_CODEX_BASE_URL lives only in its secret scope (the launch profile's
     process env names another host) still re-resolves its managed bearer each turn."""
     from agent.secret_scope import reset_secret_scope, set_secret_scope
 
     runner = _runner(monkeypatch, tmp_path)
     secondary_host = "http://127.0.0.1:9/secondary/v1"
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:9/launch-profile/v1")
+    monkeypatch.setenv("SLAVE_CODEX_BASE_URL", "http://127.0.0.1:9/launch-profile/v1")
     (tmp_path / "config.yaml").write_text("model:\n  provider: openrouter\n  default: default-model\n")
     runner._session_model_overrides["session"] = {
         "model": "selected-model", "provider": "openai-codex", "api_key": "account-A",
         "base_url": secondary_host, "api_mode": "codex_responses", "credential_pool": None,
     }
-    token = set_secret_scope({"HERMES_CODEX_BASE_URL": secondary_host})
+    token = set_secret_scope({"SLAVE_CODEX_BASE_URL": secondary_host})
     try:
         for account in ("account-A", "account-B"):
             _write_auth(tmp_path, "openai-codex", account)

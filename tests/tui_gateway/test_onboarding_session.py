@@ -27,11 +27,11 @@ FACTS = Facts(os="macos", arch="arm64", machine_kind="Mac", plugins=("blender",)
 
 @pytest.fixture
 def root(tmp_path, monkeypatch) -> Path:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr("agent.onboarding_facts.read_facts", lambda **kw: FACTS)
     (home / ".env").write_text("OPENROUTER_API_KEY=sk-or-test\n", encoding="utf-8")  # a model to run on
@@ -56,7 +56,7 @@ def client(root, monkeypatch):
 
     monkeypatch.setitem(server._methods, "session.resume", resume)
     monkeypatch.setitem(server._methods, "prompt.submit", submit)
-    from hermes_cli.process_identity import serving_local_desktop
+    from slave_cli.process_identity import serving_local_desktop
     with serving_local_desktop(True):  # the local Desktop's requests: only it starts a first run
         yield calls
 
@@ -78,7 +78,7 @@ def _rotate(db, parent: str, child: str) -> None:
 
 def _delete(db, session_id: str) -> bool:
     """Delete *session_id* through the store; True when it existed."""
-    return bool(db.sessions.delete(session_id, media_root=str(Path(server._hermes_home) / "media")))
+    return bool(db.sessions.delete(session_id, media_root=str(Path(server._slave_home) / "media")))
 
 
 def test_start_creates_one_onboarding_chat_and_plays_the_opening_once(client):
@@ -135,7 +135,7 @@ def test_only_a_chat_with_a_run_in_progress_gets_the_onboarding_toolset(root):
 
 
 def test_an_unrestricted_chat_with_a_run_keeps_every_tool_and_gets_setup_beat(root):
-    """HERMES_TUI_TOOLSETS=all loads None, which selects no session-gated toolset (onboarding is one)."""
+    """SLAVE_TUI_TOOLSETS=all loads None, which selects no session-gated toolset (onboarding is one)."""
     from model_tools import _select_tool_names
     db = server._get_db()
     _create(db, "onb")
@@ -172,9 +172,9 @@ def test_the_opening_plays_the_greeting_and_name_card_until_the_name_card_was_sh
 
 
 @pytest.mark.parametrize("locale, opens_with, asks", [
-    ("de", "Hallo, ich bin Hermes.", "Wie darf ich Sie nennen?"),
-    ("zh_TW", "你好，我是 Hermes。我們", "我該怎麼稱呼你？"),
-    ("ja-JP", "こんにちは、Hermes です。", "なんとお呼びすればいいですか？"),
+    ("de", "Hallo, ich bin Slave.", "Wie darf ich Sie nennen?"),
+    ("zh_TW", "你好，我是 slave-agent。我們", "我該怎麼稱呼你？"),
+    ("ja-JP", "こんにちは、slave-agent です。", "なんとお呼びすればいいですか？"),
     ("tlh", GREETING, "What should I call you?"),
     (None, GREETING, "What should I call you?"),
 ])
@@ -229,7 +229,7 @@ def test_skip_setup_ends_the_run_and_closes_the_waiting_card(root, monkeypatch):
     assert reply == [None]
     assert events == [("request.cancel", {"id": frames[0]["id"], "method": "setup_beat", "reason": "resolved"})]
     assert onboarding_record.load(db, "onb", persistence=db)["phase"] == "skipped"
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli.config import read_user_config_raw
     onboarding = read_user_config_raw(root / "config.yaml")["onboarding"]
     assert onboarding["run"] is False and onboarding["seen"]["profile_build_offered"] is True
 
@@ -283,7 +283,7 @@ def test_a_compression_rotation_carries_the_run_record(root):
 
 def test_skip_that_read_the_id_before_a_rotation_ends_the_run_at_the_tip(root, monkeypatch):
     """Compression published a child between Skip reading the agent's id and writing the record."""
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli.config import read_user_config_raw
     db = server._get_db()
     _create(db, "parent")
     onboarding_record.start(db, "parent", FACTS, persistence=db)
@@ -298,8 +298,8 @@ def test_skip_that_read_the_id_before_a_rotation_ends_the_run_at_the_tip(root, m
 
 
 def test_a_skip_retried_after_a_failed_config_write_closes_the_install_flag(root, monkeypatch):
-    from hermes_cli import onboarding_run
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli import onboarding_run
+    from slave_cli.config import read_user_config_raw
     db = server._get_db()
     _create(db, "onb")
     onboarding_record.start(db, "onb", FACTS, persistence=db)
@@ -320,7 +320,7 @@ def test_a_skip_retried_after_a_failed_config_write_closes_the_install_flag(root
 
 
 def test_an_old_ended_chat_never_closes_the_flag_of_a_newer_run(root):
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli.config import read_user_config_raw
     db = server._get_db()
     _create(db, "old")
     onboarding_record.start(db, "old", FACTS, persistence=db)
@@ -334,7 +334,7 @@ def test_an_old_ended_chat_never_closes_the_flag_of_a_newer_run(root):
 
 
 def test_a_rerun_ends_the_run_it_replaces_so_finishing_the_new_one_closes_the_flag(client, root, monkeypatch):
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli.config import read_user_config_raw
     broadcast = []
     monkeypatch.setattr(server, "_broadcast_global_event", lambda event, payload: broadcast.append((event, payload)))
     old = _call("onboarding.start")["result"]
@@ -354,7 +354,7 @@ def test_a_rerun_ends_the_run_it_replaces_so_finishing_the_new_one_closes_the_fl
 
 
 def test_a_rerun_never_writes_the_install_flag_off_and_heals_leftover_open_runs(client, monkeypatch):
-    from hermes_cli import onboarding_run
+    from slave_cli import onboarding_run
     db = server._get_db()
     for leftover in ("crash-a", "crash-b"):  # two open runs, as a crash mid-rerun could leave
         _create(db, leftover)
@@ -401,15 +401,15 @@ def test_deleting_the_onboarding_chat_ends_its_run_and_closes_the_flag(root):
 
 
 def test_the_onboarding_facts_are_read_in_the_default_profile(root, client, monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     work = root / "profiles" / "work"
     (work / "skills").mkdir(parents=True)
     (work / "config.yaml").write_text("model: {}\n", encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", str(work))
-    monkeypatch.setenv("HERMES_HOME", str(work))  # a backend launched with -p work
+    monkeypatch.setattr(server, "_slave_home", str(work))
+    monkeypatch.setenv("SLAVE_HOME", str(work))  # a backend launched with -p work
     monkeypatch.setitem(server._methods, "prompt.submit", lambda rid, params: {"result": {}})  # launch db is work's
     homes = []
-    monkeypatch.setattr("agent.onboarding_facts.read_facts", lambda **kw: (homes.append(get_hermes_home()), FACTS)[1])
+    monkeypatch.setattr("agent.onboarding_facts.read_facts", lambda **kw: (homes.append(get_slave_home()), FACTS)[1])
 
     _call("onboarding.start")
     assert homes == [root]
@@ -417,7 +417,7 @@ def test_the_onboarding_facts_are_read_in_the_default_profile(root, client, monk
 
 def test_a_start_outside_the_local_desktop_schedules_nothing(root):
     """A CLI or TUI calling onboarding.start is refused before ``onboarding.run`` is written."""
-    from hermes_cli.onboarding_run import _explicit_run
+    from slave_cli.onboarding_run import _explicit_run
     assert _call("onboarding.start")["error"]["code"] == 5080
     assert _explicit_run() is None
 

@@ -15,7 +15,7 @@ def _projection(frames):
 @pytest.mark.asyncio
 async def test_settled_execution_stops_stamping_idle_mutations_and_desktop_fixture_matches(tmp_path, monkeypatch):
     from tests.gateway.fixtures.execution_frames_capture import capture
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     captured = await capture(tmp_path)
     for label in ('epoch1', 'epoch2'):
         epoch = captured[label]['authority_epoch']

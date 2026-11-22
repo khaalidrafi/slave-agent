@@ -1,5 +1,5 @@
-import type { SubagentStatus } from '@hermes/shared/gateway-events'
-import type { SpawnTreeLoadResponse } from '@hermes/shared/gateway-types'
+import type { SubagentStatus } from '@slave-agent/shared/gateway-events'
+import type { SpawnTreeLoadResponse } from '@slave-agent/shared/gateway-types'
 import { atom } from 'nanostores'
 
 import type { SubagentProgress } from '../types.js'

@@ -1,6 +1,6 @@
 """Coding-context awareness: the single place that decides "are we coding?".
 
-In a code workspace on an interactive surface Hermes adopts a **coding posture**: a
+In a code workspace on an interactive surface slave-agent adopts a **coding posture**: a
 frozen :class:`RuntimeMode` built from a :class:`ContextProfile` (pure data). The
 system prompt reads ``system_prompt_parts()``; the toolset collapses ONLY under opt-in
 ``focus`` (never strips a user-enabled toolset). ``agent.coding_context``: ``auto``
@@ -20,9 +20,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_cli._subprocess_compat import bounded_git_probe
+from slave_cli._subprocess_compat import bounded_git_probe
 
-logger = logging.getLogger("hermes.coding_context")
+logger = logging.getLogger("slave.coding_context")
 
 CODING_TOOLSET = "coding"
 
@@ -72,7 +72,7 @@ _EDIT_FORMAT_GUIDANCE: dict[str, tuple[tuple[str, ...], str]] = {
     "replace": (
         ("claude", "sonnet", "opus", "haiku",
          "gemini", "gemma", "deepseek", "qwen", "kimi", "glm", "grok",
-         "hermes", "llama", "mistral", "devstral", "minimax"),
+         "slave", "llama", "mistral", "devstral", "minimax"),
         "- Edit format: author new files with `write_file`; for edits to "
         "existing code prefer `patch` in `mode='replace'` — match a unique "
         "snippet and swap it. Reach for `mode='patch'` (V4A) only when an edit "
@@ -80,7 +80,7 @@ _EDIT_FORMAT_GUIDANCE: dict[str, tuple[tuple[str, ...], str]] = {
     ),
 }
 
-# Operating brief. Tool names referenced here are in the coding toolset and _HERMES_CORE_TOOLS.
+# Operating brief. Tool names referenced here are in the coding toolset and _SLAVE_CORE_TOOLS.
 CODING_AGENT_GUIDANCE = (
     "You are a coding agent pairing with the user inside their codebase. "
     "Operate like a careful senior engineer.\n"
@@ -182,7 +182,7 @@ def _agent_config_value(config: Optional[dict[str, Any]], key: str, default: Any
     """``config["agent"][key]``, loading config when none was passed."""
     if config is None:
         try:
-            from hermes_cli.config import load_config, load_config_readonly
+            from slave_cli.config import load_config, load_config_readonly
             config = load_config_readonly() if readonly else load_config()
         except Exception:
             config = {}
@@ -281,8 +281,8 @@ def _enabled_mcp_servers(config: Optional[dict[str, Any]]) -> list[str]:
     """Names of MCP servers the user has enabled — kept in the coding posture. The profile default's
     resolver, so plugin-provided servers stay too; *config* None reads the user's config."""
     try:
-        from hermes_cli.config import read_raw_config
-        from hermes_cli.tools_config import enabled_mcp_server_names
+        from slave_cli.config import read_raw_config
+        from slave_cli.tools_config import enabled_mcp_server_names
         return sorted(enabled_mcp_server_names(read_raw_config() if config is None else config))
     except Exception:
         logger.debug("Could not list enabled MCP servers for the coding posture", exc_info=True)
@@ -327,7 +327,7 @@ class RuntimeMode:
 
     def toolset_selection(self, config: Optional[dict[str, Any]] = None) -> Optional[list[str]]:
         """Toolset list (only under ``focus``), or ``None`` to keep the platform default. Callers
-        apply it only when the user hasn't pinned a selection (``--toolsets``, ``HERMES_TUI_TOOLSETS``).
+        apply it only when the user hasn't pinned a selection (``--toolsets``, ``SLAVE_TUI_TOOLSETS``).
         *config* None lists MCP servers from the user's config."""
         if self.config_mode != "focus" or self.profile.toolset is None:
             return None
@@ -397,7 +397,7 @@ def resolve_runtime_mode(
 # ── Functional API (thin wrappers over RuntimeMode) ──────────────────────────
 
 def is_coding_context(*, platform: Optional[str] = None, cwd: Optional[str | Path] = None, config: Optional[dict[str, Any]] = None) -> bool:
-    """Whether Hermes should operate in its coding posture right now."""
+    """Whether slave-agent should operate in its coding posture right now."""
     return resolve_runtime_mode(platform=platform, cwd=cwd, config=config).is_coding
 
 
@@ -551,7 +551,7 @@ def build_coding_workspace_block(cwd: Optional[str | Path] = None) -> str:
     if git_root is not None:
         # ``status`` hashes re-timestamped files through the repo-named clean filter; skip it when
         # the filter overrides cannot be discovered rather than run it half-hardened.
-        from hermes_cli._subprocess_compat import noninteractive_repo_git_env
+        from slave_cli._subprocess_compat import noninteractive_repo_git_env
         status_env = noninteractive_repo_git_env(root)
         status = "" if status_env is None else bounded_git_probe(
             ["git", "-C", str(root), "status", "--porcelain=2", "--branch"], timeout=_GIT_TIMEOUT, env=status_env)
@@ -568,7 +568,7 @@ def build_coding_workspace_block(cwd: Optional[str | Path] = None) -> str:
         # Linked worktree: say so (branches/stashes are shared state) but do NOT expose
         # the primary tree path — a second absolute path makes the model run commands
         # in the wrong directory. Derived from the session's own cwd, so every surface
-        # opened in a worktree (``hermes -w``, Ink, Desktop, ACP) gets the same guidance.
+        # opened in a worktree (``slave -w``, Ink, Desktop, ACP) gets the same guidance.
         git_dir, common_dir = _git(root, "rev-parse", "--git-dir"), _git(root, "rev-parse", "--git-common-dir")
         if git_dir and common_dir and Path(git_dir).resolve() != Path(common_dir).resolve():
             on_branch = f" on branch {head}" if head and head != "(detached)" else ""

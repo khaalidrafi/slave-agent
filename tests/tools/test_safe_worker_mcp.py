@@ -37,8 +37,8 @@ def test_safe_worker_never_spawns_mcp_servers(tmp_path, mode):
     config = {"mcp_servers": {"owned": server}, "plugins": {"enabled": []}}
     (home / "config.yaml").write_text(json.dumps(config), encoding="utf-8")
     root = Path(__file__).resolve().parents[2]
-    env = dict(os.environ, HERMES_HOME=str(home), HOME=str(home), PROBE_MODE=mode)
-    for key in ("HERMES_SAFE_MODE", "HERMES_IGNORE_USER_CONFIG"):
+    env = dict(os.environ, SLAVE_HOME=str(home), HOME=str(home), PROBE_MODE=mode)
+    for key in ("SLAVE_SAFE_MODE", "SLAVE_IGNORE_USER_CONFIG"):
         env.pop(key, None)
     script = home / "probe.py"
     script.write_text(f"import sys; sys.path.insert(0, {str(root)!r})\n" + textwrap.dedent(f'''

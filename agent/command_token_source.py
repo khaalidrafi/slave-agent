@@ -47,7 +47,7 @@ def materialize_probe_api_key(api_key: object) -> str:
 
 def _mint(command: str, label: str) -> tuple[str, Optional[float]]:
     """Run *command*, returning ``(token, ttl_seconds_or_None)``. The helper runs FOR the profile whose
-    provider is being minted: it gets that profile's own env (secrets + HERMES_HOME), never the multiplexer's
+    provider is being minted: it gets that profile's own env (secrets + SLAVE_HOME), never the multiplexer's
     launch environ — an ``op read`` / ``vault kv get`` helper must sign in as the served profile."""
     from tools.environments.local import served_profile_child_env
 
@@ -93,8 +93,8 @@ def _mint(command: str, label: str) -> tuple[str, Optional[float]]:
             if isinstance(ttl, (int, float)) and ttl > 0:
                 return token, float(ttl)
             # CLI helpers often print an absolute ISO 8601 deadline instead of OAuth's relative
-            # lifetime; honour it or the token 401s once past. Lazy import: hermes_cli.auth imports agent.*.
-            from hermes_cli.auth import _parse_iso_timestamp
+            # lifetime; honour it or the token 401s once past. Lazy import: slave_cli.auth imports agent.*.
+            from slave_cli.auth import _parse_iso_timestamp
 
             for field in ("expiry", "expiresOn"):
                 deadline = _parse_iso_timestamp(payload.get(field))
@@ -117,7 +117,7 @@ def _mint(command: str, label: str) -> tuple[str, Optional[float]]:
 class CommandTokenSource:
     """Callable returning a bearer token, cached until shortly before expiry."""
 
-    hermes_credential_source = KEY_CMD  # display label source; read without calling (agent.credential_source)
+    slave_credential_source = KEY_CMD  # display label source; read without calling (agent.credential_source)
 
     def __init__(self, command: str, label: str = "custom") -> None:
         self._command = command

@@ -59,9 +59,9 @@ def _record_kanban_budget_exhausted(
     from multiple exit paths.
     """
     try:
-        from hermes_cli import kanban_db as _kb
-        from hermes_cli import kanban_db_connect as _kbc
-        from hermes_cli import kanban_db_dispatch as _kbd
+        from slave_cli import kanban_db as _kb
+        from slave_cli import kanban_db_connect as _kbc
+        from slave_cli import kanban_db_dispatch as _kbd
         _conn = _kbc.connect()
         try:
             _kbd._record_task_failure(
@@ -105,7 +105,7 @@ def _clone_background_review_messages(messages):
 def _invoke_hook_safely(name: str, logger: logging.Logger, **kwargs) -> list:
     """Fire a lifecycle plugin hook; a failing hook is logged, never fatal."""
     try:
-        from hermes_cli.lifecycle import invoke_hook
+        from slave_cli.lifecycle import invoke_hook
         return invoke_hook(name, **kwargs)
     except Exception as exc:
         logger.warning("%s hook failed: %s", name, exc)
@@ -174,10 +174,10 @@ def _resolve_budget_fallback(
     # A kanban worker must record a terminal outcome whether or not a fallback path
     # was eligible, so the dispatcher learns the worker could not complete. Only the
     # dispatcher-owned worker owns the task: an in-process delegate_task child or cron run
-    # inherits ``HERMES_KANBAN_TASK`` via os.environ but exhausting ITS budget must not
+    # inherits ``SLAVE_KANBAN_TASK`` via os.environ but exhausting ITS budget must not
     # close the parent's run and release its claim (#112817).
     _kanban_task = (
-        os.environ.get("HERMES_KANBAN_TASK")
+        os.environ.get("SLAVE_KANBAN_TASK")
         if budget_exhausted and is_dispatcher_owned_worker_context() else None
     )
     # If running as a kanban worker, signal the dispatcher that the worker could not complete (rather than
@@ -498,7 +498,7 @@ def _apply_output_hooks(
         except Exception:
             side_question_token = None
             logger.warning("side question lease failed", exc_info=True)
-        from hermes_cli.lifecycle import has_hook
+        from slave_cli.lifecycle import has_hook
         review_signals = build_review_signals(
             agent, memory_review_due=memory_review_due, skill_review_due=skill_review_due,
         ) if has_hook("post_llm_call") else None
@@ -566,7 +566,7 @@ def _run_held_transforms(callbacks, payload: dict, logger) -> Optional[str]:
     """A held turn runs the transforms captured at its start (``held_stream_transforms``), not the live
     registry a mid-turn reload empties. When none rewrote and one raised or timed out, the user gets a
     fixed notice, never the text the plugin had to see first."""
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
 
     try:
         rewrite, failed = get_plugin_manager().run_held_transforms(callbacks, **payload)
@@ -722,7 +722,7 @@ def finalize_turn(
 
     _rollback_interrupted_preflight_display(agent, interrupted)
 
-    from hermes_cli.observability.shared_metrics_harness import finish_turn
+    from slave_cli.observability.shared_metrics_harness import finish_turn
     finish_turn(agent, _turn_exit_reason, final_response, interrupted=interrupted, failed=failed)
 
     _cleanup_errors: list[str] = []
@@ -835,7 +835,7 @@ def finalize_turn(
         # explanation appended since): it carries no new text for the client to paint.
         "response_reused": bool(final_response) and final_response == getattr(agent, "_reused_response_text", None),
         "model": agent.model,
-        # requested_model / served_model: proxy-reported deployment or Hermes' own fallback route.
+        # requested_model / served_model: proxy-reported deployment or Slave' own fallback route.
         **result_model_fields(agent),
         "provider": agent.provider,
         "base_url": agent.base_url,
@@ -847,7 +847,7 @@ def finalize_turn(
             else getattr(agent.context_compressor, "last_prompt_tokens", 0)
         ) or 0,
         **{key: getattr(agent, f"session_{key}") for key in _SESSION_COST_KEYS},
-        # Requested service tier, for billing audits (`hermes -z --usage-file`).
+        # Requested service tier, for billing audits (`slave -z --usage-file`).
         "service_tier": (
             (getattr(agent, "request_overrides", {}) or {}).get("extra_body") or {}
         ).get("service_tier"),
@@ -859,13 +859,13 @@ def finalize_turn(
     # surfaces status="error" (desktop can toast) instead of a quiet complete frame, plus
     # the machine-readable cause 'session_persistence_failed:<locked|compression|...>'.
     if failed and str(_turn_exit_reason) == "session_persistence_failed":
-        from hermes_constants import profile_cli_selector
+        from slave_constants import profile_cli_selector
 
         # Never rebind final_response here: the memory sync and the background-review gate
         # below must still see an empty response on a persistence-failed turn.
         result["error"] = final_response or (
             "session storage could not be written — check the state database "
-            f"health (`hermes {profile_cli_selector()}doctor`), then send your message again"
+            f"health (`slave {profile_cli_selector()}doctor`), then send your message again"
         )
         _cause = getattr(agent, "_last_persistence_error_cause", None)
         result["failure_reason"] = "session_persistence_failed:" + (_cause or "unknown")

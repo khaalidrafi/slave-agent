@@ -39,7 +39,7 @@ def test_local_session_authoring_commands_run_the_gateway_handler(tmp_path):
                          'auxiliary': {'title_generation': {'enabled': False}}})
     (home / 'config.yaml').write_text(config)
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out, sid = {}, {}
 
@@ -184,7 +184,7 @@ def test_local_goal_kickoff_is_judged_and_continued_by_the_gateway(tmp_path):
         'gateway': {'multiplex_profiles': False}, 'model': {'provider': 'custom', 'default': 'm', 'base_url': url},
         'auxiliary': {'title_generation': {'enabled': False}}}))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out = {}
 

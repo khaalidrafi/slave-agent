@@ -1,4 +1,4 @@
-"""Load ``$HERMES_HOME`` provider plugins into a home layer, and swap in an updated one whole (#153300).
+"""Load ``$SLAVE_HOME`` provider plugins into a home layer, and swap in an updated one whole (#153300).
 
 A provider plugin used to be imported once per process. An update then never reached a running gateway, and a
 plugin importing part of its package on first use (inside ``create_client``) read that one file from the new
@@ -40,7 +40,7 @@ def _snapshot(plugin_dir: Path, module_name: str) -> Path:
     global _snapshot_root
     with _snapshot_lock:
         if _snapshot_root is None:
-            _snapshot_root = Path(tempfile.mkdtemp(prefix="hermes-provider-plugins-"))
+            _snapshot_root = Path(tempfile.mkdtemp(prefix="slave-provider-plugins-"))
             atexit.register(shutil.rmtree, _snapshot_root, True)
     target = _snapshot_root / module_name / plugin_dir.name
     if target.is_dir():

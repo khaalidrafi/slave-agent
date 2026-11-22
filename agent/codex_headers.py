@@ -40,18 +40,18 @@ def codex_cloudflare_headers(access_token: str, *, base_url: str = CODEX_AUX_BAS
     """Identity and account headers for chatgpt.com/backend-api/codex.
 
     OpenAI requires third-party harnesses to identify themselves: the official
-    endpoint gets Hermes' originator and version, custom endpoints keep the
+    endpoint gets slave-agent’ originator and version, custom endpoints keep the
     codex_cli_rs compatibility identity. The account headers come from the
     OAuth JWT (see :func:`codex_account_headers`).
     """
     if is_official_codex_base_url(base_url):
-        from hermes_cli.version_info import get_version_info
+        from slave_cli.version_info import get_version_info
         headers = {
-            "User-Agent": f"HermesAgent/{get_version_info().base_version}",
-            "originator": "hermes-agent",
+            "User-Agent": f"SlaveAgent/{get_version_info().base_version}",
+            "originator": "slave-agent",
         }
     else:
-        headers = {"User-Agent": "codex_cli_rs/0.0.0 (Hermes Agent)", "originator": "codex_cli_rs"}
+        headers = {"User-Agent": "codex_cli_rs/0.0.0 (slave-agent)", "originator": "codex_cli_rs"}
     headers.update(codex_account_headers(access_token))
     return headers
 
@@ -88,11 +88,11 @@ def codex_account_headers(access_token: str) -> dict[str, str]:
 
 def _codex_compression_enabled() -> bool:
     """``agent.codex_request_compression`` (default on); built-in default under ``--ignore-user-config``."""
-    if os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1":
+    if os.environ.get("SLAVE_IGNORE_USER_CONFIG") == "1":
         return True
-    from hermes_cli.config_backend import ConfigBackendUnavailable
+    from slave_cli.config_backend import ConfigBackendUnavailable
     try:
-        from hermes_cli.config import cfg_get, load_config_readonly
+        from slave_cli.config import cfg_get, load_config_readonly
         return cfg_get(load_config_readonly(), "agent", "codex_request_compression", default=True) is not False
     # The caller drops its whole HTTP client on an exception, and a refused backend read is a
     # SystemExit that would end the gateway turn worker; plain JSON is the safe answer for both.
@@ -101,8 +101,8 @@ def _codex_compression_enabled() -> bool:
         return False
 
 
-_RAW_BODY_EXT = "hermes_codex_raw_body"
-_PLAIN_BODY_EXT = "hermes_codex_plain_body"
+_RAW_BODY_EXT = "slave_codex_raw_body"
+_PLAIN_BODY_EXT = "slave_codex_plain_body"
 
 
 def codex_request_compression_hooks(base_url: str, *, async_mode: bool = False) -> dict[str, list] | None:
@@ -170,7 +170,7 @@ def codex_zstd_replay_client_cls(async_mode: bool = False) -> type:
     Only requests the compression hook encoded carry the raw body, so nothing else is resent. The
     raw body is dropped from the request as soon as the response arrives, so a long SSE stream does
     not keep a second copy alive. A rejection of the plain body is returned like any other 400.
-    The budget is one resend per ``send``: an SDK-level retry (Hermes runs the agent client with
+    The budget is one resend per ``send``: an SDK-level retry (slave-agent runs the agent client with
     ``max_retries=0``) builds a new request and may resend once more.
     """
     import httpx

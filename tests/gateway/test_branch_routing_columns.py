@@ -36,7 +36,7 @@ from tests.fixtures.storage_seed import seed_messages
 
 @pytest.fixture()
 def store(tmp_path):
-    """Real SessionStore backed by the real store (SQLite in the test HERMES_HOME)."""
+    """Real SessionStore backed by the real store (SQLite in the test SLAVE_HOME)."""
     config = GatewayConfig()
     store = SessionStore(sessions_dir=tmp_path, config=config)
     yield store

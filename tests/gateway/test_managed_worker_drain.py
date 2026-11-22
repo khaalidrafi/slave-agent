@@ -52,8 +52,8 @@ async def test_reserved_worker_persists_while_runtime_drains(tmp_path):
 async def test_draining_ws_redeems_only_worker_ticket(tmp_path, monkeypatch, purpose, state):
     from gateway.run_api import GatewayRuntimeAPI
     from gateway.runtime_bootstrap import TicketStore
-    from hermes_cli import web_server as web
-    from hermes_cli import web_server_chat
+    from slave_cli import web_server as web
+    from slave_cli import web_server_chat
     tickets = TicketStore('owner', [str(tmp_path)])
     ticket = tickets.mint(profile_id=str(tmp_path), subject='human', purpose=purpose)
     authority = SimpleNamespace(persistence=SimpleNamespace(scope=profile_scope(home=tmp_path)), profile_id=str(tmp_path), runner=None)
@@ -63,7 +63,7 @@ async def test_draining_ws_redeems_only_worker_ticket(tmp_path, monkeypatch, pur
     async def fallback(*args):
         pytest.fail('draining native calls must not enter legacy fallback')
     async def handle(ws, **kwargs):
-        await ws.accept(subprotocol='hermes-gateway-v1')
+        await ws.accept(subprotocol='slave-gateway-v1')
         seen.append((await ws.receive_json(), kwargs['auth_identity']['capabilities']))
     monkeypatch.setattr('tui_gateway.ws.handle_ws', handle)
     monkeypatch.setattr(web, '_DASHBOARD_EMBEDDED_CHAT_ENABLED', True)
@@ -73,8 +73,8 @@ async def test_draining_ws_redeems_only_worker_ticket(tmp_path, monkeypatch, pur
     async def send(value): sent.append(value)
     scope = {'type': 'websocket', 'path': '/api/ws', 'scheme': 'ws', 'query_string': b'',
         'client': ('127.0.0.1', 1234), 'server': ('127.0.0.1', 9999),
-        'headers': [(b'sec-websocket-protocol', ('hermes-gateway-v1, hermes-gateway-ticket.' + ticket).encode())],
-        'subprotocols': ['hermes-gateway-v1', 'hermes-gateway-ticket.' + ticket]}
+        'headers': [(b'sec-websocket-protocol', ('slave-gateway-v1, slave-gateway-ticket.' + ticket).encode())],
+        'subprotocols': ['slave-gateway-v1', 'slave-gateway-ticket.' + ticket]}
     await GatewayRuntimeAPI(fallback, runner, web.app)(scope, receive, send)
     if purpose == 'worker-adoption':
         assert seen == [({'method': 'worker.persist'}, frozenset({'worker:adopt'}))]

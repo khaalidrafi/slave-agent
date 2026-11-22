@@ -1,5 +1,5 @@
 name: codemode
-repo: https://github.com/junbo-hh/hermes-codemode
+repo: https://github.com/junbo-hh/slave-codemode
 sha: 6ab8e447294e80e8a9942b87329091d53455cf48
 version: "0.2.0"
 title: Codemode
@@ -8,7 +8,7 @@ maintainer: junbo-hh
 tier: community
 category: tools
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/junbo-hh/hermes-codemode#readme
+docs_url: https://github.com/junbo-hh/slave-codemode#readme
 platforms: [linux, macos]
 capabilities:
   provides_tools:

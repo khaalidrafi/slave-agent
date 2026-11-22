@@ -282,7 +282,7 @@ class TestReconcileColumnsErrorHandling:
                     "duplicate column name: last_read_at"
                 ),
             )
-            with caplog.at_level(logging.WARNING, logger="hermes_state"):
+            with caplog.at_level(logging.WARNING, logger="slave_state"):
                 _schema._reconcile_columns(cursor, db_path.parent)
         finally:
             conn.close()
@@ -303,7 +303,7 @@ class TestReconcileColumnsErrorHandling:
                     "Cannot add a NOT NULL column with default value NULL"
                 ),
             )
-            with caplog.at_level(logging.WARNING, logger="hermes_state"):
+            with caplog.at_level(logging.WARNING, logger="slave_state"):
                 _schema._reconcile_columns(cursor, db_path.parent)
         finally:
             conn.close()

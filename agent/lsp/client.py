@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
 from urllib.parse import quote, unquote
 
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.process_identity import own_process_groups, register_child, release_process_group_once_empty
+from slave_cli._subprocess_compat import windows_hide_flags
+from slave_cli.process_identity import own_process_groups, register_child, release_process_group_once_empty
 
 from agent.lsp.protocol import (
     ERROR_CONTENT_MODIFIED, ERROR_METHOD_NOT_FOUND, LSPProtocolError, LSPRequestError, classify_message,
@@ -260,7 +260,7 @@ class LSPClient:
 
     async def _spawn(self) -> None:
         from agent.delegation_context import delegated_child_subprocess_env
-        from tools.environments.local import hermes_subprocess_env
+        from tools.environments.local import slave_subprocess_env
         cmd = self._command
         if sys.platform == "win32" and cmd[0].lower().endswith((".cmd", ".bat")):
             cmd = ["cmd.exe", "/c", *cmd]  # CreateProcess can't run .cmd/.bat shims directly
@@ -274,7 +274,7 @@ class LSPClient:
             self._proc = await asyncio.create_subprocess_exec(
                 cmd[0], *cmd[1:], limit=_STREAM_LIMIT,
                 stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-                env=delegated_child_subprocess_env({**hermes_subprocess_env(), **(self._env or {})}), cwd=self._cwd,
+                env=delegated_child_subprocess_env({**slave_subprocess_env(), **(self._env or {})}), cwd=self._cwd,
                 start_new_session=True,  # detached-spawn: ok — the group goes to own_process_groups below
                 creationflags=windows_hide_flags(),
             )
@@ -282,7 +282,7 @@ class LSPClient:
             raise LSPProtocolError(f"LSP server binary not found: {cmd[0]} ({e})") from e
         # The server itself exits on stdin EOF when we die, but a descendant that does not hold or
         # watch that pipe (a wrapper's background child, a SIGTERM-ignoring worker) outlived a
-        # SIGKILLed / OOM-killed Hermes forever. The owner-death supervisor kills the whole group
+        # SIGKILLed / OOM-killed Slave forever. The owner-death supervisor kills the whole group
         # the moment this process dies, by any cause. No-op on Windows (job object instead).
         own_process_groups([self._proc.pid])
         # Off the event loop: the ledger write takes a cross-process lock (up to 2 s).

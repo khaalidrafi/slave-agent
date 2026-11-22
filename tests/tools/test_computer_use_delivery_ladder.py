@@ -234,7 +234,7 @@ def _interactive_session(monkeypatch):
     from tools import approval
     from tools.approval_context import reset_current_session_key, set_current_session_key
 
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
     monkeypatch.setattr(approval, "save_permanent_allowlist", lambda patterns: None)
     keys: list[str] = []
 

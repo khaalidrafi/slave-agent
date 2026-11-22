@@ -19,7 +19,7 @@ function fixture() {
   roots.push(home)
   const receipts = join(home, 'logs/update_receipts')
   mkdirSync(receipts, { recursive: true })
-  const resultPath = join(home, '.hermes-update-result.json')
+  const resultPath = join(home, '.slave-update-result.json')
   const write = (name, data) => writeFileSync(join(receipts, name), JSON.stringify(data))
   return { home, resultPath, write }
 }
@@ -42,7 +42,7 @@ test('failed handoff fails even at target SHA; success waits for marker removal'
   writeFileSync(f.resultPath, JSON.stringify({ ok: false, exit_code: 1 }))
   expect(() => observe('target')).toThrow(/failed/)
   writeFileSync(f.resultPath, JSON.stringify({ ok: true, exit_code: 0 }))
-  const marker = join(f.home, '.hermes-update-in-progress')
+  const marker = join(f.home, '.slave-update-in-progress')
   writeFileSync(marker, 'updater still finishing')
   expect(observe('target')).toBe(false)
   rmSync(marker)

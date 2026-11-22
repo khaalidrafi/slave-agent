@@ -26,7 +26,7 @@ LIVE_CONTROL = {"action", "subagent_id", "message"}
 def _clean_queue_and_context(monkeypatch):
     import gateway.session_context as sc
 
-    monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
+    monkeypatch.delenv("SLAVE_SINGLE_QUERY_SESSION", raising=False)
     yield
     for var in sc._VAR_MAP.values():
         var.set(sc._UNSET)
@@ -42,7 +42,7 @@ def _built(inline: bool):
 
     agent = SimpleNamespace(platform="whatsapp", quiet_mode=True)
     with gateway_delegation_inline_scope(inline):
-        _load_tools(agent, ["hermes-cli"], None)
+        _load_tools(agent, ["slave-cli"], None)
     return agent
 
 
@@ -57,7 +57,7 @@ def test_the_build_scope_picks_the_schema_and_the_agent_keeps_it():
 
     background = _built(inline=False)
     registry = next(t["function"] for t in model_tools.get_tool_definitions(
-        enabled_toolsets=["hermes-cli"], disabled_toolsets=background.disabled_toolsets, quiet_mode=True)
+        enabled_toolsets=["slave-cli"], disabled_toolsets=background.disabled_toolsets, quiet_mode=True)
         if t["function"]["name"] == "delegate_task")
     assert _delegate(background) == registry  # byte-identical to main
 

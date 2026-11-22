@@ -79,7 +79,7 @@ class ScriptedModel(BaseHTTPRequestHandler):
         if (last['role'] == 'user' and state.first_proc and f'Background process {state.first_proc}' in text
                 and not state.second_started):
             state.second_started = True
-            return _call('terminal', command='sleep 2; echo SECOND_DONE fence=${HERMES_DELEGATED_CHILD_CONTEXT:-none}', background=True, notify_on_complete=True)
+            return _call('terminal', command='sleep 2; echo SECOND_DONE fence=${SLAVE_DELEGATED_CHILD_CONTEXT:-none}', background=True, notify_on_complete=True)
         return 'PARENT_ACK'
 
     def do_POST(self):
@@ -141,7 +141,7 @@ def _profile_home(target, marker, config):
 @pytest.mark.platforms("linux")  # the daemon is stopped with SIGINT, which raises on Windows
 def test_handed_off_completion_turn_runs_as_the_parent(tmp_path):
     root = Path(__file__).resolve().parents[2]
-    # A custom root (``<root>/profiles/<name>``, as in Docker): ``$HOME/.hermes`` is the live system.
+    # A custom root (``<root>/profiles/<name>``, as in Docker): ``$HOME/.slave`` is the live system.
     user, work, home = tmp_path / 'user', tmp_path / 'work', tmp_path / 'state'
     secondary = home / 'profiles' / 'second'
     secondary.mkdir(parents=True, mode=0o700)
@@ -165,8 +165,8 @@ def test_handed_off_completion_turn_runs_as_the_parent(tmp_path):
     _profile_home(home, 'LAUNCH', config)
     _profile_home(secondary, 'SECOND', config)
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
-               XDG_CONFIG_HOME=str(user / '.config'), HERMES_GATEWAY_LOCK_DIR=str(tmp_path / 'locks'),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
+               XDG_CONFIG_HOME=str(user / '.config'), SLAVE_GATEWAY_LOCK_DIR=str(tmp_path / 'locks'),
                OPENROUTER_API_KEY='loopback-only', OPENAI_API_KEY='loopback-only', PYTHONUNBUFFERED='1')
     out = {}
 
@@ -183,7 +183,7 @@ def test_handed_off_completion_turn_runs_as_the_parent(tmp_path):
         grant = control(home, 'session-ticket', {'profile_id': str(secondary), 'instance_id': desc['instance_id'],
                                                  'purpose': 'interactive'})
         async with connect(desc['api_origin'].replace('http:', 'ws:') + '/api/ws',
-                           subprotocols=['hermes-gateway-v1', 'hermes-gateway-ticket.' + grant['ticket']]) as ws:
+                           subprotocols=['slave-gateway-v1', 'slave-gateway-ticket.' + grant['ticket']]) as ws:
             created = await rpc(ws, 'session.create', request_id='handoff-parent', source='cli',
                                 toolsets=['terminal', 'delegation'], cwd=str(work))
             out['sid'] = sid = created['result']['session_id']

@@ -64,7 +64,7 @@ def test_legacy_submit_refuses_while_canonical_ledger_holds_work(monkeypatch, tm
 
 def test_ledger_read_failure_refuses_as_coordination_unavailable(monkeypatch):
     """A store failure reading the ledger refuses the turn rather than running it past unknown work."""
-    from hermes_cli.active_sessions import SESSION_COORDINATION_UNAVAILABLE
+    from slave_cli.active_sessions import SESSION_COORDINATION_UNAVAILABLE
     from persistence.core.errors import TransientStoreError
 
     def _failing(_key):

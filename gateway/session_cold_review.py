@@ -76,7 +76,7 @@ def cold_review_parent(runner, source, session_key, session_id):
         agent = AIAgent(
             model=route["model"], **route["runtime"], quiet_mode=True, verbose_logging=False,
             enabled_toolsets=enabled, disabled_toolsets=disabled,
-            # Launch-preloaded skills (``hermes -s``): the reviewer is told to load them too.
+            # Launch-preloaded skills (``slave -s``): the reviewer is told to load them too.
             ephemeral_system_prompt=(policy.skills_prompt if policy else None) or None,
             prefill_messages=prefill or None,
             reasoning_config=runner._resolve_session_reasoning_config(source=source, session_key=session_key,

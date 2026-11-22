@@ -23,17 +23,17 @@ async def test_authenticated_token_can_create_without_identityless_permissions(t
     from gateway.run_runtime import initialize_gateway_runtime, start_gateway_runtime_api, publish_gateway_runtime_ready
     from gateway.runtime_ownership import process_ownership
     from gateway.session_controls import AuthorityConnection
-    from hermes_constants import get_hermes_home
-    from hermes_cli import web_server as web
+    from slave_constants import get_slave_home
+    from slave_cli import web_server as web
 
     # Session creation persists a restorable model policy, even without a turn.
-    (get_hermes_home() / 'config.yaml').write_text(json.dumps({
+    (get_slave_home() / 'config.yaml').write_text(json.dumps({
         'model': {'provider': 'custom', 'default': 'local-wire-stub',
                   'base_url': 'http://127.0.0.1:1/v1'},
         'platform_toolsets': {'cli': []},
         'auxiliary': {'title_generation': {'enabled': False}},
     }))
-    process_ownership.reserve([get_hermes_home()])
+    process_ownership.reserve([get_slave_home()])
     runner = GatewayRunner(GatewayConfig())
     try:
         await initialize_gateway_runtime(runner)
@@ -72,7 +72,7 @@ async def test_authenticated_token_can_create_without_identityless_permissions(t
 def test_ordinary_daemon_keeps_control_auth_and_loop_witness(tmp_path, layout):
     from gateway.control_socket import identify_gateway, resolve_client_socket_path
     from gateway.shutdown_watchdog import get_loop_tick_socket_path
-    from hermes_cli.gateway import probe_gateway_loop_liveness
+    from slave_cli.gateway import probe_gateway_loop_liveness
 
     async def create(origin, token):
         url = origin.replace('http:', 'ws:') + '/api/ws'
@@ -112,8 +112,8 @@ def test_ordinary_daemon_keeps_control_auth_and_loop_witness(tmp_path, layout):
         root = Path(__file__).resolve().parents[2]
         token = secrets.token_urlsafe(32)
         env = {key: os.environ[key] for key in ('PATH', 'LANG', 'TZ') if key in os.environ}
-        env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
-                   PYTHONPATH=str(root), PYTHONUNBUFFERED='1', HERMES_DASHBOARD_SESSION_TOKEN=token)
+        env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
+                   PYTHONPATH=str(root), PYTHONUNBUFFERED='1', SLAVE_DASHBOARD_SESSION_TOKEN=token)
         if layout == 'long-temp':
             temp = tmp_path / ('t' * 120)
             temp.mkdir()

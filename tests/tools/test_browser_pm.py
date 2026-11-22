@@ -31,9 +31,9 @@ def browser_store(tmp_path, monkeypatch):
     home.mkdir()
     store = home / "tools"
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(store))
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(store))
+    monkeypatch.setenv("SLAVE_DISABLE_LAZY_INSTALLS", "1")
     monkeypatch.setenv("PATH", "")
     monkeypatch.delenv("AGENT_BROWSER_EXECUTABLE_PATH", raising=False)
     monkeypatch.delenv("PLAYWRIGHT_BROWSERS_PATH", raising=False)
@@ -86,7 +86,7 @@ def test_execution_acquires_missing_browser_through_pm(browser_store, monkeypatc
 
     _, _, publish = browser_store
     monkeypatch.setenv("PATH", "")
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "0")
+    monkeypatch.setenv("SLAVE_DISABLE_LAZY_INSTALLS", "0")
     monkeypatch.setattr(launcher, "running_in_docker", lambda: False)
     assert pm.lazy_installs_allowed()
     requests = []
@@ -103,10 +103,10 @@ def test_execution_acquires_missing_browser_through_pm(browser_store, monkeypatc
 
 
 def test_doctor_fix_publishes_and_reads_the_pm_browser(browser_store, monkeypatch, capsys):
-    """Plain ``hermes doctor`` never acquires Chromium; ``--fix`` acquires it explicitly through PM and reports
+    """Plain ``slave doctor`` never acquires Chromium; ``--fix`` acquires it explicitly through PM and reports
     the published binary. Only the worker/download boundary is replaced: selection, admission, facts and
     environment composition are the actual PM implementation."""
-    from hermes_cli import doctor_tools
+    from slave_cli import doctor_tools
     import pm.client
 
     _, _, publish = browser_store
@@ -127,11 +127,11 @@ def test_doctor_fix_publishes_and_reads_the_pm_browser(browser_store, monkeypatc
 
 def test_termux_ownership_policy_never_provisions(browser_store, monkeypatch):
     # Exercise the real environment policy, not an emulated Android binary.
-    from hermes_cli import doctor_tools
+    from slave_cli import doctor_tools
 
     monkeypatch.setenv("TERMUX_VERSION", "test")
     monkeypatch.setenv("PATH", "")
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "0")
+    monkeypatch.setenv("SLAVE_DISABLE_LAZY_INSTALLS", "0")
     monkeypatch.setattr(launcher, "running_in_docker", lambda: False)
 
     def forbidden(*args, **kwargs):
@@ -140,7 +140,7 @@ def test_termux_ownership_policy_never_provisions(browser_store, monkeypatch):
     monkeypatch.setattr(pm, "ensure", forbidden)
     assert launcher._maybe_autoinstall_chromium() is False
     assert launcher.chromium_ready()[0] is False
-    doctor_tools._check_chromium(True)  # not even `hermes doctor --fix`
+    doctor_tools._check_chromium(True)  # not even `slave doctor --fix`
 
 
 def test_cdp_override_does_not_require_pm_browser(browser_store, monkeypatch):
@@ -158,8 +158,8 @@ def test_cdp_override_does_not_require_pm_browser(browser_store, monkeypatch):
 def _pin_executable(path) -> None:
     """``browser.executable_path`` in this profile's config.yaml (the operator's browser pin)."""
     import json
-    from hermes_constants import get_hermes_home
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"browser": {"executable_path": str(path)}}))
+    from slave_constants import get_slave_home
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"browser": {"executable_path": str(path)}}))
 
 
 def test_a_missing_pinned_browser_is_named_in_the_hint(browser_store, tmp_path):
@@ -171,7 +171,7 @@ def test_a_missing_pinned_browser_is_named_in_the_hint(browser_store, tmp_path):
     ok, hint = launcher.chromium_ready()
     assert ok is False
     assert "browser.executable_path" in hint and str(missing) in hint
-    assert "hermes pm install chromium" not in hint
+    assert "slave pm install chromium" not in hint
 
 
 def test_historical_warmer_is_inert(monkeypatch):
@@ -240,7 +240,7 @@ def test_chromium_autoinstall_is_one_shot(browser_store, monkeypatch, fails):
     import pm.client
 
     _, _, publish = browser_store
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "0")
+    monkeypatch.setenv("SLAVE_DISABLE_LAZY_INSTALLS", "0")
     monkeypatch.setattr(launcher, "running_in_docker", lambda: False)
     calls = []
 
@@ -261,7 +261,7 @@ def test_chromium_acquisition_policy(browser_store, monkeypatch, policy, tmp_pat
     import pm.client
 
     monkeypatch.setattr(launcher, "running_in_docker", lambda: policy == "docker")
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1" if policy == "disabled" else "0")
+    monkeypatch.setenv("SLAVE_DISABLE_LAZY_INSTALLS", "1" if policy == "disabled" else "0")
     if policy == "termux":
         monkeypatch.setenv("TERMUX_VERSION", "test")
     if policy == "override":

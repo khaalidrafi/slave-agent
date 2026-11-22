@@ -1,6 +1,6 @@
-"""Drive a real ``hermes`` CLI / Ink TUI process under a real PTY, rendered through :mod:`._vt`.
+"""Drive a real ``slave`` CLI / Ink TUI process under a real PTY, rendered through :mod:`._vt`.
 
-The child runs with an isolated HOME/HERMES_HOME (only the fake LLM provider configured, no
+The child runs with an isolated HOME/SLAVE_HOME (only the fake LLM provider configured, no
 inherited credentials) as the session leader of its own PTY, so SIGWINCH from a resize reaches the
 foreground process group exactly as in a terminal emulator, and every process it spawns can be
 found afterwards by session id (orphans keep the sid even after being reparented to init).
@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Callable
 
 from tests.e2e.core.terminal._vt import Screen
-from tests.fakes.fake_llm_provider import FakeLLMServer, write_hermes_home
+from tests.fakes.fake_llm_provider import FakeLLMServer, write_slave_home
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
@@ -114,23 +114,23 @@ def cmdline(pid: int) -> str:
         return "?"
 
 
-class PtyHermes:
-    """One interactive ``hermes`` process on a PTY with an emulated screen."""
+class PtySlave:
+    """One interactive ``slave`` process on a PTY with an emulated screen."""
 
     def __init__(self, root: Path, argv_tail: list[str], llm: FakeLLMServer | None, *, rows: int, cols: int,
                  extra_config: str = "") -> None:
-        """``llm=None``: the caller already wrote ``root/home/.hermes`` (e.g. a native-runtime home)."""
+        """``llm=None``: the caller already wrote ``root/home/.slave`` (e.g. a native-runtime home)."""
         self.root = root
         self.home = root / "home"
-        self.hermes_home = self.home / ".hermes"
-        operator = (_operator_home() / ".hermes").resolve()
-        assert operator not in (self.hermes_home.resolve(), *self.hermes_home.resolve().parents), (
-            f"sandbox {self.hermes_home} sits inside the operator's Hermes home")
+        self.slave_home = self.home / ".slave"
+        operator = (_operator_home() / ".slave").resolve()
+        assert operator not in (self.slave_home.resolve(), *self.slave_home.resolve().parents), (
+            f"sandbox {self.slave_home} sits inside the operator's slave-agent home")
         if llm is not None:
             # No passive update check (the tui_pty sandbox's rule): on an official checkout the
             # CLI and its attached gateway both resolve the stable release against real GitHub,
             # and the gateway, which outlives /exit, is mid `git ls-remote` whenever GitHub is slow.
-            write_hermes_home(self.hermes_home, llm.base_url,
+            write_slave_home(self.slave_home, llm.base_url,
                               extra_config="updates:\n  check: false\n" + extra_config)
         self.llm = llm
         self.screen = Screen(rows, cols)
@@ -140,9 +140,9 @@ class PtyHermes:
         (root / "work").mkdir(parents=True, exist_ok=True)
         env = {k: os.environ[k] for k in ("PATH", "LANG", "LC_ALL") if k in os.environ}
         env.update(
-            HOME=str(self.home), HERMES_HOME=str(self.hermes_home), PYTHONPATH=str(REPO_ROOT),
+            HOME=str(self.home), SLAVE_HOME=str(self.slave_home), PYTHONPATH=str(REPO_ROOT),
             TMPDIR=str(root / "tmp"), TERM="xterm-256color", COLORTERM="truecolor",
-            PYTHONUNBUFFERED="1", HERMES_STATE_DB_GUARD_BYPASS="1",
+            PYTHONUNBUFFERED="1", SLAVE_STATE_DB_GUARD_BYPASS="1",
         )
         if "--tui" in argv_tail:
             # The prebuilt-bundle launch, as tui_pty does. A checkout launch first asks whether
@@ -150,16 +150,16 @@ class PtyHermes:
             # store, so it rebuilds from source and lazily downloads python/node/pnpm before the UI
             # can take the terminal (on CI that download stalled past wait_ready's 120s).
             from tests.e2e.core.tui_pty._helpers import private_tui_dir
-            env["HERMES_TUI_DIR"] = str(private_tui_dir(root))
+            env["SLAVE_TUI_DIR"] = str(private_tui_dir(root))
             node = shutil.which("node")
             if node:  # the runner's node, so the launcher never lazily installs one into the sandbox
-                env["HERMES_NODE"] = node
+                env["SLAVE_NODE"] = node
         master, slave = os.openpty()
         self._set_winsize(master, rows, cols)
         self.master = master
         self.pts = os.ttyname(slave)
         self.proc = subprocess.Popen(
-            [sys.executable, "-c", _SESSION_LEADER, sys.executable, "-m", "hermes_cli.main", *argv_tail],
+            [sys.executable, "-c", _SESSION_LEADER, sys.executable, "-m", "slave_cli.main", *argv_tail],
             stdin=slave, stdout=slave, stderr=slave, cwd=str(root / "work"), env=env,
             start_new_session=True, close_fds=True)
         os.close(slave)
@@ -221,7 +221,7 @@ class PtyHermes:
                  what=f"{needle[:40]!r} on screen")
         except AssertionError as exc:
             raise AssertionError(f"{exc}\n--- screen ---\n{self.dump()}") from None
-        assert self.proc.poll() is None, f"hermes exited ({self.proc.returncode}) waiting for {needle[:40]!r}\n{self.dump()}"
+        assert self.proc.poll() is None, f"slave exited ({self.proc.returncode}) waiting for {needle[:40]!r}\n{self.dump()}"
 
     def wait_quiet(self, idle: float = 1.0, timeout: float = 30.0) -> None:
         """Wait for a settled frame: the screen has not changed for ``idle`` seconds, ignoring
@@ -263,7 +263,7 @@ class PtyHermes:
             remaining = max(1.0, deadline - time.monotonic())
             poll(lambda: self._dead() or self._raw_mode(), timeout=remaining,
                  what="the UI to take the terminal (raw mode)")
-            assert self.proc.poll() is None, f"hermes exited ({self.proc.returncode}) during startup\n{self.dump()}"
+            assert self.proc.poll() is None, f"slave exited ({self.proc.returncode}) during startup\n{self.dump()}"
             self.wait_quiet(1.0, timeout=max(1.0, deadline - time.monotonic()))
             if self._raw_mode():
                 return
@@ -308,19 +308,19 @@ class PtyHermes:
             self.track_members()
             time.sleep(0.05)
         if self.proc.poll() is None:
-            raise AssertionError(f"hermes did not exit within {timeout:.0f}s of {command}\n{self.dump()}")
+            raise AssertionError(f"slave did not exit within {timeout:.0f}s of {command}\n{self.dump()}")
         return self.proc.returncode
 
     def leftover_processes(self, timeout: float = 15.0) -> list[str]:
         """Processes still alive in the child's session, or seen as its descendants, after exit.
 
-        The profile's ``gateway run`` is not a leftover: ``hermes chat`` attaches to it and it
+        The profile's ``gateway run`` is not a leftover: ``slave chat`` attaches to it and it
         keeps serving (cron, messaging, the next client) after the client exits; ``close()`` still
         tears it down with the rest of this harness's tree. Neither is that gateway's owner-death
         supervisor while the gateway lives: it belongs to the gateway, and after the gateway's last
         owned command it stays for an idle grace on purpose (``_SUPERVISOR_IDLE_EXIT_S``)."""
         from gateway.status import looks_like_gateway_command_line
-        from hermes_cli.process_identity import is_owner_death_supervisor
+        from slave_cli.process_identity import is_owner_death_supervisor
 
         def alive() -> list[int]:
             pids = set(session_members(self.sid))
@@ -379,11 +379,11 @@ class PtyHermes:
                 return False
             return sum(1 for _s, r, c in rows if r == "assistant" and c.strip()) >= n_replies
         poll(done, timeout=timeout, what=f"{n_replies} assistant replies persisted", interval=0.1)
-        assert self.proc.poll() is None, f"hermes exited ({self.proc.returncode}) mid-turn\n{self.dump()}"
+        assert self.proc.poll() is None, f"slave exited ({self.proc.returncode}) mid-turn\n{self.dump()}"
 
     def persisted_messages(self) -> list[tuple[str, str, str]]:
         """(session_id, role, content) for every user/assistant row in the sandbox state.db."""
-        db = self.hermes_home / "state.db"
+        db = self.slave_home / "state.db"
         if not db.exists():
             return []
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)

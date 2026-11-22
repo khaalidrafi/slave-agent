@@ -9,7 +9,7 @@ import sys
 
 def test_graph_boundary_commits_only_valid_notifications(tmp_path):
     # cwd=tmp_path: the child's symbolic profile id 'default' is a relative home path.
-    result = subprocess.run([sys.executable, __file__], cwd=tmp_path, env=dict(os.environ, HERMES_HOME=str(tmp_path)),
+    result = subprocess.run([sys.executable, __file__], cwd=tmp_path, env=dict(os.environ, SLAVE_HOME=str(tmp_path)),
                             capture_output=True, text=True, timeout=90, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     print((tmp_path / 'graph-receipt.json').read_text())
@@ -73,7 +73,7 @@ async def probe(peer):
             response = await client.post(url, json={'value': [{**notification, 'id': 'plugin-only'}]})
             assert response.status == 202 and calls == ['plugin-only']
             assert len(rows()) == len(peer.requests) == 1
-            Path(os.environ['HERMES_HOME'], 'graph-receipt.json').write_text(json.dumps({
+            Path(os.environ['SLAVE_HOME'], 'graph-receipt.json').write_text(json.dumps({
                 'admissions': len(rows()), 'inferences': len(peer.requests), 'boundary_controls': True,
                 'internal': True, 'storage_retry': True, 'scheduler_exclusive': True}))
     finally:

@@ -32,7 +32,7 @@ from agent.redact_headers import (
     redact_header_credentials,
 )
 from agent.redact_partial_keys import _redact_partial_private_keys
-from agent.redact_hermes_home import _is_under_hermes_home
+from agent.redact_slave_home import _is_under_slave_home
 from agent.redact_pattern_shape import _pattern_structure
 from agent.redact_secret_sources import redact_secret_source_values
 from agent.redact_spaced_cfg import redact_spaced_cfg_assignments
@@ -65,22 +65,22 @@ _SENSITIVE_QUERY_PARAMS = frozenset({
 })
 
 # Snapshot at import time so runtime env mutations (e.g. an LLM-generated
-# `export HERMES_REDACT_SECRETS=false`) cannot disable redaction mid-session.
+# `export SLAVE_REDACT_SECRETS=false`) cannot disable redaction mid-session.
 # ON by default; `security.redact_secrets: false` bridges to this env var.
 # ON by default — secure default per issue #17691. Users who need raw credential values in tool output (e.g.
 # working on the redactor itself) can opt out via `security.redact_secrets: false` in config.yaml (bridged
-# to this env var in hermes_cli/main.py, gateway/run.py, and cli.py) or `HERMES_REDACT_SECRETS=false` in
-# ~/.hermes/.env. An opt-out warning is logged at gateway and CLI startup so operators see the downgrade —
+# to this env var in slave_cli/main.py, gateway/run.py, and cli.py) or `SLAVE_REDACT_SECRETS=false` in
+# ~/.slave/.env. An opt-out warning is logged at gateway and CLI startup so operators see the downgrade —
 # see `_log_redaction_status()` in gateway/run.py and cli.py.
-_REDACT_ENABLED = os.getenv("HERMES_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
+_REDACT_ENABLED = os.getenv("SLAVE_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
 
 # Routed multiplex profiles: the import-time snapshot above is the LAUNCH profile's policy. A profile
-# served under a HERMES_HOME override follows its own ``security.redact_secrets`` (its ``.env`` value
-# first, like the standalone bridge in hermes_cli/main.py). The formatter never reads config or files
+# served under a SLAVE_HOME override follows its own ``security.redact_secrets`` (its ``.env`` value
+# first, like the standalone bridge in slave_cli/main.py). The formatter never reads config or files
 # for it (it runs under the logging handler's lock, per record): the values are recorded when that
 # profile's .env / config is loaded (``note_env_policy`` / ``note_config_policy``) or when log routing
 # is set up for it (``resolve_profile_policy``). Until then the profile redacts (the secure default).
-_ENV_POLICY_BY_HOME: dict = {}     # home key -> raw HERMES_REDACT_SECRETS from its .env, or None
+_ENV_POLICY_BY_HOME: dict = {}     # home key -> raw SLAVE_REDACT_SECRETS from its .env, or None
 _CONFIG_POLICY_BY_HOME: dict = {}  # home key -> raw security.redact_secrets from its config, or None
 
 
@@ -95,12 +95,12 @@ def note_config_policy(home_key: str, raw) -> None:
 def resolve_profile_policy(home) -> None:
     """Record ``home``'s redaction policy now (log-routing setup), so its records never wait for it."""
     from agent.runtime_scope import bind_profile_scope
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     try:
         with bind_profile_scope(home, hydrate_secrets=False):
-            key = hermes_home_key()
-            from hermes_cli.config import load_config_readonly, load_env
-            note_env_policy(key, load_env().get("HERMES_REDACT_SECRETS"))
+            key = slave_home_key()
+            from slave_cli.config import load_config_readonly, load_env
+            note_env_policy(key, load_env().get("SLAVE_REDACT_SECRETS"))
             note_config_policy(key, (load_config_readonly().get("security") or {}).get("redact_secrets"))
     except (Exception, SystemExit) as exc:  # health: allow BLE001 -- unreadable now: stays unknown, which redacts
         logging.getLogger(__name__).debug("redaction policy for %s not read: %s", home, exc)
@@ -109,13 +109,13 @@ def resolve_profile_policy(home) -> None:
 def _redact_enabled() -> bool:
     """Effective redaction switch for the active profile (launch snapshot when no override). Reads
     only in-memory state: the live secret scope and the recorded per-profile policy."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    from slave_constants import get_slave_home_override, slave_home_key
+    if get_slave_home_override() is None:
         return _REDACT_ENABLED
-    home_key = hermes_home_key()
+    home_key = slave_home_key()
     from agent.secret_scope import current_secret_scope
     scope = current_secret_scope()
-    raw = scope.get("HERMES_REDACT_SECRETS") if scope else None
+    raw = scope.get("SLAVE_REDACT_SECRETS") if scope else None
     if raw is None and scope is None:
         # No live scope (the log listener thread formats routed records): the profile's own .env, as
         # its scope would have it. Not recorded yet: redact, since .env may opt the profile back in.
@@ -719,7 +719,7 @@ _URL_BARE_TOKEN_RE = re.compile(
 # Teams "Workflows" webhooks (the Power Automate replacement for Office 365 connectors) are
 # logic.azure.com / api.powerplatform.com trigger URLs whose only secret is the ``sig`` query
 # parameter; Slack workflow triggers live under hooks.slack.com/triggers/.
-# Hermes stores one as ``incoming_webhook_url`` for Teams delivery and ships Slack and Discord
+# Slave stores one as ``incoming_webhook_url`` for Teams delivery and ships Slack and Discord
 # adapters, so these land in config dumps, tool output and logs. Telegram's is already covered
 # by _TELEGRAM_RE, which masks the bot token inside its API URL. ``http://`` is matched too: a
 # mistyped scheme still carries the same secret in the path. Slack Workflow Builder URLs carry a
@@ -748,11 +748,11 @@ _WEBHOOK_URL_RE = re.compile(
 # JWTs always start with "eyJ" (base64 "{"); 1-, 2- and 3-part forms.
 _JWT_RE = re.compile(r"eyJ[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_=-]{4,}){0,2}")
 
-# Links ``hermes webapp`` prints that sign a browser in as the user: the gateway's browser credential
-# after ``hermes-session=`` and the one-use ticket of a ``/webapp/launch`` link. Both values are
+# Links ``slave webapp`` prints that sign a browser in as the user: the gateway's browser credential
+# after ``slave-session=`` and the one-use ticket of a ``/webapp/launch`` link. Both values are
 # URL-safe base64 (43 characters); the 20-character floor leaves placeholders and code (``${token}``).
 _WEBAPP_LINK_CREDENTIAL_RE = re.compile(
-    r"((?<![A-Za-z0-9_-])hermes-session=|/webapp/launch#(?:[^\s#]*?&)?ticket=)[A-Za-z0-9_-]{20,}")
+    r"((?<![A-Za-z0-9_-])slave-session=|/webapp/launch#(?:[^\s#]*?&)?ticket=)[A-Za-z0-9_-]{20,}")
 
 # E.164 phone numbers, 7-15 digits; the lookahead rejects hex strings / identifiers. A ``+`` glued
 # to a word or dot is a version suffix, not a phone: ``python-3.14.7+20260901-linux-x64`` (#142574).
@@ -930,7 +930,7 @@ _DISPLAY_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f\x80-\x9f\u200b-\u200f\u202a-\u
 
 def mask_secret(value: str, *, head: int = 4, tail: int = 4, floor: int = 12,
                 placeholder: str = "***", empty: str = "") -> str:
-    """Mask a secret for display (``hermes config`` / ``status`` / ``dump``):
+    """Mask a secret for display (``slave config`` / ``status`` / ``dump``):
     ``sk-p...7890``; shorter than ``floor`` (after control-byte stripping) →
     ``placeholder``; falsy → ``empty``."""
     value = _DISPLAY_CONTROL_RE.sub("", value) if value else value
@@ -1624,7 +1624,7 @@ def redact_credential_shapes(text: str, *, force: bool = False, code_file: bool 
 
     # A Webapp sign-in link signs a browser in as the user, so its credential is masked whatever the
     # web-URL policy below.
-    if "hermes-session=" in text or "/webapp/launch#" in text:
+    if "slave-session=" in text or "/webapp/launch#" in text:
         text = _WEBAPP_LINK_CREDENTIAL_RE.sub(lambda m: m.group(1) + "***", text)
 
     if redact_url_credentials:  # opt-in; known credential shapes in URLs are caught above
@@ -1672,7 +1672,7 @@ _ENV_DUMP_COMMANDS = frozenset({"env", "printenv", "set", "export", "declare"})
 
 # Commands that read file contents to stdout, plus the filter readers (``grep``/``awk``/``sed``)
 # the model reaches for on config files. A secret-bearing target (``.env`` per AGENTS.md,
-# a shell rc/profile, Hermes' own ``config.yaml`` where ``hermes mcp add --env`` writes
+# a shell rc/profile, Slave' own ``config.yaml`` where ``slave mcp add --env`` writes
 # tokens) is a credential dump, so the ENV/YAML assignment pass must run. Arbitrary
 # ``config.yaml`` / source files stay on the code_file path (``MAX_TOKENS: 100``).
 _FILE_READ_COMMANDS = frozenset({
@@ -1689,8 +1689,8 @@ _SHELL_RC_BASENAMES = frozenset({
 # Filter readers take a PATTERN/program as their first positional; only the operands after
 # it are files, so ``grep .bashrc app.py`` must not gate on the pattern.
 _PATTERN_FIRST_COMMANDS = frozenset({"grep", "awk", "sed"})
-_HERMES_HOME_PREFIXES = ("$HERMES_HOME/", "${HERMES_HOME}/")
-# ``$HOME/.hermes/config.yaml`` keeps the ``.hermes`` segment, so stripping the prefix is
+_SLAVE_HOME_PREFIXES = ("$SLAVE_HOME/", "${SLAVE_HOME}/")
+# ``$HOME/.slave/config.yaml`` keeps the ``.slave`` segment, so stripping the prefix is
 # enough to gate it; ``~/`` already survives the ``$``-bearing-path bail-out.
 _HOME_PREFIXES = ("$HOME/", "${HOME}/")
 
@@ -1698,15 +1698,15 @@ _HOME_PREFIXES = ("$HOME/", "${HOME}/")
 def _is_secret_file_arg(arg: str) -> bool:
     """``.env``-style, shell rc or credential-store basename (``.netrc``, ``.pgpass``, ...)
     anywhere; ``credentials`` / ``config`` only under ``.aws`` (the bare names are too generic), and
-    ``config.yaml`` only under a ``.hermes`` directory, ``$HERMES_HOME``, or the resolved
-    Hermes home (never arbitrary YAML). The resolved-home arm is what covers native Windows,
-    where the home directory is ``%LOCALAPPDATA%\\hermes`` and carries no ``.hermes`` segment."""
+    ``config.yaml`` only under a ``.slave`` directory, ``$SLAVE_HOME``, or the resolved
+    slave-agent home (never arbitrary YAML). The resolved-home arm is what covers native Windows,
+    where the home directory is ``%LOCALAPPDATA%\\slave`` and carries no ``.slave`` segment."""
     path = arg.strip("\"'").replace("\\", "/")
-    hermes_home = False
-    for prefix in _HERMES_HOME_PREFIXES:
+    slave_home = False
+    for prefix in _SLAVE_HOME_PREFIXES:
         if path.startswith(prefix):
             path = path[len(prefix):]
-            hermes_home = True
+            slave_home = True
             break
     for prefix in _HOME_PREFIXES:
         if path.startswith(prefix):
@@ -1721,11 +1721,11 @@ def _is_secret_file_arg(arg: str) -> bool:
         return True
     if parts[-1] in HOME_CREDENTIAL_FILES or parts[-2:] in ([".aws", "credentials"], [".aws", "config"]):
         return True
-    # ``config.yaml`` plus the ``config.yaml.good.<stamp>`` / ``.corrupt.<stamp>`` copies Hermes
+    # ``config.yaml`` plus the ``config.yaml.good.<stamp>`` / ``.corrupt.<stamp>`` copies Slave
     # writes under ``backups/config/`` — same contents, same secrets.
     if parts[-1] != "config.yaml" and not parts[-1].startswith(("config.yaml.good.", "config.yaml.corrupt.")):
         return False
-    return hermes_home or ".hermes" in parts[:-1] or _is_under_hermes_home(path)
+    return slave_home or ".slave" in parts[:-1] or _is_under_slave_home(path)
 
 
 def _command_reads_secret_file(command: str | None) -> bool:
@@ -1805,7 +1805,7 @@ def redact_for_egress(text: str, *, urls: bool = False, keep_phone_numbers: bool
 def redact_terminal_output(output: str, command: str | None = None, *, force: bool = False) -> str:
     """Single redaction policy for ALL terminal-output surfaces: the ENV/YAML-assignment
     pass runs only when ``command`` is an env dump or reads a secret-bearing file (``.env``,
-    shell rc, a credential store like ``.netrc``, Hermes ``config.yaml``); otherwise
+    shell rc, a credential store like ``.netrc``, slave-agent ``config.yaml``); otherwise
     code_file=True avoids false positives on source/config dumps."""
     if not output:
         return output
@@ -1965,7 +1965,7 @@ def _reset_plugin_redaction_patterns() -> None:
 _LOG_UNSAFE_CHARS = re.compile(r"[\x00-\x1f\x7f\x85\u2028\u2029]")
 # Same class minus "\n": the appended traceback/stack keeps its line structure.
 _EXC_UNSAFE_CHARS = re.compile(r"[\x00-\x09\x0b-\x1f\x7f\x85\u2028\u2029]")
-# hermes_cli/logs.py _TS_RE (searched anywhere in a line) makes any stamped line a record.
+# slave_cli/logs.py _TS_RE (searched anywhere in a line) makes any stamped line a record.
 # Zero-width context so overlapping stamps ("12:00:2026-07-09 12:00:00") are all broken.
 _LOG_LINE_STAMP = re.compile(r"(?<=\d{4}-\d{2}-\d{2})[T ](?=\d{2}:\d{2}:\d{2})")
 
@@ -1982,15 +1982,15 @@ class RedactingFormatter(logging.Formatter):
         # aiohttp's access line carries the raw request target, and webhook platforms that cannot
         # send headers authenticate in the query string (BlueBubbles ``?password=``). An adapter's
         # own ``access_log=None`` does not reach the shared listener that serves multiplexed
-        # profiles (#143550), so credential params are masked on every Hermes log handler. Its target
+        # profiles (#143550), so credential params are masked on every Slave log handler. Its target
         # is relative (no ``://``), which redact_log_urls above skips.
         if record.name == "aiohttp.access":
             formatted = _redact_strict_url_credentials(formatted)
         first, *rest = _EXC_UNSAFE_CHARS.sub(" ", formatted).split("\n")
-        # Traceback lines carry exception text; break their stamps so `hermes logs` keeps them
+        # Traceback lines carry exception text; break their stamps so `slave logs` keeps them
         # as continuation lines of this record.
         return "\n".join([first, *(_LOG_LINE_STAMP.sub("_", line) for line in rest)])
 
     def formatMessage(self, record: logging.LogRecord) -> str:
-        from hermes_logging import display_record  # lazy: hermes_logging imports this module lazily
+        from slave_logging import display_record  # lazy: slave_logging imports this module lazily
         return super().formatMessage(display_record(record))

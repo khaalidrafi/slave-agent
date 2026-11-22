@@ -57,8 +57,8 @@ async def probe():
     from gateway.platforms.event import MessageEvent
     from gateway.run import GatewayRunner
     from gateway.session import SessionSource
-    from hermes_cli import web_server
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from slave_cli import web_server
+    from slave_cli.dashboard_auth.ws_tickets import mint_ticket
     from tui_gateway import server
     from run_agent import AIAgent
     from shared_authority_recovery import prepare_crash, recover_probe, verify_envelope_guards
@@ -234,8 +234,8 @@ async def probe():
                 if os.environ.get('AUTHORITY_PROBE_MODE') == 'crash':
                     await prepare_crash(runner, adapter, source, peer)
     finally:
-        Path(os.environ["HERMES_HOME"], "receipt.json").write_text(json.dumps(receipt, indent=2))
-        Path(os.environ["HERMES_HOME"], "frames.json").write_text(json.dumps(frames, indent=2))
+        Path(os.environ["SLAVE_HOME"], "receipt.json").write_text(json.dumps(receipt, indent=2))
+        Path(os.environ["SLAVE_HOME"], "frames.json").write_text(json.dumps(frames, indent=2))
         if api_handle is not None:
             from gateway.run_api import stop_gateway_api
             await stop_gateway_api(api_handle)
@@ -256,9 +256,9 @@ if __name__ == "__main__":
     base_url = f"http://127.0.0.1:{peer.server_port}/v1"
     os.environ.update(OPENAI_API_KEY="explicit-loopback-fixture", OPENAI_BASE_URL=base_url,
                       TELEGRAM_ALLOWED_USERS="fixture-user")
-    Path(os.environ["HERMES_HOME"], "config.yaml").write_text(
+    Path(os.environ["SLAVE_HOME"], "config.yaml").write_text(
         f"model:\n  default: local-wire-stub\n  provider: custom\n  base_url: {base_url}\n"
-        f"auxiliary:\n  title_generation:\n    enabled: false\nterminal:\n  cwd: {os.environ['HERMES_HOME']}\n"
+        f"auxiliary:\n  title_generation:\n    enabled: false\nterminal:\n  cwd: {os.environ['SLAVE_HOME']}\n"
         # The durable-FIFO proof needs queue semantics; interrupt mode redirects the running turn.
         "display:\n  busy_input_mode: queue\n")
     status = 0

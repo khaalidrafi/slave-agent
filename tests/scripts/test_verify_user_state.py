@@ -2,7 +2,7 @@
 
 tests/install/e2e-assets/verify-user-state.py is the standalone hook the
 install/update E2E drivers call around a real upgrade. These tests exercise it
-against a real temp HERMES_HOME (real files, real sqlite databases) — no
+against a real temp SLAVE_HOME (real files, real sqlite databases) — no
 source-reading, no filesystem mocks.
 
 The contract under test: an upgrade may ADD state and may rewrite config.yaml
@@ -114,7 +114,7 @@ def _write(path, text):
 def test_a_rebuilt_profile_cache_is_advisory_but_its_kept_subdirs_stay_judged(tmp_path, external):
     # profiles/<p>/cache/schema_columns.json is rewritten whenever a release changes
     # the session schema, so it must not fail the check; the citations ledger under
-    # the same cache/ is durable (hermes_cli/backup.py keeps it), so losing it must.
+    # the same cache/ is durable (slave_cli/backup.py keeps it), so losing it must.
     home = _home(tmp_path)
     profiles_dir = str(tmp_path / "ext-profiles") if external else None
     base = profiles_dir or os.path.join(home, "profiles")
@@ -568,7 +568,7 @@ def test_any_sqlite_database_is_judged_by_rows_not_bytes(tmp_path):
 # --- retired provider vars ---------------------------------------------------
 
 def test_retired_env_vars_come_from_the_migration_source(tmp_path):
-    """The set is read from hermes_cli/config_migrations.py, not invented here.
+    """The set is read from slave_cli/config_migrations.py, not invented here.
 
     The 12 -> 13 migration clears LLM_MODEL/OPENAI_MODEL: the old setup wizard
     wrote them and nothing reads them now. A verifier carrying its own copy of

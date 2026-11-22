@@ -1,6 +1,6 @@
 """Event hook system: fires handlers at gateway lifecycle points.
 
-Hooks live in ~/.hermes/hooks/<name>/ with HOOK.yaml (name, description, events) and
+Hooks live in ~/.slave/hooks/<name>/ with HOOK.yaml (name, description, events) and
 handler.py (``def handle(event_type, context)``, sync or async); errors never block
 the pipeline.  Events: gateway:startup, session:start/end/reset, agent:start,
 agent:step (each tool-loop turn), agent:end, command:* (wildcard).  agent:* context:
@@ -14,25 +14,25 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
-from hermes_cli.config import get_hermes_home
-from hermes_cli.plugin_isolation import import_user_code
-from hermes_constants import hermes_home_key
+from slave_cli.config import get_slave_home
+from slave_cli.plugin_isolation import import_user_code
+from slave_constants import slave_home_key
 
 
-HOOKS_DIR = get_hermes_home() / "hooks"
+HOOKS_DIR = get_slave_home() / "hooks"
 _HOOKS_DIR_AT_IMPORT = HOOKS_DIR
 
 
 def _resolve_hooks_dir() -> Path:
     """Active profile's hooks dir at call time: the patched ``HOOKS_DIR`` when a test changed it,
-    else ``get_hermes_home()/hooks``. The import-time constant is the LAUNCH profile's; under
+    else ``get_slave_home()/hooks``. The import-time constant is the LAUNCH profile's; under
     ``gateway.multiplex_profiles`` every served profile has its own ``hooks/``, and a registry
     loaded from the launch home would run the default profile's handlers (arbitrary Python) on
     every other profile's messages, responses and user ids."""
     configured = Path(HOOKS_DIR)
-    return configured if configured != _HOOKS_DIR_AT_IMPORT else get_hermes_home() / "hooks"
+    return configured if configured != _HOOKS_DIR_AT_IMPORT else get_slave_home() / "hooks"
 
 
 def _skip(name: str, reason: str) -> None:
@@ -54,7 +54,7 @@ def _load_hook_dir(hook_dir: Path) -> Optional[tuple]:
     # Registered in sys.modules while the body runs so Pydantic/dataclass forward references
     # (``from __future__ import annotations``) resolve; otherwise a handler declaring a
     # BaseModel fails at first dispatch with "TypeAdapter ... is not fully defined".
-    module = import_user_code(handler_path, f"hermes_hook_{hook_name}")
+    module = import_user_code(handler_path, f"slave_hook_{hook_name}")
     if module is None:
         return _skip(hook_name, "could not load handler.py")
     handle_fn = getattr(module, "handle", None)
@@ -127,13 +127,13 @@ class HookRegistry:
 
 
 class ProfileHookRegistries:
-    """``HookRegistry`` per served profile home, picked at emit time from the active HERMES_HOME.
+    """``HookRegistry`` per served profile home, picked at emit time from the active SLAVE_HOME.
 
     The gateway holds ONE of these. Every hook emit already runs inside the routed profile's
     ``_profile_runtime_scope`` (message handlers, /new, turn wiring), so resolving the registry by
-    ``get_hermes_home()`` there gives each profile its own ``hooks/`` and keeps the default
+    ``get_slave_home()`` there gives each profile its own ``hooks/`` and keeps the default
     profile's handlers from seeing other profiles' messages. Each home's registry is loaded on its
-    first emit, i.e. inside that profile's scope (handler imports see its HERMES_HOME); multiplexing off
+    first emit, i.e. inside that profile's scope (handler imports see its SLAVE_HOME); multiplexing off
     means a single entry for the launch home, i.e. exactly the old behaviour.
     """
 
@@ -142,7 +142,7 @@ class ProfileHookRegistries:
         self._lock = threading.Lock()
 
     def _active(self) -> HookRegistry:
-        key = hermes_home_key(get_hermes_home())
+        key = slave_home_key(get_slave_home())
         registry = self._by_home.get(key)
         if registry is None:
             with self._lock:

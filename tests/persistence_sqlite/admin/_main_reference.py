@@ -9,16 +9,16 @@ from contextlib import closing, contextmanager
 from pathlib import Path
 from typing import Optional
 
-from hermes_cli.backup_restore import _restore_db_pages
-from hermes_cli.backup_sqlite import _close_quietly, _safe_copy_db
-from hermes_cli.doctor_report import check_info
+from slave_cli.backup_restore import _restore_db_pages
+from slave_cli.backup_sqlite import _close_quietly, _safe_copy_db
+from slave_cli.doctor_report import check_info
 from persistence.sqlite._state.holders import read_only_db_uri
 
 # The logger of the module the restore functions come from.
-logger = logging.getLogger("hermes_cli.backup_restore")
+logger = logging.getLogger("slave_cli.backup_restore")
 
 
-# hermes_cli/doctor_state.py
+# slave_cli/doctor_state.py
 def _session_count(state_db_path: Path):
     import sqlite3
     # mode=ro: doctor is a reader; a writable open of a gateway-held WAL DB is the second-writer class (#103339).
@@ -42,7 +42,7 @@ def _write_health_reason(state_db_path: Path, *, should_fix: bool):
         return _db_opens_cleanly(state_db_path)
     if not should_fix and state_db_path.stat().st_size > _WRITE_PROBE_SNAPSHOT_MAX_BYTES:
         check_info("state.db write-health probe skipped: store is held by a live writer and larger than 1 GB "
-                   "(run 'hermes doctor --fix' to probe it)")
+                   "(run 'slave doctor --fix' to probe it)")
         return None
     import sqlite3
     import tempfile
@@ -60,7 +60,7 @@ def _write_health_reason(state_db_path: Path, *, should_fix: bool):
         return _db_opens_cleanly(snapshot)
 
 
-# hermes_cli/backup.py
+# slave_cli/backup.py
 def _query_ro_sqlite(path: Path, fn):
     """Run ``fn(conn)`` on a read-only connection to *path*; return ``(value, None)`` or ``(None, exc)``."""
     conn = None
@@ -77,7 +77,7 @@ _SQLITE_HEADER = b"SQLite format 3\0"
 
 
 # Above this size ``PRAGMA integrity_check`` (walks every b-tree page — minutes of pegged CPU on a
-# 30 GB state.db, reading as a hung ``hermes update``) is replaced by the O(1) header+schema probe.
+# 30 GB state.db, reading as a hung ``slave update``) is replaced by the O(1) header+schema probe.
 # Default ceiling above which ``PRAGMA integrity_check`` is skipped in favour of the (O(1)) header +
 # structural probe. Sessions databases in the tens of GB are normal for heavy users, so the size-unbounded
 # check is never an acceptable default on the update path. See #70553.
@@ -103,7 +103,7 @@ def verify_sqlite_integrity(
     if check_header:
         # Refused when a live connection exists (close() would cancel this process's POSIX locks
         # — see sqlite_safe_read); verification targets offline snapshots/backup artifacts anyway.
-        from hermes_cli.sqlite_safe_read import read_header_bytes_preopen
+        from slave_cli.sqlite_safe_read import read_header_bytes_preopen
         head = read_header_bytes_preopen(path, length=len(_SQLITE_HEADER))
         if head is None:
             return _done("cannot read header", size=size)
@@ -134,7 +134,7 @@ def verify_sqlite_integrity(
     return _done("header check passed", valid=True, size=size)
 
 
-# hermes_cli/backup_restore.py
+# slave_cli/backup_restore.py
 def _restore_epoch(path: Path) -> int:
     if not path.exists():
         return 0
@@ -151,7 +151,7 @@ def _restore_destination_epoch(dst: Path) -> int:
     except (OSError, sqlite3.Error, ValueError) as exc:
         raise OSError(
             f"Cannot read the canonical runtime epoch at {dst}; refusing in-place restore. "
-            "Use `hermes sessions recover --source <snapshot> --output <separate-path>` "
+            "Use `slave sessions recover --source <snapshot> --output <separate-path>` "
             "to salvage transcripts into a separate output."
         ) from exc
 
@@ -219,7 +219,7 @@ def _count_session_rows(path: Path) -> Optional[tuple[int, int]]:
     """Return ``(sessions, messages)`` stored in the session database *path*.
 
     Read-only and best effort.  ``None`` means "unknown" — a missing file, a
-    database that is not a Hermes session store, or one that cannot be read.
+    database that is not a slave-agent session store, or one that cannot be read.
     Callers must never read ``None`` as "zero rows": acting on an unreadable
     database would mask the very loss this count exists to surface.  Same
     contract as :func:`_count_cron_jobs`.
@@ -240,7 +240,7 @@ def _count_session_rows(path: Path) -> Optional[tuple[int, int]]:
         conn.close()
 
 
-# hermes_cli/update_downgrade_guard.py
+# slave_cli/update_downgrade_guard.py
 _LEDGER_PROBE = ("SELECT EXISTS(SELECT 1 FROM session_admissions) "
                  "OR EXISTS(SELECT 1 FROM worker_executions)")
 
@@ -258,7 +258,7 @@ def _has_ledger_rows(db_path: Path) -> bool:
 
 def _pre_runtime_snapshot(home: Path) -> str | None:
     """Newest quick snapshot of ``home`` holding a state.db from before the runtime ledger."""
-    from hermes_cli.backup import _quick_snapshot_root
+    from slave_cli.backup import _quick_snapshot_root
     from persistence.sqlite._state.holders import read_only_db_uri
     root = _quick_snapshot_root(home)
     for snap in sorted(root.iterdir(), reverse=True) if root.is_dir() else ():

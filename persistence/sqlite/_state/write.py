@@ -6,7 +6,7 @@ import sys
 import threading
 import time
 
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 # One holder line per database per window: under a real stall every queued writer times out at
 # once, and N identical lines would bury the one that names the holder.
@@ -21,7 +21,7 @@ class WriterMutexTimeout(sqlite3.OperationalError):
     Carries SQLITE_BUSY so every caller that retries or defers on lock contention
     (``is_sqlite_lock_error``, ``classify_persistence_error`` -> ``"locked"``) treats it the same
     way; the type and the ``in-process`` wording tell it apart from a foreign SQLite writer, which
-    surfaces as the ``another Hermes process held the state.db write lock`` error instead."""
+    surfaces as the ``another slave-agent process held the state.db write lock`` error instead."""
 
     def __init__(self, message: str):
         super().__init__(message)

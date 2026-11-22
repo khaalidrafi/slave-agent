@@ -1,4 +1,4 @@
-"""Cron ``deliver: room:<id>`` posts into a real hosted room store under a temp HERMES_HOME."""
+"""Cron ``deliver: room:<id>`` posts into a real hosted room store under a temp SLAVE_HOME."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import pytest
 
 from cron import scheduler_delivery as delivery
 from gateway import hosted_rooms
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_holder import hosted_owner_key
 
@@ -74,7 +74,7 @@ def test_malformed_room_token_resolves_to_nothing():
 
 
 def test_post_skips_the_unserved_session_store_copy_left_by_the_shared_store_import(room_store):
-    leftover = _create(get_hermes_home() / "state.db")  # pre-isolation copy: no gateway owner entry
+    leftover = _create(get_slave_home() / "state.db")  # pre-isolation copy: no gateway owner entry
 
     assert delivery._deliver_result(_job(), "Digest ready") is None
 
@@ -83,7 +83,7 @@ def test_post_skips_the_unserved_session_store_copy_left_by_the_shared_store_imp
 
 
 def test_post_goes_to_the_session_store_when_its_gateway_owns_the_room(room_store):
-    owned = _create(get_hermes_home() / "state.db")
+    owned = _create(get_slave_home() / "state.db")
     with closing(sqlite3.connect(owned)) as conn, conn:
         conn.execute("CREATE TABLE IF NOT EXISTS state_meta (key TEXT PRIMARY KEY, value TEXT)")
         conn.execute("INSERT INTO state_meta(key, value) VALUES (?, 'owner')", (hosted_owner_key(ROOM_ID),))
@@ -102,7 +102,7 @@ def test_named_profile_target_reaches_a_room_the_root_gateway_imported(room_stor
     with closing(sqlite3.connect(root_store)) as conn, conn:  # the root gateway's SessionDB owner table
         conn.execute("CREATE TABLE state_meta (key TEXT PRIMARY KEY, value TEXT)")
     assert import_standalone_rooms(root_store) == 1
-    research = get_hermes_home() / "profiles" / "research"
+    research = get_slave_home() / "profiles" / "research"
     research.mkdir(parents=True)
     (research / "config.yaml").write_text("{}\n", encoding="utf-8")
 

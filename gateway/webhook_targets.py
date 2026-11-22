@@ -1,5 +1,5 @@
 """Which webhook ``deliver`` targets the gateway can dispatch: one side-effect-free check shared by the
-webhook adapter (route load) and ``hermes webhook`` (subscribe / list). Plugin discovery stays with the caller."""
+webhook adapter (route load) and ``slave webhook`` (subscribe / list). Plugin discovery stays with the caller."""
 
 from contextlib import suppress
 

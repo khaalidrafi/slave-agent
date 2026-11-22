@@ -21,7 +21,7 @@ def _serving(entries: list, endpoint_url: Optional[str], as_called: AsCalled = N
         return entries
     if as_called is None:
         return [e for e in entries if serves(e, endpoint_url)]
-    from hermes_cli.route_identity import normalize_route_base_url as norm
+    from slave_cli.route_identity import normalize_route_base_url as norm
     target = norm(as_called(endpoint_url))
     return [e for e in entries
             if not (url := getattr(e, "runtime_base_url", None) or getattr(e, "base_url", None)) or norm(as_called(url)) == target]

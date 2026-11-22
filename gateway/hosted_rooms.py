@@ -295,7 +295,7 @@ def _validate_actor(value: Any, *, kind: str) -> tuple[dict[str, str], str]:
 def default_db_path(home: Path | None = None) -> Path:
     """Return the hosted-room coordination database for the install of ``home`` (the active home by default).
 
-    Profile gateways (``~/.hermes/profiles/<name>/``) resolve to the shared
+    Profile gateways (``~/.slave/profiles/<name>/``) resolve to the shared
     ROOT ``shared-state.db`` instead of the master ``state.db``: hosted-room
     coordination is the only thing this module owns, and pointing profile
     gateways at the master session store makes every profile process a
@@ -306,15 +306,15 @@ def default_db_path(home: Path | None = None) -> Path:
     session store writable.
     """
     if home is None:
-        from hermes_constants import get_hermes_home
-        home = get_hermes_home()
+        from slave_constants import get_slave_home
+        home = get_slave_home()
     home = Path(home)
     return (home.parent.parent if home.parent.name == "profiles" else home) / "shared-state.db"
 
 
 def local_authority_gateway_id() -> str:
     """Return the stable server-owned identity for hosted-room authority."""
-    from hermes_cli.install_identity import get_install_id
+    from slave_cli.install_identity import get_install_id
     install_id = get_install_id()
     if not install_id:
         raise HostedRoomError("stable gateway install identity is unavailable")

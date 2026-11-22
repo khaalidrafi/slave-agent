@@ -38,6 +38,6 @@ export function observeSourceUpdate({ home, resultPath, expectSha }) {
       }
     }
     return complete && (!expectSha || head === expectSha)
-      && !existsSync(join(home, '.hermes-update-in-progress'))
+      && !existsSync(join(home, '.slave-update-in-progress'))
   }
 }

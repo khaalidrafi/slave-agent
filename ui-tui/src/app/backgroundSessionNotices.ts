@@ -1,4 +1,4 @@
-import type { SessionActiveListResponse } from '@hermes/shared/gateway-types'
+import type { SessionActiveListResponse } from '@slave-agent/shared/gateway-types'
 
 import type { GatewayClient } from '../gatewayClient.js'
 import { t } from '../i18n/runtime.js'

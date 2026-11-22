@@ -1,8 +1,8 @@
 """Private bootstrap policy for admission-owned workers: the frozen session config every
 config reader returns, plus (troubleshooting workers only) the safe/ignore-user-config bypass.
 
-Stdlib-only: hermes_cli's config/env layer imports it, so it ships in the installer's
-hermes_cli + i18n-kernel tail and must never import beyond the standard library.
+Stdlib-only: slave_cli's config/env layer imports it, so it ships in the installer's
+slave_cli + i18n-kernel tail and must never import beyond the standard library.
 
 Bind once in a fresh exec, before config/agent/plugin imports. This is not a
 sandbox or a public launch switch: only the managed worker bootstrap consumes
@@ -27,8 +27,8 @@ class _SafeWorkerPolicy:
 _policy: _SafeWorkerPolicy | None = None
 _bind_lock = Lock()
 _RUNTIME_IMPORTS = frozenset({
-    "run_agent", "model_tools", "hermes_cli.config", "hermes_cli.env_loader",
-    "hermes_cli.plugins", "providers", "agent.agent_init",
+    "run_agent", "model_tools", "slave_cli.config", "slave_cli.env_loader",
+    "slave_cli.plugins", "providers", "agent.agent_init",
 })
 
 

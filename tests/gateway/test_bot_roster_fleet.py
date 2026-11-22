@@ -3,7 +3,7 @@ Bot Chat (the status dot's session id and the row's age), however that chat was 
 
 Each profile here holds its Bot Chat from a different creation path: a pre-upgrade CLI chat adopted
 on its first open (the reporter's fleet), a first ``bot_relay.deliver`` (``gateway/session_bot.py``),
-``hermes -p <bot> chat -c "Bot Chat" --create-if-missing``, and the Desktop's own mint. The Desktop
+``slave -p <bot> chat -c "Bot Chat" --create-if-missing``, and the Desktop's own mint. The Desktop
 asks ``profiles.list`` of its active bot over its one host-scoped socket, so the other bots' rows
 come from that same answer.
 """
@@ -110,7 +110,7 @@ class _Fleet:
         await async_wait_until(
             lambda: (read_delivery_result(self.homes['alpha'], 'a' * 32) or {}).get('status') == 'settled',
             timeout=30, interval=.05)
-        # beta: provisioned by `hermes -p beta chat -c "Bot Chat" --create-if-missing`.
+        # beta: provisioned by `slave -p beta chat -c "Bot Chat" --create-if-missing`.
         cli = self.connect('beta')
         provisioned = await self.call(cli, 'session.create', request_id='provision', title='Bot Chat',
                                       source='cli', cwd=str(self.homes['beta']))
@@ -159,7 +159,7 @@ async def test_every_bot_row_resolves_its_own_bot_chat_whichever_bot_is_active(f
 @pytest.mark.asyncio
 async def test_no_row_shows_a_bot_chat_its_viewer_may_not_read(fleet):
     chats = await fleet.bot_chats()
-    # A profile-bound socket (`hermes -p beta chat`) can route nowhere else: its siblings stay
+    # A profile-bound socket (`slave -p beta chat`) can route nowhere else: its siblings stay
     # discovery metadata, even though each of them holds a Bot Chat.
     rows = _rows(await fleet.call(fleet.connect('beta'), 'profiles.list'))
     assert rows['beta']['canonical_session']['resolved_id'] == chats['beta']

@@ -12,7 +12,7 @@ from agent.redact import _is_secret_file_arg, redact_sensitive_text, redact_term
 
 @pytest.fixture(autouse=True)
 def _ensure_redaction_enabled(monkeypatch):
-    monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+    monkeypatch.delenv("SLAVE_REDACT_SECRETS", raising=False)
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
 
@@ -123,7 +123,7 @@ class TestCredentialStoreReads:
     @pytest.mark.parametrize("path, line", [
         (".env", "credential_process={pw}"),
         ("~/.zshrc", "credential_process={pw}"),
-        ("~/.hermes/config.yaml", "credential_process: {pw}"),
+        ("~/.slave/config.yaml", "credential_process: {pw}"),
         ("~/.aws/config", "credential_process = {pw}"),  # no ``[section]`` above it
         ("~/.bashrc", "[ -f ~/.x ]\ncredential_process={pw}"),  # a shell test is not a section header
     ])

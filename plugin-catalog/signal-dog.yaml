@@ -15,7 +15,7 @@ description: >-
   Audio from the microphone is never kept: it is analysed in memory and dropped, with no option to keep it.
   /signaldog demo writes one recording made by code (no real sound) to a private temporary folder and
   deletes it when the demo ends.
-  Stored locally: a size-limited numbers log in $HERMES_HOME/signal-dog/events.log (times, levels, what was
+  Stored locally: a size-limited numbers log in $SLAVE_HOME/signal-dog/events.log (times, levels, what was
   detected, plus an optional note of up to 80 characters the user types after /signaldog wrong or right).
   The read-only tool signal_dog_recent_alerts returns alert times, kinds, pitches, the user's right and
   wrong marks and the listener state to the agent, so it reaches the user's model provider; it does not

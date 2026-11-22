@@ -5,11 +5,11 @@ reserved for framed events before runtime imports redirect ordinary output.
 Neither assignment secrets nor launch credentials appear in argv or logs.
 """
 # Spawned as a bare ``sys.executable -m``: in a PM install that interpreter carries no dependencies
-# until hermes_bootstrap selects the committed environment, so it must be the first import.
+# until slave_bootstrap selects the committed environment, so it must be the first import.
 try:
-    import hermes_bootstrap
+    import slave_bootstrap
 except ModuleNotFoundError as exc:
-    if exc.name != "hermes_bootstrap" and not "hermes_bootstrap".startswith(f"{exc.name}."):
+    if exc.name != "slave_bootstrap" and not "slave_bootstrap".startswith(f"{exc.name}."):
         raise
 
 import contextlib
@@ -399,14 +399,14 @@ def tool_frame(call_id, name, args, *result):
 
 
 def execute(frame, channel):
-    # The owner RPC below imports gateway/config modules (hermes_cli.config, providers,
-    # hermes_cli.plugins) transitively; the policy must already be frozen when they load.
+    # The owner RPC below imports gateway/config modules (slave_cli.config, providers,
+    # slave_cli.plugins) transitively; the policy must already be frozen when they load.
     bind_worker_policy(frame)
     from agent.runtime_session_store import RuntimeSessionStore, WorkerRPC
     scope = dict(frame['scope'])
     # This process serves exactly one turn of one profile: bind it as the runtime scope. The
     # profile state is this process's own (its environment names the home), so only the slot.
-    from hermes_scope import LOCAL_OWNER, LOCAL_TENANT, Fence, Scope, push_state
+    from slave_scope import LOCAL_OWNER, LOCAL_TENANT, Fence, Scope, push_state
     push_state(scope=Scope(LOCAL_TENANT, frame['home'], LOCAL_OWNER).for_turn(
         scope['session_id'], scope['execution_id'], Fence(scope['epoch'], scope['generation'])))
     rpc = WorkerRPC(frame['home'])
@@ -429,7 +429,7 @@ def execute(frame, channel):
     from tools.approval import register_gateway_notify, unregister_gateway_notify
     from tools.approval_context import set_current_session_key
     set_current_session_key(frame['route'])
-    os.environ['HERMES_GATEWAY_SESSION'] = '1'
+    os.environ['SLAVE_GATEWAY_SESSION'] = '1'
     from gateway.session_worker_construct import checkpoint_agent_kwargs, construct_kwargs, routing_agent_kwargs
     construct = {'ephemeral_system_prompt': policy.skills_prompt, **construct_kwargs(frame)}
     controls = WorkerControls(channel, frame['route'])
@@ -528,7 +528,7 @@ def hello():
     the ancestor chain it observes. Launchers (uv's venv python.exe) put the owner's Popen
     handle one or two hops above; the owner, never this process, decides whether they match."""
     import psutil
-    from hermes_cli.process_identity import worker_birth
+    from slave_cli.process_identity import worker_birth
     me = psutil.Process()
     return {'pid': me.pid, 'birth': worker_birth(me), 'ancestors': [p.pid for p in me.parents()[:3]]}
 

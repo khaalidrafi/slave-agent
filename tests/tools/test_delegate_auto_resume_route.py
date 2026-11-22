@@ -78,7 +78,7 @@ def test_the_stand_in_parent_runs_on_the_sessions_own_tier_not_the_runners_last_
     runner, built = _runner(), []
     runner._service_tier = "priority"
     factory, start = _start(runner, model, built)
-    with patch("hermes_cli.models.resolve_fast_mode_overrides", return_value={"service_tier": "priority"}), \
+    with patch("slave_cli.models.resolve_fast_mode_overrides", return_value={"service_tier": "priority"}), \
             patch("run_agent.AIAgent", side_effect=factory):
         assert tick(start, capacity=3) == [sid]
     assert built[0].get("service_tier") is None and "service_tier" not in (built[0]["request_overrides"] or {})
@@ -101,14 +101,14 @@ def test_capacity_counts_only_this_profiles_running_units(tmp_path, monkeypatch)
     """One gateway serves many profiles: another profile's running units never use up this one's slots."""
     from agent.runtime_scope import bind_profile_scope
     from gateway.run_auto_resume import _capacity
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     from tools import async_delegation
     other, mine = tmp_path / "other", tmp_path / "mine"
     for home, cap in ((other, 2), (mine, 3)):
         home.mkdir()
         (home / "config.yaml").write_text(json.dumps({"delegation": {"max_concurrent_children": cap}}))
-    running = {f"u{i}": {"status": "running", "_home": hermes_home_key(other)} for i in range(2)}
-    running["m"] = {"status": "running", "_home": hermes_home_key(mine)}
+    running = {f"u{i}": {"status": "running", "_home": slave_home_key(other)} for i in range(2)}
+    running["m"] = {"status": "running", "_home": slave_home_key(mine)}
     monkeypatch.setattr(async_delegation, "_records", running)
     with bind_profile_scope(mine, hydrate_secrets=False):
         assert _capacity() == 2

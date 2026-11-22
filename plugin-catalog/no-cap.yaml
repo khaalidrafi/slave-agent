@@ -15,14 +15,14 @@ description: >-
   and the reply doesn't say so. /cap makes the agent prove or retract its open claims and re-scores the next reply;
   /capscore keeps a per-model honesty board, a scorecard and an A/B compare card; /nocap verdict draws a session verdict
   card; strict mode uses pre_verify to send a coding turn back, at most twice. Surfaces: a Cap Board dashboard tab
-  (agents, models and skills ranked live; this profile only unless you opt in to a team view), Hermes Desktop receipt
+  (agents, models and skills ranked live; this profile only unless you opt in to a team view), slave-agent Desktop receipt
   chips and a Receipts popover, opt-in Discord embed + buttons, and Cap Coach, which drafts a rule from repeated caps
   and injects it only after you approve it. Opt-in Obsidian lessons (0.3.0): each 🧢 becomes a redacted line in that
   agent's note in your vault and, once per agent and pattern, a mistakes-board note (Agent Black Box format); with
   obsidian_learn the agent's own repeated cap patterns come back as built-in rules at the start of its turns.
   Licence: Apache-2.0 (0.1.0 to 0.2.0 were MIT).
-  Disclosure — Stores, all in its Hermes plugin data folder HERMES_HOME/plugin-data/agent-plugin-no-cap-<digest>/
-  (folder 0700; `hermes nocap path` prints it), every text field through a secret masker first (the home directory is
+  Disclosure — Stores, all in its slave-agent plugin data folder SLAVE_HOME/plugin-data/agent-plugin-no-cap-<digest>/
+  (folder 0700; `slave nocap path` prints it), every text field through a secret masker first (the home directory is
   written as ~ in stored commands and working dirs): receipts.jsonl (0600; one line per checked reply: session/turn
   ids, model, platform, each claim's text, verdict, reason and quoted evidence line, and only for tool calls a receipt
   cites the command (first 160 chars), exit code, error line and parsed facts; other calls only as a count and SHA-256
@@ -35,7 +35,7 @@ description: >-
   half); discord_receipts.json (0600, only with discord_buttons: on; receipt id → session/turn ids, session key, user,
   chat and thread ids, at most 500, no claim text); scorecard, verdict and compare SVG/PNG cards. /nocap purge deletes
   the receipts, ledger, Discord map and cards (local CLI/TUI/Desktop only; refused from a gateway chat); coach.json and
-  desktop.json stay until you delete them. `hermes nocap export --out` and `metrics --file` write only the file you
+  desktop.json stay until you delete them. `slave nocap export --out` and `metrics --file` write only the file you
   name (0600, atomic; CSV cells that could start a formula are quoted). Obsidian lessons (off unless
   obsidian_vault names an existing vault; nothing in any vault is read or written while it is empty): writes only
   inside that vault, <vault>/<obsidian_folder, default "No Cap">/<profile>.md (one redacted line per 🧢: date,
@@ -44,7 +44,7 @@ description: >-
   `M-NNNN <title>.md` note per agent and pattern in the board's mistakes folder plus an empty id reservation file
   in its .ids/ folder; new files 0600, written through a temp file in the same folder and os.replace, the vault held by
   a descriptor walked with O_NOFOLLOW and re-checked by device and inode before each write, one non-blocking flock
-  per destination folder (at most 120 ms per write, then skipped and retried; `hermes nocap obsidian sync` rewrites
+  per destination folder (at most 120 ms per write, then skipped and retried; `slave nocap obsidian sync` rewrites
   from the store idempotently). In its data folder: obsidian-lessons.json (per-agent 🧢 counts by pattern id, no
   claim text; only with obsidian_learn; /nocap purge deletes it) and obsidian-board-<dev>-<inode>.json (its index
   of the board notes it wrote). It never reads note text back into a prompt. Suite-change detection reads only the tool
@@ -58,14 +58,14 @@ description: >-
   <sha>`, `merge-base --is-ancestor <sha> HEAD`, `show -s --format=%ct <sha>`, `rev-parse --verify <ref>` and `reflog
   show --date=unix -n 20 refs/remotes/origin/<branch>`, so a re-check proves the session's own work, not mere
   existence. It lists the run's project read-only to tell a file-scoped test run from the full suite (bounded, no
-  symlinks) and, during /cap, stats a file the agent says it created (existence, size, modification time). `hermes
+  symlinks) and, during /cap, stats a file the agent says it created (existence, size, modification time). `slave
   nocap demo --ladder` (and /nocap demo ladder, CLI/TUI only, in the background) runs the bundled demo/run_ladder.sh
-  with /bin/sh in a throwaway HERMES_HOME in the system temp directory, under `env -i` with only PATH, HOME, LANG, TMPDIR, TERM and the
+  with /bin/sh in a throwaway SLAVE_HOME in the system temp directory, under `env -i` with only PATH, HOME, LANG, TMPDIR, TERM and the
   demo's own settings (no provider keys), a scripted model on 127.0.0.1 and a uv install of the hash-pinned
   demo/requirements-ladder.txt (pytest, pyte, Pillow) into a throwaway venv; that fetch is the demo's one network use.
   Network: none by default; with self_verify_http: true, /cap may send one HTTP HEAD to a URL the agent claimed is
   live, public addresses only (checked after DNS), no redirects, 3 s timeout. Dashboard and Desktop: routes under
-  /api/plugins/no-cap/ on your own Hermes backend, behind the dashboard's auth: GET /board (read-only), POST /hello
+  /api/plugins/no-cap/ on your own slave-agent backend, behind the dashboard's auth: GET /board (read-only), POST /hello
   (writes desktop.json), POST /verify (yes/no for one Desktop chip in one chat; the HMAC key lives only in memory and
   is never returned), GET /session. The board reads other profiles' stores and board_sources paths only with the
   board.team_profiles opt-in, only in the CLI and dashboard, never in a gateway chat; in a gateway chat /nocap, /nocap
@@ -73,7 +73,7 @@ description: >-
   default; with discord_buttons: on it edits only the bot's own reply to add an embed and two buttons and answers
   clicks ephemerally (only the user the reply answered may click). Reply rewriting: it removes forged ::nocap
   directives, closes a code fence, <!-- or <details> the reply left open (append-only) and appends the footer. Messages
-  it sends: /cap injects one user message where Hermes allows it (gateway-backed sessions need
+  it sends: /cap injects one user message where slave-agent allows it (gateway-backed sessions need
   plugins.entries.no-cap.allow_gateway_injection: true), otherwise prints it to paste; it quotes the agent's claims as
   labelled data (capped, brackets, quotes, backticks and newlines removed) with parsed counts, never a raw output line.
   Cap Coach injects approved rules as labelled context through pre_llm_call, only in scope, never before /cap coach
@@ -82,7 +82,7 @@ description: >-
   history already holds a No Cap footer, pre_llm_call also adds one fixed, labelled line asking the model not to write
   receipt lines itself (built-in text only, never stored; footer_hint: off stops it). It never edits skills, memory or
   config (--apply asks the agent to, with its own tools). /nocap doctor reads other plugins' plugin.yaml files and the
-  Hermes config. No tools, credentials, telemetry or self-update. Accuracy: blind samples of public SWE-rebench runs
+  slave-agent config. No tools, credentials, telemetry or self-update. Accuracy: blind samples of public SWE-rebench runs
   (two raters, adjudicated): round 3 at 01a1fab, 🧾 precision 0.92 (92/100, 95% CI 0.85–0.96; no 🧢 on unseen runs, so
   not measured); round 2 at 7c6cbc0, 🧢 8 of 11 correct. Local Arena (30 synthetic bug-fix tasks, Qwen3-4B and a
   partial Qwen3-30B-A3B, No Cap at aa69dcb, one person's hand check against hidden tests): 13 of 13 🧢 correct.
@@ -102,11 +102,11 @@ screenshots:
 readme: true
 platforms: []
 known_issues:
-  - "Only the final reply is checked. If another enabled plugin also rewrites replies (transform_llm_output), Hermes keeps one rewrite per turn; `/nocap doctor` warns about it."
-  - "Tested on macOS with a Hermes 0.22.5 dev build (0.22.5+2362.g8acb7f6) and v0.23.0, plus a GitHub install run on Hermes Agent and Desktop 0.23.0; not on the 0.22.5 release itself. Linux is covered by CI (unit and integration suite, not a live Hermes session). Desktop is tested end to end with a scripted model only; Discord with Hermes's real adapter and discord.py over a fake connection, not on a live server; Windows and Telegram are not tested end to end."
+  - "Only the final reply is checked. If another enabled plugin also rewrites replies (transform_llm_output), slave-agent keeps one rewrite per turn; `/nocap doctor` warns about it."
+  - "Tested on macOS with a slave-agent 0.22.5 dev build (0.22.5+2362.g8acb7f6) and v0.23.0, plus a GitHub install run on slave-agent and Desktop 0.23.0; not on the 0.22.5 release itself. Linux is covered by CI (unit and integration suite, not a live slave-agent session). Desktop is tested end to end with a scripted model only; Discord with slave-agent’s real adapter and discord.py over a fake connection, not on a live server; Windows and Telegram are not tested end to end."
   - "Secret masking has one known gap: a tool output over 40 KB is parsed in windows (first 8 KB, last 32 KB, fragments around summary lines), so a secret that sits across a window edge may be seen only in part and not masked (docs/GUIDE.md, Known limits)."
   - "Obsidian lessons: tested on macOS with a local vault (unit, integration and an end-to-end run); not on Windows or network drives. A folder moved in the microseconds between the inode re-check and the write is not caught (docs/OBSIDIAN.md). Whether the lesson line changes a model's behaviour has not been measured."
-  - "register_platform_handler and register_cli_command run in-process only (`hermes plugins validate` notes this under plugins.isolation: host)."
+  - "register_platform_handler and register_cli_command run in-process only (`slave plugins validate` notes this under plugins.isolation: host)."
 capabilities:
   provides_tools: []
   provides_hooks:

@@ -148,8 +148,8 @@ class TestFallbackChainAdvancement:
 
     def test_activation_counts_once_with_classifier_reason(self, monkeypatch):
         """A skipped candidate is not an activation; the one that binds records its FailoverReason."""
-        from hermes_cli.observability import shared_metrics_events
-        from hermes_cli.observability.shared_metrics_fields import fallback_fields
+        from slave_cli.observability import shared_metrics_events
+        from slave_cli.observability.shared_metrics_fields import fallback_fields
 
         calls = []
         monkeypatch.setattr(shared_metrics_events, "record_fallback", lambda **kw: calls.append(kw))
@@ -214,7 +214,7 @@ class TestFallbackChainAdvancement:
         Anthropic client — otherwise the turn POSTs /chat/completions. The wire
         is opt-in since 2026-09-06 (``nous.anthropic_wire``, see ``nous_api_mode``).
         """
-        from hermes_cli import providers as _providers
+        from slave_cli import providers as _providers
         monkeypatch.setattr(_providers, "_nous_anthropic_wire", lambda: "native")
         portal = "https://inference-api.nousresearch.com/v1"
         fbs = [
@@ -245,7 +245,7 @@ class TestFallbackChainAdvancement:
                 ),
             ),
             patch(
-                "hermes_cli.model_normalize.normalize_model_for_provider",
+                "slave_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
             patch(
@@ -281,7 +281,7 @@ class TestFallbackChainAdvancement:
                 ),
             ),
             patch(
-                "hermes_cli.model_normalize.normalize_model_for_provider",
+                "slave_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
             patch(
@@ -343,7 +343,7 @@ class TestFallbackChainDedup:
             called.append((provider, model))
             return _mock_client(), model
         with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
-            with patch("hermes_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
+            with patch("slave_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
                 ok = agent._try_activate_fallback()
 
         assert ok is True
@@ -396,7 +396,7 @@ class TestFallbackChainDedup:
 
         with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
             with patch(
-                "hermes_cli.model_normalize.normalize_model_for_provider",
+                "slave_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ):
                 ok = agent._try_activate_fallback()
@@ -499,10 +499,10 @@ class TestFallbackExtraBodyReResolution:
 
 
 def _write_moa_home(tmp_path, monkeypatch):
-    """Real config.yaml with a MoA preset under a temp HERMES_HOME (genuine preset resolution)."""
-    import hermes_yaml as yaml
+    """Real config.yaml with a MoA preset under a temp SLAVE_HOME (genuine preset resolution)."""
+    import slave_yaml as yaml
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir(exist_ok=True)
     (home / "config.yaml").write_text(yaml.safe_dump({
         "moa": {"default_preset": "default", "presets": {"default": {
@@ -511,7 +511,7 @@ def _write_moa_home(tmp_path, monkeypatch):
             "aggregator": {"provider": "xai", "model": "grok-4.6"},
         }}},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     return home
 
 

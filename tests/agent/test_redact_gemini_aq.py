@@ -9,7 +9,7 @@ KEY = "AQ.Ab8RN6" + "xY3kQ9zLm2" * 5  # placeholder, not a real credential
 
 @pytest.fixture(autouse=True)
 def _ensure_redaction_enabled(monkeypatch):
-    monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+    monkeypatch.delenv("SLAVE_REDACT_SECRETS", raising=False)
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
 

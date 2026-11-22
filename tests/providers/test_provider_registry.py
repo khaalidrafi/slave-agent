@@ -79,7 +79,7 @@ def test_provider_lookups_reuse_the_home_plugin_stamp_within_its_ttl(tmp_path, m
         stamp_calls += 1
         return original_stamps(home)
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "slave"))
     monkeypatch.setattr(providers, "_HOME_LAYERS", {})
     monkeypatch.setattr(providers, "_plugin_dir_stamps", count_stamps)
     monkeypatch.setattr(providers, "_scan_home_layer", lambda *_: None)
@@ -96,7 +96,7 @@ def test_api_key_profiles_declare_their_registry_key_env():
     variable first in ``env_vars``. Surfaces that read the profile (the provider-catalog e2e
     matrix, doctor, setup prompts) otherwise see a keyless provider. Runs on the default lane so
     the gap is caught even when the change classifier skips the e2e lane (#134320 -> #134385)."""
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from slave_cli.auth import PROVIDER_REGISTRY
 
     missing = []
     for profile in providers.list_providers():

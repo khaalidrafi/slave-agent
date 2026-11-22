@@ -10,7 +10,7 @@ original = AIAgent.run_conversation
 
 
 def witness(self, *args, **kwargs):
-    with Path(os.environ['HERMES_HOME'], 'agents.jsonl').open('a') as output:
+    with Path(os.environ['SLAVE_HOME'], 'agents.jsonl').open('a') as output:
         output.write(json.dumps({'agent': id(self), 'session': self.session_id}) + '\n')
     return original(self, *args, **kwargs)
 

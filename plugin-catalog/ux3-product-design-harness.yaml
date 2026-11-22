@@ -23,7 +23,7 @@ docs_url: https://github.com/cis2042/ux3-product-design-harness/blob/48965c6b501
 readme: true
 platforms: []
 known_issues:
-  - "Hermes 0.15.1 does not support this portable package; Hermes >=0.22.4 is required."
+  - "slave-agent 0.15.1 does not support this portable package; slave-agent >=0.22.4 is required."
   - "Compatible-host installation, runtime inventory, enable/disable and admission scanning have not been executed locally."
   - "User-invoked bundled validators require existing Python and jsonschema dependencies; no dependency installer or plugin install hook is provided."
 capabilities:

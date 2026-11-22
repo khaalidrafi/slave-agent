@@ -4,7 +4,7 @@ sha: c66a0dd354a034da1bad4fe56bd4945f1e5c8e24
 version: "1.0.1"
 title: Hotwire
 description: >-
-  Analog circuit design bench: Hermes writes a SPICE netlist from plain English,
+  Analog circuit design bench: slave-agent writes a SPICE netlist from plain English,
   proves it against measurable specs (gain, corner frequencies, distortion, bias,
   current draw, part stress) with Hotwire's own circuit simulator, plays your
   guitar riff or WAV through the simulated circuit so you can hear it, runs Monte
@@ -16,7 +16,7 @@ description: >-
   analog-design skill, a /hotwire command and a Desktop Bench pane with live
   knobs. Disclosure — runs entirely locally with numpy (installed with consent);
   no network calls, no credentials, no shell commands; writes designs, plots and
-  audio under <HERMES_HOME>/plugin-data/hotwire/ and reads only the .cir/.wav
+  audio under <SLAVE_HOME>/plugin-data/hotwire/ and reads only the .cir/.wav
   files you or the agent name; the Desktop half plays audio in the browser
   (microphone only after you press Live and grant access).
 maintainer: RohanGlitched

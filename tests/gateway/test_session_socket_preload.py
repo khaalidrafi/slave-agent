@@ -79,8 +79,8 @@ async def test_a_preload_never_awaited_logs_no_unretrieved_exception(monkeypatch
 def _attach_scope(ticket):
     return {'type': 'websocket', 'path': '/api/ws', 'scheme': 'ws', 'query_string': b'',
             'client': ('127.0.0.1', 1234), 'server': ('127.0.0.1', 9999),
-            'headers': [(b'sec-websocket-protocol', ('hermes-gateway-v1, hermes-gateway-ticket.' + ticket).encode())],
-            'subprotocols': ['hermes-gateway-v1', 'hermes-gateway-ticket.' + ticket]}
+            'headers': [(b'sec-websocket-protocol', ('slave-gateway-v1, slave-gateway-ticket.' + ticket).encode())],
+            'subprotocols': ['slave-gateway-v1', 'slave-gateway-ticket.' + ticket]}
 
 
 async def _attach_while_loading(tmp_path, monkeypatch, *, during_load, purpose='interactive'):
@@ -88,8 +88,8 @@ async def _attach_while_loading(tmp_path, monkeypatch, *, during_load, purpose='
     while the handler fetch is pending. Returns (whether the handler ran, the ASGI messages sent)."""
     from gateway.run_api import GatewayRuntimeAPI
     from gateway.runtime_bootstrap import TicketStore
-    from hermes_cli import web_server as web
-    from hermes_cli import web_server_chat
+    from slave_cli import web_server as web
+    from slave_cli import web_server_chat
 
     tickets = TicketStore('owner', [str(tmp_path)])
     ticket = tickets.mint(profile_id=str(tmp_path), subject='human', purpose=purpose)

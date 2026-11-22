@@ -24,7 +24,7 @@ async def test_same_chat_key_on_another_session_is_refused_not_rerun(api, owner)
         statuses = []
         for sid in ('first-session', 'second-session'):
             response = await client.post('/v1/chat/completions', json=body, headers={
-                'Authorization': 'Bearer ' + KEY, 'Idempotency-Key': 'pay-once', 'X-Hermes-Session-Id': sid})
+                'Authorization': 'Bearer ' + KEY, 'Idempotency-Key': 'pay-once', 'X-Slave-Session-Id': sid})
             statuses.append((response.status, (await response.json()).get('error', {}).get('code')))
     assert calls == ['charge the card'], calls
     assert statuses == [(200, None), (409, 'admission_conflict')], statuses

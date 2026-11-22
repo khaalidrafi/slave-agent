@@ -24,12 +24,12 @@ def test_entry_closes_transport_without_discovering_mcp(monkeypatch, crash):
 
     monkeypatch.setattr(entry, "_setup_logging", lambda: None)
     monkeypatch.setattr(entry, "_load_env", lambda: None)
-    monkeypatch.setattr("acp_adapter.server.HermesACPAgent", lambda: agent)
+    monkeypatch.setattr("acp_adapter.server.SlaveACPAgent", lambda: agent)
     monkeypatch.setattr(agent, "aclose", close)
     monkeypatch.setattr(acp, "run_agent", serve)
-    monkeypatch.setattr("hermes_cli.mcp_startup.start_background_mcp_discovery",
+    monkeypatch.setattr("slave_cli.mcp_startup.start_background_mcp_discovery",
                         lambda **kw: calls.append(("mcp", None)))
-    monkeypatch.delenv("HERMES_ACP_SKIP_CONFIGURED_MCP", raising=False)
+    monkeypatch.delenv("SLAVE_ACP_SKIP_CONFIGURED_MCP", raising=False)
     if crash:
         with pytest.raises(SystemExit):
             entry.main([])

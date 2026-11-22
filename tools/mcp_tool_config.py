@@ -14,7 +14,7 @@ import sys
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
-from hermes_cli.stderr_timestamp import stamp_line, timestamp
+from slave_cli.stderr_timestamp import stamp_line, timestamp
 from tools.mcp_tool_common import _env_ref_name, _prepend_path
 
 logger = logging.getLogger("tools.mcp_tool")
@@ -27,14 +27,14 @@ def _get_mcp_stderr_log() -> Any:
     """Shared append-mode handle for MCP subprocess stderr, cached until shutdown PER PROFILE HOME (a
     multiplexed gateway's secondary profile must log under ITS ``logs/``, not the launch profile's). Must
     expose a real fd (asyncio wires the child's stderr to it); falls back to ``/dev/null``, then real stderr."""
-    from hermes_constants import get_hermes_home, hermes_home_key, mkdir_under_hermes_home
-    home_key = hermes_home_key()
+    from slave_constants import get_slave_home, slave_home_key, mkdir_under_slave_home
+    home_key = slave_home_key()
     with _mcp_stderr_log_lock:
         fh = _mcp_stderr_log_fh.get(home_key)
         if fh is None or fh.closed:
             try:
-                log_dir = get_hermes_home() / "logs"
-                mkdir_under_hermes_home(log_dir)
+                log_dir = get_slave_home() / "logs"
+                mkdir_under_slave_home(log_dir)
                 # Line-buffered so output lands promptly; errors="replace" tolerates garbled binary.
                 fh = open(log_dir / "mcp-stderr.log", "a", encoding="utf-8", errors="replace", buffering=1)
                 fh.fileno()  # confirm a real fd before committing
@@ -108,7 +108,7 @@ class _StderrTee:
 
 def _write_stderr_log_header(server_name: str) -> None:
     """Session marker so operators can find each server's output in the shared log; it leads with the
-    same stamp as every server line (``_StderrTee``) so ``hermes logs mcp --since`` can filter it."""
+    same stamp as every server line (``_StderrTee``) so ``slave logs mcp --since`` can filter it."""
     fh = _get_mcp_stderr_log()
     try:
         fh.write(f"\n{timestamp()} ===== starting MCP server '{server_name}' =====\n")
@@ -201,8 +201,8 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     keys, ``XDG_*``, vars injected by an external secret source (users configured that backend
     precisely so subprocesses can consume them), plus the server config's own ``env``."""
     from agent.secret_scope import get_secret
-    from hermes_cli.env_loader import secret_source_names
-    from tools.environments.local_env_policy import hermes_consumed_credentials
+    from slave_cli.env_loader import secret_source_names
+    from tools.environments.local_env_policy import slave_consumed_credentials
     env = {
         key: value for key, value in os.environ.items()
         if key in _SAFE_ENV_KEYS or key.upper() in _SAFE_ENV_KEYS_CASE_INSENSITIVE or key.startswith("XDG_")}
@@ -210,28 +210,28 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     # holds only the LAUNCH profile's values, so the value must come from the active profile's
     # secret scope; a profile that lacks the name gets nothing, never another profile's token.
     source_names = secret_source_names()
-    # Where a credential is stored must not decide who receives it: what Hermes itself consumes
+    # Where a credential is stored must not decide who receives it: what Slave itself consumes
     # (under any name it reads it by) is stripped from .env too, and reaches a server only via ``env``.
-    withheld = hermes_consumed_credentials(source_names) if source_names else ()
+    withheld = slave_consumed_credentials(source_names) if source_names else ()
     for key in source_names:
         if key in withheld:
             continue
         value = get_secret(key)
         if value is not None:
             env[key] = value
-    for key in ("HERMES_KANBAN_DB", "HERMES_KANBAN_BOARD"):
+    for key in ("SLAVE_KANBAN_DB", "SLAVE_KANBAN_BOARD"):
         if key in os.environ:
             env[key] = os.environ[key]
     # Pin the ACTIVE (served) profile's home so a stdio child never falls back to the
     # platform-default home (issue #18594). Without it a child spawned by a multiplexed host
-    # or a dashboard/desktop backend serving ``--open-profile`` resolves HERMES_HOME to the
+    # or a dashboard/desktop backend serving ``--open-profile`` resolves SLAVE_HOME to the
     # LAUNCH profile's home (or the platform default) and writes to the wrong profile — and a
-    # Python child that imports hermes_constants trips the ``_warn_profile_fallback_once``
-    # guard. Resolve at call time: ``get_hermes_home()`` honours the served-profile
+    # Python child that imports slave_constants trips the ``_warn_profile_fallback_once``
+    # guard. Resolve at call time: ``get_slave_home()`` honours the served-profile
     # contextvar, which does not cross the process boundary, while ``os.environ`` holds only
-    # the launch profile's home. An explicit server ``env.HERMES_HOME`` still wins below.
-    from hermes_constants import get_hermes_home
-    env["HERMES_HOME"] = str(get_hermes_home())
+    # the launch profile's home. An explicit server ``env.SLAVE_HOME`` still wins below.
+    from slave_constants import get_slave_home
+    env["SLAVE_HOME"] = str(get_slave_home())
     if user_env:
         # An entry rendered from one whole ``${VAR}`` that is unset (or empty) counts as absent, so
         # a plugin can forward an optional var without the child seeing the literal placeholder.
@@ -273,7 +273,7 @@ def _which_with_config_pathext(command: str, path_arg, env: dict):
     return None
 
 
-# Bare MCP launchers Hermes ships through PM, keyed to the package that provides them.
+# Bare MCP launchers Slave ships through PM, keyed to the package that provides them.
 _MANAGED_LAUNCHERS = {"npx": "npm", "npm": "npm", "node": "npm", "uv": "uv", "uvx": "uv"}
 
 
@@ -292,17 +292,17 @@ def _managed_launcher(command: str) -> Optional[tuple[str, list[str]]]:
         launcher = pm.uv_launcher(command)
         dirs = [str(launcher.parent)] if launcher is not None else []
     else:
-        from hermes_constants import with_hermes_node_path
+        from slave_constants import with_slave_node_path
 
-        dirs = [d for d in with_hermes_node_path({"PATH": ""})["PATH"].split(os.pathsep) if d]
+        dirs = [d for d in with_slave_node_path({"PATH": ""})["PATH"].split(os.pathsep) if d]
     executable = shutil.which(command, path=os.pathsep.join(dirs)) if dirs else None
     if executable is None:
-        raise RuntimeError(f"Hermes-managed {command} is not installed; run `hermes pm install {package}`")
+        raise RuntimeError(f"Slave-managed {command} is not installed; run `slave pm install {package}`")
     return executable, dirs
 
 
 def _outside_package(launcher: str, managed: str, dirs: list[str]) -> tuple[str, list[str]]:
-    """Hermes's npm/node *launcher* and toolchain *dirs*, swapped for PM's copies outside a
+    """slave-agent’s npm/node *launcher* and toolchain *dirs*, swapped for PM's copies outside a
     sealed Windows payload (``pm.user_facing.copies``). npm starts each package bin through
     cmd.exe, and cmd.exe cannot start the packaged ``node.exe``."""
     from pm.user_facing import copies
@@ -310,14 +310,14 @@ def _outside_package(launcher: str, managed: str, dirs: list[str]) -> tuple[str,
     moved = copies(dirs)
     if moved == dirs:
         return managed, dirs
-    # Plain which(): Hermes's own copy dirs hold one real node.exe/npx.cmd, so the parent's
+    # Plain which(): Slave's own copy dirs hold one real node.exe/npx.cmd, so the parent's
     # PATHEXT is the right question (unlike a user server's config env, see _which_with_config_pathext).
     return shutil.which(launcher, path=os.pathsep.join(moved)) or managed, moved
 
 
-def _is_hermes_managed_bin_dir(directory: str) -> bool:
-    """True for the bin dirs Hermes' bootstrap prepends to this process's PATH: anything
-    under the active hermes home (the sealed payload's venv, ``<home>/bin``, PM store
+def _is_slave_managed_bin_dir(directory: str) -> bool:
+    """True for the bin dirs slave-agent’ bootstrap prepends to this process's PATH: anything
+    under the active slave home (the sealed payload's venv, ``<home>/bin``, PM store
     runtimes) plus the running interpreter's own bin dir (a repo checkout's venv)."""
     try:
         resolved = Path(directory).resolve()
@@ -325,9 +325,9 @@ def _is_hermes_managed_bin_dir(directory: str) -> bool:
         return False
     if resolved == Path(sys.executable).resolve().parent:
         return True
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     try:
-        home = Path(get_hermes_home()).resolve()
+        home = Path(get_slave_home()).resolve()
     except Exception:
         return False
     return resolved == home / "bin" or home in resolved.parents
@@ -357,7 +357,7 @@ def _pathext_suffixes(env: Optional[dict] = None, *, windows: Optional[bool] = N
 
 def _first_user_which_hit(command: str, path_arg: Optional[str],
                           env: Optional[dict] = None, *, windows: Optional[bool] = None) -> Optional[str]:
-    """First PATH hit for *command* OUTSIDE Hermes-managed bin dirs, or ``None``.
+    """First PATH hit for *command* OUTSIDE Slave-managed bin dirs, or ``None``.
 
     ``shutil.which`` stops at the first hit, and bootstrap prepends the managed runtime's
     bin dir, so a bare ``python3`` resolves to the bundled interpreter — which lacks the
@@ -371,7 +371,7 @@ def _first_user_which_hit(command: str, path_arg: Optional[str],
     else:
         names = [command + ext for ext in exts]
     for directory in str(path_arg or "").split(os.pathsep):
-        if not directory or _is_hermes_managed_bin_dir(directory):
+        if not directory or _is_slave_managed_bin_dir(directory):
             continue
         for name in names:
             candidate = os.path.join(directory, name)
@@ -383,7 +383,7 @@ def _first_user_which_hit(command: str, path_arg: Optional[str],
 def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
     """Resolve a stdio command against the exact subprocess env (bare launchers under a filtered PATH).
 
-    Bare ``npx``/``npm``/``node``/``uv``/``uvx`` resolve to Hermes's PM-managed copies with their
+    Bare ``npx``/``npm``/``node``/``uv``/``uvx`` resolve to slave-agent’s PM-managed copies with their
     toolchain dirs first on the child PATH, never the user's (an absolute ``command:`` stays the
     user's choice). Anything else resolves on the child env's PATH only: ``shutil.which`` with
     ``path=None`` silently falls back to the PARENT's ``os.environ["PATH"]``, letting a command
@@ -410,7 +410,7 @@ def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
             which_hit = _which_with_config_pathext(resolved_command, path_arg, resolved_env)
         # A bare command keeps the USER's PATH semantics: bootstrap prepends the managed
         # runtime's bin dir to this process's PATH, so the first hit for a bare ``python3``
-        # is Hermes' bundled interpreter, which lacks the user's packages and dies on import
+        # is Slave' bundled interpreter, which lacks the user's packages and dies on import
         # (#125300). Step past managed dirs to the user's own hit; the explicit launcher
         # family keeps the managed-first resolution (that is the point of
         # ``_launcher_fallback``), and a managed-only PATH keeps the managed hit.
@@ -428,7 +428,7 @@ def _npx_bin_candidates(bin_dir: str, name: str, *, windows: Optional[bool] = No
     """Launcher paths to try for *name* inside an npx cache's ``.bin``, in order. On Windows that
     directory holds the extensionless sh script plus ``<name>.cmd``/``<name>.ps1``; the sh one
     cannot be spawned there and ``os.access(X_OK)`` is only an existence check, so select by
-    extension (same precedence as ``hermes_constants._candidate_node_command_names``). ``windows``
+    extension (same precedence as ``slave_constants._candidate_node_command_names``). ``windows``
     is injectable so the branch is testable without patching ``os.name`` process-wide."""
     is_windows = os.name == "nt" if windows is None else windows
     if is_windows:
@@ -440,7 +440,7 @@ def _npx_cached_bin(args: list) -> Optional[tuple]:
     """Resolve ``npx -y <pkg>`` to the already-installed binary, or None.
 
     ``npx`` resolves the package and then FORKS, staying resident as the real server's parent
-    for nothing (~48 MB private memory per MCP server, measured); Hermes already supervises the
+    for nothing (~48 MB private memory per MCP server, measured); slave-agent already supervises the
     child (shared death supervisor). When the package is in npx's cache we spawn its binary
     directly. Deliberately conservative — None (caller keeps plain ``npx``, so a cold machine
     still installs) for a cache miss, a version pin (``pkg@1.2.3``), extra npx flags, a manifest
@@ -506,7 +506,7 @@ def _packaged_npx_entry(command: str, args: list) -> Optional[tuple]:
     Windows payload's own npx, else None.
 
     That npx starts the package bin through cmd.exe, and cmd.exe cannot start the packaged
-    ``node.exe`` (``pm.user_facing``). Hermes gets here only without a host Node and without
+    ``node.exe`` (``pm.user_facing``). slave-agent gets here only without a host Node and without
     a copy that PM may make. The payload's Python CAN start the packaged ``node.exe``, so the
     package is installed with npm's own script and the bin's script runs on that node.
     Install scripts stay off, because npm runs them through cmd.exe too. None keeps plain
@@ -538,9 +538,9 @@ def _packaged_npx_entry(command: str, args: list) -> Optional[tuple]:
     scope, _, bare = spec.rpartition("/") if spec.startswith("@") else ("", "", spec)
     base, _, version = bare.partition("@")
     name = (f"{scope}/" if scope else "") + base
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    prefix = Path(get_hermes_home()) / "cache" / "mcp-npx" / hashlib.sha256(spec.encode()).hexdigest()[:16]
+    prefix = Path(get_slave_home()) / "cache" / "mcp-npx" / hashlib.sha256(spec.encode()).hexdigest()[:16]
     manifest = prefix / "node_modules" / name / "package.json"
     exact = re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.+-]+)?", version) is not None
     if not (exact and manifest.is_file()):
@@ -660,7 +660,7 @@ def _malformed_cost_table(name: str, cfg: Any) -> Optional[str]:
 def _suspicious_mcp_issues(name: str, cfg: Any) -> list[str]:
     """Exfiltration/persistence-shaped findings for one entry. Run it on the RENDERED config: a
     ``${VAR}`` expands into the command the transport actually spawns."""
-    from hermes_cli.mcp_security import validate_mcp_server_entry  # an import failure fails closed: no spawn
+    from slave_cli.mcp_security import validate_mcp_server_entry  # an import failure fails closed: no spawn
     if not isinstance(cfg, dict):
         return []
     issues = validate_mcp_server_entry(name, cfg)
@@ -709,7 +709,7 @@ def _portable_mcp_servers(safe_servers: dict[str, dict], rejected: frozenset[str
     a package server's trust) keeps them unless it sets the cost key itself; ``spend_limit: 0`` turns the limit off."""
     from tools.mcp_tool_costs import CONFIG_KEYS
     try:
-        from hermes_cli.plugins import discover_plugins, get_plugin_manager
+        from slave_cli.plugins import discover_plugins, get_plugin_manager
         discover_plugins()
         portable = _render_portable_mcp_servers(get_plugin_manager().get_portable_mcp_servers())
         # A native entry replaces the package's command, which never spawns: only its budget is merged, so
@@ -745,19 +745,19 @@ def _load_mcp_config() -> dict[str, dict]:
     if safe_worker_enabled():
         return {}
     try:
-        from hermes_cli.config import load_config
+        from slave_cli.config import load_config
         from utils import env_var_enabled as _env_enabled
-        if _env_enabled("HERMES_SAFE_MODE"):
+        if _env_enabled("SLAVE_SAFE_MODE"):
             return {}
         try:  # native and package filters both need it, even with no native entries: fail closed, visibly
-            import hermes_cli.mcp_security
+            import slave_cli.mcp_security
         except ImportError as exc:
             logger.warning("MCP server validator unavailable; no MCP servers started: %s", exc)
             return {}
         servers = load_config().get("mcp_servers")
         try:  # ensure .env vars are available for interpolation
-            from hermes_cli.env_loader import load_hermes_dotenv
-            load_hermes_dotenv()
+            from slave_cli.env_loader import load_slave_dotenv
+            load_slave_dotenv()
         except Exception:
             pass
         safe_servers: dict[str, dict] = {}

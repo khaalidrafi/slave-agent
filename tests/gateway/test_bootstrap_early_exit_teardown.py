@@ -11,11 +11,11 @@ async def test_refused_startup_keeps_startup_failed_and_crash_recovery(monkeypat
     from gateway.config import GatewayConfig, Platform, PlatformConfig
     from gateway.run_bootstrap import start_gateway
     from gateway.status import read_runtime_status
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    home = get_hermes_home()
+    home = get_slave_home()
     home.chmod(0o700)
-    monkeypatch.setattr(gateway_run, '_hermes_home', home)
+    monkeypatch.setattr(gateway_run, '_slave_home', home)
     for name in ('GATEWAY_ALLOW_ALL_USERS', 'WHATSAPP_ALLOW_ALL_USERS', 'WHATSAPP_DM_POLICY'):
         monkeypatch.delenv(name, raising=False)
     # The open-DM refusal: start() writes startup_failed and requests a clean exit before recovery.
@@ -33,9 +33,9 @@ async def test_refused_startup_keeps_startup_failed_and_crash_recovery(monkeypat
 async def test_ready_publication_failure_stops_cron_and_housekeeping(monkeypatch):
     from gateway import run_bootstrap, run_runtime
     from gateway.config import GatewayConfig
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    get_hermes_home().chmod(0o700)
+    get_slave_home().chmod(0o700)
     stopped = threading.Event()
     threads = []
 

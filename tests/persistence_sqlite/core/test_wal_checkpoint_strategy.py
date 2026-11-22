@@ -83,7 +83,7 @@ class TestTryWalCheckpointPassive:
         mock_conn.execute.side_effect = sqlite3.OperationalError("disk I/O error")
         db._conn = mock_conn
         try:
-            with caplog.at_level(logging.WARNING, logger="hermes_state"):
+            with caplog.at_level(logging.WARNING, logger="slave_state"):
                 db._try_wal_checkpoint()
         finally:
             db._conn = real_conn

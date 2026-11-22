@@ -14,7 +14,7 @@ description: >-
   and ~/Applications, hidden and locked items, unreadable folders, symlinks, and app-managed
   libraries (Photos, Lightroom, Final Cut, iMovie, Music, apps, Time Machine); skips cloud
   placeholders without opening them. spacewise_trash takes only a scan id and categories (never
-  file paths) and is escalated by its own pre_tool_call hook to Hermes' human-approval gate, so it
+  file paths) and is escalated by its own pre_tool_call hook to slave-agent’ human-approval gate, so it
   follows the user's approval settings (YOLO, approvals off or approvals.cron_mode can let it
   through; with no human present it fails closed); each request gets a one-time rule key. Moves are
   same-disk renames into ~/.Trash or <drive>/.Trashes/<uid> (freedesktop Trash on Linux), never

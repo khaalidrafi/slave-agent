@@ -12,7 +12,7 @@ docs_url: https://github.com/ProlowN/surplus-intelligence-seller
 readme: true
 title: Surplus Intelligence seller
 known_issues:
-  - "SURPLUS_SELLER_API_KEY is optional. surplus_seller_auth mints an si_seller_ key with a throwaway SIWE wallet and discards the private key. Paste the key into Hermes secrets so it survives restart."
+  - "SURPLUS_SELLER_API_KEY is optional. surplus_seller_auth mints an si_seller_ key with a throwaway SIWE wallet and discards the private key. Paste the key into slave-agent secrets so it survives restart."
   - "The plugin sends the Venice API key to Surplus Intelligence, which stores it encrypted and uses it to serve buyers."
   - "VENICE_ADMIN_API_KEY is optional. Without it, epoch allocation may be unknown and sell-through percent cannot be scored; remaining DIEM still drives the end-of-epoch discount."
 capabilities:

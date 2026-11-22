@@ -182,7 +182,7 @@ def test_numbered_branch_never_shadows_the_canonical_chat(db):
     """Title resolution must land on the canonical Bot Chat, never on a "#N" sibling.
 
     Every DM transport resolves the target bot by that exact name
-    (``hermes -p <bot> chat --in ~ -c "Bot Chat"``: message_agent, bot_relay, cron
+    (``slave -p <bot> chat --in ~ -c "Bot Chat"``: message_agent, bot_relay, cron
     delivery). A numbered sibling (a Desktop branch, which is visible and NOT
     Bot-Mode-managed) would otherwise swallow each teammate's message into a
     session whose bot has no message_agent and cannot answer.
@@ -319,7 +319,7 @@ def test_archived_ordinary_title_still_resolves(db):
 
 
 def test_bulk_archive_spares_bot_chat_and_unarchived_retired_chat_is_listed(db):
-    """``hermes sessions archive`` is housekeeping like the idle sweep: it never retires the
+    """``slave sessions archive`` is housekeeping like the idle sweep: it never retires the
     canonical chat. A per-chat Archive does, and unarchiving the retired chat returns it as an
     ordinary visible conversation; it never takes "Bot Chat" back."""
     sid = _make_canonical(db, "forever")

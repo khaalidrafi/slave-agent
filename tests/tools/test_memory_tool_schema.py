@@ -105,7 +105,7 @@ def test_background_review_one_item_remove_of_the_last_entry_is_staged_not_appli
     that far: the #105921 delete gate stages it, so #103419's USER.md wipe stays closed."""
     from tools.memory_tool import memory_tool
     from tools.skill_provenance import reset_current_write_origin, set_current_write_origin
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr("tools.memory_tool.get_memory_dir", lambda: tmp_path)
     store = MemoryStore(memory_char_limit=500, user_char_limit=300)
     store.load_from_disk()

@@ -1,10 +1,10 @@
 """Packaging invariant: every root-level module that packaged code imports ships in the wheel.
 
 ``packages.find`` only sees directories with ``__init__.py``; root single-file modules
-(``run_agent``, ``hermes_state``, ``toolsets``...) reach the wheel through
+(``run_agent``, ``slave_state``, ``toolsets``...) reach the wheel through
 ``setup.py::_root_py_modules()``, which derives the list from the tree at build time. A
 static list drifted every time the root layout changed and broke installed wheels with
-``ModuleNotFoundError`` on ``import hermes_state``. This test pins the two halves of that
+``ModuleNotFoundError`` on ``import slave_state``. This test pins the two halves of that
 contract: the derived list covers every root module packaged code can import, and the
 helper stays the single source (no static ``py-modules`` creeping back into pyproject).
 """
@@ -16,14 +16,14 @@ import sys
 import tomllib
 from pathlib import Path
 
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PACKAGES = ("agent", "tools", "hermes_cli", "gateway", "tui_gateway", "cron", "acp_adapter", "plugins", "providers")
+PACKAGES = ("agent", "tools", "slave_cli", "gateway", "tui_gateway", "cron", "acp_adapter", "plugins", "providers")
 
 
 def _root_py_modules() -> set[str]:
-    spec = importlib.util.spec_from_file_location("_hermes_setup_py", REPO_ROOT / "setup.py")
+    spec = importlib.util.spec_from_file_location("_slave_setup_py", REPO_ROOT / "setup.py")
     mod = importlib.util.module_from_spec(spec)
     saved = sys.argv
     sys.argv = ["setup.py", "--name"]  # setup() must not try to build anything on import

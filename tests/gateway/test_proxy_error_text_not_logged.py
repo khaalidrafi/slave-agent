@@ -82,7 +82,7 @@ def _telegram_adapter(monkeypatch, proxy):
     from plugins.platforms.telegram import adapter as tg
 
     monkeypatch.setenv("TELEGRAM_PROXY", proxy)
-    monkeypatch.setenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
+    monkeypatch.setenv("SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
     return tg, tg.TelegramAdapter(PlatformConfig(enabled=True, token="123456:TOKEN"))
 
 

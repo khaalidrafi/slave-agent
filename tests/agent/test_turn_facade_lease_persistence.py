@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 
 from agent.session_persistence import _PERSIST_AFTER_ADMISSION_INTERRUPT
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence.conversation.lineage import CompressionChild
 from persistence.conversation.messages import ConversationRequest, NewMessage
 from persistence_assembly import open_persistence, profile_scope
@@ -22,7 +22,7 @@ def test_lease_carries_the_agent_handle_and_runs_on_it(monkeypatch):
         assert committed is not None and lease._authority_deadline == committed
         lease.release()
         assert handle.coordination.turn_lease_expires_at(session_id="s1", holder=lease.holder) is None
-        assert (get_hermes_home() / "state.db").exists()
+        assert (get_slave_home() / "state.db").exists()
     finally:
         handle.close()
 

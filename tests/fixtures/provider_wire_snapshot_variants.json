@@ -1541,8 +1541,8 @@
      "enabled": true
     },
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>"
+     "product=slave-agent",
+     "client=slave-client-v<VERSION>"
     ]
    },
    "messages": [
@@ -1605,8 +1605,8 @@
   "off": {
    "extra_body": {
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>"
+     "product=slave-agent",
+     "client=slave-client-v<VERSION>"
     ]
    },
    "messages": [
@@ -1669,8 +1669,8 @@
   "unset": {
    "extra_body": {
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>"
+     "product=slave-agent",
+     "client=slave-client-v<VERSION>"
     ]
    },
    "messages": [

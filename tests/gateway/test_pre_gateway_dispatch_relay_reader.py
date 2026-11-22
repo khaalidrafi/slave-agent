@@ -19,7 +19,7 @@ pytestmark = pytest.mark.usefixtures("authority_cwd_in_tmp")  # symbolic profile
 
 
 def _hook(callback):
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
 
     manager = get_plugin_manager()
     manager._discovered = True

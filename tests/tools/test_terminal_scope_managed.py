@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import managed_scope
-from hermes_cli.config_defaults import DEFAULT_CONFIG
+from slave_cli import managed_scope
+from slave_cli.config_defaults import DEFAULT_CONFIG
 from tools.terminal_scope import TerminalPolicyUnavailable, build_profile_terminal_scope, default_terminal_scope
 
 
@@ -22,7 +22,7 @@ from tools.terminal_scope import TerminalPolicyUnavailable, build_profile_termin
 def managed(tmp_path, monkeypatch):
     md = tmp_path / "managed"
     md.mkdir()
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(md))
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", str(md))
     managed_scope.invalidate_managed_cache()
     yield md
     managed_scope.invalidate_managed_cache()

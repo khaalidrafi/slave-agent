@@ -1,7 +1,7 @@
 """Gateway lifecycle guard for cron job creation.
 
-A cron job that restarts/stops the gateway from inside the gateway (``hermes gateway restart``,
-``launchctl kickstart ai.hermes.gateway``, ``systemctl restart hermes-gateway``) kills the process,
+A cron job that restarts/stops the gateway from inside the gateway (``slave gateway restart``,
+``launchctl kickstart ai.slave.gateway``, ``systemctl restart slave-gateway``) kills the process,
 the supervisor revives it, auto-resume re-runs the turn: a SIGTERM-respawn loop.
 ``cron.jobs.create_job`` rejects such specs on every creation path. Patterns are command-shaped —
 anchored on concrete command identifiers — so they cannot fire on prose. Defence-in-depth layer.
@@ -31,22 +31,22 @@ class GatewayLifecycleBlocked(ValueError):
 # concrete command identifier so it fires only on command-shaped strings, never prose.
 _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     r"(?i)"
-    # Branch A: destructive `hermes gateway` ops. `start` is excluded: starting from inside a
+    # Branch A: destructive `slave gateway` ops. `start` is excluded: starting from inside a
     # gateway is benign and a job may legitimately start a sibling profile. The lookbehind keeps
-    # `hermes` from being a path component or word tail (`/docs/hermes gateway restart-notes.md`)
+    # `slave` from being a path component or word tail (`/docs/hermes gateway restart-notes.md`)
     # while every real command position (text start, whitespace, `;`/`&`/`|`, `$(`, backtick,
     # U+FFFD) still matches.
     # See #77173.
-    # Windows spells the CLI with a launcher suffix (`hermes.exe`, npm-style `hermes.cmd`/`.ps1`);
+    # Windows spells the CLI with a launcher suffix (`slave.exe`, npm-style `slave.cmd`/`.ps1`);
     # same command, so the suffix is optional here.
-    r"(?:(?<![/\w.\-])hermes(?:\.(?:exe|cmd|bat|com|ps1))?\s+gateway\s+(?:restart|stop|uninstall)\b)"
-    # Branch B: launchctl ops anchored on a hermes-gateway label so unrelated hermes services stay
+    r"(?:(?<![/\w.\-])slave(?:\.(?:exe|cmd|bat|com|ps1))?\s+gateway\s+(?:restart|stop|uninstall)\b)"
+    # Branch B: launchctl ops anchored on a slave-gateway label so unrelated slave services stay
     # unblocked. `submit`/`bootstrap` register a NEW keepalive job wrapping an arbitrary helper (a
     # laundered restart); neutral-label submissions are caught by
     # `contains_launchctl_submit_command`. `bootout`/`remove`/`disable` are the
     # modern/legacy/durable forms of `unload`.
     # `submit` and `bootstrap` are included alongside the direct verbs (kickstart/etc.): `launchctl submit
-    # -l ai.hermes.gateway-<suffix> -- <helper-script>` (or `launchctl bootstrap gui/<uid> <plist>`) creates
+    # -l ai.slave.gateway-<suffix> -- <helper-script>` (or `launchctl bootstrap gui/<uid> <plist>`) creates
     # a NEW keepalive job wrapping an arbitrary helper, which is how a blocked direct restart/kill gets
     # laundered into a persistent restart loop instead (#62891) — same foot-gun, indirect shape.
     # Neutral-label submissions that dodge this text anchor are caught separately by
@@ -57,7 +57,7 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     # (tools/approval.py, skipped on force=True) as the only cover, while this hard block — documented as
     # "force=True cannot help here" — let them through (#80260).
     r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart|submit|bootstrap|bootout|remove|disable)\b[^\n]*\bhermes[.\-]?gateway)"
-    # Branch C: systemctl ops on a hermes-gateway unit.
+    # Branch C: systemctl ops on a slave-gateway unit.
     r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\bhermes[.\-]?gateway)"
     # Branch D: pkill/kill of the gateway process, both token orders. Leading \b keeps "skill" from
     # matching as "kill".
@@ -69,8 +69,8 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
 )
 
 # Branch E: process killers whose TARGET is the interpreter image hosting the gateway. A supervised
-# gateway is literally `python.exe` / `python3.12` (`python -m hermes_cli.main gateway run`), so
-# `taskkill /F /IM python.exe`, `pkill -9 python3` or `killall python` carry no hermes/gateway token
+# gateway is literally `python.exe` / `python3.12` (`python -m slave_cli.main gateway run`), so
+# `taskkill /F /IM python.exe`, `pkill -9 python3` or `killall python` carry no slave/gateway token
 # yet terminate it (#113667). Token-aware rather than a line regex: option VALUES are never read as
 # targets (`pkill -u <user> chrome`), `-f` cmdline patterns are judged as patterns, and other image
 # names (`taskkill /F /IM chrome.exe`) stay available. Numeric-PID kills of OTHER processes stay
@@ -98,17 +98,17 @@ _NAME_KILLERS = frozenset({"pkill", "killall", "taskkill", "stop-process"})
 _NAME_ENUMERATORS = frozenset({"pgrep", "pidof", "get-process"})
 _KILL_VERB_RE = re.compile(r"(?i)\b(?:kill|taskkill|stop-process)\b")
 # A `-f` pattern that does not start with the interpreter reaches the gateway cmdline
-# (`python -m hermes_cli.main gateway run` / `hermes gateway run`) only through its own tokens;
-# an unrelated script that merely contains "hermes" (`hermes-polis/run.sh`, `my_hermes_bot.py`)
-# cannot match it. Same hermes+gateway pairing as Branch D, plus the module path.
-_GATEWAY_CMDLINE_TOKEN_RE = re.compile(r"(?i)hermes_cli|\bhermes\b[^\n]*\bgateway\b|\bgateway\b[^\n]*\bhermes\b")
+# (`python -m slave_cli.main gateway run` / `slave gateway run`) only through its own tokens;
+# an unrelated script that merely contains "slave" (`slave-polis/run.sh`, `my_slave_bot.py`)
+# cannot match it. Same slave+gateway pairing as Branch D, plus the module path.
+_GATEWAY_CMDLINE_TOKEN_RE = re.compile(r"(?i)slave_cli|\bhermes\b[^\n]*\bgateway\b|\bgateway\b[^\n]*\bhermes\b")
 # Rejection text for Branch E, shared by every tool surface that runs the guard so the agent is
 # pointed at the ownership-scoped route (proc_* id / explicit PID) rather than the shell.
 HOST_INTERPRETER_KILL_REJECTION = (
     "Blocked: this command kills every process whose image/name matches the Python "
     "interpreter, which is the process hosting this gateway (and this command). "
     "Stop only the process you own instead: process(action=\"kill\", session_id=\"proc_…\") "
-    "for a background job Hermes started, or kill/taskkill by its explicit PID."
+    "for a background job slave-agent started, or kill/taskkill by its explicit PID."
 )
 
 
@@ -129,8 +129,8 @@ def _is_interpreter_image(value: str, *, substring: bool = False) -> bool:
 
 def _pattern_reaches_host_interpreter(pattern: str, *, full_cmdline: bool, exact: bool) -> bool:
     """pkill/pgrep/killall operand semantics: an ERE against the process NAME (or, with `-f`, the full
-    command line). `python -m hermes_cli.main …` is the gateway's own cmdline, so a `-f` pattern
-    that names the interpreter and then only wildcards or a `hermes` token reaches it, while
+    command line). `python -m slave_cli.main …` is the gateway's own cmdline, so a `-f` pattern
+    that names the interpreter and then only wildcards or a `slave` token reaches it, while
     `python mt_add.py` (a specific script) does not."""
     core = pattern.strip().strip("\"'").lstrip("^")
     core = core.removesuffix("$")
@@ -143,7 +143,7 @@ def _pattern_reaches_host_interpreter(pattern: str, *, full_cmdline: bool, exact
         head = head[: match.start()]
     if not _is_interpreter_image(head, substring=not exact):
         return full_cmdline and bool(_GATEWAY_CMDLINE_TOKEN_RE.search(core))
-    return not rest.strip() or bool(_ERE_WILDCARD_ONLY.match(rest)) or "hermes" in rest.lower()
+    return not rest.strip() or bool(_ERE_WILDCARD_ONLY.match(rest)) or "slave" in rest.lower()
 
 
 def _killer_targets_host_interpreter(name: str, args: list[str]) -> bool:
@@ -227,7 +227,7 @@ def contains_host_interpreter_kill(text: str) -> bool:
 # does) rather than loosening `[^\n]*`.
 # Every branch above uses `[^\n]*` between its verb and the gateway identifier so the match can't span
 # unrelated lines of a longer cron prompt/script, but that also means a real multi-line shell invocation
-# split across continuation lines (e.g. `launchctl submit \` / `  -l ai.hermes.gateway-... \` / `  -- ...`,
+# split across continuation lines (e.g. `launchctl submit \` / `  -l ai.slave.gateway-... \` / `  -- ...`,
 # the exact reported shape in #62891) would otherwise slip past. Collapse continuations to a single space
 # before matching, mirroring what the shell itself does, rather than loosening `[^\n]*` and risking false
 # positives across genuinely separate lines.
@@ -238,17 +238,17 @@ _SHELL_LINE_CONTINUATION = re.compile(r"\\\r?\n[ \t]*")
 # See #68289.
 _ARGV_LIST_PUNCTUATION = re.compile(r"[\[\],]+")
 
-# Branch A2: `hermes -p <profile> gateway restart|stop` (also `--profile <name>` /
+# Branch A2: `slave -p <profile> gateway restart|stop` (also `--profile <name>` /
 # `--profile=<name>`). The selector breaks Branch A's adjacency. A sibling-profile restart is a
 # legitimate fleet operation, so the profile name is captured and blocked only when it equals the
 # profile running the guard. `start` stays excluded as in Branch A.
 # Unlike Branch A this form is NOT unconditionally self-targeting: issued from inside gateway `zeus`,
-# `hermes -p venus gateway restart` operates on a sibling profile's gateway and is a legitimate fleet
+# `slave -p venus gateway restart` operates on a sibling profile's gateway and is a legitimate fleet
 # operation. The pattern captures the named profile so `contains_gateway_lifecycle_command` can block only
 # the self-targeting shape (named profile == the profile running the guard). See #78028.
 _PROFILE_FLAG_LIFECYCLE_PATTERN = re.compile(
     r"(?i)"
-    r"hermes\s+"
+    r"slave\s+"
     # Each flag has one parse: '-' plus its remainder, never two ways to split
     # '--'. A following flag cannot also be an optional value (#129281).
     # Possessive token/space runs avoid repartitioning whitespace on failure;
@@ -264,14 +264,14 @@ _PROFILE_FLAG_LIFECYCLE_PATTERN = re.compile(
 
 # Branch B needs the label AFTER the verb in one `[^\n]*` span; a loop that builds the label in an
 # EARLIER `;`-segment (`label=${item%%:*}; launchctl bootout "gui/$uid/$label"`) leaves only
-# `$label` next to the verb. These verbs act on an EXISTING job, so the hermes-gateway label anchor
+# `$label` next to the verb. These verbs act on an EXISTING job, so the slave-gateway label anchor
 # stays correct, but the check is "verb anywhere AND label anywhere".
 # No profile identity available: cannot prove self-targeting, so do not block — sibling restarts must stay
 # allowed (#78028).
 _LAUNCHCTL_LIFECYCLE_VERBS_RE = re.compile(
     r"(?i)\blaunchctl\s+(?:kickstart|unload|load|stop|restart|bootout|kill|disable|remove)\b"
 )
-_HERMES_GATEWAY_LABEL_RE = re.compile(r"(?i)\bhermes[.\-]?gateway\b")
+_SLAVE_GATEWAY_LABEL_RE = re.compile(r"(?i)\bhermes[.\-]?gateway\b")
 
 _SHELL_EXECUTABLES = frozenset({"sh", "bash", "dash", "ksh", "zsh"})
 _SHELL_OPTIONS_WITH_VALUES = frozenset({"-O", "+O", "-o", "+o"})
@@ -373,8 +373,8 @@ _BINARY_MAGICS = (
 # --- profile identity -------------------------------------------------------------------------
 
 def _current_profile_name() -> Optional[str]:
-    """Profile running the guard (``hermes_cli.profiles.current_profile_name``); ``None`` if none."""
-    from hermes_cli.profiles import current_profile_name
+    """Profile running the guard (``slave_cli.profiles.current_profile_name``); ``None`` if none."""
+    from slave_cli.profiles import current_profile_name
 
     return current_profile_name()
 
@@ -391,7 +391,7 @@ def _named_profile_is_current(named: str) -> bool:
 def _contains_launchctl_gateway_lifecycle(normalized_text: str) -> bool:
     """Order-independent companion to Branch B — see the verbs regex comment."""
     return bool(_LAUNCHCTL_LIFECYCLE_VERBS_RE.search(normalized_text)) and bool(
-        _HERMES_GATEWAY_LABEL_RE.search(normalized_text)
+        _SLAVE_GATEWAY_LABEL_RE.search(normalized_text)
     )
 
 
@@ -410,7 +410,7 @@ def contains_gateway_lifecycle_command(text: str) -> bool:
     pass alone lets a spliced verb reach ``launchctl``/``systemctl`` untouched while still executing as the
     blocked lifecycle command (#80269, reported against #80260's bootout parity fix). Tokenizing closes that
     gap while keeping the same gateway-label anchoring (``_GATEWAY_LIFECYCLE_PATTERN`` still requires a
-    ``hermes``/``gateway`` token) — this function is the single choke point
+    ``slave``/``gateway`` token) — this function is the single choke point
     ``_contains_unsafe_gateway_action`` calls at every recursion level, so referenced-script and ``sh -c``
     payload scanning inherit the fix automatically.
     """
@@ -420,7 +420,7 @@ def contains_gateway_lifecycle_command(text: str) -> bool:
     # are documentation, not commands. The stripper fails open on ANY ambiguity (unquoted delimiter,
     # shell consumer, unterminated body), so executable heredocs are still scanned.
     # Heredoc bodies that are provably inert data (quoted delimiter, data-sink consumer like `cat > file
-    # <<'EOF'`) are masked before scanning (#88336): a runbook line "a human can run: hermes gateway
+    # <<'EOF'`) are masked before scanning (#88336): a runbook line "a human can run: slave gateway
     # restart" inside such a body is documentation, not a command this shell will execute.
     # ``mask_code_consumers=False`` keeps python/osascript bodies visible: their payload reaches a
     # shell at runtime (``os.system``, ``do shell script``), so masking it here would let an inline
@@ -432,8 +432,8 @@ def contains_gateway_lifecycle_command(text: str) -> bool:
     if _GATEWAY_LIFECYCLE_PATTERN.search(normalized):
         return True
     # Profile-flag form: blocked only when the named profile IS the one running the guard.
-    # Profile-flag form (#78028): `hermes -p <profile> gateway restart|stop` bypasses Branch A because the
-    # selector sits between `hermes` and `gateway`. It is only the same foot-gun when the named profile IS
+    # Profile-flag form (#78028): `slave -p <profile> gateway restart|stop` bypasses Branch A because the
+    # selector sits between `slave` and `gateway`. It is only the same foot-gun when the named profile IS
     # the profile running the guard — sibling-profile restarts are legitimate fleet operations and stay
     # allowed.
     profile_match = _PROFILE_FLAG_LIFECYCLE_PATTERN.search(normalized)
@@ -460,7 +460,7 @@ def contains_gateway_lifecycle_command(text: str) -> bool:
     # defined in an earlier `;`-separated segment (`label=${item%%:*}; launchctl bootout
     # "gui/$uid/$label"`), so neither the same-span regex nor same-segment tokenization sees verb and label
     # together. Check "verb anywhere AND label anywhere" instead.
-    # Branch E (#113667): killers aimed at the interpreter image itself carry no hermes/gateway token.
+    # Branch E (#113667): killers aimed at the interpreter image itself carry no slave/gateway token.
     return _contains_launchctl_gateway_lifecycle(normalized) or contains_host_interpreter_kill(normalized)
 
 
@@ -598,7 +598,7 @@ def _budget_exhausted(budget: _LifecycleScanBudget, what: str, depth: int) -> bo
 def _unreadable_reason(path: Path) -> str:
     """Name why an *executed* script failed closed without being scanned (live SQLite, device,
     oversized). Message-only: the fail-closed verdict itself came from the bounded reader."""
-    from hermes_cli.sqlite_safe_read import has_live_connection
+    from slave_cli.sqlite_safe_read import has_live_connection
 
     if has_live_connection(path):
         return f"`{path}` is a SQLite database open in this gateway process"
@@ -1108,8 +1108,8 @@ def _resolved_or_nothing(candidate: str, cwd: Optional[str]) -> Iterator[Path]:
 
 def _resolve_script_path(script_path: str) -> Optional[Path]:
     """Resolve a cron ``script`` value the way ``cron.scheduler`` does (relative paths live under
-    ``<HERMES_HOME>/scripts/``) so the guard scans the file that will actually run."""
-    from hermes_constants import get_hermes_home
+    ``<SLAVE_HOME>/scripts/``) so the guard scans the file that will actually run."""
+    from slave_constants import get_slave_home
 
     raw = _expand_candidate_path(script_path)
     if raw is None:
@@ -1117,9 +1117,9 @@ def _resolve_script_path(script_path: str) -> Optional[Path]:
     if raw.is_absolute():
         return raw
     try:
-        return get_hermes_home() / "scripts" / raw
+        return get_slave_home() / "scripts" / raw
     except (RuntimeError, OSError):
-        # get_hermes_home() falls back to Path.home(), which raises when neither HERMES_HOME nor
+        # get_slave_home() falls back to Path.home(), which raises when neither SLAVE_HOME nor
         # HOME is resolvable (launchd/systemd) — same ingestion contract: nothing to scan.
         return None
 
@@ -1296,7 +1296,7 @@ def _read_referenced_script(
     which another thread opens SQLite after the check but before this function
     closes its descriptor, cancelling that connection's POSIX locks.
     """
-    from hermes_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
+    from slave_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
 
     try:
         with offline_file_access(path, what="read referenced script"):
@@ -1609,7 +1609,7 @@ def check_gateway_lifecycle(prompt: Optional[str], script: Optional[str] = None)
                 "evicted FileProvider placeholder can hang the guard's "
                 "preflight scan indefinitely, so it is refused without "
                 "being read. Move the script to a local, non-cloud path "
-                "(e.g. ~/.hermes/scripts/) and recreate the job."
+                "(e.g. ~/.slave/scripts/) and recreate the job."
             )
         python_script = resolved_script is not None and resolved_script.suffix == ".py"
         script_text, refusal = _read_script_for_scanning(script)
@@ -1646,6 +1646,6 @@ def check_gateway_lifecycle(prompt: Optional[str], script: Optional[str] = None)
             "Blocked: cron job contains a gateway lifecycle command or persistent "
             "launchctl submit operation. This is blocked to prevent agent-driven "
             "SIGTERM-respawn loops under launchd/systemd supervision "
-            "(#30719). Run `hermes gateway restart` from a shell outside "
+            "(#30719). Run `slave gateway restart` from a shell outside "
             "the running gateway instead."
         )

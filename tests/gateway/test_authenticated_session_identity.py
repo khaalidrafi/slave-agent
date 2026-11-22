@@ -55,9 +55,9 @@ def oidc():
 
 
 def connection(authority, session, monkeypatch):
-    from hermes_cli import web_server as web
-    from hermes_cli.dashboard_auth.routes import api_auth_ws_ticket
-    from hermes_cli.web_server_chat import _ws_auth_reason
+    from slave_cli import web_server as web
+    from slave_cli.dashboard_auth.routes import api_auth_ws_ticket
+    from slave_cli.web_server_chat import _ws_auth_reason
     from gateway.session_controls import AuthorityConnection
     # Exercise the production ticket endpoint and upgrade stamp, not a made-up SessionActor.
     monkeypatch.setattr(web.app.state, 'auth_required', True, raising=False)
@@ -74,7 +74,7 @@ async def test_every_bundled_sign_in_acts_as_the_owner_and_keeps_durable_receipt
     from gateway.session_authority import initialize_session_authority
     from gateway.session_local import create_local_session
     from gateway.session_contract import SessionActor
-    from hermes_cli.web_server_sessions import _session_mutation_context
+    from slave_cli.web_server_sessions import _session_mutation_context
     from persistence.core.errors import AuthorityRefusal
     from plugins.dashboard_auth.basic import BasicAuthProvider, hash_password
 
@@ -91,7 +91,7 @@ async def test_every_bundled_sign_in_acts_as_the_owner_and_keeps_durable_receipt
                       'query_string': ('ticket=' + ticket).encode(), 'client': ('127.0.0.1', 1)},
                      None, None)
         assert auth(ws)[0] is None
-        result = factory(authority, object(), ws._hermes_auth_identity).actor
+        result = factory(authority, object(), ws._slave_auth_identity).actor
         # HTTP mutation must use precisely the WS ownership/retry key.
         assert _session_mutation_context(request, None)[1].subject == result.subject
         return result

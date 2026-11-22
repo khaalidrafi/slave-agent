@@ -113,7 +113,7 @@ class TestSendTelegramStandaloneProxy:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Without a proxy the standalone Bot gets the gateway adapter's request shape: its
-        HERMES_TELEGRAM_HTTP_* timeouts (not PTB's 5s/1s/20s defaults) and the fallback-IP
+        SLAVE_TELEGRAM_HTTP_* timeouts (not PTB's 5s/1s/20s defaults) and the fallback-IP
         transport, so a blocked api.telegram.org DNS path fails over like the gateway does.
         """
         from plugins.platforms.telegram.telegram_network import SEED_FALLBACK_IPS, TelegramFallbackTransport
@@ -122,10 +122,10 @@ class TestSendTelegramStandaloneProxy:
         for var in (
             "TELEGRAM_PROXY", "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy",
             "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy",
-            "TELEGRAM_FALLBACK_IPS", "HERMES_TELEGRAM_DISABLE_FALLBACK_IPS",
+            "TELEGRAM_FALLBACK_IPS", "SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS",
         ):
             monkeypatch.delenv(var, raising=False)
-        monkeypatch.setenv("HERMES_TELEGRAM_HTTP_READ_TIMEOUT", "33")
+        monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_READ_TIMEOUT", "33")
         monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
         monkeypatch.setattr(
             "gateway.platforms.base._detect_macos_system_proxy", lambda: None
@@ -153,7 +153,7 @@ class TestSendTelegramStandaloneProxy:
 
 def test_send_to_platform_honours_configured_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
     """``platforms.telegram.extra.base_url`` reaches the standalone Bot through the production
-    dispatch (``_send_to_platform``), so cron / ``hermes send`` / send_message use the same
+    dispatch (``_send_to_platform``), so cron / ``slave send`` / send_message use the same
     self-hosted or compatible Bot API server as the gateway, never api.telegram.org."""
     from gateway.config import Platform, PlatformConfig
     from gateway.outbound.send import _send_to_platform
@@ -204,13 +204,13 @@ def test_local_bot_api_server_honours_no_proxy_bypass(monkeypatch: pytest.Monkey
 
 def test_standalone_requests_match_the_gateway_adapter_build(monkeypatch: pytest.MonkeyPatch) -> None:
     """The standalone Bot gets the gateway's pool size, keepalive limits and TLS context, not a
-    hand-copied subset (HERMES_TELEGRAM_HTTP_POOL_SIZE, platform keepalive, platform_ssl_context)."""
+    hand-copied subset (SLAVE_TELEGRAM_HTTP_POOL_SIZE, platform keepalive, platform_ssl_context)."""
     import ssl
     from plugins.platforms.telegram.standalone import _send_telegram
 
     for var in ("TELEGRAM_PROXY", "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("HERMES_TELEGRAM_HTTP_POOL_SIZE", "64")
+    monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_POOL_SIZE", "64")
     shared = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     monkeypatch.setattr("plugins.platforms.telegram.telegram_network.platform_ssl_context", lambda: shared)
     monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)

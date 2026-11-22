@@ -21,10 +21,10 @@ screenshots:
 platforms:
   - macos
 known_issues:
-  - "Requires Apple Silicon, native arm64 Python 3.11–3.14, Chrome, one display and an in-process local Hermes session with input permission."
+  - "Requires Apple Silicon, native arm64 Python 3.11–3.14, Chrome, one display and an in-process local slave-agent session with input permission."
   - "Eye tracking is experimental. Real-camera accuracy and screen-reader compatibility are unverified. English-first voice and UI."
   - "Questions and page evidence reach the configured model. Optional TypeSafe scope requests can add costs."
-  - "Explicit allow-all skips Look action review for requested actions. Chrome sign-ins, model caches, calibration and Hermes/provider history survive plugin removal."
+  - "Explicit allow-all skips Look action review for requested actions. Chrome sign-ins, model caches, calibration and Slave/provider history survive plugin removal."
   - "Gallery shows fixture-backed UI captured before v3 integration, with scripted answers and no provider inference. Not native Chrome consent or a fresh install."
 capabilities:
   provides_tools:

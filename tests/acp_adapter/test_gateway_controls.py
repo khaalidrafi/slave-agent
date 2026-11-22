@@ -1,15 +1,15 @@
 """ACP controls retain generation fences and reject unavailable mutations."""
 import pytest
 
-from acp_adapter.server import HermesACPAgent
-from hermes_cli.gateway_client import GatewayClientError
+from acp_adapter.server import SlaveACPAgent
+from slave_cli.gateway_client import GatewayClientError
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_seed import seed_messages, seed_session
 
 
 @pytest.mark.asyncio
 async def test_cancel_uses_observed_generation_and_mutations_fail_explicitly(tmp_path):
-    agent = HermesACPAgent()
+    agent = SlaveACPAgent()
     calls = []
 
     class RPC:
@@ -46,8 +46,8 @@ async def test_cancel_uses_observed_generation_and_mutations_fail_explicitly(tmp
 
 @pytest.mark.asyncio
 async def test_gateway_acp_catalog_does_not_boot_a_runtime(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    agent = HermesACPAgent()
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    agent = SlaveACPAgent()
     assert (await agent.list_sessions()).sessions == []
     assert not (tmp_path / "state.db").exists()
     with open_persistence(profile_scope(home=tmp_path)) as db:
@@ -61,9 +61,9 @@ async def test_gateway_acp_catalog_does_not_boot_a_runtime(tmp_path, monkeypatch
 async def test_gateway_acp_advertises_every_session_capability_it_implements(tmp_path, monkeypatch):
     """Editors gate fork/list/resume UI on initialize; the gateway projection implements all three."""
     from acp_adapter.session import SessionManager
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    gateway = HermesACPAgent()
-    in_process = HermesACPAgent(session_manager=SessionManager(agent_factory=object))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    gateway = SlaveACPAgent()
+    in_process = SlaveACPAgent(session_manager=SessionManager(agent_factory=object))
     advertised = (await gateway.initialize(protocol_version=1)).agent_capabilities.session_capabilities
     expected = (await in_process.initialize(protocol_version=1)).agent_capabilities.session_capabilities
     assert advertised.model_dump(exclude_none=True) == expected.model_dump(exclude_none=True)

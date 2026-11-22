@@ -1,6 +1,6 @@
 """Channel directory -- cached map of reachable channels/contacts per platform.
 
-Built on gateway startup, refreshed every 5 min, saved to ``<HERMES_HOME>/channel_directory.json``.
+Built on gateway startup, refreshed every 5 min, saved to ``<SLAVE_HOME>/channel_directory.json``.
 send_message reads it to resolve friendly channel names to IDs.
 """
 
@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from hermes_cli.config import get_hermes_home
+from slave_cli.config import get_slave_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -38,11 +38,11 @@ _SLACK_RAW_ID_PREFIXES = ("C0", "D0", "G0")
 
 
 def _directory_path() -> Path:
-    return DIRECTORY_PATH or get_hermes_home() / "channel_directory.json"
+    return DIRECTORY_PATH or get_slave_home() / "channel_directory.json"
 
 
 def _aliases_path() -> Path:
-    return CHANNEL_ALIASES_PATH or get_hermes_home() / "channel_aliases.json"
+    return CHANNEL_ALIASES_PATH or get_slave_home() / "channel_aliases.json"
 
 
 def _read_json(path: Path) -> Any:
@@ -400,7 +400,7 @@ def _build_from_sessions_db(platform_name: str) -> list[dict[str, str]]:
 
 def _build_from_sessions_json(platform_name: str) -> list[dict[str, str]]:
     """Legacy fallback: pull channels/contacts from sessions.json origin data."""
-    sessions_path = get_hermes_home() / "sessions" / "sessions.json"
+    sessions_path = get_slave_home() / "sessions" / "sessions.json"
     if not sessions_path.exists():
         return []
     def _origins() -> Iterable[tuple[dict[str, Any], Any]]:
@@ -449,7 +449,7 @@ def resolve_channel_name(platform_name: str, name: str) -> Optional[str]:
         if ch.get("id") == raw:
             return ch["id"]
     query = _normalize_channel_query(name)
-    # 1. Exact name match, including the display labels shown by `hermes send --list`
+    # 1. Exact name match, including the display labels shown by `slave send --list`
     for ch in channels:
         if query in (_normalize_channel_query(ch["name"]), _normalize_channel_query(_channel_target_name(platform_name, ch))):
             return ch["id"]
@@ -468,7 +468,7 @@ def resolve_channel_name(platform_name: str, name: str) -> Optional[str]:
 def format_directory_for_display(platforms: Optional[dict[str, Any]] = None) -> str:
     """Format the channel directory as a human-readable list for the model.
 
-    ``platforms`` overrides the on-disk directory (``hermes send --list`` merges in
+    ``platforms`` overrides the on-disk directory (``slave send --list`` merges in
     configured-but-undiscovered platforms); an empty channel list renders a "(no channels
     discovered yet)" hint because the platform is still a valid send target.
     """

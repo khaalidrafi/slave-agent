@@ -15,7 +15,7 @@ def _(rid, params: dict) -> dict:
 
 @method("onboarding.set_run")
 def _(rid, params: dict) -> dict:
-    from hermes_cli.onboarding_run import set_run
+    from slave_cli.onboarding_run import set_run
     if not isinstance(params.get("run"), bool):
         return _err(rid, 4002, "onboarding.set_run requires a boolean 'run'")
     try:
@@ -27,14 +27,14 @@ def _(rid, params: dict) -> dict:
 
 
 def _run_state(*, assume_fresh: bool = False) -> dict:
-    """``run``: the root config says so, else this OS user never used Hermes (or the unpackaged
+    """``run``: the root config says so, else this OS user never used slave-agent (or the unpackaged
     desktop's ``--fresh-install`` says to assume that). ``eligible``: this is the desktop's local
     backend and something can carry the first chat (the welcome trial or a configured provider);
     remote backends answer at once and run onboarding only from Settings. On the local backend the
     answer comes from the boot computation (``onboarding_due``); ``--fresh-install`` asks live."""
-    from hermes_cli import onboarding_due
-    from hermes_cli.anon_auth import on_local_desktop_backend
-    from hermes_cli.onboarding_run import should_run
+    from slave_cli import onboarding_due
+    from slave_cli.anon_auth import on_local_desktop_backend
+    from slave_cli.onboarding_run import should_run
 
     if not on_local_desktop_backend():
         return {"run": should_run(assume_fresh=assume_fresh), "eligible": False, **_active_run()}
@@ -43,8 +43,8 @@ def _run_state(*, assume_fresh: bool = False) -> dict:
 
 
 def _due_now(*, assume_fresh: bool = False) -> dict[str, bool]:
-    from hermes_cli.onboarding_run import should_run
-    from hermes_cli.welcome_trial import inference_available
+    from slave_cli.onboarding_run import should_run
+    from slave_cli.welcome_trial import inference_available
 
     # Read in the default profile, where onboarding runs, not the launch profile.
     home = _profile_home("default")
@@ -58,18 +58,18 @@ def _due_stamp() -> tuple:
     (``onboarding.run``), the default profile's config, ``.env`` and ``auth.json`` (what carries a
     first chat), the shared Nous store (another profile's sign-in or connector guest) and the managed
     layer's ``config.yaml`` and ``.env`` (an admin's onboarding or provider policy)."""
-    from hermes_cli import managed_scope
-    from hermes_constants import get_default_hermes_root
-    home = Path(_profile_home("default") or get_default_hermes_root())
+    from slave_cli import managed_scope
+    from slave_constants import get_default_slave_root
+    home = Path(_profile_home("default") or get_default_slave_root())
     managed = managed_scope.get_managed_dir()
-    paths = (get_default_hermes_root() / "config.yaml", home / "config.yaml", home / ".env", home / "auth.json",
+    paths = (get_default_slave_root() / "config.yaml", home / "config.yaml", home / ".env", home / "auth.json",
              *_shared_nous_store(), *((managed / "config.yaml", managed / ".env") if managed else ()))
     return tuple(_version(path) for path in paths)
 
 
 def _shared_nous_store() -> tuple[Path, ...]:
     """The shared Nous store as ``_read_shared_nous_state`` finds it: none when the test seat belt trips."""
-    from hermes_cli.auth_nous import _nous_shared_store_path
+    from slave_cli.auth_nous import _nous_shared_store_path
     try:
         return (_nous_shared_store_path(),)
     except RuntimeError:
@@ -88,7 +88,7 @@ def start_due_boot() -> None:
     """Work out the local Desktop's due answer off the RPC path, after the setup bootstrap has recorded
     a fresh install (``begin_local_desktop_boot``)."""
     from agent.memory_provider import spawn_context_thread
-    from hermes_cli import free_tier_bootstrap, onboarding_due
+    from slave_cli import free_tier_bootstrap, onboarding_due
 
     finish = onboarding_due.begin_boot(_due_stamp)
 
@@ -111,8 +111,8 @@ def begin_local_desktop_boot() -> None:
     left unsettled."""
     global _local_desktop_boot_started
     from agent.memory_provider import spawn_context_thread
-    from hermes_cli import free_tier_bootstrap
-    from hermes_cli.process_identity import serving_local_desktop
+    from slave_cli import free_tier_bootstrap
+    from slave_cli.process_identity import serving_local_desktop
     from tui_gateway.launch_profile_policy import launch_profile_scope_if_multiplexed
 
     with _local_desktop_boot_lock:
@@ -153,9 +153,9 @@ def _claim_before_run(scope: dict, *, assume_fresh: bool):
     a refused claim (error 5079) leaves no guest and no chat, and the install still due. A blocked claim
     (another install took the trial since the due check) with no trial or provider to run on is error
     5080, with no chat either: the desktop lands on provider setup and sign-in, not a chat that fails."""
-    from hermes_cli import anon_auth
-    from hermes_cli.onboarding_run import set_run
-    from hermes_cli.welcome_trial import claim_desktop_free_tier, provider_configured
+    from slave_cli import anon_auth
+    from slave_cli.onboarding_run import set_run
+    from slave_cli.welcome_trial import claim_desktop_free_tier, provider_configured
     if not anon_auth.on_local_desktop_backend():  # gateway/session_onboarding.py::_claim_before_run
         raise _NoModelForTheRun("First-run onboarding starts only in the Desktop app on this machine.")
     set_run(True)
@@ -172,8 +172,8 @@ def _(rid, params: dict) -> dict:
     from session_rules.onboarding_flow import End, Facts
     from agent.onboarding_record import advance, load, open_session_ids, start
     from agent.onboarding_text import CHAT_TITLE, opening_prompt
-    from hermes_cli.auth_constants import AuthError
-    from hermes_cli import free_tier_bootstrap
+    from slave_cli.auth_constants import AuthError
+    from slave_cli import free_tier_bootstrap
     from persistence.conversation.sessions import NewSession
     # The app's once-per-launch start: closing the app mid-run does not count, so that run's chat goes
     # and the run starts over. A second window or a reconnect sends no flag and gets the run back.
@@ -285,7 +285,7 @@ def _discard_unfinished_runs(db, stored_ids: list[str], *, persistence=None) -> 
     from gateway.session_ingress_media import native_inputs_root
     for sid in _live_session_ids(stored_ids):
         _close_session_by_id(sid, end_reason="onboarding_restart")
-    sessions_dir = Path(_profile_home("default") or get_hermes_home()) / "sessions"
+    sessions_dir = Path(_profile_home("default") or get_slave_home()) / "sessions"
     media_root = str(native_inputs_root())
     for old in stored_ids:
         try:

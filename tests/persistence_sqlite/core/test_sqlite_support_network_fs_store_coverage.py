@@ -15,7 +15,7 @@ import sqlite_support
 def network_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     (home / "cron").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: False)
     monkeypatch.setattr(sqlite_support, "path_on_cross_vm_fs", lambda p: False)
     monkeypatch.setattr(sqlite_support, "_detect_network_fs", lambda directory, *a, **k: True, raising=False)

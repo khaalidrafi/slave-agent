@@ -10,11 +10,11 @@ import os
 import pytest
 
 from gateway.config_loader import load_yaml_layer
-from hermes_cli import env_loader
+from slave_cli import env_loader
 from tests.agent.test_env_loader_reload_restore import _register_fake_source
 
 KEY = "TELEGRAM_ALLOWED_USERS"
-MARKER = "HERMES_BRIDGED_" + KEY
+MARKER = "SLAVE_BRIDGED_" + KEY
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +26,7 @@ def _isolated(tmp_path, monkeypatch):
     for name in ("_LOADED_DOTENV_KEYS", "_MANAGED_DOTENV_KEYS"):
         monkeypatch.setattr(env_loader, name, set())
     monkeypatch.setattr(env_loader, "_DOTENV_PUBLISHED", {})
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     for key in (KEY, MARKER):  # setenv first so teardown also removes what the loaders write
         monkeypatch.setenv(key, "")
         monkeypatch.delenv(key)
@@ -53,12 +53,12 @@ def test_removed_source_returns_the_list_to_yaml(tmp_path, source_value, overrid
     load_yaml_layer(tmp_path, {})
     _register_fake_source({KEY: source_value}, override_existing=override)
     _config(tmp_path, ["111", "222"], source=True)
-    env_loader.load_hermes_dotenv(hermes_home=tmp_path)
+    env_loader.load_slave_dotenv(slave_home=tmp_path)
     assert os.environ[KEY] == source_value and MARKER not in os.environ
 
     _config(tmp_path, ["111"])  # source removed, list tightened in the same edit
     env_loader.reset_secret_source_cache(tmp_path)
-    env_loader.load_hermes_dotenv(hermes_home=tmp_path)
+    env_loader.load_slave_dotenv(slave_home=tmp_path)
     load_yaml_layer(tmp_path, {})
 
     runner = GatewayAuthorizationMixin()

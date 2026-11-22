@@ -1,8 +1,8 @@
 """A failed agent run's error text is redacted on streaming ``/v1/chat/completions`` too.
 
-The non-streaming reply, the ``X-Hermes-Error`` header and both ``/v1/responses`` paths pass the
+The non-streaming reply, the ``X-Slave-Error`` header and both ``/v1/responses`` paths pass the
 error through ``_redact_api_error_text`` (#37733); the final SSE chunk of a streamed chat completion
-put the raw text in ``error.message`` and ``hermes.error``, so a provider error carrying a key was
+put the raw text in ``error.message`` and ``slave.error``, so a provider error carrying a key was
 masked with ``stream: false`` and sent verbatim with ``stream: true``.
 """
 
@@ -21,7 +21,7 @@ ERROR = f"provider auth failed OPENAI_API_KEY={SECRET}"
 
 
 async def _post(tmp_path, monkeypatch, stream, *, create_agent):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     adapter = APIServerAdapter(PlatformConfig(enabled=True, extra={"key": "test-local-key"}))
     app = web.Application()
     app.router.add_post("/v1/chat/completions", adapter._handle_chat_completions)
@@ -56,7 +56,7 @@ async def test_failed_result_error_is_redacted(tmp_path, monkeypatch, stream):
         terminal = _terminal_frame(wire)
         assert terminal["choices"][0]["finish_reason"] == "error"
         assert "OPENAI_API_KEY=" in terminal["error"]["message"]
-        assert terminal["hermes"]["failed"] is True
+        assert terminal["slave"]["failed"] is True
     else:
         assert status == 502
 

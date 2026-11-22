@@ -8,7 +8,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence.sqlite import _registry
 from persistence.sqlite._schema import apply_declared_schema, schema_read_probe_statements
 from persistence.sqlite._schema_ddl import SCHEMA_SQL
@@ -39,7 +39,7 @@ def _write_sessions_json(folder: Path, display_name: str) -> None:
 
 
 def test_each_store_reads_and_writes_the_column_cache_in_its_own_folder(backend, scope_a, scope_b):
-    ambient = _plant_cache(get_hermes_home(), "ambient_probe")
+    ambient = _plant_cache(get_slave_home(), "ambient_probe")
     ambient_bytes = ambient.read_bytes()
     _plant_cache(store_for(scope_a).parent, "profile_a_probe")
     for scope in (scope_a, scope_b):
@@ -64,7 +64,7 @@ def test_the_v18_backfill_reads_each_profiles_sessions_json(backend, scope_a, sc
             conn.execute("INSERT INTO sessions (id, source, started_at) VALUES ('tg-1', 'telegram', 1.0)")
             conn.execute("UPDATE schema_version SET version = 17")
         _write_sessions_json(store_for(scope).parent, f"{scope.name} name")
-    _write_sessions_json(get_hermes_home(), "ambient name")
+    _write_sessions_json(get_slave_home(), "ambient name")
 
     for scope in scopes:
         backend.open(scope).ready()
@@ -76,7 +76,7 @@ def test_the_v18_backfill_reads_each_profiles_sessions_json(backend, scope_a, sc
 
 
 def test_the_raw_connection_reconciler_caches_in_the_folder_it_is_given(tmp_path):
-    ambient = _plant_cache(get_hermes_home(), "ambient_probe")
+    ambient = _plant_cache(get_slave_home(), "ambient_probe")
     ambient_bytes = ambient.read_bytes()
     folder = tmp_path / "store"
     _plant_cache(folder, "store_probe")

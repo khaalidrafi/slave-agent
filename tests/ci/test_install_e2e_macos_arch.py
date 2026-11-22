@@ -8,7 +8,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import hermes_yaml
+import slave_yaml
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,7 +16,7 @@ WORKFLOW = ROOT / ".github" / "workflows" / "install-e2e-macos-run.yml"
 
 
 def _bundled_job() -> dict:
-    jobs = hermes_yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]
+    jobs = slave_yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]
     (job,) = [job for job in jobs.values()
               if "packaged-app" in str(job.get("if", "")) and "open-app-update" in str(job.get("if", ""))]
     return job

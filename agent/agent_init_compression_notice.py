@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any, Optional
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 def _build_codex_gpt5_autoraise_notice(
@@ -29,13 +29,13 @@ def _build_codex_gpt5_autoraise_notice(
         f"ℹ Codex {model} caps context at {cap}, so auto-compaction was raised "
         f"to {to_pct}% (from {from_pct}%) to use more of the window before "
         f"summarizing.\n"
-        f"  Opt back out: hermes config set compression.codex_gpt55_autoraise false"
+        f"  Opt back out: slave config set compression.codex_gpt55_autoraise false"
     )
 
 
 def _codex_gpt55_autoraise_notice_marker():
-    """Per-profile marker path (``$HERMES_HOME`` is profile-scoped; not a config key)."""
-    return get_hermes_home() / ".codex_gpt55_autoraise_notice"
+    """Per-profile marker path (``$SLAVE_HOME`` is profile-scoped; not a config key)."""
+    return get_slave_home() / ".codex_gpt55_autoraise_notice"
 
 
 def _codex_gpt55_autoraise_notice_state(autoraise: dict[str, Any]) -> str:

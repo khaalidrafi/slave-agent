@@ -12,7 +12,7 @@ import threading
 
 import pytest
 
-import hermes_state_loop_guard as guard
+import slave_state_loop_guard as guard
 
 # Loop-side reads that stay on the loop on purpose (``(module, function)`` of the caller), each because
 # it is paired, in one loop step, with loop-only state:
@@ -60,7 +60,7 @@ def _site(record):
 
 
 def test_guard_is_inert_until_installed(tmp_path):
-    from hermes_state import SessionDB
+    from slave_state import SessionDB
     from persistence.sqlite._holder import StoreHolder
     guard.uninstall()
     assert not getattr(StoreHolder, '_loop_guard_installed', False)
@@ -76,7 +76,7 @@ def test_guard_is_inert_until_installed(tmp_path):
 
 
 def test_raise_mode_refuses_on_the_loop_thread_and_allows_workers(tmp_path):
-    from hermes_state import SessionDB
+    from slave_state import SessionDB
     db = SessionDB(tmp_path / 'state.db')
     guard.install('raise')
 
@@ -99,7 +99,7 @@ def test_a_backend_repository_call_on_the_loop_is_flagged_at_its_caller(tmp_path
     from persistence import ProfileScope
     from persistence.sqlite import SQLiteBackend
     scope = ProfileScope(profile_dir=tmp_path, name='default')
-    backend = SQLiteBackend({scope.hermes_home_key: tmp_path / 'state.db'})
+    backend = SQLiteBackend({scope.slave_home_key: tmp_path / 'state.db'})
     store = backend.open(scope)
 
     async def repository_calls_on_loop():
@@ -134,7 +134,7 @@ def test_gateway_startup_installs_the_guard_from_config_yaml(tmp_path, monkeypat
     from gateway import run
     from gateway.run_startup_liveness import start_loop_liveness_guards
     (tmp_path / 'config.yaml').write_text('gateway:\n  sessiondb_loop_guard: warn\n', encoding='utf-8')
-    monkeypatch.setattr(run, '_hermes_home', tmp_path)
+    monkeypatch.setattr(run, '_slave_home', tmp_path)
     owner = SimpleNamespace(config=SimpleNamespace(loop_watchdog=False))
     loop = asyncio.new_event_loop()
     try:
@@ -164,10 +164,10 @@ async def test_cron_run_and_inbound_turn_touch_sessiondb_on_the_loop_only_where_
     from gateway.session_ingress_context import register_transport_home
     from tests.gateway.test_command_bypass_active_session import _StubAdapter
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setenv('TELEGRAM_ALLOWED_USERS', '42')
-    monkeypatch.setattr('gateway.run._hermes_home', tmp_path)
-    monkeypatch.setattr('hermes_state.DEFAULT_DB_PATH', tmp_path / 'state.db')
+    monkeypatch.setattr('gateway.run._slave_home', tmp_path)
+    monkeypatch.setattr('slave_state.DEFAULT_DB_PATH', tmp_path / 'state.db')
     monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {'model': {}, 'platform_toolsets': {'cli': []}})
     monkeypatch.setattr(jobs, 'get_job', lambda jid: {'id': jid, 'prompt': 'p', 'model': 'm', 'name': 'job'})
     release = threading.Event()

@@ -1,6 +1,6 @@
 """Tests for the bundled Nous dashboard-auth plugin.
 
-Covers four shapes from Phase 4 of ``.hermes/plans/2026-05-21-dashboard-oauth-auth.md``:
+Covers four shapes from Phase 4 of ``.slave/plans/2026-05-21-dashboard-oauth-auth.md``:
 
 1. Plugin entry-point registration gating (env var checks).
 2. ``start_login`` shape (PKCE/state, authorize URL parameters).
@@ -30,7 +30,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import plugins.dashboard_auth.nous as nous_plugin
-from hermes_cli.dashboard_auth import (
+from slave_cli.dashboard_auth import (
     InvalidCodeError,
     ProviderError,
     RefreshExpiredError,
@@ -131,7 +131,7 @@ class TestConstruction:
     def test_rejects_malformed_client_id(self):
         with pytest.raises(ValueError, match="agent:"):
             nous_plugin.NousDashboardAuthProvider(
-                client_id="hermes-dashboard", portal_url="https://x"
+                client_id="slave-dashboard", portal_url="https://x"
             )
 
 # ---------------------------------------------------------------------------
@@ -140,22 +140,22 @@ class TestConstruction:
 
 class TestPluginRegister:
     def test_skips_when_client_id_missing(self, monkeypatch):
-        monkeypatch.delenv("HERMES_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
-        monkeypatch.delenv("HERMES_DASHBOARD_PORTAL_URL", raising=False)
+        monkeypatch.delenv("SLAVE_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
+        monkeypatch.delenv("SLAVE_DASHBOARD_PORTAL_URL", raising=False)
         ctx = MagicMock()
         nous_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
         # Skip reason is surfaced for the gate's fail-closed message.
-        assert "HERMES_DASHBOARD_OAUTH_CLIENT_ID" in nous_plugin.LAST_SKIP_REASON
+        assert "SLAVE_DASHBOARD_OAUTH_CLIENT_ID" in nous_plugin.LAST_SKIP_REASON
 
     def test_registers_with_default_portal_url_when_only_client_id_set(
         self, monkeypatch
     ):
-        """Phase 7 follow-up: HERMES_DASHBOARD_PORTAL_URL is optional —
+        """Phase 7 follow-up: SLAVE_DASHBOARD_PORTAL_URL is optional —
         defaults to the production Nous Portal. The user shouldn't have
         to set it for the common production deployment path."""
-        monkeypatch.setenv("HERMES_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
-        monkeypatch.delenv("HERMES_DASHBOARD_PORTAL_URL", raising=False)
+        monkeypatch.setenv("SLAVE_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
+        monkeypatch.delenv("SLAVE_DASHBOARD_PORTAL_URL", raising=False)
         ctx = MagicMock()
         nous_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_called_once()
@@ -169,8 +169,8 @@ class TestPluginRegister:
         """Explicit empty string still falls back to the production
         default — same handling as 'unset' so an empty Fly secret can't
         accidentally point the dashboard at nowhere."""
-        monkeypatch.setenv("HERMES_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
-        monkeypatch.setenv("HERMES_DASHBOARD_PORTAL_URL", "")
+        monkeypatch.setenv("SLAVE_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
+        monkeypatch.setenv("SLAVE_DASHBOARD_PORTAL_URL", "")
         ctx = MagicMock()
         nous_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -182,8 +182,8 @@ class TestPluginRegister:
 
 class TestConfigYamlSource:
     """``dashboard.oauth.{client_id,portal_url}`` in ``config.yaml`` is the
-    canonical surface for these settings. ``HERMES_DASHBOARD_OAUTH_CLIENT_ID``
-    and ``HERMES_DASHBOARD_PORTAL_URL`` are operator overrides that win when
+    canonical surface for these settings. ``SLAVE_DASHBOARD_OAUTH_CLIENT_ID``
+    and ``SLAVE_DASHBOARD_PORTAL_URL`` are operator overrides that win when
     set — this is the contract Fly.io's platform-secret injection relies on,
     and the contract that lets local devs experiment without setting env
     vars.
@@ -196,7 +196,7 @@ class TestConfigYamlSource:
 
     @pytest.fixture
     def patch_config(self, monkeypatch):
-        """Yield a callable that replaces ``hermes_cli.config.load_config``
+        """Yield a callable that replaces ``slave_cli.config.load_config``
         with a stub returning the given dict. Tests pass the intended
         ``dashboard.oauth`` block; the stub returns the wrapping structure."""
 
@@ -205,7 +205,7 @@ class TestConfigYamlSource:
             if oauth_block is not None:
                 cfg = {"dashboard": {"oauth": oauth_block}}
             monkeypatch.setattr(
-                "hermes_cli.config.load_config", lambda: cfg
+                "slave_cli.config.load_config", lambda: cfg
             )
 
         return _set
@@ -214,8 +214,8 @@ class TestConfigYamlSource:
         """No env var, only config.yaml — plugin reads from config and
         registers successfully. This is the path Teknium's review pushed
         for (".env is for secrets only")."""
-        monkeypatch.delenv("HERMES_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
-        monkeypatch.delenv("HERMES_DASHBOARD_PORTAL_URL", raising=False)
+        monkeypatch.delenv("SLAVE_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
+        monkeypatch.delenv("SLAVE_DASHBOARD_PORTAL_URL", raising=False)
         patch_config({"client_id": "agent:from-config"})
         ctx = MagicMock()
         nous_plugin.register(ctx)
@@ -228,9 +228,9 @@ class TestConfigYamlSource:
 
     def test_env_overrides_config_client_id(self, patch_config, monkeypatch):
         """Env wins. Critical for Fly.io: the Portal injects
-        HERMES_DASHBOARD_OAUTH_CLIENT_ID at deploy time and we MUST
+        SLAVE_DASHBOARD_OAUTH_CLIENT_ID at deploy time and we MUST
         honour it even if a stale config.yaml ships in the image."""
-        monkeypatch.setenv("HERMES_DASHBOARD_OAUTH_CLIENT_ID", "agent:from-env")
+        monkeypatch.setenv("SLAVE_DASHBOARD_OAUTH_CLIENT_ID", "agent:from-env")
         patch_config({"client_id": "agent:from-config"})
         ctx = MagicMock()
         nous_plugin.register(ctx)
@@ -253,7 +253,7 @@ class TestStartLogin:
 
     def test_redirect_url_targets_portal_authorize(self, provider):
         result = provider.start_login(
-            redirect_uri="https://hermes.fly.dev/auth/callback"
+            redirect_uri="https://slave.fly.dev/auth/callback"
         )
         assert result.redirect_url.startswith(
             "https://portal.example.com/oauth/authorize?"
@@ -261,13 +261,13 @@ class TestStartLogin:
 
     def test_authorize_url_has_required_params(self, provider):
         result = provider.start_login(
-            redirect_uri="https://hermes.fly.dev/auth/callback"
+            redirect_uri="https://slave.fly.dev/auth/callback"
         )
         parsed = urllib.parse.urlparse(result.redirect_url)
         params = dict(urllib.parse.parse_qsl(parsed.query))
         assert params["response_type"] == "code"
         assert params["client_id"] == "agent:inst1"
-        assert params["redirect_uri"] == "https://hermes.fly.dev/auth/callback"
+        assert params["redirect_uri"] == "https://slave.fly.dev/auth/callback"
         assert params["scope"] == "agent_dashboard:access"
         assert params["code_challenge_method"] == "S256"
         assert "state" in params
@@ -275,10 +275,10 @@ class TestStartLogin:
 
     def test_code_verifier_in_cookie_payload_43_to_128_chars(self, provider):
         result = provider.start_login(
-            redirect_uri="https://hermes.fly.dev/auth/callback"
+            redirect_uri="https://slave.fly.dev/auth/callback"
         )
-        assert "hermes_session_pkce" in result.cookie_payload
-        pkce = result.cookie_payload["hermes_session_pkce"]
+        assert "slave_session_pkce" in result.cookie_payload
+        pkce = result.cookie_payload["slave_session_pkce"]
         # Shape: ``state=…;verifier=…`` (matches stub-provider convention so
         # the auth-route layer's parser works uniformly across providers).
         parts = dict(seg.split("=", 1) for seg in pkce.split(";") if "=" in seg)
@@ -288,23 +288,23 @@ class TestStartLogin:
 
     def test_state_in_cookie_payload_matches_url_param(self, provider):
         result = provider.start_login(
-            redirect_uri="https://hermes.fly.dev/auth/callback"
+            redirect_uri="https://slave.fly.dev/auth/callback"
         )
         parsed = urllib.parse.urlparse(result.redirect_url)
         params = dict(urllib.parse.parse_qsl(parsed.query))
-        pkce = result.cookie_payload["hermes_session_pkce"]
+        pkce = result.cookie_payload["slave_session_pkce"]
         parts = dict(seg.split("=", 1) for seg in pkce.split(";") if "=" in seg)
         assert parts["state"] == params["state"]
 
     def test_two_calls_produce_different_state_and_verifier(self, provider):
         a = provider.start_login(
-            redirect_uri="https://hermes.fly.dev/auth/callback"
+            redirect_uri="https://slave.fly.dev/auth/callback"
         )
         b = provider.start_login(
-            redirect_uri="https://hermes.fly.dev/auth/callback"
+            redirect_uri="https://slave.fly.dev/auth/callback"
         )
-        assert a.cookie_payload["hermes_session_pkce"] != b.cookie_payload[
-            "hermes_session_pkce"
+        assert a.cookie_payload["slave_session_pkce"] != b.cookie_payload[
+            "slave_session_pkce"
         ]
 
     def test_allows_http_with_arbitrary_host(self, provider):
@@ -313,7 +313,7 @@ class TestStartLogin:
         # accepted; this client-side fast-fail must not reject self-hosted
         # dashboards reached over plain HTTP (LAN IPs, internal hostnames,
         # TLS-terminating reverse proxies). Should not raise.
-        provider.start_login(redirect_uri="http://hermes.fly.dev/auth/callback")
+        provider.start_login(redirect_uri="http://slave.fly.dev/auth/callback")
         provider.start_login(redirect_uri="http://192.168.1.50:8080/auth/callback")
         provider.start_login(redirect_uri="http://my-internal-host/auth/callback")
 
@@ -360,7 +360,7 @@ class TestCompleteLogin:
                 code="abc",
                 state="state-val",
                 code_verifier="vfy",
-                redirect_uri="https://hermes.fly.dev/auth/callback",
+                redirect_uri="https://slave.fly.dev/auth/callback",
             )
         assert isinstance(session, Session)
         assert session.user_id == "usr_abc"
@@ -379,7 +379,7 @@ class TestCompleteLogin:
             with pytest.raises(InvalidCodeError, match="invalid_grant"):
                 provider.complete_login(
                     code="bad", state="s", code_verifier="v",
-                    redirect_uri="https://hermes.fly.dev/auth/callback",
+                    redirect_uri="https://slave.fly.dev/auth/callback",
                 )
 
     def test_500_raises_provider_error(self, provider):
@@ -389,7 +389,7 @@ class TestCompleteLogin:
             with pytest.raises(ProviderError, match="500"):
                 provider.complete_login(
                     code="x", state="s", code_verifier="v",
-                    redirect_uri="https://hermes.fly.dev/auth/callback",
+                    redirect_uri="https://slave.fly.dev/auth/callback",
                 )
 
     def test_missing_access_token_raises(self, provider):
@@ -398,7 +398,7 @@ class TestCompleteLogin:
             with pytest.raises(ProviderError, match="access_token"):
                 provider.complete_login(
                     code="x", state="s", code_verifier="v",
-                    redirect_uri="https://hermes.fly.dev/auth/callback",
+                    redirect_uri="https://slave.fly.dev/auth/callback",
                 )
 
     def test_unexpected_token_type_raises(self, provider, rsa_keypair):
@@ -410,7 +410,7 @@ class TestCompleteLogin:
             with pytest.raises(ProviderError, match="token_type"):
                 provider.complete_login(
                     code="x", state="s", code_verifier="v",
-                    redirect_uri="https://hermes.fly.dev/auth/callback",
+                    redirect_uri="https://slave.fly.dev/auth/callback",
                 )
 
     def test_network_error_raises_provider_error(self, provider):
@@ -421,7 +421,7 @@ class TestCompleteLogin:
             with pytest.raises(ProviderError, match="unreachable"):
                 provider.complete_login(
                     code="x", state="s", code_verifier="v",
-                    redirect_uri="https://hermes.fly.dev/auth/callback",
+                    redirect_uri="https://slave.fly.dev/auth/callback",
                 )
 
 # ---------------------------------------------------------------------------
@@ -454,7 +454,7 @@ class TestVerifySession:
         self, provider, rsa_keypair, caplog
     ):
         """Operators need to see the actual iss/aud the token carries to debug
-        config drift between HERMES_DASHBOARD_PORTAL_URL/CLIENT_ID and Portal: the
+        config drift between SLAVE_DASHBOARD_PORTAL_URL/CLIENT_ID and Portal: the
         rejection is a 401, so the warning log is where drift shows up."""
         import logging
         token = _mint_token(rsa_keypair, iss="https://evil.example")

@@ -8,12 +8,12 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Dict, Iterator, List, NamedTuple, Optional
 from utils import base_url_hostname, is_truthy_value
-from hermes_cli.fallback_config import scoped_fallback_chain
+from slave_cli.fallback_config import scoped_fallback_chain
 
 logger = logging.getLogger("tools.delegate_tool")  # log-record parity with the origin module
 
 # Runtime-provider sentinel for providers that are not natively known; must
-# match hermes_cli.runtime_provider.RUNTIME_PROVIDER_TYPE_CUSTOM.
+# match slave_cli.runtime_provider.RUNTIME_PROVIDER_TYPE_CUSTOM.
 _RUNTIME_PROVIDER_CUSTOM = "custom"
 
 _DEFAULT_MAX_CONCURRENT_CHILDREN = 10
@@ -136,7 +136,7 @@ def gateway_delegation_inline(user_config: Any, platform_key: str, *, interim_en
     return not interim_enabled and str(platform_key or "").lower() not in NON_MESSAGING_SESSION_SURFACES
 
 # Set by the gateway around building a session's agent; read once by that agent's first tool build.
-_GATEWAY_DELEGATION_INLINE: ContextVar[bool] = ContextVar("hermes_gateway_delegation_inline", default=False)
+_GATEWAY_DELEGATION_INLINE: ContextVar[bool] = ContextVar("slave_gateway_delegation_inline", default=False)
 
 @contextmanager
 def gateway_delegation_inline_scope(inline: bool) -> Iterator[None]:
@@ -394,7 +394,7 @@ def _direct_endpoint_credentials(v: dict, explicit_request_overrides) -> dict:
     # Foundry, MiniMax, Zhipu, LiteLLM) get the Messages transport instead of 404ing on chat_completions.
     # Without this, subagents would default to chat_completions and hit 404s on endpoints that only speak
     # the Anthropic Messages protocol. Fixes #10213.
-    from hermes_cli.runtime_provider import _detect_api_mode_for_url
+    from slave_cli.runtime_provider import _detect_api_mode_for_url
     base_lower = v["base_url"].lower()
     host = base_url_hostname(v["base_url"])
     provider = "custom"
@@ -413,7 +413,7 @@ def _direct_endpoint_credentials(v: dict, explicit_request_overrides) -> dict:
     request_overrides = None
     if v["provider"]:
         try:
-            from hermes_cli.runtime_provider import resolve_runtime_provider
+            from slave_cli.runtime_provider import resolve_runtime_provider
             runtime = resolve_runtime_provider(requested=v["provider"], target_model=v["model"])
             request_overrides = dict(runtime.get("request_overrides") or {}) or None
 
@@ -433,7 +433,7 @@ def _runtime_provider_credentials(v: dict, explicit_request_overrides, explicit_
     to the resolver the way the main agent hands it ``model.base_url``: the provider keeps its own key on it."""
     configured_provider = v["provider"]
     try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from slave_cli.runtime_provider import resolve_runtime_provider
         endpoint = {"explicit_base_url": explicit_base_url} if explicit_base_url else {}
         runtime = resolve_runtime_provider(requested=configured_provider, target_model=v["model"], **endpoint)
     except Exception as exc:
@@ -449,7 +449,7 @@ def _runtime_provider_credentials(v: dict, explicit_request_overrides, explicit_
         endpoint_hint = f", or set delegation.api_key for {explicit_base_url}" if explicit_base_url else ""
         raise ValueError(
             f"Delegation provider '{configured_provider}' resolved but has no API key. "
-            f"Set the appropriate environment variable or run 'hermes auth'{endpoint_hint}."
+            f"Set the appropriate environment variable or run 'slave auth'{endpoint_hint}."
         )
     # A pinned ACP transport command must exist — refuse the spawn loudly rather than letting the child
     # silently fall back to another transport (#80450).
@@ -481,7 +481,7 @@ def _resolver_kept_endpoint(named: dict, configured_url: str) -> bool:
     """Whether the runtime resolver used ``configured_url``, allowing for its own path normalisation (OpenCode
     relay path, LM Studio, Actual, and the ``/v1`` that Messages-mode resolvers strip): a resolver without a base_url
     knob returns its default endpoint, often on the same host."""
-    from hermes_cli.runtime_provider import _finalize_base_url
+    from slave_cli.runtime_provider import _finalize_base_url
     expected = _finalize_base_url(named["provider"] or "", named["api_mode"] or "", configured_url)
     def sans_version(url: str) -> str:
         return (url or "").rstrip("/").removesuffix("/v1")
@@ -524,12 +524,12 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
 
 def _load_config() -> dict:
     """The ``delegation`` config section (read-only — do NOT mutate). Prefers the shared ``load_config_readonly()``
-    (follows HERMES_HOME/profile; no deepcopy, since this runs on every get_definitions() rebuild) over the legacy
-    ``cli.CLI_CONFIG``, which can hide user-set keys — except that ``HERMES_IGNORE_USER_CONFIG=1`` is only honored
+    (follows SLAVE_HOME/profile; no deepcopy, since this runs on every get_definitions() rebuild) over the legacy
+    ``cli.CLI_CONFIG``, which can hide user-set keys — except that ``SLAVE_IGNORE_USER_CONFIG=1`` is only honored
     by the legacy loader, so it stays authoritative when that flag is set."""
-    if os.environ.get("HERMES_IGNORE_USER_CONFIG") != "1":
+    if os.environ.get("SLAVE_IGNORE_USER_CONFIG") != "1":
         try:
-            from hermes_cli.config import load_config_readonly
+            from slave_cli.config import load_config_readonly
             cfg = load_config_readonly().get("delegation") or {}
             if isinstance(cfg, dict):
                 return cfg
@@ -586,7 +586,7 @@ def _child_reasoning(parent_agent, delegation_cfg: dict, route_effort: Any) -> A
     if not (delegation_effort or delegation_effort is False):
         delegation_effort = (delegation_cfg or {}).get("reasoning_effort")
     if delegation_effort or delegation_effort is False:
-        from hermes_constants import parse_reasoning_effort
+        from slave_constants import parse_reasoning_effort
         parsed = parse_reasoning_effort(delegation_effort)
         if parsed is None:
             logger.warning("Unknown delegation.reasoning_effort '%s', inheriting parent level", delegation_effort)
@@ -628,13 +628,13 @@ def _resolve_child_runtime(
     # the parent — each provider has its own API surface (e.g. MiniMax uses anthropic_messages, DeepSeek
     # uses chat_completions). Inheriting the parent's mode causes 404 errors when the child routes to the
     # wrong endpoint. Derive the mode from the target provider when it differs. Same-provider inheritance
-    # would pin a child Hermes/Qwen subagent onto the parent's Claude Messages wire (or the reverse).
+    # would pin a child Slave/Qwen subagent onto the parent's Claude Messages wire (or the reverse).
     # agent_init honors an explicit api_mode above its nous branch, so re-derive here before construction.
     _parent_provider = getattr(parent_agent, "provider", None) or ""
     if override_api_mode is not None:
         effective_api_mode = override_api_mode
     elif (effective_provider or "").strip().lower() in _NOUS_PROVIDERS:
-        from hermes_cli.providers import nous_api_mode
+        from slave_cli.providers import nous_api_mode
         effective_api_mode = nous_api_mode(effective_model)
     elif effective_provider != _parent_provider:
         effective_api_mode = None  # force re-derivation from provider's defaults

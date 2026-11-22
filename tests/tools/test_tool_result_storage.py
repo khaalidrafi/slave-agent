@@ -50,7 +50,7 @@ class TestWriteToSandbox:
     def test_success(self, tmp_path):
         env = MagicMock()
         env.execute.return_value = {"output": "", "returncode": 0}
-        remote = str(tmp_path / "shared" / "hermes-results" / "abc.txt")
+        remote = str(tmp_path / "shared" / "slave-results" / "abc.txt")
         if sys.platform != "win32":
             # Run the real commands so the owner-only modes are observed, not
             # pattern-matched.
@@ -387,12 +387,12 @@ class TestPerToolThresholds:
         except ImportError:
             pytest.skip("file_tools not importable in test env")
 
-# ── Host-side spillover ($HERMES_HOME/cache/spillover) ────────────────
+# ── Host-side spillover ($SLAVE_HOME/cache/spillover) ────────────────
 
 class TestSpillover:
     @pytest.fixture(autouse=True)
     def _isolated_home(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         # Reset the once-per-process prune flag so each test is independent.
         import tools.tool_result_storage as trs
         monkeypatch.setattr(trs, "_spillover_pruned_homes", set())
@@ -535,47 +535,47 @@ class TestSpillover:
         assert not orphan.exists()
 
     def test_retention_hours_reads_session_retention_days(self, monkeypatch):
-        import hermes_cli.config
+        import slave_cli.config
         import tools.tool_result_storage as trs
 
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            slave_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": 7}})
         assert trs._spillover_retention_hours() == 7 * 24
 
     def test_retention_hours_defaults_and_falls_back(self, monkeypatch):
-        import hermes_cli.config
+        import slave_cli.config
         import tools.tool_result_storage as trs
 
-        monkeypatch.setattr(hermes_cli.config, "load_config_readonly", dict)
+        monkeypatch.setattr(slave_cli.config, "load_config_readonly", dict)
         assert trs._spillover_retention_hours() == 90 * 24
 
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr(hermes_cli.config, "load_config_readonly", _boom)
+        monkeypatch.setattr(slave_cli.config, "load_config_readonly", _boom)
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            slave_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": -5}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
         # 0 is a legal prune setting (ended sessions go at once) but open sessions survive it;
         # a 0h spill window would delete the file the first spill just wrote.
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            slave_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": 0}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
         # YAML ``.inf`` / ``.nan`` parse as floats; int() on them raises and used to
         # silently kill every sweep after the once-per-home flag was set.
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            slave_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": float("inf")}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            slave_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": float("nan")}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
@@ -666,7 +666,7 @@ class TestMcpEnvelopeSpillover:
 
     @pytest.fixture(autouse=True)
     def _isolated_home(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         import tools.tool_result_storage as trs
         monkeypatch.setattr(trs, "_spillover_pruned_homes", set())
         yield
@@ -726,7 +726,7 @@ class TestMcpEnvelopeSpillover:
             "skill_dir": "/srv/skills/testing/big-skill",
             "linked_files": {"references": [f"references/topic-{i}.md" for i in range(60)]},
             "usage_hint": "To view linked files, call skill_view(name, file_path).",
-            "metadata": {"hermes": {"tags": ["Testing"], "related_skills": []}},
+            "metadata": {"slave": {"tags": ["Testing"], "related_skills": []}},
         }
         result = maybe_persist_tool_result(
             content=json.dumps(payload, ensure_ascii=False), tool_name="skill_view",

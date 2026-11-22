@@ -1,6 +1,6 @@
 """The content-policy (safety-filter) refusal notice must tell the user they can just continue.
 
-Regression for the "Hermes Bot stuck sessions" report: a refusal is deterministic for the whole
+Regression for the "slave-agent Bot stuck sessions" report: a refusal is deterministic for the whole
 conversation (the filter judges the thread, not just the new message), so once a chat trips the
 filter every later message — even an innocuous one — used to re-refuse and lock the chat. The
 refused turn is now dropped from the conversation automatically (the user keeps seeing it, it just

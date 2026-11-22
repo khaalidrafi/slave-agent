@@ -110,7 +110,7 @@ def test_push_follows_the_owning_profiles_private_url_policy(monkeypatch, serve,
     from gateway.config import PlatformConfig
     from plugins.platforms.a2a.adapter import A2AAdapter
 
-    for var in ("A2A_BEARER_TOKEN", "A2A_PEER_TOKENS", "HERMES_ALLOW_PRIVATE_URLS"):
+    for var in ("A2A_BEARER_TOKEN", "A2A_PEER_TOKENS", "SLAVE_ALLOW_PRIVATE_URLS"):
         monkeypatch.delenv(var, raising=False)
     _resolve_as(monkeypatch, {"receiver.lan": "127.0.0.1"})
     secondary = tmp_path / "profiles" / "sec"

@@ -50,8 +50,8 @@ def test_builtin_names_and_handle_prefixes_are_reserved():
 
 
 def test_reload_cannot_change_prefix_and_leave_ambiguous_restore(tmp_path):
-    from hermes_cli.plugins import PluginContext, PluginManager
-    from hermes_cli.plugins_manifest import PluginManifest
+    from slave_cli.plugins import PluginContext, PluginManager
+    from slave_cli.plugins_manifest import PluginManifest
     scope = str(tmp_path / "home")
     context = PluginContext(PluginManifest(name="login-example", source="bundled"), PluginManager(scope_key=scope))
     original = Example()
@@ -68,8 +68,8 @@ def test_reload_cannot_change_prefix_and_leave_ambiguous_restore(tmp_path):
 
 
 def test_lease_reload_and_unload_do_not_cross_profiles(tmp_path):
-    from hermes_cli.plugins import PluginContext, PluginManager
-    from hermes_cli.plugins_manifest import PluginManifest
+    from slave_cli.plugins import PluginContext, PluginManager
+    from slave_cli.plugins_manifest import PluginManifest
     first, second = str(tmp_path / "first"), str(tmp_path / "second")
     manifest = PluginManifest(name="test-vault", source="bundled")
     first_ctx = PluginContext(manifest, PluginManager(scope_key=first))
@@ -87,8 +87,8 @@ def test_lease_reload_and_unload_do_not_cross_profiles(tmp_path):
 
 
 def test_real_plugin_discovery_reload_and_disable(tmp_path, monkeypatch):
-    from hermes_cli.plugins import PluginManager
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+    from slave_cli.plugins import PluginManager
+    from slave_constants import set_slave_home_override, reset_slave_home_override
     home = tmp_path / "home"
     plugin = home / "plugins" / "login_example"
     plugin.mkdir(parents=True)
@@ -109,8 +109,8 @@ def test_real_plugin_discovery_reload_and_disable(tmp_path, monkeypatch):
     _record_verified_install(home, "login_example")
     config = home / "config.yaml"
     config.write_text("plugins:\n  enabled: [login_example]\nvault:\n  example:\n    enabled: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    token = set_hermes_home_override(home)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    token = set_slave_home_override(home)
     manager = PluginManager(scope_key=str(home))
     try:
         manager.discover_and_load()
@@ -123,12 +123,12 @@ def test_real_plugin_discovery_reload_and_disable(tmp_path, monkeypatch):
         assert backend_for_handle("example:one") is None
     finally:
         manager.unload()
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_host_plugin_refuses_server_local_fill_context():
-    from hermes_cli.plugin_host_child import RemotePluginContext
-    from hermes_cli.plugin_host_wire import PluginHostUnsupported
+    from slave_cli.plugin_host_child import RemotePluginContext
+    from slave_cli.plugin_host_wire import PluginHostUnsupported
     remote = RemotePluginContext(None, "example", {"ctx_methods": ["register_login_backend"]})
     with pytest.raises(PluginHostUnsupported, match="server-local"):
         remote.register_login_backend(Example())

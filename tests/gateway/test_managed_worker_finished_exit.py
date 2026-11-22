@@ -12,7 +12,7 @@ import pytest
 from gateway.session_contract import SessionActor, SessionRef
 
 CHILD = """import json, os, sys, time, psutil
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 me = psutil.Process()
 out = os.fdopen(os.dup(sys.stdout.fileno()), 'wb', buffering=0)
 def send(frame):
@@ -45,7 +45,7 @@ def test_finished_worker_keeps_its_result_on_slow_or_nonzero_exit(tmp_path, monk
     from tests.fixtures.storage_holder import raw_holder
     from tests.fixtures.storage_seed import seed_session
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = open_persistence(profile_scope(home=tmp_path))
     seed_session(db, 's', 'test')
     # The worker's per-call usage writes, already committed by the time it reports 'finished'.

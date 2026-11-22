@@ -18,8 +18,8 @@
  * The selection cursor can be moved with ↑/↓ once it's live (the components own
  * their own useInput); Esc/Enter behave as in production. Ctrl-C to exit.
  */
-import { render } from '@hermes/ink'
-import type { BillingStateResponse, SubscriptionStateResponse, SubscriptionTierOption } from '@hermes/shared/gateway-types'
+import { render } from '@slave-agent/ink'
+import type { BillingStateResponse, SubscriptionStateResponse, SubscriptionTierOption } from '@slave-agent/shared/gateway-types'
 import React from 'react'
 
 import type { BillingOverlayState, SubscriptionOverlayState, SubscriptionScreen } from '../src/app/interfaces.js'

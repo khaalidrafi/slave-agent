@@ -64,8 +64,8 @@ def test_reads_and_recreatable_objects_stay_ungated(command):
     "podman system reset -f",
 ])
 def test_destruction_classes_are_never_proposed_for_the_allowlist(command):
-    # `hermes approvals suggest` filters on the class description; a destruction class it lets
+    # `slave approvals suggest` filters on the class description; a destruction class it lets
     # through comes back as a `docker system *` glob that also waves through `prune --volumes`.
-    from hermes_cli.approvals_suggest import build_proposals
+    from slave_cli.approvals_suggest import build_proposals
 
     assert build_proposals([(command, detect_dangerous_command(command)[1])] * 3) == []

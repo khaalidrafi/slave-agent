@@ -18,7 +18,7 @@ _IN_TREE_BACKEND = '''\
 import base64, hashlib, zipfile
 from pathlib import Path
 
-_DIST, _VERSION = "hermes_source_fixture", "8.0.0"
+_DIST, _VERSION = "slave_source_fixture", "8.0.0"
 
 
 def get_requires_for_build_wheel(config_settings=None):
@@ -29,7 +29,7 @@ def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
     info = f"{_DIST}-{_VERSION}.dist-info"
     files = {
         "source_fixture.py": Path("source_fixture.py").read_bytes(),
-        f"{info}/METADATA": b"Metadata-Version: 2.1\\nName: hermes-source-fixture\\nVersion: 8.0.0\\n",
+        f"{info}/METADATA": b"Metadata-Version: 2.1\\nName: slave-source-fixture\\nVersion: 8.0.0\\n",
         f"{info}/WHEEL": b"Wheel-Version: 1.0\\nGenerator: fixture\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n",
     }
     record = "".join(
@@ -66,7 +66,7 @@ def test_source_pin_survives_resolution_build_and_offline_install(tmp_path, monk
     repo.mkdir()
     (repo / "pyproject.toml").write_text(
         '[build-system]\nrequires = []\nbuild-backend = "backend"\nbackend-path = ["."]\n'
-        '[project]\nname = "hermes-source-fixture"\nversion = "8.0.0"\n', encoding="utf-8")
+        '[project]\nname = "slave-source-fixture"\nversion = "8.0.0"\n', encoding="utf-8")
     (repo / "backend.py").write_text(_IN_TREE_BACKEND, encoding="utf-8")
     (repo / "source_fixture.py").write_text('VALUE = "from pinned source"\n', encoding="utf-8")
     subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
@@ -83,20 +83,20 @@ def test_source_pin_survives_resolution_build_and_offline_install(tmp_path, monk
     source = f"git+{url}@{commit}"
     lock = tmp_path / "uv.lock"
     lock.write_text(
-        '[[package]]\nname = "hermes-source-fixture"\nversion = "8.0.0"\n'
+        '[[package]]\nname = "slave-source-fixture"\nversion = "8.0.0"\n'
         f'source = {{ git = "{url}?rev={commit}#{commit}" }}\n', encoding="utf-8")
     export = tmp_path / "requirements.txt"
     export.write_text(
-        'hermes-source-fixture==7.2.2 ; python_version < "3.11"\n'
-        f'hermes-source-fixture @ {source} ; python_version >= "3.11"\n', encoding="utf-8")
+        'slave-source-fixture==7.2.2 ; python_version < "3.11"\n'
+        f'slave-source-fixture @ {source} ; python_version >= "3.11"\n', encoding="utf-8")
     resolved = tmp_path / "resolved.txt"
     builder.normalize_reqs(export, lock, resolved)
     specs = builder.load_entries(resolved)
-    assert specs == {"hermes-source-fixture": f" @ {source}"}
+    assert specs == {"slave-source-fixture": f" @ {source}"}
     reqs = tmp_path / "offline.txt"
     builder.write_reqs_file(resolved, reqs)
     assert "@" not in reqs.read_text(encoding="utf-8")
-    assert 'hermes-source-fixture==8.0.0 ; python_version >= "3.11"' in reqs.read_text(encoding="utf-8")
+    assert 'slave-source-fixture==8.0.0 ; python_version >= "3.11"' in reqs.read_text(encoding="utf-8")
 
     wheels = tmp_path / "wheels"
     wheels.mkdir()
@@ -107,7 +107,7 @@ def test_source_pin_survives_resolution_build_and_offline_install(tmp_path, monk
     # build proves the git pin alone produces the wheel.
     monkeypatch.setenv("PIP_NO_INDEX", "1")
     builder.build_wheels(list(specs), specs, wheels, python=str(python))
-    assert len(list(wheels.glob("hermes_source_fixture-8.0.0-*.whl"))) == 1
+    assert len(list(wheels.glob("slave_source_fixture-8.0.0-*.whl"))) == 1
     # Remove the original source URL to rule out a Git fallback.
     repo.rename(tmp_path / "unavailable-source")
     target = tmp_path / "installed"

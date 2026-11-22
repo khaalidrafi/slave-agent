@@ -7,7 +7,7 @@ description: 'Discover priced APIs and pay per request (HTTP 402, x402, MPP) in 
   wallet on this machine, through the local `pay mcp` stdio server of the official Pay CLI, with the
   pay workflow skill bundled. Portable Agent Plugins v1 package (mcp.json + skills/), no Python or
   executables; the user installs the `pay` CLI (brew or npm) and runs `pay setup` first, and the server
-  is offered only while `pay` is on PATH. Disclosure — payments plugin for pay.sh: Hermes starts `pay mcp`
+  is offered only while `pay` is on PATH. Disclosure — payments plugin for pay.sh: slave-agent starts `pay mcp`
   as a long-running local process; the curl tool spends the local wallet''s stablecoin balance; each
   payment is confirmed by the user through MCP elicitation (PAY_FORCE_ELICITATION=1, declined when
   nobody can answer) and the server is marked untrusted; every profile using the plugin shares the

@@ -9,7 +9,7 @@ in the file is a schema violation, not a warning (req. 1).
 The artifact lands at ``<state>/personas/<slug>.json``. The spec's first draft
 said ``profiles/<name>.json``, but the state dir's ``profiles/`` already
 belongs to upstream's config profiles (alternate homes, see
-``hermes_cli.profiles``); sharing it would make a deployment persona and a
+``slave_cli.profiles``); sharing it would make a deployment persona and a
 config profile fight over one directory, so the deployment tier gets
 ``personas/`` and the correction is recorded here.
 """

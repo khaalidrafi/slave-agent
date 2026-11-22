@@ -32,7 +32,7 @@ def test_mcp_progress_notifications_reach_tool_progress_callback(monkeypatch, tm
     (home / "config.yaml").write_text(
         f"mcp_servers:\n  prog:\n    command: {json.dumps(sys.executable)}\n    args: [{json.dumps(str(home / 'server.py'))}]\n",
         encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
     from agent.tool_progress_relay import bound_tool_progress
     from tools import mcp_tool_discovery as disc

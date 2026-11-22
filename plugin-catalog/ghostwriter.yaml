@@ -3,7 +3,7 @@ title: Ghostwriter
 repo: https://github.com/nevpit/ghostwriter
 sha: "90a9f5364e681ad2fd4ff4dcf953f37a768420d2"
 version: "0.1.0"
-description: "Write, revise, and export screenplays in a Hermes Desktop workspace with a project-aware assistant."
+description: "Write, revise, and export screenplays in a slave-agent Desktop workspace with a project-aware assistant."
 maintainer: nevpit
 tier: community
 category: desktop

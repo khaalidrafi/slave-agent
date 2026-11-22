@@ -19,7 +19,7 @@ from gateway.run import GatewayRunner
 @pytest.mark.asyncio
 @pytest.mark.parametrize("install_ok", [True, False])
 async def test_install_runs_off_loop_and_is_not_retried_on_it(tmp_path, monkeypatch, install_ok):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     loop = asyncio.get_running_loop()
     loop_answered = threading.Event()
     installs = []

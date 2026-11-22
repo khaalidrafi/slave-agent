@@ -10,8 +10,8 @@ import os
 import pytest
 
 import session_retention
-from hermes_cli.plugins import get_plugin_manager
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_cli.plugins import get_plugin_manager
+from slave_constants import reset_slave_home_override, set_slave_home_override
 from persistence import SessionId
 from persistence.authority.runtime import Delete, Sidebar
 from persistence.sqlite.authority._runtime_ends import begin_runtime_epoch
@@ -28,11 +28,11 @@ def store(backend, scope_a):
 @pytest.fixture()
 def hook(store):
     """Register callbacks on the registry ``invoke_hook`` reads (the store's profile home's); restore it afterwards."""
-    token = set_hermes_home_override(os.path.abspath(store.scope.profile_dir))
+    token = set_slave_home_override(os.path.abspath(store.scope.profile_dir))
     try:
         manager = get_plugin_manager()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     saved = {name: list(cbs) for name, cbs in manager._hooks.items()}
     events: list[dict] = []
     holder = store.holder()
@@ -87,7 +87,7 @@ def test_every_delete_and_archive_path_fires_once_after_commit(store, hook):
         holder._execute_write(lambda c, t=tip: c.execute(
             "UPDATE sessions SET parent_session_id = ? WHERE id = ?", (f"{t}-root", t)))
 
-    removed = store.sessions.delete(SessionId("cli"), media_root=MEDIA_ROOT)  # hermes sessions delete, /exit --delete
+    removed = store.sessions.delete(SessionId("cli"), media_root=MEDIA_ROOT)  # slave sessions delete, /exit --delete
     assert removed
     _deleted(store, removed, "delete", primary="cli")
     removed = store.sessions.delete(SessionId("missing"), media_root=MEDIA_ROOT)  # unknown id: silent

@@ -33,10 +33,10 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-from hermes_agent.compat.paths import original_path
+from slave_agent.compat.paths import original_path
 from scripts.code_health import gitio
 
-SRC_DIRS = ("agent", "gateway", "hermes_cli", "tools", "tui_gateway", "cron", "acp_adapter", "plugins", "hermes_agent")
+SRC_DIRS = ("agent", "gateway", "slave_cli", "tools", "tui_gateway", "cron", "acp_adapter", "plugins", "slave_agent")
 _TEST_DEF_RE = re.compile(r"^\s*(?:async\s+)?def test_", re.MULTILINE)
 
 

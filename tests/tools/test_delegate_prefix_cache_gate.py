@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.waiting import wait_until
 from tools import delegate_tool_dispatch
 from tools.delegate_tool_child_run import _attach_child
@@ -70,7 +70,7 @@ def _gated_batch(parent, kids, run_child):
 
 
 def test_background_siblings_ignore_a_parent_stop_and_a_sibling_stopped_while_waiting_is_released():
-    (get_hermes_home() / "config.yaml").write_text("delegation:\n  prefix_stagger_seconds: 30\n", encoding="utf-8")
+    (get_slave_home() / "config.yaml").write_text("delegation:\n  prefix_stagger_seconds: 30\n", encoding="utf-8")
     parent = SimpleNamespace(_interrupt_requested=False, _delegate_spinner=None, _delegate_depth=0,
                              _active_children=[], _active_children_lock=threading.Lock())
     closed, ran = [], []

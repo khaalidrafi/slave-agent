@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -31,7 +31,7 @@ const snapshotB = { ...snapshotA, session_id: 'b', stored_session_id: 'b', subsc
 
 function mount() {
   const home = mkdtempSync(join(tmpdir(), 'ink-activate-prompts-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
 
   const gw = new GatewayClient()

@@ -23,7 +23,7 @@ ROUTE = "mcp-ambush-0123456789ab"
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     route = {"secret": SECRET, "prompt": "Event {eventId}: {data.feed_id}", "deliver": "log", "profile": "default",
              "mcp_event": {"server": "ambush", "name": "feed.emission.created", "arguments": {}}}
     (tmp_path / "webhook_subscriptions.json").write_text(json.dumps({ROUTE: route}))
@@ -128,7 +128,7 @@ async def test_subscription_state_changes_do_not_strand_an_admitted_run(home):
         assert (await _post(cli, {**occurrence, "eventId": "e-2", "cursor": "c-2"})).status == 202
         assert (await _post(cli, {"type": "gap", "cursor": "c-3"})).status == 200
         events._store_grant(ROUTE, {"id": "sub_1", "refreshBefore": "2026-10-17T00:00:00Z", "cursor": "c-4"},
-                            "https://hermes.example.com/webhooks/" + ROUTE)
+                            "https://slave.example.com/webhooks/" + ROUTE)
         assert retained_destination(adapter, chat_id) == destination
         retry = await _post(cli, {**occurrence, "eventId": "e-1", "cursor": "c-4"})  # watermark moved on
         assert retry.status == 200 and (await retry.json())["status"] == "duplicate"

@@ -66,7 +66,7 @@ def _arm(monkeypatch, *, url="wss://connector.example/relay", token="nas-token")
     monkeypatches resolve_nous_access_token to raise instead.
     """
     monkeypatch.setattr(relay, "relay_url", lambda: url)
-    monkeypatch.setattr("hermes_cli.auth.resolve_nous_access_token", lambda: token)
+    monkeypatch.setattr("slave_cli.auth.resolve_nous_access_token", lambda: token)
 
 
 # ─────────────────────────── config readers ───────────────────────────
@@ -220,7 +220,7 @@ def test_no_nas_token_is_non_fatal(monkeypatch):
     def _boom():
         raise RuntimeError("no token")
 
-    monkeypatch.setattr("hermes_cli.auth.resolve_nous_access_token", _boom)
+    monkeypatch.setattr("slave_cli.auth.resolve_nous_access_token", _boom)
     # Must not raise; returns False; no creds set.
     assert relay.self_provision_relay() is False
     assert relay.relay_connection_auth() == (None, None)
@@ -230,16 +230,16 @@ def test_no_nas_token_is_non_fatal(monkeypatch):
 
 
 def test_relay_display_name_suppresses_stock_brand(monkeypatch):
-    """The default 'Hermes Agent' brand is identical on every install — forwarding
+    """The default 'slave-agent' brand is identical on every install — forwarding
     it would shadow the connector's linked-owner fallback (which actually
     disambiguates) with a uniform label. Only customized names are forwarded."""
     monkeypatch.delenv("GATEWAY_RELAY_DISPLAY_NAME", raising=False)
 
     class _Skin:
         def get_branding(self, key, fallback=""):
-            return "Hermes Agent" if key == "agent_name" else fallback
+            return "slave-agent" if key == "agent_name" else fallback
 
-    monkeypatch.setattr("hermes_cli.skin_engine.get_active_skin", lambda: _Skin())
+    monkeypatch.setattr("slave_cli.skin_engine.get_active_skin", lambda: _Skin())
     assert relay.relay_display_name() is None
 
 
@@ -249,7 +249,7 @@ def test_relay_display_name_suppresses_stock_brand(monkeypatch):
 def _boot_with_expired_login(tmp_path, monkeypatch, *, env_file: str, stored_portal: str) -> list[str]:
     """Launch home whose Nous access token expired while the box slept, so the startup
     self-provision is the first caller to refresh it. Returns the Portal URLs the refresh used."""
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".slave"
     launch_home.mkdir()
     (launch_home / ".env").write_text(env_file, encoding="utf-8")
     (launch_home / "auth.json").write_text(json.dumps({
@@ -260,8 +260,8 @@ def _boot_with_expired_login(tmp_path, monkeypatch, *, env_file: str, stored_por
             "expires_at": "2000-01-01T00:00:00+00:00",
         }},
     }), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
-    for name in ("HERMES_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL", "NOUS_INFERENCE_BASE_URL"):
+    monkeypatch.setenv("SLAVE_HOME", str(launch_home))
+    for name in ("SLAVE_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL", "NOUS_INFERENCE_BASE_URL"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(relay, "relay_url", lambda: "wss://connector.example/relay")
     monkeypatch.setattr(relay, "register_relay_adapter", lambda: False)
@@ -271,14 +271,14 @@ def _boot_with_expired_login(tmp_path, monkeypatch, *, env_file: str, stored_por
         portals.append(kwargs["portal_base_url"])
         raise RuntimeError("stop before any network call")
 
-    monkeypatch.setattr("hermes_cli.auth._refresh_nous_or_quarantine", _refresh)
+    monkeypatch.setattr("slave_cli.auth._refresh_nous_or_quarantine", _refresh)
     return portals
 
 
 def test_startup_refresh_uses_launch_profile_portal_when_multiplexed(tmp_path, monkeypatch, caplog):
     """A Portal override in the launch profile's .env survives the startup refresh."""
     portals = _boot_with_expired_login(
-        tmp_path, monkeypatch, env_file="HERMES_PORTAL_BASE_URL=https://portal.example\n",
+        tmp_path, monkeypatch, env_file="SLAVE_PORTAL_BASE_URL=https://portal.example\n",
         stored_portal="https://portal.example")
     secret_scope.set_multiplex_active(True)
 
@@ -291,7 +291,7 @@ def test_startup_refresh_uses_launch_profile_portal_when_multiplexed(tmp_path, m
 
 def test_startup_refresh_without_override_stays_on_default_portal(tmp_path, monkeypatch):
     """With no override anywhere, the startup refresh keeps the default Portal."""
-    from hermes_cli.auth_nous import DEFAULT_NOUS_PORTAL_URL
+    from slave_cli.auth_nous import DEFAULT_NOUS_PORTAL_URL
 
     portals = _boot_with_expired_login(
         tmp_path, monkeypatch, env_file="", stored_portal=DEFAULT_NOUS_PORTAL_URL)
@@ -306,7 +306,7 @@ def test_startup_refresh_single_profile_reads_process_env_override(tmp_path, mon
     """Single-profile hosts (multiplexing off) still take the override from the process env."""
     portals = _boot_with_expired_login(
         tmp_path, monkeypatch, env_file="", stored_portal="https://portal.example")
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", "https://portal.example")
+    monkeypatch.setenv("SLAVE_PORTAL_BASE_URL", "https://portal.example")
 
     GatewayStartupMixin._start_register_plugins_relay_hooks()
 
@@ -319,15 +319,15 @@ def test_startup_idp_secret_ref_keeps_launch_env_value_when_multiplexed(tmp_path
     import io
     from unittest.mock import Mock
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".slave"
     launch_home.mkdir()
     (launch_home / ".env").write_text("", encoding="utf-8")
     (launch_home / "config.yaml").write_text(
         "gateway:\n  idp:\n    token_url: https://idp.example/token\n"
         "    client_id: relay-client\n    client_secret: ${RELAY_IDP_SECRET}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("SLAVE_HOME", str(launch_home))
     # The autouse fixture stubs config reads; this test needs the real ``${VAR}`` expansion.
-    from hermes_cli.config_effective import load_user_config_effective
+    from slave_cli.config_effective import load_user_config_effective
     monkeypatch.setattr("gateway.run._load_gateway_config",
                         lambda config_path=None: load_user_config_effective(launch_home / "config.yaml"))
     monkeypatch.setenv("RELAY_IDP_SECRET", "injected-launch-secret")

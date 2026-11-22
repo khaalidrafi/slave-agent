@@ -1,7 +1,7 @@
 """Environment and shell line for the detached ``/restart`` helper (#152714).
 
-The helper runs ``<python> -m hermes_cli.main gateway restart`` after the gateway exits, so it
-must import the same Hermes the gateway runs, and its failure must leave a trace somewhere.
+The helper runs ``<python> -m slave_cli.main gateway restart`` after the gateway exits, so it
+must import the same slave-agent the gateway runs, and its failure must leave a trace somewhere.
 """
 
 import os
@@ -11,9 +11,9 @@ from typing import Optional
 
 
 def _running_checkout_root() -> Optional[str]:
-    """Root of the source checkout ``hermes_cli`` was imported from, or None for an install in
+    """Root of the source checkout ``slave_cli`` was imported from, or None for an install in
     site-packages (the interpreter finds that one without PYTHONPATH)."""
-    from hermes_cli._startup_fast import project_root_str
+    from slave_cli._startup_fast import project_root_str
 
     root = Path(project_root_str())
     if any(part in ("site-packages", "dist-packages") for part in root.parts):
@@ -24,10 +24,10 @@ def _running_checkout_root() -> Optional[str]:
 def keep_running_checkout_importable(watcher_env: dict) -> dict:
     """Put the running checkout back on the watcher's PYTHONPATH.
 
-    The child-env builders strip Hermes-owned PYTHONPATH entries so ordinary children never
+    The child-env builders strip Slave-owned PYTHONPATH entries so ordinary children never
     inherit the gateway's checkout. The restart helper is the one child that must re-run THIS
-    install: a gateway started through PYTHONPATH (``scripts/hermes-python``) otherwise respawns
-    a helper that dies on ``No module named 'hermes_cli'``."""
+    install: a gateway started through PYTHONPATH (``scripts/slave-python``) otherwise respawns
+    a helper that dies on ``No module named 'slave_cli'``."""
     root = _running_checkout_root()
     if root:
         existing = [p for p in watcher_env.get("PYTHONPATH", "").split(os.pathsep) if p]
@@ -37,10 +37,10 @@ def keep_running_checkout_importable(watcher_env: dict) -> dict:
 
 
 def _detached_restart_log_path() -> Optional[Path]:
-    """``<HERMES_HOME>/logs/detached-restart.log``, or None when the logs dir cannot be made."""
-    from hermes_constants import get_hermes_home
+    """``<SLAVE_HOME>/logs/detached-restart.log``, or None when the logs dir cannot be made."""
+    from slave_constants import get_slave_home
 
-    log_path = get_hermes_home() / "logs" / "detached-restart.log"
+    log_path = get_slave_home() / "logs" / "detached-restart.log"
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
     except OSError:

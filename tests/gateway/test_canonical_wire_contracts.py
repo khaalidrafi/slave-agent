@@ -33,7 +33,7 @@ async def test_canonical_resume_rejects_unknown_keys_and_validates_real_snapshot
         snapshot = CANONICAL_METHODS['session.resume'].result.model_validate(result['result'])
         assert snapshot.subscription_id == viewer.subscriptions['s']
         assert snapshot.revision == 0 and snapshot.pending == []
-        assert snapshot.info.desktop_protocol == 'hermes-gateway-v1'
+        assert snapshot.info.desktop_protocol == 'slave-gateway-v1'
     finally:
         if viewer is not None:
             await viewer.close()

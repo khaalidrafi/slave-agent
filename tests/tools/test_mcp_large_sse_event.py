@@ -3,8 +3,8 @@
 httpx2 2.12 bounds every ``EventSource`` at 1 MiB by default, and the mcp SDK's Streamable HTTP
 client inherits that bound unless the caller passes ``max_sse_event_size``. A server whose
 ``tools/list`` is one ~1 MiB event (a 162-tool catalog) then failed to connect and was parked with
-0 tools, although Hermes' own wire-body cap is 10 MiB per event. Each test serves a real catalog
-from a local MCP server subprocess and drives ``hermes mcp test`` / the shared connect path.
+0 tools, although slave-agent’ own wire-body cap is 10 MiB per event. Each test serves a real catalog
+from a local MCP server subprocess and drives ``slave mcp test`` / the shared connect path.
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ import sys
 
 import pytest
 
-import hermes_yaml as yaml
-from hermes_constants import get_hermes_home
+import slave_yaml as yaml
+from slave_constants import get_slave_home
 from tests.waiting import wait_until
 
 _SERVER = """
@@ -75,10 +75,10 @@ def catalog_server(tmp_path):
 
 
 def _mcp_test(capsys, entry: dict) -> tuple[int, str]:
-    """``hermes mcp test catalog`` against *entry*; returns (exit code, printed output)."""
-    from hermes_cli.mcp_config import cmd_mcp_test
+    """``slave mcp test catalog`` against *entry*; returns (exit code, printed output)."""
+    from slave_cli.mcp_config import cmd_mcp_test
 
-    (get_hermes_home() / "config.yaml").write_text(yaml.safe_dump({"mcp_servers": {"catalog": entry}}),
+    (get_slave_home() / "config.yaml").write_text(yaml.safe_dump({"mcp_servers": {"catalog": entry}}),
                                                    encoding="utf-8")
     capsys.readouterr()
     code = cmd_mcp_test(argparse.Namespace(name="catalog"))

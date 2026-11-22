@@ -3,7 +3,7 @@ drives operations through here; the tool thread that minted one closes it on set
 
 The profile is part of the key: two multiplexed profiles can carry the same timestamp-based
 session key, and each side (the tool thread under the turn's profile override, the RPC under the
-session's profile scope) resolves it through ``hermes_home_key``."""
+session's profile scope) resolves it through ``slave_home_key``."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import logging
 import threading
 from typing import Dict, Optional, Tuple
 
-from hermes_constants import get_process_hermes_home, hermes_home_key
+from slave_constants import get_process_slave_home, slave_home_key
 from tools.connectors.operation import ConnectionOperation
 
 
@@ -31,7 +31,7 @@ _lock = threading.Lock()
 def _profile_key(profile_home: Optional[str]) -> str:
     """A session record names its profile home only for a non-default profile; the tool thread sees
     the same home through its turn override, and the default profile through the process home."""
-    return hermes_home_key(profile_home or get_process_hermes_home())
+    return slave_home_key(profile_home or get_process_slave_home())
 
 
 def _key(session_key: str, profile_home: Optional[str]) -> tuple[str, str]:
@@ -39,7 +39,7 @@ def _key(session_key: str, profile_home: Optional[str]) -> tuple[str, str]:
 
 
 def open(operation: ConnectionOperation) -> None:
-    operation.profile_key = hermes_home_key()
+    operation.profile_key = slave_home_key()
     key = (operation.profile_key, operation.session_key)
     with _lock:
         existing = _open.get(key)

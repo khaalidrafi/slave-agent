@@ -1,14 +1,14 @@
 name: veille
 title: Veille
-repo: https://github.com/veilleio/hermes-plugin-veille
+repo: https://github.com/veilleio/slave-plugin-veille
 sha: d14dbf9ac39c0fb5023205dbff38d073c38933d6
 version: "1.1.0"
-description: "Fraud and validity checks for Hermes through the Veille API: emails (with an SMTP inbox check), domains, IPs (VPN, proxy, Tor, data center), phone numbers, EU VAT numbers and IBANs, plus ECB exchange rates. Disclosure — sends the values you check to api.veille.io with your VEILLE_API_KEY, and calls use Veille credits (1 to 5 per call, stated in each tool description). veille_qualify_email has Veille contact the address's mail server. Reads the key only through Hermes's secret scope. Registers 9 tools, no hooks or middleware, writes no files, starts no processes, has no telemetry or self-updater, and uses only the Python standard library."
+description: "Fraud and validity checks for slave-agent through the Veille API: emails (with an SMTP inbox check), domains, IPs (VPN, proxy, Tor, data center), phone numbers, EU VAT numbers and IBANs, plus ECB exchange rates. Disclosure — sends the values you check to api.veille.io with your VEILLE_API_KEY, and calls use Veille credits (1 to 5 per call, stated in each tool description). veille_qualify_email has Veille contact the address's mail server. Reads the key only through slave-agent’s secret scope. Registers 9 tools, no hooks or middleware, writes no files, starts no processes, has no telemetry or self-updater, and uses only the Python standard library."
 maintainer: veilleio
 tier: community
 category: tools
 requires_hermes: ">=0.21.6"
-docs_url: https://github.com/veilleio/hermes-plugin-veille#readme
+docs_url: https://github.com/veilleio/slave-plugin-veille#readme
 readme: true
 platforms: []
 capabilities:

@@ -137,7 +137,7 @@ async def test_stopping_a_profile_mid_recovery_leaves_no_reply_stranded(tmp_path
     from gateway.config import Platform
     from gateway.run import GatewayRunner
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # the ledger opens the launch home's store
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))  # the ledger opens the launch home's store
     monkeypatch.setattr(ledger, "ledger_enabled", lambda config=None: True)
     for oid in ("ob-1", "ob-2", "ob-3"):
         ledger.record_obligation(obligation_id=oid, session_key=f"agent:work:telegram:dm:{oid}",

@@ -1,6 +1,6 @@
 name: model-fallback-heuristic
 title: "Fallback — Model Switching Heuristics"
-repo: https://github.com/tomkubik/hermes-fallback
+repo: https://github.com/tomkubik/slave-fallback
 sha: ce150572ea10de682a2c67902b314590b55683b3
 version: "0.2.0"
 description: >-
@@ -8,18 +8,18 @@ description: >-
   providers (parameter count, context window, release recency, flash tier, tool support, provider
   preference, and reasoning effort) — works seamlessly with or without an LLM call. Disclosure —
   session-start and API-error hooks rewrite fallback_providers and plugin settings in
-  ~/.hermes/config.yaml (primary model replacement is opt-in via
+  ~/.slave/config.yaml (primary model replacement is opt-in via
   auto_switch_primary_when_unavailable); queries public model catalog endpoints
   (models.dev/api.json, openrouter.ai/api/v1/models, and
   inference-api.nousresearch.com/v1/portal/models) to rank candidate models and check free-tier
   availability; optional interactive CLI setup saves user-entered provider API keys via
-  hermes_cli.config.save_env_value when explicitly requested.
+  slave_cli.config.save_env_value when explicitly requested.
 maintainer: tomkubik
 tier: community
 category: models
 requires_hermes: ">=0.19"
-docs_url: https://github.com/tomkubik/hermes-fallback#readme
-image: https://raw.githubusercontent.com/tomkubik/hermes-fallback/ce150572ea10de682a2c67902b314590b55683b3/assets/cover.png
+docs_url: https://github.com/tomkubik/slave-fallback#readme
+image: https://raw.githubusercontent.com/tomkubik/slave-fallback/ce150572ea10de682a2c67902b314590b55683b3/assets/cover.png
 readme: true
 platforms: []
 capabilities:

@@ -2,7 +2,7 @@
 
 Invariant under test
 --------------------
-When a non-default profile is active (``HERMES_HOME`` points at
+When a non-default profile is active (``SLAVE_HOME`` points at
 ``<root>/profiles/testprof``), NO subsystem write may land anywhere under the
 default profile's tree — ``<root>/state.db``, ``<root>/config.yaml``,
 ``<root>/memories/``, ``<root>/cron/``, or any other path directly under
@@ -40,9 +40,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_constants import (
-    reset_hermes_home_override,
-    set_hermes_home_override,
+from slave_constants import (
+    reset_slave_home_override,
+    set_slave_home_override,
 )
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_seed import seed_messages, seed_session
@@ -57,7 +57,7 @@ class ProfileTripwire:
     any created / modified / deleted entry.
 
     Attributes:
-        root:     the default profile's home (``<tmp>/hermes``).
+        root:     the default profile's home (``<tmp>/slave``).
         profile:  the active profile home (``<root>/profiles/testprof``).
     """
 
@@ -116,17 +116,17 @@ def profile_tripwire(tmp_path, monkeypatch):
 
     Sets up:
 
-    1. A temp hermes root acting as the *default* profile, seeded with the
+    1. A temp slave root acting as the *default* profile, seeded with the
        files a real install has (config.yaml, memories/, cron/jobs.json) so
        both "new file created" and "existing file modified" leaks are
        detectable.
-    2. ``HERMES_HOME`` (env var AND the context-local override) pointed at
+    2. ``SLAVE_HOME`` (env var AND the context-local override) pointed at
        the testprof home — the exact activation shape ``--profile`` uses.
 
     Yields a :class:`ProfileTripwire`; teardown re-asserts the invariant so
     a surface test that forgets the explicit check still trips the wire.
     """
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     profile = root / "profiles" / "testprof"
     profile.mkdir(parents=True)
 
@@ -138,8 +138,8 @@ def profile_tripwire(tmp_path, monkeypatch):
     (root / "cron" / "jobs.json").write_text("[]\n")
     (root / ".env").write_text("")
 
-    monkeypatch.setenv("HERMES_HOME", str(profile))
-    token = set_hermes_home_override(str(profile))
+    monkeypatch.setenv("SLAVE_HOME", str(profile))
+    token = set_slave_home_override(str(profile))
 
     tripwire = ProfileTripwire(root, profile)
     try:
@@ -147,7 +147,7 @@ def profile_tripwire(tmp_path, monkeypatch):
         # Safety net: re-check even if the test body forgot to.
         tripwire.assert_default_untouched()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ def _exercise_session_db(tripwire: ProfileTripwire) -> None:
 
 def _exercise_config_save(tripwire: ProfileTripwire) -> None:
     """save_config()/load_config() while a profile is active (#92662, #89190)."""
-    from hermes_cli.config import load_config, save_config
+    from slave_cli.config import load_config, save_config
 
     cfg = load_config()
     cfg["model"] = "testprof-model"  # bare-string alias form is canonical

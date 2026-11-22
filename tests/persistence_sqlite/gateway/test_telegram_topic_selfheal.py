@@ -23,7 +23,7 @@ CHAT = "208214988"
 def _store(db_path: Path):
     """A writable SQLite store on *db_path*, closed on exit."""
     scope = ProfileScope(profile_dir=db_path.parent, name=db_path.parent.name)
-    backend = SQLiteBackend({scope.hermes_home_key: db_path})
+    backend = SQLiteBackend({scope.slave_home_key: db_path})
     try:
         yield backend.open(scope)
     finally:

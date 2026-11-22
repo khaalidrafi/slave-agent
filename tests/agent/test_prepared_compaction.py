@@ -39,7 +39,7 @@ class _StubCompressor(ContextCompressor):
     """Records every summariser call; ``gate`` holds background passes only (shared with the worker copy)."""
 
     def _generate_summary(self, turns_to_summarize, focus_topic=None, memory_context="", bypass_cooldown=False):
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
 
         worker = threading.current_thread().name == "compaction-prepare"
         if worker and self.read_seconds:
@@ -65,7 +65,7 @@ class _StubCompressor(ContextCompressor):
             "first": turns_to_summarize[0].get("content", "")[:10],
             "previous": self._previous_summary,
             "focus": focus_topic,
-            "home": str(get_hermes_home()),
+            "home": str(get_slave_home()),
         })
         body = f"Summary v{len(self.calls)} of {len(turns_to_summarize)} turns."
         self._previous_summary = body
@@ -131,7 +131,7 @@ def test_flag_off_leaves_compression_inline_and_stateless():
 
 def test_config_flag_reaches_the_compressor_through_the_loader(tmp_path, monkeypatch):
     from agent.agent_init import _parse_compression_config
-    from hermes_cli.config import DEFAULT_CONFIG, load_config_readonly
+    from slave_cli.config import DEFAULT_CONFIG, load_config_readonly
 
     agent = SimpleNamespace(model="m", provider="openrouter", api_mode="chat_completions", quiet_mode=True)
     assert DEFAULT_CONFIG["compression"]["prepare_ahead"] is False
@@ -140,7 +140,7 @@ def test_config_flag_reaches_the_compressor_through_the_loader(tmp_path, monkeyp
     home = tmp_path / "profile"
     home.mkdir()
     (home / "config.yaml").write_text("compression:\n  prepare_ahead: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     assert _parse_compression_config(agent, load_config_readonly()).prepare_ahead is True
 
 
@@ -199,17 +199,17 @@ def test_turn_end_pass_skipped_where_the_session_ends_with_the_turn(agent_attrs)
 
 
 def test_pass_runs_under_the_callers_profile_scope(tmp_path):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     homes = [tmp_path / "a", tmp_path / "b", tmp_path / "a"]
     compressors = []
     for home in homes:
         cc = _compressor()
-        token = set_hermes_home_override(home)
+        token = set_slave_home_override(home)
         try:
             _prepare(cc, _messages(30))
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
         compressors.append(cc)
     assert [cc.calls[0]["home"] for cc in compressors] == [str(h) for h in homes]
 
@@ -658,7 +658,7 @@ def test_turn_that_crosses_the_trigger_splices_the_summary_prepared_during_its_t
     from run_agent import AIAgent
 
     if prepare_ahead:
-        Path(os.environ["HERMES_HOME"], "config.yaml").write_text(
+        Path(os.environ["SLAVE_HOME"], "config.yaml").write_text(
             "compression:\n  prepare_ahead: true\n", encoding="utf-8",
         )
     tool_defs = [{"type": "function", "function": {

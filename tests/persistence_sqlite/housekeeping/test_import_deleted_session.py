@@ -8,7 +8,7 @@ out, as before.
 """
 import pytest
 
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.core.errors import AuthorityRefusal
 from persistence.sqlite.authority._mutation import mutate_runtime_session
 from persistence.sqlite.authority._runtime_ends import begin_runtime_epoch

@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.nous_account import NousPaidServiceAccessInfo, NousPortalAccountInfo
+from slave_cli.nous_account import NousPaidServiceAccessInfo, NousPortalAccountInfo
 from tools.tool_backend_helpers import (
     coerce_modal_mode,
     has_direct_modal_credentials,
@@ -40,7 +40,7 @@ class TestManagedNousToolsEnabled:
 
     def test_disabled_when_not_logged_in(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.nous_account.get_nous_portal_account_info",
+            "slave_cli.nous_account.get_nous_portal_account_info",
             lambda: NousPortalAccountInfo(logged_in=False, source="none", fresh=False),
         )
         assert managed_nous_tools_enabled() is False
@@ -49,7 +49,7 @@ class TestManagedNousToolsEnabled:
     def test_returns_false_on_exception(self, monkeypatch):
         """Should never crash — returns False on any exception."""
         monkeypatch.setattr(
-            "hermes_cli.nous_account.get_nous_portal_account_info",
+            "slave_cli.nous_account.get_nous_portal_account_info",
             _raise_import,
         )
         assert managed_nous_tools_enabled() is False
@@ -58,7 +58,7 @@ class TestManagedNousToolsEnabled:
 class TestNousToolGatewayUnavailableMessage:
     def test_uses_entitlement_reason_for_logged_in_user(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.nous_account.get_nous_portal_account_info",
+            "slave_cli.nous_account.get_nous_portal_account_info",
             lambda force_fresh=False: NousPortalAccountInfo(
                 logged_in=True,
                 source="account_api",

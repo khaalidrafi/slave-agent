@@ -25,7 +25,7 @@ logger = logging.getLogger("agent.lsp.sync_diagnostics")
 _TS_SEVERITY = {"error": 1, "warning": 2, "message": 3, "suggestion": 4}
 _TS_SERVERS = frozenset({"typescript"})
 _TS_COMMANDS = ("syntacticDiagnosticsSync", "semanticDiagnosticsSync")
-_UNSUPPORTED = "_hermes_sync_diagnostics_unsupported"
+_UNSUPPORTED = "_slave_sync_diagnostics_unsupported"
 
 
 def supported(client: Any) -> bool:

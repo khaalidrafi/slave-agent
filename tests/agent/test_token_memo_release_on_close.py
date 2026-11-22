@@ -1,7 +1,7 @@
 """A closed agent's message bodies leave the token-estimate memo.
 
 ``_MSG_TOKENS_CACHE`` pins every string it fingerprints, so after ``AIAgent.close()`` a long-lived
-``hermes serve`` kept each closed session's message bodies resident until 4096 newer messages evicted
+``slave serve`` kept each closed session's message bodies resident until 4096 newer messages evicted
 them (~50 MB after 20 sessions x 10 turns of 256 KB replies on macOS).
 """
 

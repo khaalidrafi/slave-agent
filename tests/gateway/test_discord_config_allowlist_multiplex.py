@@ -27,7 +27,7 @@ def config_only_discord(monkeypatch):
     """Multiplexed default profile; the Discord allowlist lives only in config.yaml."""
     from agent import secret_scope
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     (home / "config.yaml").write_text(
         "gateway:\n  multiplex_profiles: true\n"
         f"discord:\n  require_mention: true\n  allow_from: {USER}\n",
@@ -166,7 +166,7 @@ def test_button_click_in_a_thread_resolves_a_thread_scoped_route():
     from agent import secret_scope
     from gateway.pairing import PairingStore
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     (home / "profiles" / "kody").mkdir(parents=True)
     (home / "profiles" / "kody" / ".env").write_text("", encoding="utf-8")
     (home / "config.yaml").write_text(
@@ -210,7 +210,7 @@ def test_secondary_profiles_own_bot_honors_its_config_allow_from_in_guild_channe
     from gateway.run import GatewayRunner
     from plugins.platforms.discord.adapter import DiscordAdapter
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     (home / "profiles" / "kody").mkdir(parents=True)
     (home / ".env").write_text("DISCORD_BOT_TOKEN=test-token\nDISCORD_ALLOWED_USERS=999\n", encoding="utf-8")
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", "999")  # the default profile's live env
@@ -225,7 +225,7 @@ def test_secondary_profiles_own_bot_honors_its_config_allow_from_in_guild_channe
         runner.adapters = {}
         adapter = DiscordAdapter(PlatformConfig(
             enabled=True, token="kody-token", extra={"allow_from": USER, "require_mention": True}))
-        adapter._hermes_profile_name = "kody"
+        adapter._slave_profile_name = "kody"
         runner._profile_adapters = {"kody": {Platform.DISCORD: adapter}}
         adapter.set_authorization_check(runner._make_adapter_auth_check(Platform.DISCORD, profile_name="kody"))
 

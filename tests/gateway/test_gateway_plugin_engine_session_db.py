@@ -1,4 +1,4 @@
-"""The gateway binds a plugin context engine as main did: ``session_db`` is the deprecated ``hermes_state.SessionDB``
+"""The gateway binds a plugin context engine as main did: ``session_db`` is the deprecated ``slave_state.SessionDB``
 on the session's profile store, on a cold ``/compress`` and on session hygiene's rebind, plus the store itself as
 ``persistence`` when the engine's bind names that keyword; the ``SessionDB`` closes when the compress ends or the
 hygiene agent closes."""
@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_state
+import slave_state
 from agent.context_engine import ContextEngine
 from gateway.run import GatewayRunner
 from persistence_assembly import open_persistence, profile_scope
@@ -65,7 +65,7 @@ def engine(request):
 
 @pytest.fixture
 def store(monkeypatch):
-    monkeypatch.setattr(hermes_state, "_warned", True)
+    monkeypatch.setattr(slave_state, "_warned", True)
     handle = open_persistence(profile_scope(), eager=True)
     seed_session(handle, "s1", "cli", model="m1", title="alpha plan")
     seed_messages(handle, "s1", *({"role": role, "content": f"{role} turn {i} " + "x" * 200}
@@ -77,8 +77,8 @@ def store(monkeypatch):
 @pytest.fixture
 def closes(monkeypatch):
     calls = []
-    real = hermes_state.SessionDB.close
-    monkeypatch.setattr(hermes_state.SessionDB, "close", lambda self: (calls.append(self), real(self))[1])
+    real = slave_state.SessionDB.close
+    monkeypatch.setattr(slave_state.SessionDB, "close", lambda self: (calls.append(self), real(self))[1])
     return calls
 
 
@@ -101,7 +101,7 @@ def test_a_cold_compress_binds_a_plugin_engine_to_a_session_db_closed_when_it_en
 
     prepared = asyncio.run(run())
     [(session_db, row)] = engine.bound
-    assert isinstance(session_db, hermes_state.SessionDB)
+    assert isinstance(session_db, slave_state.SessionDB)
     assert row == store.sessions.get("s1").as_session_row()
     assert (row["id"], row["source"], row["model"], row["title"]) == ("s1", "cli", "m1", "alpha plan")
     assert prepared["messages"][-1]["content"] == "ENGINE_SUMMARY"

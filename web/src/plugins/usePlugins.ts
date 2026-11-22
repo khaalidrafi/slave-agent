@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { api, HERMES_BASE_PATH } from "@/lib/api";
+import { api, SLAVE_BASE_PATH } from "@/lib/api";
 import { dashboardServingProfile } from "@/lib/profile-bootstrap";
 import type { PluginManifest, RegisteredPlugin } from "./types";
 import {
@@ -25,7 +25,7 @@ import {
   setPluginLoadError,
 } from "./registry";
 
-export const MANIFEST_CACHE_KEY = "hermes:plugin-manifests";
+export const MANIFEST_CACHE_KEY = "slave:plugin-manifests";
 
 /** One profile's cached list: another profile's never seeds it. */
 function manifestCacheKey(profile: string): string {
@@ -83,7 +83,7 @@ export function pluginAssetUrl(
   profile: string,
 ): string {
   const scope = profile ? `@${encodeURIComponent(profile)}/` : "";
-  return `${HERMES_BASE_PATH}/dashboard-plugins/${scope}${name}/${file}`;
+  return `${SLAVE_BASE_PATH}/dashboard-plugins/${scope}${name}/${file}`;
 }
 
 /** The manifests of one profile and whether its plugins are still loading. */
@@ -128,8 +128,8 @@ export function usePlugins(selectedProfile: string) {
   useEffect(() => {
     const loaded = loadedScripts.current;
     return () => {
-      for (const el of document.querySelectorAll("[data-hermes-profile]")) {
-        if (el.getAttribute("data-hermes-profile") === profile) el.remove();
+      for (const el of document.querySelectorAll("[data-slave-profile]")) {
+        if (el.getAttribute("data-slave-profile") === profile) el.remove();
       }
       loaded.clear();
     };
@@ -176,7 +176,7 @@ export function usePlugins(selectedProfile: string) {
           const link = document.createElement("link");
           link.rel = "stylesheet";
           link.href = cssUrl;
-          link.setAttribute("data-hermes-profile", owner);
+          link.setAttribute("data-slave-profile", owner);
           document.head.appendChild(link);
         }
       }
@@ -186,7 +186,7 @@ export function usePlugins(selectedProfile: string) {
       // re-execute a previously cached <script> URL.
       const baseUrl = pluginAssetUrl(manifest.name, manifest.entry, owner);
       const scriptSrc = import.meta.env.DEV
-        ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}hermes_dv=${Date.now()}`
+        ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}slave_dv=${Date.now()}`
         : baseUrl;
       if (!import.meta.env.DEV) {
         if (loaded.has(baseUrl)) continue;
@@ -194,10 +194,10 @@ export function usePlugins(selectedProfile: string) {
       }
 
       const script = document.createElement("script");
-      script.setAttribute("data-hermes-plugin", manifest.name);
+      script.setAttribute("data-slave-plugin", manifest.name);
       // The registry ignores register() calls from a bundle of a profile no
       // longer selected.
-      script.setAttribute("data-hermes-profile", owner);
+      script.setAttribute("data-slave-profile", owner);
       script.src = scriptSrc;
       script.async = true;
       // SRI integrity verification — defense against compromised plugin

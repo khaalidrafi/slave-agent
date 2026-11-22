@@ -1,7 +1,7 @@
 """Shared fixtures for tests/acp_adapter.
 
-Keeps the ACP server tests offline: ``HermesACPAgent._build_model_state``
-calls ``hermes_cli.inventory.build_models_payload``, which (without this
+Keeps the ACP server tests offline: ``SlaveACPAgent._build_model_state``
+calls ``slave_cli.inventory.build_models_payload``, which (without this
 fixture) performs live network fetches — models.dev registry, GitHub model
 catalog, Copilot token exchange, Anthropic model list — adding ~3s of real
 SSL/socket time to every test that creates or loads a session (~147s total
@@ -30,7 +30,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _offline_model_inventory(monkeypatch):
     """Stub the shared model inventory so ACP tests never hit the network."""
-    from hermes_cli import inventory
+    from slave_cli import inventory
 
     class _StubPickerContext:
         def with_overrides(self, **_kwargs):
@@ -71,10 +71,10 @@ def daemon(tmp_path, model_peer, request):
         config.setdefault(key, {}).update(value)
     (home / "config.yaml").write_text(json.dumps(config))
     env = {k: os.environ[k] for k in ("PATH", "LANG", "TZ") if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED="1",
                OPENAI_API_KEY="loopback-only", OPENAI_BASE_URL=model_url,
-               HERMES_ACP_SKIP_CONFIGURED_MCP="1")
+               SLAVE_ACP_SKIP_CONFIGURED_MCP="1")
     command = [sys.executable, "-m", "gateway.run"]
     if getattr(request, 'param', None) == 'proposed-acp-descriptor':
         # API-owner handoff only: execution/create/policy stay unmodified. This

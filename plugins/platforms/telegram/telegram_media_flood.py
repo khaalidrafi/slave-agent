@@ -59,7 +59,7 @@ def _keep_private_copy(path: str) -> Optional[str]:
     document fallback) delete their file as soon as the send returns. Blocking: use ``to_thread``."""
     tmp_dir = None
     try:
-        tmp_dir = tempfile.mkdtemp(prefix="hermes-tg-flood-")
+        tmp_dir = tempfile.mkdtemp(prefix="slave-tg-flood-")
         kept = os.path.join(tmp_dir, os.path.basename(path))
         shutil.copy2(path, kept)
         return kept

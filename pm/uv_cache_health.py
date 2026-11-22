@@ -169,14 +169,14 @@ def remove_corrupt_entries(cache: Path, names: set[str]) -> None:
 
     Where uv links a wheel to its archive by symlink (Linux, macOS), clean
     drops the link and leaves the archive, which nothing uses again but
-    ``hermes pm doctor`` would keep reporting. ``uv cache prune`` is not an
+    ``slave pm doctor`` would keep reporting. ``uv cache prune`` is not an
     option: PM seeds this cache from a bundle copy whose links are real
     directories, and prune treats their archives as unreachable, so the next
     install fails. On Windows uv's pointer files let clean take the archive.
 
     Holds uv's own cache lock so no uv process is reading an entry while it is
     deleted. If uv keeps the lock busy past _LOCK_WAIT_SECONDS the leftovers
-    stay; they are harmless and ``hermes pm doctor --repair`` takes them.
+    stay; they are harmless and ``slave pm doctor --repair`` takes them.
     """
     archive = _archive_root(cache)
     if not names or os.name == "nt" or archive is None:

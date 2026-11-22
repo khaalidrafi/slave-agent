@@ -21,7 +21,7 @@ _env_configured = env_is_connected("SIGNAL_HTTP_URL", "SIGNAL_ACCOUNT")
 def _is_connected(config: PlatformConfig) -> bool:
     """URL + account from config/scoped env, else ``.env``: a plain CLI process never loads ``.env``
     into the environment, and the old static setup row read it, so a ``.env``-only profile stays
-    "configured" in ``hermes gateway setup``."""
+    "configured" in ``slave gateway setup``."""
     return validate_signal_config(config) or _env_configured(config)
 
 
@@ -50,7 +50,7 @@ def _parse_send_target(ref):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the slave-agent plugin system."""
     from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
         target_ref_syntax_fn=_parse_send_target,

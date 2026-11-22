@@ -38,7 +38,7 @@ def test_local_session_owner_adds_a_goal_gate(tmp_path):
         'auxiliary': {'title_generation': {'enabled': False}},
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out = {}
 
@@ -94,7 +94,7 @@ async def test_messaging_goal_gate_add_stays_admin_only():
     runner._get_goal_manager_for_event = _mgr_for
     runner._run_in_executor_with_context = _inline
     source = SessionSource(platform=Platform.TELEGRAM, chat_id='c', user_id='u', chat_type='dm')
-    with patch('hermes_cli.goals.last_user_message_from_db', lambda _sid: None):
+    with patch('slave_cli.goals.last_user_message_from_db', lambda _sid: None):
         out = await runner._handle_goal_command(MessageEvent(text='/goal gate add true', source=source))
     assert mgr.added == []
     assert 'admin' in out.lower()

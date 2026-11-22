@@ -2,7 +2,7 @@
 
 Older builds kept a refused turn in the model context and closed it with a ``failed_turn`` boundary
 whose error card says ``content_policy_blocked`` (the exact rows below were read back from a real
-``hermes chat`` run of such a build against an Anthropic-shaped ``stop_reason=refusal`` provider). The
+``slave chat`` run of such a build against an Anthropic-shaped ``stop_reason=refusal`` provider). The
 safety filter judges the whole thread, so that chat refused every later message. A store opened by a
 current build takes those turns out of the model context once, keeps the asks on screen as greyed
 refused rows, and leaves alone every chat it cannot prove locked.

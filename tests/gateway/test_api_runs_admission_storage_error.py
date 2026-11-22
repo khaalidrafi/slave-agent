@@ -16,7 +16,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 
 @pytest.mark.asyncio
 async def test_locked_admission_write_is_503_and_exact_retry_runs(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     store = SessionStore(tmp_path / "sessions", GatewayConfig())
     db = storage_handle(tmp_path)
     executed = []

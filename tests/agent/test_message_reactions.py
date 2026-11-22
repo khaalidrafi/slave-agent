@@ -19,7 +19,7 @@ _WITH_ROW_IDS = ConversationRequest(include_row_ids=True)
 
 @pytest.fixture
 def db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     store = open_persistence(profile_scope(home=tmp_path))
     yield store
     store.close()

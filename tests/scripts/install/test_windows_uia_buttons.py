@@ -147,9 +147,9 @@ def _uwp_frame(host: int, app: int, names: list[str]) -> str:
 
 
 def test_uwp_app_installer_prompt_inside_its_application_frame_is_found():
-    hermes = _element(1444, "Chrome_WidgetWin_1", "1444/1", ["Open settings"])
+    slave = _element(1444, "Chrome_WidgetWin_1", "1444/1", ["Open settings"])
     frame = _uwp_frame(7580, 2224, ["Update", "Cancel"])
-    assert _find([hermes, frame], [2224]) == "Update@2224/core"
+    assert _find([slave, frame], [2224]) == "Update@2224/core"
 
 
 def test_another_uwp_apps_frame_is_never_pressed():

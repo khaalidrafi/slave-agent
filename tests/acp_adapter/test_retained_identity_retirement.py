@@ -12,7 +12,7 @@ import acp
 import pytest
 import pytest_asyncio
 
-from hermes_cli.gateway_client import GatewayClientError, GatewayRPCError
+from slave_cli.gateway_client import GatewayClientError, GatewayRPCError
 from tests.waiting import async_wait_until
 from tests.fixtures.storage_read import session_row
 
@@ -49,14 +49,14 @@ class Wire:
 
 @pytest_asyncio.fixture
 async def owner(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     from gateway import run
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
-    from hermes_cli import model_cost_guard, model_switch
+    from slave_cli import model_cost_guard, model_switch
     monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {'platform_toolsets': {'acp': []}})
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model=k['raw_input'], target_provider='custom', base_url='http://127.0.0.1:9/v1'))
@@ -138,7 +138,7 @@ async def test_a_repeated_control_after_other_work_is_new_work(owner, surface, b
     if surface.startswith('acp'):
         handle = await _acp(owner)
     else:
-        from hermes_cli.gateway_chat_view import GatewayChatView
+        from slave_cli.gateway_chat_view import GatewayChatView
         handle = GatewayChatView(owner.wire, {'stored_session_id': owner.sid})
     try:
         # other-control: A committed, its reply was lost; then B lands -> the repeat must re-apply A.

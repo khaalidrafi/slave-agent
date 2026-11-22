@@ -25,8 +25,8 @@ import threading
 import uuid
 from typing import Any, Callable, Optional
 
-from hermes_cli.config import DEFAULT_CONFIG
-from hermes_constants import hermes_home_key
+from slave_cli.config import DEFAULT_CONFIG
+from slave_constants import slave_home_key
 from utils import env_int
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ MAX_INACTIVITY_CLEANUP_FAILURES = 3
 
 _active_sessions: dict[str, dict[str, Any]] = {}
 _session_last_activity: dict[str, float] = {}
-# Owner Hermes home per session: the janitor is one process-global thread, so each teardown re-enters the
+# Owner Slave home per session: the janitor is one process-global thread, so each teardown re-enters the
 # OWNING profile's scope (#86402).
 _session_owner_homes: dict[str, str] = {}
 _cleanup_failures: dict[str, int] = {}  # consecutive janitor failures (#100738)
@@ -71,7 +71,7 @@ def build_browser_env() -> dict:
     NO_PROXY (a macOS system proxy would capture the local CDP dial, #110565), and a short TMPDIR
     (Chrome's SingletonSocket overflows the AF_UNIX path cap under a deep scratch dir)."""
     from agent.proxy_bypass import add_loopback_no_proxy
-    from hermes_constants import socket_safe_tmpdir
+    from slave_constants import socket_safe_tmpdir
     from tools.bot_desktop.runtime import desktop_env
     from tools.environments.local import served_profile_child_env
     env = add_loopback_no_proxy(desktop_env(served_profile_child_env(inherit_credentials=False)))
@@ -82,7 +82,7 @@ def build_browser_env() -> dict:
 # ── Bot Desktop fence ────────────────────────────────────────────────────────────────────────────────
 
 def shares_bot_desktop_browser(session_info: dict[str, Any]) -> bool:
-    """Every LOCAL session is a browser Hermes launched with this profile's Bot Desktop DISPLAY, so it is the
+    """Every LOCAL session is a browser slave-agent launched with this profile's Bot Desktop DISPLAY, so it is the
     screen a human who took over is typing into. Cloud / user-supplied CDP sessions are another browser. A
     human lease with the screen already gone still fences (computer_use does the same)."""
     if not (session_info.get("features") or {}).get("local"):
@@ -352,7 +352,7 @@ def get_session_info(cache_key: Optional[str] = None) -> dict[str, Any]:
         return reused
 
     force_local = is_local_sidecar_key(key)
-    home_key = hermes_home_key()
+    home_key = slave_home_key()
     for attempt in range(_STALE_ENDPOINT_RETRIES + 1):
         generation = live_cdp_generation(home_key)
         session_info = _create_session_for_key(key, force_local)
@@ -386,7 +386,7 @@ def _atexit_cleanup() -> None:
     prompt_toolkit key-binding callback corrupts the coroutine state and makes the process unkillable."""
     try:
         from tools.browser_session_lifecycle import emergency_cleanup_all_sessions, stop_cleanup_thread
-    except ImportError:  # half-updated tree mid-`hermes update` (#112437): nothing resolvable to clean
+    except ImportError:  # half-updated tree mid-`slave update` (#112437): nothing resolvable to clean
         return
     emergency_cleanup_all_sessions()
     stop_cleanup_thread()

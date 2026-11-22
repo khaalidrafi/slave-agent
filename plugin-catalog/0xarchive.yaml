@@ -17,10 +17,10 @@ description: >-
   terminal_run (sets up views, levels and price alerts in the user's open 0xArchive Terminal; it
   never places orders or touches trading keys). The package marks the server untrusted, but the
   required sign-in step writes a config.yaml entry that replaces the package's own, trust included,
-  unless the user adds trust: untrusted to it. Hermes stores and refreshes the OAuth tokens. The tool
+  unless the user adds trust: untrusted to it. slave-agent stores and refreshes the OAuth tokens. The tool
   list comes from 0xArchive's server at run time, so the pinned commit doesn't cover it. OAuth must
   be enabled with
-  `hermes mcp add 0xarchive --url https://mcp.0xarchive.io/mcp --auth oauth --connect-timeout 300`;
+  `slave mcp add 0xarchive --url https://mcp.0xarchive.io/mcp --auth oauth --connect-timeout 300`;
   the bundled mcp.json alone yields 401.
 maintainer: 0xArchive
 tier: community
@@ -31,7 +31,7 @@ version: "1.0.0"
 image: https://raw.githubusercontent.com/0xArchiveIO/0xarchive-mcp/abd430ea4c6d627e3a5dc2132b90dde9b2d38077/assets/catalog-banner.jpg
 platforms: []
 known_issues:
-  - "Sign in once after installing: hermes mcp add 0xarchive --url https://mcp.0xarchive.io/mcp --auth oauth --connect-timeout 300"
+  - "Sign in once after installing: slave mcp add 0xarchive --url https://mcp.0xarchive.io/mcp --auth oauth --connect-timeout 300"
 capabilities:
   provides_tools: []
   provides_hooks: []

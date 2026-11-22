@@ -1,5 +1,5 @@
 name: submission-desk
-repo: https://github.com/alfredbirkelund/hermes-submission-desk
+repo: https://github.com/alfredbirkelund/slave-submission-desk
 sha: fde18934d5cf4798c312b8a631a22c050addb984
 subdir: ""
 version: "0.1.0"
@@ -20,14 +20,14 @@ maintainer: alfredbirkelund
 tier: community
 category: tools
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/alfredbirkelund/hermes-submission-desk#readme
+docs_url: https://github.com/alfredbirkelund/slave-submission-desk#readme
 screenshots:
-  - https://raw.githubusercontent.com/alfredbirkelund/hermes-submission-desk/fde18934d5cf4798c312b8a631a22c050addb984/docs/screenshots/readiness-stale-review.png
-  - https://raw.githubusercontent.com/alfredbirkelund/hermes-submission-desk/fde18934d5cf4798c312b8a631a22c050addb984/docs/screenshots/proposals-with-quotes.png
-  - https://raw.githubusercontent.com/alfredbirkelund/hermes-submission-desk/fde18934d5cf4798c312b8a631a22c050addb984/docs/screenshots/folder-confirmation.png
+  - https://raw.githubusercontent.com/alfredbirkelund/slave-submission-desk/fde18934d5cf4798c312b8a631a22c050addb984/docs/screenshots/readiness-stale-review.png
+  - https://raw.githubusercontent.com/alfredbirkelund/slave-submission-desk/fde18934d5cf4798c312b8a631a22c050addb984/docs/screenshots/proposals-with-quotes.png
+  - https://raw.githubusercontent.com/alfredbirkelund/slave-submission-desk/fde18934d5cf4798c312b8a631a22c050addb984/docs/screenshots/folder-confirmation.png
 platforms: []
 known_issues:
-  - "Hermes Desktop builds before 2026.9.21: if the Submission Desk page does not open from the sidebar, right-click it and choose Open in split (issue #109063)."
+  - "slave-agent Desktop builds before 2026.9.21: if the Submission Desk page does not open from the sidebar, right-click it and choose Open in split (issue #109063)."
 capabilities:
   provides_tools:
     - submission_desk_workspace

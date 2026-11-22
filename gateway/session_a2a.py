@@ -111,7 +111,7 @@ async def forward(connection, params):
         ref = restore_local_session(authority, sid)
     else:
         # Historical `a2a-{agent}-{slug}` titles discarded peer/tenant identity and collapsed
-        # context characters, and those `hermes chat --source a2a` rows stored no origin, so a
+        # context characters, and those `slave chat --source a2a` rows stored no origin, so a
         # titled row never proves it belongs to this exact conversation. Never adopt or retitle
         # it (that would hand one peer another's history), and never refuse every peer whose
         # slug collides: start this identity's own canonical session and leave the old row be.
@@ -140,9 +140,9 @@ async def forward(connection, params):
 
 async def forward_to_owner(home, *, agent, tenant, peer, context_id, input_id, text, timeout):
     """Transport-only caller; a timeout never cancels or re-identifies accepted work."""
-    from hermes_cli.gateway_client import (GATEWAY_WS_PROTOCOL, GatewayClient, GatewayClientError,
+    from slave_cli.gateway_client import (GATEWAY_WS_PROTOCOL, GatewayClient, GatewayClientError,
         _session_ticket, gateway_ws_target)
-    from hermes_cli.gateway_runtime import ensure_gateway_runtime
+    from slave_cli.gateway_runtime import ensure_gateway_runtime
     from websockets.asyncio.client import connect
     home = await asyncio.to_thread(Path(home).resolve)
     async with asyncio.timeout(timeout):

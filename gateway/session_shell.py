@@ -4,7 +4,7 @@ The legacy sidecar ran ``subprocess.run(cwd=os.getcwd())`` in its own process: o
 the daemon's directory (the install root for an auto-started one), not the session's launch cwd or
 ``-w`` worktree, and the sidecar's contract refused the ``session_id`` Ink sends (dokterdok N22).
 Here the command runs for exactly one local session, in its frozen launch cwd, behind the same
-hardline/dangerous-command refusal, with Hermes-managed secrets scrubbed from the child and the
+hardline/dangerous-command refusal, with Slave-managed secrets scrubbed from the child and the
 output redacted before it crosses the wire. Nothing enters the transcript or the admission FIFO.
 """
 import asyncio
@@ -58,7 +58,7 @@ async def shell_exec(connection, ref, params):
 
 def _run(command, cwd):
     from agent.redact import redact_sensitive_text
-    from hermes_cli._subprocess_compat import windows_hide_flags
+    from slave_cli._subprocess_compat import windows_hide_flags
     from tools.environments.local import build_subprocess_env
     # shell=True keeps the user-facing !cmd grammar (pipes, redirects); the child never inherits
     # credentials the long-lived owner holds, nor a launch profile's .env residue in a routed one.

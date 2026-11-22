@@ -70,7 +70,7 @@ class _RecordingEnv(BaseEnvironment):
 @pytest.fixture
 def configured_password(monkeypatch):
     monkeypatch.setenv("SUDO_PASSWORD", PW)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
     terminal_tool.set_sudo_password_callback(None)
 
 
@@ -88,7 +88,7 @@ def test_askpass_form_prologue_plus_rewrite_and_one_password_line(configured_pas
     rewritten = command.replace("sudo", f"{PRE}sudo {OPT}")
     rewritten = rewritten.replace(f"/usr/bin/{PRE}sudo {OPT}", f"{PRE}/usr/bin/sudo {OPT}")
     assert exec_command == askpass.build_prologue(count, TOKEN, False, sudo_words=words) + rewritten
-    assert f"__hermes_sudo_n={count}\n" in exec_command
+    assert f"__slave_sudo_n={count}\n" in exec_command
     assert PW not in exec_command
     assert sudo_stdin == (PW + "\n") * count
 
@@ -114,7 +114,7 @@ def test_execute_fills_timeout_token_with_effective_timeout_plus_30(configured_p
 
     (wrapped, _stdin, run_timeout), = env.command_runs()
     assert TOKEN not in wrapped
-    assert f"__hermes_sudo_t={expected};" in wrapped
+    assert f"__slave_sudo_t={expected};" in wrapped
     assert run_timeout == (timeout or 10)
 
 
@@ -158,7 +158,7 @@ def test_fallback_when_capability_probe_fails(configured_password):
     (wrapped, stdin_data, _timeout), = env.command_runs()
     assert stdin_data == f"{PW}\nrest\n"
     assert "sudo -S -p '\\'''\\'' id -u" in wrapped  # the wrapper's eval quoting of ''
-    assert "__hermes_sudo" not in wrapped
+    assert "__slave_sudo" not in wrapped
 
 
 @pytest.mark.parametrize(("command", "expected"), [
@@ -215,7 +215,7 @@ def test_capability_probe_runs_once_per_environment(configured_password):
     env.execute("sudo a && sudo b")
     assert len(env.probe_runs()) == 1
     assert env.probe_runs()[0][2] == env._SUDO_PROBE_TIMEOUT_S
-    assert all("__hermes_sudo_dir" in call[0] for call in env.command_runs())
+    assert all("__slave_sudo_dir" in call[0] for call in env.command_runs())
 
 
 # --- 5. no password / NOPASSWD -----------------------------------------------------------------------
@@ -223,7 +223,7 @@ def test_capability_probe_runs_once_per_environment(configured_password):
 
 def test_no_password_leaves_command_and_skips_probe(monkeypatch):
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
     terminal_tool.set_sudo_password_callback(None)
     env = _RecordingEnv()
     assert env._prepare_command("sudo id -u") == ("sudo id -u", None)
@@ -237,7 +237,7 @@ def test_no_password_leaves_command_and_skips_probe(monkeypatch):
 
 def test_nopasswd_leaves_command_and_skips_askpass_probe(monkeypatch):
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
 
     def _fail_prompt(*_args, **_kwargs):
         raise AssertionError("no prompt under NOPASSWD")
@@ -253,7 +253,7 @@ def test_nopasswd_leaves_command_and_skips_askpass_probe(monkeypatch):
 
 def test_empty_configured_password_gets_one_empty_line_in_askpass_form(monkeypatch):
     monkeypatch.setenv("SUDO_PASSWORD", "")
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
     env = _RecordingEnv()
     exec_command, sudo_stdin = env._prepare_command("sudo a && sudo b")
     assert exec_command == askpass.build_prologue(2, TOKEN, False) + f"{PRE}sudo {OPT} a && {PRE}sudo {OPT} b"
@@ -412,7 +412,7 @@ def live_env(tmp_path, monkeypatch):
     from tools.environments.local import LocalEnvironment
 
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
     terminal_tool.set_sudo_password_callback(None)
     temp_dir = tmp_path / "tmp"
     temp_dir.mkdir()
@@ -493,7 +493,7 @@ def test_live_no_temp_dir_or_process_left_after_return(live_env):
         deadline = time.monotonic() + 3
         left, procs = [Path("unpolled")], ["unpolled"]
         while time.monotonic() < deadline:
-            left = list(temp_dir.glob("hermes-sudo.*"))
+            left = list(temp_dir.glob("slave-sudo.*"))
             procs = _prologue_processes(str(temp_dir), env._session_id) if Path("/proc").is_dir() else []
             if not left and not procs:
                 break
@@ -506,7 +506,7 @@ def test_live_timeout_kill_leaves_no_temp_dir(live_env):
     env, sudo, temp_dir = live_env
     result = env.execute(f"sleep 20; {sudo} true", timeout=2)
     assert result["returncode"] == 124, result
-    wait_until(lambda: not list(temp_dir.glob("hermes-sudo.*")), timeout=5, what="askpass dir removed")
+    wait_until(lambda: not list(temp_dir.glob("slave-sudo.*")), timeout=5, what="askpass dir removed")
 
 
 @_needs_posix_shell
@@ -529,7 +529,7 @@ def test_live_snapshot_holds_neither_password_nor_prologue_names(live_env):
     snapshot = Path(env._snapshot_path).read_text(encoding="utf-8")
     assert "AFTER_SUDO" in snapshot  # the snapshot really was re-dumped after this command
     assert PW not in snapshot
-    assert "__hermes_sudo" not in snapshot and "SUDO_ASKPASS" not in snapshot
+    assert "__slave_sudo" not in snapshot and "SUDO_ASKPASS" not in snapshot
 
 
 # --- live: prologue hardening and the capability probe ------------------------------------------------
@@ -582,7 +582,7 @@ def test_live_sudo_after_watchdog_timeout_is_served_while_the_command_runs(tmp_p
     proc = _bash(askpass.build_prologue(count, "1") + command, stdin=PW + "\n", env_vars={"TMPDIR": str(tmp_path), "PATH": _fake_path(sudo)})
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip() == str(os.getuid())
-    wait_until(lambda: not list(tmp_path.glob("hermes-sudo.*")), timeout=5, what="askpass dir removed")
+    wait_until(lambda: not list(tmp_path.glob("slave-sudo.*")), timeout=5, what="askpass dir removed")
 
 
 @_needs_posix_shell
@@ -596,7 +596,7 @@ def test_live_every_counted_sudo_that_asks_is_served(tmp_path):
     proc = _bash(askpass.build_prologue(count, "20") + command, stdin=PW + "\n", env_vars={"TMPDIR": str(tmp_path), "PATH": _fake_path(sudo)})
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.split() == [str(os.getuid())] * 3
-    wait_until(lambda: not list(tmp_path.glob("hermes-sudo.*")), timeout=5, what="askpass dir removed")
+    wait_until(lambda: not list(tmp_path.glob("slave-sudo.*")), timeout=5, what="askpass dir removed")
 
 
 @_needs_posix_shell
@@ -612,14 +612,14 @@ def test_live_sudos_that_ask_at_the_same_time_are_each_served(tmp_path):
         proc = _bash(askpass.build_prologue(count, "20") + command, stdin=PW + "\n",
                      env_vars={"TMPDIR": str(tmp_path), "PATH": _fake_path(sudo)})
         assert sorted(proc.stdout.split()) == ["OK0", "OK1", "OK2", "OK3"], proc.stderr
-    wait_until(lambda: not list(tmp_path.glob("hermes-sudo.*")), timeout=5, what="askpass dir removed")
+    wait_until(lambda: not list(tmp_path.glob("slave-sudo.*")), timeout=5, what="askpass dir removed")
 
 
 @_needs_posix_shell
 def test_live_setup_failure_at_run_time_falls_back_to_the_stdin_form(live_env):
     """The temp dir goes away after the capability probe passed: every sudo still authenticates from stdin."""
     env, sudo, _ = live_env
-    env.execute("export TMPDIR=/nonexistent-hermes-sudo-dir")
+    env.execute("export TMPDIR=/nonexistent-slave-sudo-dir")
     drop = f"rm -f {Path(sudo).parent / 'ticket'}"
     rc, output = _run(env, f"{sudo} id -u; {drop}; {sudo} id -u; cat", "rest\n")
     assert rc == 0, output
@@ -632,7 +632,7 @@ def test_live_unused_serving_is_gone_once_the_command_returns(live_env):
     env, sudo, temp_dir = live_env
     rc, output = _run(env, f"{sudo} true && {sudo} id -u; sleep 15 >/dev/null 2>&1 &")
     assert rc == 0, output
-    wait_until(lambda: not list(temp_dir.glob("hermes-sudo.*")), timeout=5, what="askpass dir removed")
+    wait_until(lambda: not list(temp_dir.glob("slave-sudo.*")), timeout=5, what="askpass dir removed")
 
 
 @_needs_posix_shell
@@ -646,7 +646,7 @@ def test_live_backgrounded_sudo_is_served_after_the_shell_exits(tmp_path):
     assert proc.returncode == 0, proc.stderr
     wait_until(lambda: out.exists() and out.read_text().strip() == str(os.getuid()), timeout=10,
                what="backgrounded sudo authenticated")
-    wait_until(lambda: not list(tmp_path.glob("hermes-sudo.*")), timeout=8, what="askpass dir removed")
+    wait_until(lambda: not list(tmp_path.glob("slave-sudo.*")), timeout=8, what="askpass dir removed")
 
 
 @_needs_posix_shell
@@ -665,7 +665,7 @@ def test_live_backgrounded_sudo_in_case_or_coproc_is_served_after_the_shell_exit
     assert rc == 0, output
     wait_until(lambda: out.exists() and out.read_text().strip() == str(os.getuid()), timeout=10,
                what="backgrounded sudo authenticated")
-    wait_until(lambda: not list(temp_dir.glob("hermes-sudo.*")), timeout=8, what="askpass dir removed")
+    wait_until(lambda: not list(temp_dir.glob("slave-sudo.*")), timeout=8, what="askpass dir removed")
 
 
 @pytest.mark.parametrize(("command", "expected"), [
@@ -699,7 +699,7 @@ def test_live_orphan_holding_fd_19_does_not_keep_the_writer_past_the_timeout(tmp
         f"sleep 8 >/dev/null 2>&1 & false && {sudo} true", askpass=True)
     proc = _bash(askpass.build_prologue(count, "1") + command, stdin=PW + "\n", env_vars={"TMPDIR": str(tmp_path), "PATH": _fake_path(sudo)})
     assert proc.returncode == 1, proc.stderr
-    wait_until(lambda: not list(tmp_path.glob("hermes-sudo.*")), timeout=5, what="askpass dir removed")
+    wait_until(lambda: not list(tmp_path.glob("slave-sudo.*")), timeout=5, what="askpass dir removed")
 
 
 def _probe_env(tmp_path, bin_dir):
@@ -727,7 +727,7 @@ def test_capability_probe_live_passes_with_askpass_capable_sudo(tmp_path, config
     exec_command, sudo_stdin = env._prepare_command("sudo id -u")
     assert exec_command == askpass.build_prologue(1, TOKEN, False) + f"{PRE}sudo {OPT} id -u"
     assert sudo_stdin == PW + "\n"
-    assert list(tmp_path.glob("hermes-sudo.*")) == []
+    assert list(tmp_path.glob("slave-sudo.*")) == []
 
 
 @_needs_posix_shell
@@ -735,7 +735,7 @@ def test_capability_probe_live_fails_when_sudo_rejects_askpass(tmp_path, configu
     _write_fake_sudo(tmp_path / "bin", accepts_askpass=False)
     env = _probe_env(tmp_path, tmp_path / "bin")
     assert env._prepare_command("sudo id -u") == ("sudo -S -p '' id -u", PW + "\n")
-    assert list(tmp_path.glob("hermes-sudo.*")) == []
+    assert list(tmp_path.glob("slave-sudo.*")) == []
 
 
 @_needs_posix_shell

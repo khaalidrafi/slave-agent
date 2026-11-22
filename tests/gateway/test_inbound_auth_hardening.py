@@ -41,7 +41,7 @@ def _wecom_accepts(timestamp: str, presented_signature=None) -> bool:
 def _feishu_accepts(timestamp: str) -> bool:
     from plugins.platforms.feishu.adapter import FeishuAdapter
     env = {"FEISHU_APP_ID": "cli", "FEISHU_APP_SECRET": "sec", "FEISHU_ENCRYPT_KEY": SECRET,
-           "HERMES_HOME": os.environ["HERMES_HOME"]}
+           "SLAVE_HOME": os.environ["SLAVE_HOME"]}
     with patch.dict(os.environ, env, clear=True):
         adapter = FeishuAdapter(PlatformConfig())
     body = b'{"type":"event"}'

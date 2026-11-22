@@ -1,8 +1,8 @@
 """The real slash worker answers ``/fast ultrafast`` on the session's endpoint, not the profile default's.
 
 #141953: a Codex session on a profile whose default is a ``process://`` provider ran ``/fast`` in the
-worker, whose ``HermesCLI`` seeded ``base_url`` from ``model.base_url``, so the Ultrafast gate saw the
-default's URL and refused. Runs the worker's ``main()`` with a real ``HermesCLI``.
+worker, whose ``SlaveCLI`` seeded ``base_url`` from ``model.base_url``, so the Ultrafast gate saw the
+default's URL and refused. Runs the worker's ``main()`` with a real ``SlaveCLI``.
 """
 
 from __future__ import annotations

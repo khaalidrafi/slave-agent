@@ -45,7 +45,7 @@ async def lender(api, owner, tmp_path, monkeypatch):
         _, ref, _ = admit_api_turn(api, session_id='approval-session', request_id='run_approval',
                                   user_message='run', conversation_history=[])
         row = admission_row(owner.persistence.admissions.claim(epoch=owner.epoch, session_id=ref.session_id))
-        scope = SimpleNamespace(headers={'Authorization': 'HermesRoom ' + grant},
+        scope = SimpleNamespace(headers={'Authorization': 'SlaveRoom ' + grant},
                                 path='/v1/runs/run_approval', method='GET')
         api._run_owners['run_approval'] = api._run_idempotency_scope(scope)
         live = owner.sessions[ref.session_id]

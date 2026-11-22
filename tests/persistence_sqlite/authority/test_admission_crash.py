@@ -23,7 +23,7 @@ def _settle_child(path: str, profile_dir: str, name: str, admission_id: str, gen
     from persistence.sqlite import SQLiteBackend
 
     scope = ProfileScope(profile_dir=Path(profile_dir), name=name)
-    store = SQLiteBackend({scope.hermes_home_key: Path(path)}).open(scope)
+    store = SQLiteBackend({scope.slave_home_key: Path(path)}).open(scope)
 
     def trace(statement: str) -> None:
         if "UPDATE session_admissions SET status='terminal'" in statement:

@@ -40,7 +40,7 @@ def test_register_shape():
 
 def test_is_connected_needs_both_credentials(monkeypatch):
     _clear_qq(monkeypatch)
-    import hermes_cli.gateway as gateway_mod
+    import slave_cli.gateway as gateway_mod
     monkeypatch.setattr(gateway_mod, "get_env_value", lambda name: None)
     from gateway.config import PlatformConfig
     from plugins.platforms.qqbot.register import is_connected
@@ -55,7 +55,7 @@ def test_is_connected_needs_both_credentials(monkeypatch):
 def test_qqbot_platform_hint_comes_from_its_platform_entry():
     from agent.system_prompt import _default_platform_hint
     from gateway.platform_registry import platform_registry
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
 
     discover_plugins()
     hint = platform_registry.get("qqbot").platform_hint
@@ -86,7 +86,7 @@ def test_qq_prefixed_home_env_still_resolves_for_cron(monkeypatch):
 
 
 def test_cron_deliver_qqbot_without_a_live_gateway():
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
     discover_plugins()
     from cron.scheduler_delivery import _is_known_delivery_platform, _resolve_home_env_var
 

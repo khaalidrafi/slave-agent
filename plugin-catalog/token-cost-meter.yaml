@@ -1,7 +1,7 @@
 name: token-cost-meter
 repo: https://github.com/IT-dreamer/token-cost-meter
 sha: 18fbc2c15d3ddd1c3784e0f83feec314ac686152
-description: "Live token usage, model-aware USD cost and prompt-cache savings in the Hermes Desktop status bar, with a persistent per-day ledger that survives restarts. Disclosure — Desktop only; no network calls of its own (prices come from the gateway's model.options and a bundled models.dev rate table); stores per-day token totals, per-session counters and last-known rates in its own Desktop plugin storage; costs are list-price estimates, not billing data."
+description: "Live token usage, model-aware USD cost and prompt-cache savings in the slave-agent Desktop status bar, with a persistent per-day ledger that survives restarts. Disclosure — Desktop only; no network calls of its own (prices come from the gateway's model.options and a bundled models.dev rate table); stores per-day token totals, per-session counters and last-known rates in its own Desktop plugin storage; costs are list-price estimates, not billing data."
 maintainer: IT-dreamer
 tier: community
 category: desktop

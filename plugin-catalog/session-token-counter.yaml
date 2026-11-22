@@ -2,7 +2,7 @@ name: session-token-counter
 repo: https://github.com/Vsemagush/session-token-counter
 sha: 0e69fb55f8ec11a44f32382c59746e13a30bc179
 description: Accumulated input/output token totals and context-window occupancy for the focused
-  session, in the Hermes Desktop status bar.
+  session, in the slave-agent Desktop status bar.
 maintainer: Vsemagush
 tier: community
 category: desktop

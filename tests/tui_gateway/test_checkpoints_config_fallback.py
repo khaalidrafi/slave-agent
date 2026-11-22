@@ -1,7 +1,7 @@
 """Tests for TUI/desktop checkpoint config fallback (#79625).
 
-Desktop sessions (via ``hermes serve`` → TUI gateway) never set
-``HERMES_TUI_CHECKPOINTS``, so agent creation gated filesystem checkpoints
+Desktop sessions (via ``slave serve`` → TUI gateway) never set
+``SLAVE_TUI_CHECKPOINTS``, so agent creation gated filesystem checkpoints
 on that env var alone — ``checkpoints.enabled: true`` in config.yaml was
 silently ignored on the desktop surface while the CLI and messaging gateway
 honored it. The fix makes ``_make_agent`` fall back to the ``checkpoints``
@@ -44,27 +44,27 @@ class TestResolveCheckpointsEnabled:
     """The env-var-first precedence used by ``_make_agent``."""
 
     def test_config_enabled_used_when_env_unset(self, monkeypatch):
-        """Desktop path: no HERMES_TUI_CHECKPOINTS → config ``enabled: true`` wins."""
-        monkeypatch.delenv("HERMES_TUI_CHECKPOINTS", raising=False)
+        """Desktop path: no SLAVE_TUI_CHECKPOINTS → config ``enabled: true`` wins."""
+        monkeypatch.delenv("SLAVE_TUI_CHECKPOINTS", raising=False)
         assert server._resolve_checkpoints_enabled(
             {"checkpoints": {"enabled": True}}
         ) is True
 
     def test_config_disabled_used_when_env_unset(self, monkeypatch):
-        monkeypatch.delenv("HERMES_TUI_CHECKPOINTS", raising=False)
+        monkeypatch.delenv("SLAVE_TUI_CHECKPOINTS", raising=False)
         assert server._resolve_checkpoints_enabled(
             {"checkpoints": {"enabled": False}}
         ) is False
 
     def test_env_var_overrides_config(self, monkeypatch):
         """CLI ``--tui --checkpoints`` (env set) still wins over config."""
-        monkeypatch.setenv("HERMES_TUI_CHECKPOINTS", "1")
+        monkeypatch.setenv("SLAVE_TUI_CHECKPOINTS", "1")
         assert server._resolve_checkpoints_enabled(
             {"checkpoints": {"enabled": False}}
         ) is True
 
     def test_env_var_false_overrides_config_true(self, monkeypatch):
-        monkeypatch.setenv("HERMES_TUI_CHECKPOINTS", "0")
+        monkeypatch.setenv("SLAVE_TUI_CHECKPOINTS", "0")
         assert server._resolve_checkpoints_enabled(
             {"checkpoints": {"enabled": True}}
         ) is False
@@ -89,20 +89,20 @@ class TestMakeAgentCheckpointsFallback:
             return types.SimpleNamespace(model=kwargs.get("model"))
 
         if env_val == "__unset__":
-            monkeypatch.delenv("HERMES_TUI_CHECKPOINTS", raising=False)
+            monkeypatch.delenv("SLAVE_TUI_CHECKPOINTS", raising=False)
         else:
-            monkeypatch.setenv("HERMES_TUI_CHECKPOINTS", env_val)
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
-        monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
-        monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-        monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-        monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+            monkeypatch.setenv("SLAVE_TUI_CHECKPOINTS", env_val)
+        monkeypatch.delenv("SLAVE_MODEL", raising=False)
+        monkeypatch.delenv("SLAVE_INFERENCE_MODEL", raising=False)
+        monkeypatch.delenv("SLAVE_TUI_PROVIDER", raising=False)
+        monkeypatch.delenv("SLAVE_DESKTOP", raising=False)
+        monkeypatch.delenv("SLAVE_DESKTOP_TERMINAL", raising=False)
         monkeypatch.setattr(
             server, "_load_cfg",
             lambda: {**cfg, "model": {"default": "gpt-5.5", "provider": "openai-codex"}},
         )
         monkeypatch.setattr(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "slave_cli.runtime_provider.resolve_runtime_provider",
             lambda requested=None, target_model=None: {
                 "provider": "openai-codex",
                 "base_url": "https://chatgpt.com/backend-api/codex",

@@ -27,7 +27,7 @@ async def test_streaming_retry_after_delete_replays_terminal_receipt(api, owner)
         first = await client.post('/v1/chat/completions', json=body, headers=headers)
         assert first.status == 200, await first.text()
         assert 'answer' in await first.text()
-        sid = first.headers['X-Hermes-Session-Id']
+        sid = first.headers['X-Slave-Session-Id']
         removed = owner.persistence.sessions.delete(sid, media_root=str(native_inputs_root()))
         after_sessions_removed(owner.persistence, owner.persistence.scope.profile_dir, removed, reason='delete',
                                primary=sid)

@@ -16,7 +16,7 @@ import sqlite3
 
 import pytest
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import sqlite_support
 from sqlite_support import apply_wal_with_fallback
 
@@ -29,7 +29,7 @@ def _detect_network_fs(directory, mountinfo_path):
 def _isolate(monkeypatch, tmp_path):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: False)
     monkeypatch.setattr(sqlite_support, "path_on_cross_vm_fs", lambda p: False)
     for name in ("_network_fs_warned_paths", "_network_fs_new_store_warned_paths",
@@ -127,7 +127,7 @@ def test_existing_wal_store_on_network_fs_keeps_wal_and_names_the_offline_remedy
     lines = [r for r in caplog.records if "network filesystem" in r.getMessage()]
     assert len(lines) == 1 and lines[0].levelno == logging.WARNING
     text = lines[0].getMessage()
-    assert "hermes sessions set-journal-mode delete" in text
+    assert "slave sessions set-journal-mode delete" in text
     assert "database.journal_mode: delete" in text
 
 
@@ -143,4 +143,4 @@ def test_network_fstypes_cover_nfs_and_smb_variants(tmp_path):
     mi = _mountinfo(tmp_path, rows)
     for fs in ("nfs", "nfs4", "cifs", "smb3", "fuse_sshfs"):
         assert _detect_network_fs(f"/mnt/{fs}/home", mountinfo_path=mi) is True
-    assert _detect_network_fs("/home/user/.hermes", mountinfo_path=mi) is False
+    assert _detect_network_fs("/home/user/.slave", mountinfo_path=mi) is False

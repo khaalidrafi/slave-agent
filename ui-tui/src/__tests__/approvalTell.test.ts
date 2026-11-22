@@ -17,7 +17,7 @@ beforeEach(() => {
   patchUiState({ sid: 'owner' })
 })
 
-describe('"No, and tell Hermes what to do instead" (#25693)', () => {
+describe('"No, and tell slave-agent what to do instead" (#25693)', () => {
   it('is offered after Deny on every prompt that has Deny, and picked by its number', () => {
     const rows = approvalRows(req)
 

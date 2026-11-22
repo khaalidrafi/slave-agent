@@ -1,6 +1,6 @@
 """The /new paused-queue note names a discard command the chat can actually send (#145177).
 
-Slack registers no native ``/discard`` (its slash-command cap); the umbrella ``/hermes discard``
+Slack registers no native ``/discard`` (its slash-command cap); the umbrella ``/slave discard``
 reaches it, as the lost-turn pause notice already tells Slack users.
 """
 import pytest
@@ -18,16 +18,16 @@ def _note(platform):
 
 def test_slack_is_told_the_umbrella_discard_command():
     note = _note(Platform.SLACK)
-    assert "/hermes discard" in note and "/resume sid-1" in note
+    assert "/slave discard" in note and "/resume sid-1" in note
 
 
 def test_telegram_is_told_the_native_discard_command():
     note = _note(Platform.TELEGRAM)
-    assert "then /discard" in note and "/hermes" not in note
+    assert "then /discard" in note and "/slave" not in note
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("platform,discard", [(Platform.SLACK, "/hermes discard"), (Platform.TELEGRAM, "/discard")])
+@pytest.mark.parametrize("platform,discard", [(Platform.SLACK, "/slave discard"), (Platform.TELEGRAM, "/discard")])
 async def test_reset_reply_names_the_platform_discard_command(monkeypatch, platform, discard):
     """The /new handler itself fills {discard} per platform, not only the helper."""
     from datetime import datetime

@@ -134,7 +134,7 @@ def daemon():
     async def observed(self, request):
         reply = await original(self, request)
         if request.get('method') == 'session.interrupt':
-            with (Path(os.environ['HERMES_HOME']) / 'native-control-receipts.jsonl').open('a') as output:
+            with (Path(os.environ['SLAVE_HOME']) / 'native-control-receipts.jsonl').open('a') as output:
                 output.write(json.dumps({'request': request, 'reply': reply}) + '\n')
         return reply
     AuthorityConnection.dispatch = observed

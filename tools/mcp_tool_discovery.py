@@ -33,7 +33,7 @@ def _discovery_connect_concurrency() -> int:
     """``mcp.discovery_concurrency`` from config (0 = unlimited); a non-integer or negative value
     warns and falls back to the default rather than silently running unbounded."""
     try:
-        from hermes_cli.config import load_config
+        from slave_cli.config import load_config
         raw = (load_config().get("mcp") or {}).get("discovery_concurrency", _DISCOVERY_CONNECT_CONCURRENCY)
     except Exception:
         return _DISCOVERY_CONNECT_CONCURRENCY
@@ -112,9 +112,9 @@ def _owner_secret_mapping(home: Path) -> dict[str, str]:
     + external sources only. A source that did not fully hydrate is retried at most once per
     interval per home: every retry is a helper subprocess, and connect/reconnect loops are tight."""
     from agent.secret_scope import _is_process_home, build_profile_secret_scope
-    from hermes_cli import env_loader
-    from hermes_constants import hermes_home_key
-    key = hermes_home_key(home)
+    from slave_cli import env_loader
+    from slave_constants import slave_home_key
+    key = slave_home_key(home)
     if time.monotonic() >= _hydrate_retry_after.get(key, 0.0):
         env_loader.hydrate_profile_secret_sources(home)
         if key not in env_loader._APPLIED_HOMES:
@@ -612,7 +612,7 @@ def discover_mcp_tools(allowed_mcp_names: Optional[list[str]] = None) -> list[st
 
     ``allowed_mcp_names``: spawn only the MCP servers named in it (built-in toolset names in the
     list simply don't match); ``None`` spawns every configured server. Used by
-    ``hermes -z -t <toolsets>`` to skip cold-starting servers the caller doesn't need (10-60s
+    ``slave -z -t <toolsets>`` to skip cold-starting servers the caller doesn't need (10-60s
     each); it only affects which servers start, not which names ``-t`` validation can see."""
     from agent.safe_worker_policy import safe_worker_enabled
     if safe_worker_enabled():

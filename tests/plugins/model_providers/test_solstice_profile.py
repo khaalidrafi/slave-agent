@@ -6,9 +6,9 @@ from __future__ import annotations
 import json
 import time
 
-import hermes_cli.auth
+import slave_cli.auth
 import providers
-from hermes_cli import auth_oauth_pkce_plugin as pkce
+from slave_cli import auth_oauth_pkce_plugin as pkce
 from providers import register_provider
 from providers.base import ProviderProfile
 
@@ -23,13 +23,13 @@ def _write_pool(home, provider: str, row: dict) -> None:
 
 
 def test_solstice_is_off_every_discovery_surface_until_signed_in_but_always_resolves(monkeypatch, tmp_path):
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    from hermes_cli.models import list_available_providers
-    from hermes_cli.models_catalog_static import listed_canonical_providers
-    from hermes_cli.provider_catalog import provider_catalog
-    from hermes_cli.web_routers.oauth import _build_oauth_catalog
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    from slave_cli.models import list_available_providers
+    from slave_cli.models_catalog_static import listed_canonical_providers
+    from slave_cli.provider_catalog import provider_catalog
+    from slave_cli.web_routers.oauth import _build_oauth_catalog
 
     def surfaces() -> dict[str, bool]:
         return {
@@ -42,8 +42,8 @@ def test_solstice_is_off_every_discovery_surface_until_signed_in_but_always_reso
     assert providers.get_provider_profile("solstice").hidden is True
     assert surfaces() == dict.fromkeys(surfaces(), False)
     # Typed paths never consult the gate: a user who names it can sign in and run it.
-    assert hermes_cli.auth.resolve_provider("solstice") == "solstice"
-    assert hermes_cli.auth.resolve_provider("solstice-oauth") == "solstice"
+    assert slave_cli.auth.resolve_provider("solstice") == "solstice"
+    assert slave_cli.auth.resolve_provider("solstice-oauth") == "solstice"
 
     _write_pool(home, "solstice", _pool_row("solstice", access="ya29.x", expires_at_ms=int(time.time() * 1000) + 3_600_000))
     assert surfaces() == dict.fromkeys(surfaces(), True)
@@ -54,9 +54,9 @@ def test_brokered_opaque_bearer_rotates_on_stored_expiry_and_keeps_the_refresh_t
     plugin's broker instead of a token URL, and keep the refresh token when the response omits it."""
     from agent.credential_pool import load_pool
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     grants: list[dict] = []
 
     def broker(grant: dict) -> dict:
@@ -67,7 +67,7 @@ def test_brokered_opaque_bearer_rotates_on_stored_expiry_and_keeps_the_refresh_t
     cfg = pkce.OAuthPKCEConfig(client_id="", authorize_url="", token_url="", token_request=broker)
     register_provider(ProviderProfile(name=name, auth_type="oauth_external", base_url="https://example.invalid/v1",
                                       auth_handler=pkce.pkce_auth_handler(cfg), refresh_credential=pkce.pkce_refresh_credential(cfg)))
-    request.addfinalizer(lambda: (providers._REGISTRY.pop(name, None), hermes_cli.auth.PROVIDER_REGISTRY.pop(name, None)))
+    request.addfinalizer(lambda: (providers._REGISTRY.pop(name, None), slave_cli.auth.PROVIDER_REGISTRY.pop(name, None)))
 
     now_ms = int(time.time() * 1000)
     _write_pool(home, name, _pool_row(name, access="ya29.live", expires_at_ms=now_ms + 3_600_000))
@@ -84,7 +84,7 @@ def test_brokered_opaque_bearer_rotates_on_stored_expiry_and_keeps_the_refresh_t
     # A grant the broker rejects is DEAD and stays DEAD through the inference 401 that follows (never re-benched
     # as EXHAUSTED, which would replay the dead token every cooldown).
     from agent.credential_pool import STATUS_DEAD
-    from hermes_cli.auth_constants import AuthError
+    from slave_cli.auth_constants import AuthError
 
     def dead_broker(grant: dict) -> dict:
         raise AuthError("rejected", provider=name, code="invalid_grant", relogin_required=True)

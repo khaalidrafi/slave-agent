@@ -83,9 +83,9 @@ def _usage_payload(session_used: float = 20.0, weekly_used: float = 5.0) -> dict
 def test_read_only_fetch_routes_to_entries_own_host_and_parses(monkeypatch, tmp_path):
     """The per-credential read-only fetch hits the entry's own route host with its own token and
     parses the payload: duration-labeled windows, identity from the JWT, no refresh attempted."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    from hermes_cli import auth as auth_mod
+    from slave_cli import auth as auth_mod
 
     rotations: list = []
     monkeypatch.setattr(auth_mod, "resolve_codex_runtime_credentials",
@@ -110,9 +110,9 @@ def test_read_only_401_raises_and_never_retries_with_rotation(monkeypatch, tmp_p
     """A 401 on the read-only path is reported (snapshot None → unknown), never repaired via a
     forced refresh that could rotate a pooled credential; the live (non-read-only) fetch keeps its
     retry path for the session's own credential."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    from hermes_cli import auth as auth_mod
+    from slave_cli import auth as auth_mod
 
     def _forbidden_refresh(**kw):
         raise AssertionError("read-only path must not force-refresh (would rotate a pool credential)")
@@ -172,7 +172,7 @@ def test_read_only_fetch_remembered_under_identity_slot(monkeypatch, tmp_path):
     ``cached_account_usage(identity_id=...)``) and never in the provider-wide legacy slot."""
     from agent.account_usage_cache import _snapshots, cached_account_usage
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     _snapshots.clear()
     token = _codex_jwt("acct-7", "user-7")
     with _LoopbackUsageServer() as server:

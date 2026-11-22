@@ -4,7 +4,7 @@ import type {
   SubscriptionPreviewResponse,
   SubscriptionStateResponse,
   SubscriptionUpgradeResponse
-} from '@hermes/shared/gateway-types'
+} from '@slave-agent/shared/gateway-types'
 
 import { t } from '../../../i18n/runtime.js'
 import { openExternalUrl } from '../../../lib/openExternalUrl.js'

@@ -22,8 +22,8 @@ def adapter_persistence(adapter, home=None):
     ``_session_db`` override when that is a handle; :func:`close_cached_stores` closes the adapter's. None without a
     store or beside an override that is not a handle."""
     if home is None:
-        from hermes_constants import get_hermes_home
-        home = get_hermes_home()
+        from slave_constants import get_slave_home
+        home = get_slave_home()
     if adapter.gateway_runner is not None:
         from gateway.session_authorities import authority_for_home
         authority = authority_for_home(adapter.gateway_runner, home)

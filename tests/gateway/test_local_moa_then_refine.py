@@ -44,7 +44,7 @@ def test_local_refine_finds_the_conversation_after_a_moa_turn(tmp_path):
                                         'aggregator': {'provider': 'custom', 'model': 'refine-model'}}}},
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out = {}
 

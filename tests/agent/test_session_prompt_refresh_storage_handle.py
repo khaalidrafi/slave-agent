@@ -1,4 +1,4 @@
-"""``hermes sessions refresh-prompts`` reaches an agent that writes through a storage interface handle, as the
+"""``slave sessions refresh-prompts`` reaches an agent that writes through a storage interface handle, as the
 messaging gateway's agents do: the next turn rebuilds the stored prompt once and persists it with the epoch."""
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from tests.fakes.fake_llm_provider import FakeLLMServer
 
 @pytest.fixture
 def profile(monkeypatch, tmp_path):
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     project = tmp_path / "project"
     with FakeLLMServer() as srv:
         _write_profile(home, srv.base_url, project)

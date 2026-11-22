@@ -5,7 +5,7 @@ nothing new; each repeat is a full model turn. After ``_PROMOTE_AFTER`` consecut
 with no new output, this promotes the session to ``notify_on_complete`` (wiring gateway delivery when
 the process was started silently) and tells the model to stop checking: the exit arrives as a message.
 
-Only where a completion can actually reach this agent: one-shot runners (``hermes -z``), cron, Kanban
+Only where a completion can actually reach this agent: one-shot runners (``slave -z``), cron, Kanban
 workers, stateless HTTP sessions, delegated subagents, profiles whose effective
 ``display.background_process_notifications`` is ``off``, and callers that do not own the process's
 completion (another session's process, a subagent's un-handed-off process) keep the old result, since
@@ -27,7 +27,7 @@ _state: dict[str, tuple[int, int]] = {}
 _state_lock = threading.Lock()
 
 _STOP_NOTE = (
-    "The process is still running and has printed nothing new since your last check. Hermes has turned on "
+    "The process is still running and has printed nothing new since your last check. slave-agent has turned on "
     "notify_on_complete for it: when it exits, a message with its exit code and final output starts a new turn "
     "automatically, even after you end this turn. Do NOT call process_manage wait or poll on {sid} again, and do "
     "not sleep or loop to wait for it. If you have other work, do it now; otherwise end your turn with a one-line "
@@ -39,13 +39,13 @@ def _effective_config() -> dict:
     """The profile's effective user config (managed overlay, ``${VAR}`` expansion): the same reader the
     completion consumers use (``gateway.run._load_gateway_config``, ``tui_gateway.server._load_cfg``), so
     an admin-managed or env-expanded value decides promotion exactly as it decides delivery."""
-    from hermes_cli.config_effective import load_user_config_effective
+    from slave_cli.config_effective import load_user_config_effective
     return load_user_config_effective()
 
 
 def _enabled() -> bool:
     """``terminal.process_wait_auto_notify`` (default true); true when config is unreadable."""
-    from hermes_cli.config import cfg_get
+    from slave_cli.config import cfg_get
     try:
         return cfg_get(_effective_config(), "terminal", "process_wait_auto_notify", default=True) is not False
     except Exception:  # a broken config.yaml must not break process_manage
@@ -74,22 +74,22 @@ def _count_unchanged(session) -> int:
 def _can_deliver_completion() -> bool:
     """Whether a completion notice for this session can reach the agent that is waiting.
 
-    Finite turns (non-interactive ``hermes chat -q`` / ``-z``, as ``delegate_task`` decides inline execution) end
+    Finite turns (non-interactive ``slave chat -q`` / ``-z``, as ``delegate_task`` decides inline execution) end
     the run when the turn ends, so a promised notice would never arrive."""
     from agent.delegation_context import is_delegated_child_context
     from gateway.session_context import async_delivery_supported, get_session_env
     from gateway.session_finite import finite_turn_required
     finite = finite_turn_required()
-    if finite is True or (finite is None and get_session_env("HERMES_SINGLE_QUERY_SESSION") == "1"):
+    if finite is True or (finite is None and get_session_env("SLAVE_SINGLE_QUERY_SESSION") == "1"):
         return False
     if not async_delivery_supported() or is_delegated_child_context():
         return False
     # ``off`` drains the completion but never starts the agent turn (CLI, TUI and gateway alike). The
-    # gateway also honours the HERMES_BACKGROUND_NOTIFICATIONS override; either one saying off is off.
-    from hermes_cli.config import cfg_get
+    # gateway also honours the SLAVE_BACKGROUND_NOTIFICATIONS override; either one saying off is off.
+    from slave_cli.config import cfg_get
     try:
         from gateway.platforms._shared import platform_gate_env
-        modes = (platform_gate_env("HERMES_BACKGROUND_NOTIFICATIONS"),
+        modes = (platform_gate_env("SLAVE_BACKGROUND_NOTIFICATIONS"),
                  cfg_get(_effective_config(), "display", "background_process_notifications"))
     except Exception:
         logger.debug("background_process_notifications unreadable; assuming on", exc_info=True)
@@ -107,7 +107,7 @@ def _caller_receives_completion(session) -> bool:
     from tools.environments.sandbox_scope import producer_fields
     from tools.process_registry import ProcessRegistry
     from tools.process_registry_notifications import should_surface_notification
-    caller_key = get_session_env("HERMES_SESSION_KEY", "")
+    caller_key = get_session_env("SLAVE_SESSION_KEY", "")
     evt = {"type": "completion", "session_id": session.id, "session_key": session.session_key,
            "task_id": session.task_id, "owner_task_id": session.owner_task_id,
            **producer_fields(session.sandbox_key)}
@@ -132,7 +132,7 @@ def _claim_notify_if_running(registry, session) -> bool:
 def _promote(registry, session) -> None:
     """Wire completion delivery for a process just claimed by ``_claim_notify_if_running``.
 
-    CLI, TUI/Desktop and ``hermes chat -q`` drain ``completion_queue``, which the exit path fills
+    CLI, TUI/Desktop and ``slave chat -q`` drain ``completion_queue``, which the exit path fills
     whenever the flag is set. The messaging gateway delivers only through a per-process watcher, so a
     process started silently also needs the chat routing stamped and a watcher armed."""
     from tools.terminal_tool_background import _register_completion_watcher, _stamp_gateway_routing

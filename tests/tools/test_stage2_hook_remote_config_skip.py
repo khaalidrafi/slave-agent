@@ -25,10 +25,10 @@ def _block() -> str:
 
 
 def _env(root: Path, backend_env: str | None) -> dict:
-    env = {k: v for k, v in os.environ.items() if k != "HERMES_CONFIG_BACKEND"}
-    env.update(PYTHONPATH=str(REPO), HERMES_MANAGED_DIR=str(root / "managed"))
+    env = {k: v for k, v in os.environ.items() if k != "SLAVE_CONFIG_BACKEND"}
+    env.update(PYTHONPATH=str(REPO), SLAVE_MANAGED_DIR=str(root / "managed"))
     if backend_env is not None:
-        env["HERMES_CONFIG_BACKEND"] = backend_env
+        env["SLAVE_CONFIG_BACKEND"] = backend_env
     return env
 
 
@@ -49,7 +49,7 @@ def _run(home: Path, backend_env: str | None) -> str:
     python.chmod(0o755)
     script = (
         "set -eu\n"
-        + f'PATH="{bin_dir}:$PATH"\nHERMES_HOME="{home}"\nINSTALL_DIR="{root / "install"}"\n'
+        + f'PATH="{bin_dir}:$PATH"\nSLAVE_HOME="{home}"\nINSTALL_DIR="{root / "install"}"\n'
         + _block()
     )
     proc = subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=60,
@@ -60,11 +60,11 @@ def _run(home: Path, backend_env: str | None) -> str:
 
 
 def _runtime_selects(home: Path, backend_env: str | None) -> str:
-    """The backend a real Hermes start selects: the first config read (``hermes_cli.config`` reads
-    at import time) or ``load_hermes_dotenv``'s boot, whichever selects first, reports the backend
+    """The backend a real slave-agent start selects: the first config read (``slave_cli.config`` reads
+    at import time) or ``load_slave_dotenv``'s boot, whichever selects first, reports the backend
     and ends the process right there (there is no plane in this test)."""
     code = ("import os, sys\n"
-            "from hermes_cli.config_backend import FileBackend\n"
+            "from slave_cli.config_backend import FileBackend\n"
             "from plugins.config_backends.remote.backend import RemoteBackend\n"
             "def report(name):\n"
             "    def stop(self, *args, **kwargs):\n"
@@ -73,11 +73,11 @@ def _runtime_selects(home: Path, backend_env: str | None) -> str:
             "    return stop\n"
             "RemoteBackend._state = report('remote')\n"
             "FileBackend.boot = report('file')\n"
-            "from hermes_cli import env_loader\n"
-            "env_loader.load_hermes_dotenv(hermes_home=sys.argv[1], load_external_secrets=False)\n"
+            "from slave_cli import env_loader\n"
+            "env_loader.load_slave_dotenv(slave_home=sys.argv[1], load_external_secrets=False)\n"
             "sys.exit('no backend was selected')\n")
     env = _env(home.parent, backend_env)
-    env["HERMES_HOME"] = str(home)
+    env["SLAVE_HOME"] = str(home)
     proc = subprocess.run([sys.executable, "-c", code, str(home)], capture_output=True, text=True,
                           timeout=60, env=env, cwd=str(home.parent), check=False)
     assert proc.returncode == 0, proc.stderr
@@ -103,14 +103,14 @@ def test_remote_from_container_env_skips(home):
 
 
 @pytest.mark.parametrize("dotenv, container", [
-    ("HERMES_CONFIG_BACKEND=remote", None),
-    ('HERMES_CONFIG_BACKEND="remote"', None),
-    ("export HERMES_CONFIG_BACKEND='remote'", None),
-    ("HERMES_CONFIG_BACKEND=remote  # fleet-managed", None),
-    ("HERMES_CONFIG_BACKEND = remote", None),
-    ("HERMES_CONFIG_BACKEND=file\n# HERMES_CONFIG_BACKEND=remote", None),
-    ("HERMES_CONFIG_BACKEND=file", "remote"),
-    ("HERMES_CONFIG_BACKEND=remote", "file"),
+    ("SLAVE_CONFIG_BACKEND=remote", None),
+    ('SLAVE_CONFIG_BACKEND="remote"', None),
+    ("export SLAVE_CONFIG_BACKEND='remote'", None),
+    ("SLAVE_CONFIG_BACKEND=remote  # fleet-managed", None),
+    ("SLAVE_CONFIG_BACKEND = remote", None),
+    ("SLAVE_CONFIG_BACKEND=file\n# SLAVE_CONFIG_BACKEND=remote", None),
+    ("SLAVE_CONFIG_BACKEND=file", "remote"),
+    ("SLAVE_CONFIG_BACKEND=remote", "file"),
 ])
 def test_stage2_decides_like_the_runtime(home, dotenv, container):
     (home / ".env").write_text(f"OTHER=1\n{dotenv}\n")
@@ -120,7 +120,7 @@ def test_stage2_decides_like_the_runtime(home, dotenv, container):
 
 
 def test_remote_from_managed_dotenv_skips(home):
-    (home.parent / "managed" / ".env").write_text("HERMES_CONFIG_BACKEND=remote\n")
+    (home.parent / "managed" / ".env").write_text("SLAVE_CONFIG_BACKEND=remote\n")
     assert _runtime_selects(home, None) == "remote"
     assert "MIGRATE_RAN" not in _run(home, None)
 
@@ -132,7 +132,7 @@ def test_remote_from_managed_dotenv_skips(home):
 def test_stage2_decides_like_the_runtime_for_utf16_dotenv(home, encode):
     """The runtime sanitizes a UTF-16 / NUL-padded .env before loading it; the early selection
     (stage2, the first config read) parses it the same way, so both pick remote."""
-    (home / ".env").write_bytes(encode("OTHER=1\nHERMES_CONFIG_BACKEND=remote\n"))
-    from hermes_cli.env_loader import selected_config_backend_name
+    (home / ".env").write_bytes(encode("OTHER=1\nSLAVE_CONFIG_BACKEND=remote\n"))
+    from slave_cli.env_loader import selected_config_backend_name
     assert selected_config_backend_name(home) == "remote"
     assert "MIGRATE_RAN" not in _run(home, None)

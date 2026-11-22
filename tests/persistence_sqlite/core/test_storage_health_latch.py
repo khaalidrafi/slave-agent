@@ -140,11 +140,11 @@ class TestPeerWritesAfterLatch:
 # ── Readiness ──────────────────────────────────────────────────────────────
 
 
-def test_readiness_state_db_and_session_store_agree_on_corrupt(_isolate_hermes_home):
+def test_readiness_state_db_and_session_store_agree_on_corrupt(_isolate_slave_home):
     from gateway.readiness import collect_runtime_readiness
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    path = get_hermes_home() / "state.db"
+    path = get_slave_home() / "state.db"
     _seed(path, count=1)
     healthy = collect_runtime_readiness(configured_model="m", runtime_status={"session_store": {"status": "ok"}})
     assert healthy["checks"]["state_db"]["status"] == "ok"
@@ -157,11 +157,11 @@ def test_readiness_state_db_and_session_store_agree_on_corrupt(_isolate_hermes_h
     assert ready["checks"]["session_store"] == {"status": "unavailable", "detail": "corrupt"}
 
 
-def test_readiness_probe_latches_a_file_that_is_not_a_database(_isolate_hermes_home):
+def test_readiness_probe_latches_a_file_that_is_not_a_database(_isolate_slave_home):
     from gateway.readiness import _probe_state_db
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    home = get_hermes_home()
+    home = get_slave_home()
     (home / "state.db").write_bytes(b"this is not sqlite" * 512)
     assert _probe_state_db(home) == {"status": "degraded", "detail": "corrupt"}
     assert storage_state(home / "state.db") == "corrupt"
@@ -171,27 +171,27 @@ def test_readiness_probe_latches_a_file_that_is_not_a_database(_isolate_hermes_h
 
 
 @pytest.fixture
-def client(monkeypatch, _isolate_hermes_home):
+def client(monkeypatch, _isolate_slave_home):
     try:
         from starlette.testclient import TestClient
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    from hermes_cli.web_routers import profiles as profiles_routes
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
-    from hermes_constants import get_hermes_home
+    from slave_cli.web_routers import profiles as profiles_routes
+    from slave_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from slave_constants import get_slave_home
 
     monkeypatch.setattr(profiles_routes, "_SIDEBAR_CACHE_TTL_SECONDS", 0.0)
-    (get_hermes_home() / "config.yaml").write_text("{}\n", encoding="utf-8")
+    (get_slave_home() / "config.yaml").write_text("{}\n", encoding="utf-8")
     c = TestClient(app)
     c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return c
 
 
 def test_corrupt_state_db_is_published_to_every_desktop_surface(client):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    path = get_hermes_home() / "state.db"
+    path = get_slave_home() / "state.db"
     _seed(path)
 
     healthy = client.get("/api/profiles/sessions/sidebar?recents_profile=all").json()

@@ -2,7 +2,7 @@
 """Scan a PR's added lines for critical supply-chain indicators and unbounded PyPI deps.
 
 Run by two steps of ``.github/workflows/repo-guards.yml`` on pull requests, with the PR's base
-and head commits in ``_HERMES_PR_BASE_SHA`` and ``_HERMES_PR_HEAD_SHA``. Each subcommand appends ``found=true|false`` to
+and head commits in ``_SLAVE_PR_BASE_SHA`` and ``_SLAVE_PR_HEAD_SHA``. Each subcommand appends ``found=true|false`` to
 ``$GITHUB_OUTPUT`` and, on a finding, writes the report that
 ``scripts/ci/review_status.py emit`` publishes:
 
@@ -66,7 +66,7 @@ UNBOUNDED_DEP = re.compile(r'"[a-zA-Z0-9_-]+(?:\[[^\\]\]*\])?>=[ 0-9.]+"')
 
 def pr_diff(*pathspec: str) -> str:
     """Three-dot diff of the PR; a git failure yields an empty diff, as ``|| true`` did."""
-    commits = f"{os.environ['_HERMES_PR_BASE_SHA']}...{os.environ['_HERMES_PR_HEAD_SHA']}"
+    commits = f"{os.environ['_SLAVE_PR_BASE_SHA']}...{os.environ['_SLAVE_PR_HEAD_SHA']}"
     result = subprocess.run(("git", "diff", "--no-renames", commits, "--", *pathspec), stdout=subprocess.PIPE,
                             stdin=subprocess.DEVNULL, timeout=300, check=False)
     return result.stdout.decode("utf-8", "surrogateescape")

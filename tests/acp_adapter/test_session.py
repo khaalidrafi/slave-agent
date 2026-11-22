@@ -48,7 +48,7 @@ class TestCreateSession:
             captured["task_id"] = task_id
             captured["overrides"] = overrides
 
-        monkeypatch.setattr("hermes_platform.host.runtime._wsl_detected", True)
+        monkeypatch.setattr("slave_platform.host.runtime._wsl_detected", True)
         monkeypatch.setattr(
             "tools.terminal_tool.register_task_env_overrides",
             fake_register_task_env_overrides,
@@ -91,7 +91,7 @@ class TestCreateSession:
             raising=False,
         )
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "slave_cli.config.load_config",
             lambda: {
                 "model": {
                     "default": "fake-model",
@@ -101,7 +101,7 @@ class TestCreateSession:
             },
         )
         monkeypatch.setattr(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "slave_cli.runtime_provider.resolve_runtime_provider",
             lambda requested=None: {
                 "provider": requested,
                 "api_mode": "codex_app_server",
@@ -110,7 +110,7 @@ class TestCreateSession:
             },
         )
         monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: None)
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("slave_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
 
         SessionManager(db=None).create_session(cwd=str(workspace))
 
@@ -127,22 +127,22 @@ class TestCreateSession:
 
         config = {"model": {"default": "m", "provider": "p"}, "mcp_servers": {"cfg-server": {}}}
         monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: config)
-        monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {})
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("slave_cli.config.load_config", lambda: config)
+        monkeypatch.setattr("slave_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {})
+        monkeypatch.setattr("slave_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
         monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: None)
         manager = SessionManager(db=None)
 
         manager._make_agent(session_id="fresh", cwd=".")
         manager._make_agent(
-            session_id="rebuilt", cwd=".", enabled_toolsets=["hermes-acp", "mcp-acp-server"], disabled_toolsets=["browser"],
+            session_id="rebuilt", cwd=".", enabled_toolsets=["slave-acp", "mcp-acp-server"], disabled_toolsets=["browser"],
         )
 
         assert "mcp-cfg-server" in seen[0]["enabled_toolsets"] and seen[0]["disabled_toolsets"] is None
-        assert (seen[1]["enabled_toolsets"], seen[1]["disabled_toolsets"]) == (["hermes-acp", "mcp-acp-server"], ["browser"])
+        assert (seen[1]["enabled_toolsets"], seen[1]["disabled_toolsets"]) == (["slave-acp", "mcp-acp-server"], ["browser"])
 
     @pytest.mark.parametrize("config, offered, withheld", [
-        # agent.disabled_toolsets, in the JSON-string shape `hermes config set` stores (#74582).
+        # agent.disabled_toolsets, in the JSON-string shape `slave config set` stores (#74582).
         ({"agent": {"disabled_toolsets": "['code_execution']"}}, "file", "code_execution"),
         # platform_toolsets.acp narrows the surface like every other platform (#79516).
         ({"platform_toolsets": {"acp": ["file"]}}, "file", "code_execution"),
@@ -160,9 +160,9 @@ class TestCreateSession:
                 seen.append(kwargs)
 
         monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"model": {"default": "m"}, **config})
-        monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {})
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("slave_cli.config.load_config", lambda: {"model": {"default": "m"}, **config})
+        monkeypatch.setattr("slave_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {})
+        monkeypatch.setattr("slave_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
         monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: None)
 
         SessionManager(db=None)._make_agent(session_id="fresh", cwd=".")
@@ -171,15 +171,15 @@ class TestCreateSession:
             return {t["function"]["name"] for t in get_tool_definitions(
                 enabled_toolsets=enabled, disabled_toolsets=disabled, quiet_mode=True)}
 
-        assert set(resolve_toolset(withheld)) <= surface(["hermes-acp"])  # non-vacuous: offered by default
+        assert set(resolve_toolset(withheld)) <= surface(["slave-acp"])  # non-vacuous: offered by default
         names = surface(seen[0]["enabled_toolsets"], seen[0]["disabled_toolsets"])
         assert set(resolve_toolset(offered)) <= names
         assert not names & set(resolve_toolset(withheld))
 
     @pytest.mark.parametrize("acp_toolsets, expected_mcp", [
         (None, {"mcp-alpha", "mcp-beta"}),              # default: every enabled config server
-        (["hermes-acp", "alpha"], {"mcp-alpha"}),       # listed server names are an allowlist
-        (["hermes-acp", "no_mcp"], set()),              # the no_mcp sentinel drops them all
+        (["slave-acp", "alpha"], {"mcp-alpha"}),       # listed server names are an allowlist
+        (["slave-acp", "no_mcp"], set()),              # the no_mcp sentinel drops them all
     ])
     def test_fresh_agent_mcp_servers_follow_platform_toolsets(self, monkeypatch, acp_toolsets, expected_mcp):
         """Config MCP servers reach a fresh ACP agent by the gateway's rules for ``platform_toolsets.<platform>``,
@@ -195,9 +195,9 @@ class TestCreateSession:
         if acp_toolsets is not None:
             config["platform_toolsets"] = {"acp": acp_toolsets}
         monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: config)
-        monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {})
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("slave_cli.config.load_config", lambda: config)
+        monkeypatch.setattr("slave_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {})
+        monkeypatch.setattr("slave_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
         monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: None)
 
         SessionManager(db=None)._make_agent(session_id="fresh", cwd=".")
@@ -211,19 +211,19 @@ class TestCreateSession:
         first-run "No LLM provider configured" text; the operator must get the swallowed cause
         instead. The fallback still stands when the bare build succeeds."""
         def _no_creds(**_kw):
-            raise RuntimeError("No Codex credentials stored. Run `hermes auth add openai-codex`")
+            raise RuntimeError("No Codex credentials stored. Run `slave auth add openai-codex`")
 
         class BareFails:
             def __init__(self, **kwargs):
-                raise RuntimeError("No LLM provider configured. Run `hermes setup`")
+                raise RuntimeError("No LLM provider configured. Run `slave setup`")
 
         class BareWorks:
             def __init__(self, **kwargs):
                 self.kwargs = kwargs
 
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"model": {"default": "m", "provider": "openai-codex"}})
-        monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _no_creds)
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("slave_cli.config.load_config", lambda: {"model": {"default": "m", "provider": "openai-codex"}})
+        monkeypatch.setattr("slave_cli.runtime_provider.resolve_runtime_provider", _no_creds)
+        monkeypatch.setattr("slave_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
         monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: None)
         manager = SessionManager(db=None)
 
@@ -247,11 +247,11 @@ class TestCreateSession:
                 seen.append(kwargs)
 
         monkeypatch.setattr("run_agent.AIAgent", FakeAgent)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"model": {"default": "m", "provider": "openai-codex"}})
-        monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {
+        monkeypatch.setattr("slave_cli.config.load_config", lambda: {"model": {"default": "m", "provider": "openai-codex"}})
+        monkeypatch.setattr("slave_cli.runtime_provider.resolve_runtime_provider", lambda **_kw: {
             "provider": "openai-codex", "api_mode": "codex_app_server", "api_key": "test-key", "credential_pool": sentinel_pool,
         })
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("slave_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
         monkeypatch.setattr("acp_adapter.session._register_task_cwd", lambda task_id, cwd: None)
 
         SessionManager(db=None)._make_agent(session_id="s", cwd=".")
@@ -268,7 +268,7 @@ class TestCreateSession:
 
 class TestWslCwdTranslation:
     def test_translate_acp_cwd_converts_windows_drive_path_when_wsl(self, monkeypatch):
-        monkeypatch.setattr("hermes_platform.host.runtime._wsl_detected", True)
+        monkeypatch.setattr("slave_platform.host.runtime._wsl_detected", True)
 
         assert acp_session._translate_acp_cwd(r"E:\Projects\AI\paperclip") == "/mnt/e/Projects/AI/paperclip"
 
@@ -277,7 +277,7 @@ class TestWslCwdTranslation:
 
 
     def test_fork_session_stores_translated_cwd_on_wsl(self, manager, monkeypatch):
-        monkeypatch.setattr("hermes_platform.host.runtime._wsl_detected", True)
+        monkeypatch.setattr("slave_platform.host.runtime._wsl_detected", True)
         original = manager.create_session(cwd="/tmp/base")
 
         forked = manager.fork_session(original.session_id, cwd=r"D:\work\project")
@@ -286,7 +286,7 @@ class TestWslCwdTranslation:
         assert forked.cwd == "/mnt/d/work/project"
 
     def test_update_cwd_stores_translated_cwd_on_wsl(self, manager, monkeypatch):
-        monkeypatch.setattr("hermes_platform.host.runtime._wsl_detected", True)
+        monkeypatch.setattr("slave_platform.host.runtime._wsl_detected", True)
         state = manager.create_session(cwd="/tmp/old")
 
         updated = manager.update_cwd(state.session_id, cwd=r"C:\Users\foo\project")
@@ -336,8 +336,8 @@ class TestSymlinkAliasNormalization:
         # that don't exist on this host (e.g. WSL-translated drives) behave
         # exactly as the old normpath comparison did.
         assert acp_session._normalize_cwd_for_compare(
-            "/nonexistent-hermes-test/x/../y"
-        ) == acp_session._normalize_cwd_for_compare("/nonexistent-hermes-test/y")
+            "/nonexistent-slave-test/x/../y"
+        ) == acp_session._normalize_cwd_for_compare("/nonexistent-slave-test/y")
 
     @pytest.mark.require_symlinks
     def test_list_sessions_matches_symlink_alias_cwd(self, manager, tmp_path):
@@ -579,11 +579,11 @@ class TestPersistence:
         def fake_agent(**kwargs):
             return SimpleNamespace(model=kwargs.get("model"), _print_fn=None)
 
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {
+        monkeypatch.setattr("slave_cli.config.load_config", lambda: {
             "model": {"provider": "openrouter", "default": "test-model"}
         })
         monkeypatch.setattr(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "slave_cli.runtime_provider.resolve_runtime_provider",
             fake_resolve_runtime_provider,
         )
         db = storage_handle(tmp_path)

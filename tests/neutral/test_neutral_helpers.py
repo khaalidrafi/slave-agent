@@ -127,30 +127,30 @@ def test_storage_failure_copy_splits_a_full_disk_from_a_read_only_file():
 
 
 _UNSAVED = "Sessions will not be saved until this is fixed."
-_FIX = "Run `hermes doctor --fix` to diagnose and repair."
+_FIX = "Run `slave doctor --fix` to diagnose and repair."
 _LONG_CAUSE = "RuntimeError: something else\nsecond line " + "y" * 400
 
 
 # Each text is the unavailable notice for "P" after the last open failure is set to ``cause``.
 @pytest.mark.parametrize(("cause", "details", "text"), [
-    (None, False, f"P. {_UNSAVED} Run `hermes doctor` to check the storage location."),
-    (None, True, f"P. {_UNSAVED} Run `hermes doctor` to check the storage location."),
+    (None, False, f"P. {_UNSAVED} Run `slave doctor` to check the storage location."),
+    (None, True, f"P. {_UNSAVED} Run `slave doctor` to check the storage location."),
     ("OperationalError: database is locked", False,
-     f"P: the session database is locked by another Hermes process. {_UNSAVED} Wait a moment and try again; if it persists, "
-     "stop the other Hermes process (`hermes gateway stop`)."),
+     f"P: the session database is locked by another slave-agent process. {_UNSAVED} Wait a moment and try again; if it persists, "
+     "stop the other slave-agent process (`slave gateway stop`)."),
     ("OperationalError: database is locked", True,
-     f"P: the session database is locked by another Hermes process. {_UNSAVED} Wait a moment and try again; if it persists, "
-     "stop the other Hermes process (`hermes gateway stop`).\nDetails: OperationalError: database is locked"),
+     f"P: the session database is locked by another slave-agent process. {_UNSAVED} Wait a moment and try again; if it persists, "
+     "stop the other slave-agent process (`slave gateway stop`).\nDetails: OperationalError: database is locked"),
     ("sqlite3.OperationalError: locking protocol", True,
      f"P: the session database could not be opened; it may be on a network or unsupported drive. {_UNSAVED} Move it to a "
-     "local disk (`hermes doctor` shows where it is), then start Hermes again.\nDetails: sqlite3.OperationalError: locking protocol"),
+     "local disk (`slave doctor` shows where it is), then start slave-agent again.\nDetails: sqlite3.OperationalError: locking protocol"),
     ("OperationalError: disk I/O error", False,
      f"P: the session database file is read-only or not writable. {_UNSAVED} {_FIX} If the database lives on a network drive, "
      "move it to a local disk."),
     ("OperationalError: attempt to write a readonly database", False,
      f"P: the session database file is read-only or not writable. {_UNSAVED} {_FIX}"),
     ("DatabaseError: database disk image is malformed", False,
-     f"P: the session database file is damaged. {_UNSAVED} {_FIX} Recovery: `hermes sessions recover --source <state.db> --inspect-only`."),
+     f"P: the session database file is damaged. {_UNSAVED} {_FIX} Recovery: `slave sessions recover --source <state.db> --inspect-only`."),
     ("OperationalError: database or disk is full", False, f"P: the disk is full. {_UNSAVED} Free some disk space, then try again."),
     ("OSError: [Errno 28] No space left on device", True,
      f"P: the disk is full. {_UNSAVED} Free some disk space, then try again.\nDetails: OSError: [Errno 28] No space left on device"),
@@ -178,10 +178,10 @@ def test_the_last_open_failure_is_kept_until_the_next_one(monkeypatch):
 
 @pytest.mark.parametrize(("configured", "limit"), [(None, 20_000), (5, 5), (0, 0), (-1, 20_000), ("x", 20_000)])
 def test_transcript_limits_come_from_the_sessions_config(monkeypatch, configured, limit):
-    import hermes_cli.config
+    import slave_cli.config
 
     sessions = {} if configured is None else {"max_export_messages": configured, "max_resume_messages": configured}
-    monkeypatch.setattr(hermes_cli.config, "load_config_readonly", lambda: {"sessions": sessions})
+    monkeypatch.setattr(slave_cli.config, "load_config_readonly", lambda: {"sessions": sessions})
     assert storage_limits.resolved_max_export_messages() == limit
     assert storage_limits.resolved_max_resume_messages() == limit
 
@@ -219,9 +219,9 @@ OPERAND_TAKING_OPTIONS = [
 def test_an_operand_taking_option_is_read_past_to_the_program(options):
     from gateway.status_inline_source import inline_source_flag_index
 
-    inline = ["python", *options, "-c", "import os", "14980", "hermes", "gateway", "run"]
+    inline = ["python", *options, "-c", "import os", "14980", "slave", "gateway", "run"]
     assert inline_source_flag_index(inline) == len(options) + 1
-    assert inline_source_flag_index(["python", *options, "-m", "hermes_cli.main", "gateway", "run"]) is None
+    assert inline_source_flag_index(["python", *options, "-m", "slave_cli.main", "gateway", "run"]) is None
 
 
 def test_a_rescued_transcript_appends_under_the_callers_directory(tmp_path):

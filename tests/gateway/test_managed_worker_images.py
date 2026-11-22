@@ -31,7 +31,7 @@ def test_admitted_images_reach_managed_worker(tmp_path, mode, model):
         'auxiliary': {'title_generation': {'enabled': False}},
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     async def exercise(desc):

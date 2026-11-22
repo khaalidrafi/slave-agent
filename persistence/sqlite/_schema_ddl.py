@@ -8,7 +8,7 @@ from typing import Sequence
 from persistence.sqlite._state.keys import CRON_PRINCIPAL_ID
 
 # Pre-split logger identity so log filtering/capture is unchanged.
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 
 def _sql_literal(text: str) -> str:
@@ -77,7 +77,7 @@ SCHEMA_VERSION = 33
 # state_meta key ``fts_storage_version``. The main schema version advances
 # freely on open (so future migrations always land); the FTS *layout* only
 # reaches the current version when a DB is either born fresh or explicitly
-# optimized via ``hermes sessions optimize-storage``. A legacy DB sits at
+# optimized via ``slave sessions optimize-storage``. A legacy DB sits at
 # layout 0 (marker absent) with a working inline index until the user opts in.
 #   1 = v23 external-content layout with a tool-row-excluded trigram
 #   2 = trigram also excludes structured tool_calls JSON
@@ -323,7 +323,7 @@ CREATE TABLE IF NOT EXISTS gateway_hygiene_state (
 
 -- Monotonic conversation generation per routing peer (#96811).
 --
--- A host-declared conversation key (X-Hermes-Session-Key / build_session_key)
+-- A host-declared conversation key (X-Slave-Session-Key / build_session_key)
 -- is per-CHAT and outlives any single conversation on it, so the prompt-cache
 -- affinity scope derived from it must be qualified by which conversation is
 -- currently live. Deriving that from the session rows themselves
@@ -463,7 +463,7 @@ BEFORE DELETE ON sessions
 WHEN EXISTS (SELECT 1 FROM session_admissions WHERE target_session_id = old.id)
   OR EXISTS (SELECT 1 FROM worker_executions WHERE session_id = old.id)
 BEGIN
-    SELECT RAISE(ABORT, 'Refused to delete a session that has gateway runtime history: state.db was upgraded by a newer Hermes, and this older Hermes cannot delete such sessions. Downgrading is unsupported. Run hermes update to go back to the newer release, or restore the pre-update snapshot: https://hermes-agent.nousresearch.com/docs/getting-started/updating#rolling-back-to-an-older-release');
+    SELECT RAISE(ABORT, 'Refused to delete a session that has gateway runtime history: state.db was upgraded by a newer slave-agent, and this older slave-agent cannot delete such sessions. Downgrading is unsupported. Run slave update to go back to the newer release, or restore the pre-update snapshot: https://hermes-agent.nousresearch.com/docs/getting-started/updating#rolling-back-to-an-older-release');
 END;
 DROP TRIGGER IF EXISTS messages_transcript_revision_update;
 CREATE TRIGGER IF NOT EXISTS messages_transcript_revision_update
@@ -827,7 +827,7 @@ FTS_REBUILD_DEFERRAL_KEY = "fts_rebuild_deferral"
 
 # ── Legacy (v22 / inline-content) FTS DDL ──────────────────────────────
 # Used ONLY to keep an existing pre-v23 install's search working and its
-# triggers repairable UNTIL the user opts into `hermes db optimize`. This is
+# triggers repairable UNTIL the user opts into `slave db optimize`. This is
 # the exact inline shape v11..v22 shipped: each virtual table stores its own
 # copy of ``content || tool_name || tool_calls`` and the trigram table indexes
 # every row (including role='tool'). We never CREATE these on a fresh install —

@@ -104,7 +104,7 @@ class TestQuarantinedHandleStopsTouchingTheFile:
         db, real_conn = _quarantined_db(tmp_path)
         recorder = _RecordingConn(real_conn)
         db._conn = recorder
-        with caplog.at_level("WARNING", logger="hermes_state"):
+        with caplog.at_level("WARNING", logger="slave_state"):
             db.close()
         assert not any("wal_checkpoint" in sql for sql in recorder.recorded)
         assert db._conn is None
@@ -263,7 +263,7 @@ class TestVacuumAndMaintenanceRespectQuarantine:
     """vacuum()/optimize_fts() must check the same
     quarantine flags _execute_write does before touching the connection.
 
-    Without this, `hermes sessions vacuum`/`optimize` and the default-on
+    Without this, `slave sessions vacuum`/`optimize` and the default-on
     ``maybe_auto_prune_and_vacuum`` auto-maintenance could run VACUUM /
     FTS5 'optimize' / an explicit WAL checkpoint directly over a
     structurally damaged, replaced, or split-WAL-generation file: turning

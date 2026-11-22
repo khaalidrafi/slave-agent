@@ -292,9 +292,9 @@ async def test_failed_tls_through_a_proxy_tunnel_frees_its_pool_slot(tmp_path, m
     proxy = _ConnectProxy(edge)
     for key in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy", "TELEGRAM_PROXY"):
         monkeypatch.delenv(key, raising=False)
-    monkeypatch.setenv("HERMES_TELEGRAM_HTTP_POOL_SIZE", "2")
-    monkeypatch.setenv("HERMES_TELEGRAM_HTTP_POOL_TIMEOUT", "2")
-    monkeypatch.setenv("HERMES_GATEWAY_HTTPX_MAX_KEEPALIVE", "0")  # every send opens its own tunnel
+    monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_POOL_SIZE", "2")
+    monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_POOL_TIMEOUT", "2")
+    monkeypatch.setenv("SLAVE_GATEWAY_HTTPX_MAX_KEEPALIVE", "0")  # every send opens its own tunnel
     general, updates = tnet.build_ptb_requests(HTTPXRequest, fallback_ips=[], proxy_url=proxy.url, verify=client_ctx)
     bot = Bot("123:abc", request=general, get_updates_request=updates)
     await bot.initialize()
@@ -314,7 +314,7 @@ async def test_failed_tls_through_a_proxy_tunnel_frees_its_pool_slot(tmp_path, m
 
 
 def test_pool_size_override_fits_the_process_descriptor_budget(monkeypatch):
-    """HERMES_TELEGRAM_HTTP_POOL_SIZE=512 across 2 clients × (fallback IPs + hostname) pools must not
+    """SLAVE_TELEGRAM_HTTP_POOL_SIZE=512 across 2 clients × (fallback IPs + hostname) pools must not
     promise more sockets than a quarter of RLIMIT_NOFILE (#82678); a small override is kept."""
     from plugins.platforms.telegram import telegram_pool
 
@@ -328,7 +328,7 @@ def test_pool_size_override_fits_the_process_descriptor_budget(monkeypatch):
         def __init__(self, **kwargs):
             built.append(kwargs)
 
-    monkeypatch.setenv("HERMES_TELEGRAM_HTTP_POOL_SIZE", "512")
+    monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_POOL_SIZE", "512")
     tnet.build_ptb_requests(_Capture, fallback_ips=ips, proxy_url=None, verify=False)
     transports = [b["httpx_kwargs"]["transport"] for b in built]
     paths = len(transports[0]._fallback_ips) + 1
@@ -338,16 +338,16 @@ def test_pool_size_override_fits_the_process_descriptor_budget(monkeypatch):
     assert sum(per_pool) * paths <= soft // 4
     assert all(t._transport_kwargs["limits"].max_keepalive_connections <= p for t, p in zip(transports, per_pool))
 
-    # An operator's keepalive-off (HERMES_GATEWAY_HTTPX_MAX_KEEPALIVE=0) survives the cap.
+    # An operator's keepalive-off (SLAVE_GATEWAY_HTTPX_MAX_KEEPALIVE=0) survives the cap.
     built.clear()
-    monkeypatch.setenv("HERMES_GATEWAY_HTTPX_MAX_KEEPALIVE", "0")
+    monkeypatch.setenv("SLAVE_GATEWAY_HTTPX_MAX_KEEPALIVE", "0")
     tnet.build_ptb_requests(_Capture, fallback_ips=ips, proxy_url=None, verify=False)
     capped = built[0]["httpx_kwargs"]["transport"]._transport_kwargs["limits"]
     assert capped.max_connections < 512 and capped.max_keepalive_connections == 0
-    monkeypatch.delenv("HERMES_GATEWAY_HTTPX_MAX_KEEPALIVE")
+    monkeypatch.delenv("SLAVE_GATEWAY_HTTPX_MAX_KEEPALIVE")
 
     built.clear()
-    monkeypatch.setenv("HERMES_TELEGRAM_HTTP_POOL_SIZE", "4")
+    monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_POOL_SIZE", "4")
     tnet.build_ptb_requests(_Capture, fallback_ips=ips, proxy_url=None, verify=False)
     assert all(b["httpx_kwargs"]["transport"]._transport_kwargs["limits"].max_connections == 4 for b in built)
 
@@ -477,7 +477,7 @@ async def test_no_proxy_custom_base_url_is_reached_directly(tmp_path, monkeypatc
     dead_proxy = socket.create_server(("127.0.0.1", 0))  # accepts, never answers: a proxied request hangs
     monkeypatch.setenv("HTTPS_PROXY", f"http://127.0.0.1:{dead_proxy.getsockname()[1]}")
     monkeypatch.setenv("NO_PROXY", "127.0.0.1")
-    monkeypatch.setenv("HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT", "3")
+    monkeypatch.setenv("SLAVE_TELEGRAM_HTTP_CONNECT_TIMEOUT", "3")
     monkeypatch.setattr("plugins.platforms.telegram.adapter.platform_ssl_context", lambda: client_ctx)
     base_url = f"https://127.0.0.1:{edge.port}/bot"
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="123:abc", extra={

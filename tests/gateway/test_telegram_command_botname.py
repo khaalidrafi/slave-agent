@@ -42,26 +42,26 @@ def _dispatched_command(text):
 
 
 @pytest.mark.parametrize("text, command, args", [
-    ("/reasoning@hermes_bot medium", "reasoning", "medium"),
-    ("/reasoning@hermes_bot: high --global", "reasoning", "high --global"),
-    ("/memory@hermes_bot approve abc123", "memory", "approve abc123"),
-    ("/new@hermes_bot", "new", ""),
-    ("@hermes_bot /model@hermes_bot gpt-5", "model", "gpt-5"),
-    ("@hermes_bot, /model gpt-5", "model", "gpt-5"),
-    ("/btw did @hermes_bot already answer Alice?", "btw", "did @hermes_bot already answer Alice?"),
-    ("/btw@hermes_bot did @hermes_bot already answer?", "btw", "did @hermes_bot already answer?"),
-    ("/btw 👋 did @hermes_bot already answer?", "btw", "👋 did @hermes_bot already answer?"),
-    ("/model @hermes_bot gpt-5", "model", "gpt-5"),
-    ("/model gpt-5 @hermes_bot", "model", "gpt-5"),
-    ("/model gpt-5 @hermes_bot @hermes_bot", "model", "gpt-5"),
-    ("/reasoning high @hermes_bot --global", "reasoning", "high --global"),
-    ("/reasoning high @hermes_bot @hermes_bot --global", "reasoning", "high --global"),
-    ("/btw did @hermes_bot — our helper — already answer?", "btw", "did @hermes_bot — our helper — already answer?"),
-    ("/x a @hermes_bot --level 3", "x", "a --level 3"),
-    ("/x a @hermes_bot -v", "x", "a -v"),
-    ("/x a @hermes_bot —global", "x", "a —global"),
-    ("/x a @hermes_bot –global", "x", "a –global"),
-    ("/reload-mcp@hermes_bot x", "reload-mcp", "x"),
+    ("/reasoning@slave_bot medium", "reasoning", "medium"),
+    ("/reasoning@slave_bot: high --global", "reasoning", "high --global"),
+    ("/memory@slave_bot approve abc123", "memory", "approve abc123"),
+    ("/new@slave_bot", "new", ""),
+    ("@slave_bot /model@slave_bot gpt-5", "model", "gpt-5"),
+    ("@slave_bot, /model gpt-5", "model", "gpt-5"),
+    ("/btw did @slave_bot already answer Alice?", "btw", "did @slave_bot already answer Alice?"),
+    ("/btw@slave_bot did @slave_bot already answer?", "btw", "did @slave_bot already answer?"),
+    ("/btw 👋 did @slave_bot already answer?", "btw", "👋 did @slave_bot already answer?"),
+    ("/model @slave_bot gpt-5", "model", "gpt-5"),
+    ("/model gpt-5 @slave_bot", "model", "gpt-5"),
+    ("/model gpt-5 @slave_bot @slave_bot", "model", "gpt-5"),
+    ("/reasoning high @slave_bot --global", "reasoning", "high --global"),
+    ("/reasoning high @slave_bot @slave_bot --global", "reasoning", "high --global"),
+    ("/btw did @slave_bot — our helper — already answer?", "btw", "did @slave_bot — our helper — already answer?"),
+    ("/x a @slave_bot --level 3", "x", "a --level 3"),
+    ("/x a @slave_bot -v", "x", "a -v"),
+    ("/x a @slave_bot —global", "x", "a —global"),
+    ("/x a @slave_bot –global", "x", "a –global"),
+    ("/reload-mcp@slave_bot x", "reload-mcp", "x"),
 ])
 def test_command_menu_form_keeps_its_arguments(text, command, args):
     event = _dispatched_command(text)
@@ -72,30 +72,30 @@ def test_command_menu_form_keeps_its_arguments(text, command, args):
 
 def test_prose_mention_cleanup_is_unchanged():
     adapter = _make_adapter(require_mention=True)
-    assert adapter._clean_bot_trigger_text("@hermes_bot, summarize this") == "summarize this"
-    assert adapter._clean_bot_trigger_text("thanks @hermes_bot") == "thanks"
+    assert adapter._clean_bot_trigger_text("@slave_bot, summarize this") == "summarize this"
+    assert adapter._clean_bot_trigger_text("thanks @slave_bot") == "thanks"
 
 
 @pytest.mark.parametrize("text, expected", [
-    ("@hermes_bot /new@hermes_bot/log.txt", "/new/log.txt"),
-    ("/new@hermes_bot/log.txt", "/new /log.txt"),
-    ("@hermes_bot /new@alice/log.txt is missing", "/new@alice/log.txt is missing"),
+    ("@slave_bot /new@slave_bot/log.txt", "/new/log.txt"),
+    ("/new@slave_bot/log.txt", "/new /log.txt"),
+    ("@slave_bot /new@alice/log.txt is missing", "/new@alice/log.txt is missing"),
     ("/file.txt is missing", "/file.txt is missing"),
-    ("/file-name.txt mentions @hermes_bot here", "/file-name.txt mentions here"),
-    ("@hermes_bot , @ops_bot are you both listening?", "@hermes_bot , @ops_bot are you both listening?"),
-    ("@hermes_bot", "@hermes_bot"),
-    ("@hermes_bot, summarize this", "summarize this"),
-    ("thanks @hermes_bot", "thanks"),
+    ("/file-name.txt mentions @slave_bot here", "/file-name.txt mentions here"),
+    ("@slave_bot , @ops_bot are you both listening?", "@slave_bot , @ops_bot are you both listening?"),
+    ("@slave_bot", "@slave_bot"),
+    ("@slave_bot, summarize this", "summarize this"),
+    ("thanks @slave_bot", "thanks"),
     ("/new", "/new"),
-    ("@hermes_bot /new", "/new"),
-    ("@file: /model@hermes_bot gpt-5", "@file: /model@hermes_bot gpt-5"),
-    ("/set-home @hermes_bot", "/set-home"),
+    ("@slave_bot /new", "/new"),
+    ("@file: /model@slave_bot gpt-5", "@file: /model@slave_bot gpt-5"),
+    ("/set-home @slave_bot", "/set-home"),
     ("/codex-runtime", "/codex-runtime"),
     ("/reload-mcp x", "/reload-mcp x"),
-    ("@alice /model@OtherBot failed; @hermes_bot can you explain?",
-     "@alice /model@OtherBot failed; @hermes_bot can you explain?"),
-    ("/model@hermes_bot gpt-5 @OtherBot", "/model@hermes_bot gpt-5 @OtherBot"),
-    ("@hermes_bot /btw ask @alice", "@hermes_bot /btw ask @alice"),
+    ("@alice /model@OtherBot failed; @slave_bot can you explain?",
+     "@alice /model@OtherBot failed; @slave_bot can you explain?"),
+    ("/model@slave_bot gpt-5 @OtherBot", "/model@slave_bot gpt-5 @OtherBot"),
+    ("@slave_bot /btw ask @alice", "@slave_bot /btw ask @alice"),
 ])
 def test_other_inputs_keep_parent_behavior(text, expected):
     entities = _telegram_entities(text)
@@ -112,5 +112,5 @@ def test_full_length_bot_username_keeps_parent_behavior():
 
 
 def test_path_without_entities_keeps_parent_behavior():
-    text = "@hermes_bot /new@alice/log.txt is missing"
+    text = "@slave_bot /new@alice/log.txt is missing"
     assert [e.text for e in _dispatch(text, entities=[])] == ["/new@alice/log.txt is missing"]

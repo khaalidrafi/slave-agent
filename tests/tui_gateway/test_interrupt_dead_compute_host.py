@@ -1,4 +1,4 @@
-"""session.interrupt on a compute host that is gone (hermes-agent 82603).
+"""session.interrupt on a compute host that is gone (slave-agent 82603).
 
 A dead host (broken pipe, respawn exhausted) can never deliver the ``turn.end`` that clears
 ``running``. Stop used to return 5019 and leave the session busy forever, so every later

@@ -99,7 +99,7 @@ def available(extra: str) -> bool:
 
 
 def _platform_gates() -> dict[str, str]:
-    """The [tool.hermes.extras-platforms] table from pyproject.toml:
+    """The [tool.slave.extras-platforms] table from pyproject.toml:
     extra -> PEP 508 marker string. Cached per process."""
     global _PLATFORM_GATES
     if _PLATFORM_GATES is not None:
@@ -112,7 +112,7 @@ def _platform_gates() -> dict[str, str]:
     try:
         with (repo_root() / "pyproject.toml").open("rb") as f:
             data = tomllib.load(f)
-        table = data.get("tool", {}).get("hermes", {}).get("extras-platforms", {})
+        table = data.get("tool", {}).get("slave", {}).get("extras-platforms", {})
         if isinstance(table, dict):
             gates = {str(k): str(v) for k, v in table.items()}
     except (OSError, ValueError):
@@ -211,7 +211,7 @@ def suppress_interactive_install_prompts():
 
 def install_hint(extra: str) -> str:
     """The one command users are told to run for a missing extra."""
-    return f"hermes pm install --extra {extra}"
+    return f"slave pm install --extra {extra}"
 
 
 def ensure_import(extra: str) -> None:
@@ -245,7 +245,7 @@ def ensure_import(extra: str) -> None:
         app_running = True
     if not app_running and sys.stdin.isatty() and sys.stdout.isatty():
         try:
-            answer = input(f"\nThis needs Hermes' optional {extra!r} feature, which isn't installed yet.\n"
+            answer = input(f"\nThis needs slave-agent’ optional {extra!r} feature, which isn't installed yet.\n"
                            "Install it now? [Y/n] ").strip().lower()
         except (EOFError, KeyboardInterrupt):
             answer = "n"
@@ -270,7 +270,7 @@ def ensure_import(extra: str) -> None:
         if selected not in {Path(entry).resolve() for entry in sys.path}:
             reason = restart_needed(root) or "this process does not run from the install's dependency environment"
             note_restart_pending(f"{extra} installed ({reason})")
-            raise InstallError("venv", f"{extra} installed; restart Hermes to activate it ({reason})")
+            raise InstallError("venv", f"{extra} installed; restart slave-agent to activate it ({reason})")
 
 
 def ensure_and_bind(extra, importer, target_globals) -> bool:
@@ -322,7 +322,7 @@ def declined_extras_path(project_root: Path | None = None) -> Path:
 
 
 def declined_extras(project_root: Path | None = None) -> frozenset[str]:
-    """Extras the user dropped with ``hermes pm install --without NAME``.
+    """Extras the user dropped with ``slave pm install --without NAME``.
 
     Recorded beside the dependency facts, so a carried selection (legacy
     migration, recorded extras, configured-feature auto-installs) never
@@ -414,15 +414,15 @@ def droppable_extras(project_root: Path) -> list[str]:
 def _pre_pm_site_packages(root: Path) -> list[Path]:
     """The site-packages of the checkout's own main-era ``venv/`` or ``.venv/`` (POSIX or Windows layout).
 
-    A venv counts when Hermes is installed in it and PM did not build it. What Hermes was installed
+    A venv counts when slave-agent is installed in it and PM did not build it. What slave-agent was installed
     from says nothing: a pre-PM updater reinstalls the checkout into the old venv from the tree it
-    just pulled, PM included. A bare ``uv venv`` holds no Hermes, and an environment PM built
+    just pulled, PM included. A bare ``uv venv`` holds no slave-agent, and an environment PM built
     (``pm.build_env --out .venv``) is no install's old state: reading either would union its
     contents into every sync of a data root with no recorded selection.
     """
     return [tree for venv in (root / "venv", root / ".venv") if not _built_by_pm(venv)
             for tree in (*venv.glob("lib/python*/site-packages"), venv / "Lib" / "site-packages")
-            if tree.is_dir() and any(tree.glob("hermes_agent-*.dist-info"))]
+            if tree.is_dir() and any(tree.glob("slave_agent-*.dist-info"))]
 
 
 def _built_by_pm(venv: Path) -> bool:
@@ -503,7 +503,7 @@ def venv_selection_recorded(project_root: Path) -> bool:
 
 def first_generation_selection(project_root: Path) -> list[str] | None:
     """The extras a sync of the install's whole selection requests: ``None`` once PM recorded a
-    selection (that ledger owns the extras), else ``[all]``, as ``hermes pm install`` selects.
+    selection (that ledger owns the extras), else ``[all]``, as ``slave pm install`` selects.
 
     The update's completion bootstrap, the historical takeover, the launch migration and the
     ``venv_sync`` entry pass this; without it a first sync would reach only the core. The old
@@ -528,7 +528,7 @@ def _covered_extras(root: Path, recorded) -> set[str]:
     except (OSError, KeyError, ValueError):
         return set()
     def nested(spec: str):
-        return re.match(r"^hermes-agent\[([^\]]+)\]", spec)
+        return re.match(r"^slave-agent\[([^\]]+)\]", spec)
 
     def name_of(spec: str) -> str:
         return _canonical(re.split(r"[\s\[<>=!~;@(]", spec, maxsplit=1)[0])
@@ -584,8 +584,8 @@ def pre_pm_baseline(project_root: Path) -> list[str]:
     """What a request on a pre-PM tree unions into: the old venv's selection, or ``[]``.
 
     PM unions a request into the recorded selection. A tree with a main-era venv and no recorded
-    selection runs that venv, so its extras are the selection every sync extends (``hermes setup``
-    adding ``telegram``, ``hermes pm update``'s venv step); otherwise its first generation records
+    selection runs that venv, so its extras are the selection every sync extends (``slave setup``
+    adding ``telegram``, ``slave pm update``'s venv step); otherwise its first generation records
     the request alone and the re-scan that would carry the rest never runs again. ``[]`` once a
     selection is recorded, and on a tree with no old venv (nothing to keep).
     """

@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 
 from gateway.session_context import clear_session_vars, set_session_vars
-from hermes_cli.config import load_config
+from slave_cli.config import load_config
 from tools import approval, approval_prompt, mcp_tool
 from tools import mcp_tool_handlers as handlers
 from tools.approval_context import reset_current_session_key, set_current_session_key

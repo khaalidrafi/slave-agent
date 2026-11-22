@@ -53,13 +53,13 @@ def resolve_room_target(job: dict, address: str) -> Optional[dict]:
 def _room_stores(profile: Optional[str]) -> tuple[RoomStore, RoomStore]:
     """Where a room can live: the hosting profile's session store (rooms its gateway owns), then the
     install's shared room store (rooms the dashboard backend owns)."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     if profile:
-        from hermes_cli.profiles import get_profile_dir
+        from slave_cli.profiles import get_profile_dir
         home = get_profile_dir(profile)
     else:
-        home = get_hermes_home()
-    return (home, "profile"), (get_hermes_home(), "shared")
+        home = get_slave_home()
+    return (home, "profile"), (get_slave_home(), "shared")
 
 
 @contextmanager
@@ -111,7 +111,7 @@ def deliver_to_room(job: dict, content: str, address: str, *, for_failure: bool 
     if match is None:
         return f"{target}: malformed room delivery target"
     room_id, profile = match.group("room"), match.group("profile")
-    from hermes_cli.profiles import profile_exists
+    from slave_cli.profiles import profile_exists
     if profile and not profile_exists(profile):
         return f"{target}: no profile named {profile!r} on this machine (Room settings shows the exact target)"
     try:

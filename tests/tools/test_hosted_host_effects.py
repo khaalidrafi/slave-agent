@@ -54,9 +54,9 @@ def _remote_execute_code(provider, monkeypatch, payload):
 
 
 def test_execute_code_remote_stdout_never_spills_to_host(provider, monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     result = _remote_execute_code(provider, monkeypatch, "TENANT-STDOUT-PRIVATE\n" * 4000)
-    exec_cache = get_hermes_home() / "cache" / "exec"
+    exec_cache = get_slave_home() / "cache" / "exec"
     assert not (exec_cache.exists() and any("TENANT-STDOUT-PRIVATE" in p.read_text() for p in exec_cache.iterdir()))
     path = result.get("stdout_spill_path")
     assert path and not Path(path).exists(), result  # a path in the sandbox, not on this host
@@ -66,11 +66,11 @@ def test_execute_code_remote_stdout_never_spills_to_host(provider, monkeypatch):
 
 
 def test_local_execute_code_stdout_still_spills_to_cache():
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools import code_execution_tool
     _text, meta = code_execution_tool._truncate_stdout_text("LOCAL-STDOUT\n" * 8000)
     path = Path(meta["stdout_spill_path"])
-    assert path.parent == get_hermes_home() / "cache" / "exec" and "LOCAL-STDOUT" in path.read_text()
+    assert path.parent == get_slave_home() / "cache" / "exec" and "LOCAL-STDOUT" in path.read_text()
 
 
 # --------------------------------------------------------------------------------------------------
@@ -78,9 +78,9 @@ def test_local_execute_code_stdout_still_spills_to_cache():
 
 
 def _plant_skill(monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     import tools.skills_tool as skills
-    root = get_hermes_home() / "skills"
+    root = get_slave_home() / "skills"
     skill = root / "private_probe"
     skill.mkdir(parents=True, exist_ok=True)
     (skill / "SKILL.md").write_text("---\nname: private_probe\ndescription: Private review probe.\n---\nHOST-SKILL-PRIVATE\n")
@@ -122,10 +122,10 @@ def test_a_hosted_write_is_not_judged_by_this_hosts_skill_locks(provider, host_d
     """A skill locked on this host's profile changes nothing for a hosted path that names it, through a
     host symlink or literally: the path is the sandbox's, so it is neither resolved on this host nor
     refused by the host skill's name, and the write reaches the sandbox."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools import skill_usage
     from tools.skill_lock import skill_refusal
-    skill = get_hermes_home() / "skills" / "locked_probe"
+    skill = get_slave_home() / "skills" / "locked_probe"
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text("---\nname: locked_probe\ndescription: x\n---\nbody\n", encoding="utf-8")
     assert skill_usage.set_locked("locked_probe", True)
@@ -149,7 +149,7 @@ def test_a_hosted_write_is_not_judged_by_this_hosts_skill_locks(provider, host_d
 
 def _capture_hook(tmp_path, monkeypatch, event="post_tool_call", matcher="memory"):
     from agent import shell_hooks
-    from hermes_cli import plugins
+    from slave_cli import plugins
     captured = tmp_path / f"{event}.json"
     script = tmp_path / "capture.py"
     script.write_text("import pathlib,sys\npathlib.Path(sys.argv[1]).write_text(sys.stdin.read())\n")
@@ -182,7 +182,7 @@ def test_shell_hook_cannot_write_refused_tool_payload_to_host(tmp_path, monkeypa
 def test_shell_hook_never_spawns_in_hosted_scope(tmp_path, monkeypatch):
     """The subprocess site itself refuses, whichever event or caller reaches it."""
     from agent import shell_hooks
-    from hermes_cli.plugins import invoke_hook
+    from slave_cli.plugins import invoke_hook
     captured = _capture_hook(tmp_path, monkeypatch, event="on_session_start", matcher=None)
     spec = shell_hooks.ShellHookSpec(event="on_session_start", command=f"{shlex.quote(sys.executable)} -c pass")
     with bind_state(A):
@@ -194,7 +194,7 @@ def test_shell_hook_never_spawns_in_hosted_scope(tmp_path, monkeypatch):
 
 
 def test_middleware_never_sees_a_refused_hosted_call(tmp_path, monkeypatch):
-    from hermes_cli import middleware
+    from slave_cli import middleware
     seen = []
     monkeypatch.setattr(middleware, "apply_tool_request_middleware", lambda *a, **k: seen.append("request"))
     monkeypatch.setattr(middleware, "run_tool_execution_middleware", lambda *a, **k: seen.append("execution"))
@@ -246,17 +246,17 @@ def _hosted_background(monkeypatch, command="echo TENANT-PROCESS-PRIVATE"):
 
 
 def test_background_process_metadata_and_result_stay_off_host(provider, monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     r, session, release = _hosted_background(monkeypatch)
     try:
-        checkpoint = get_hermes_home() / "processes.json"
+        checkpoint = get_slave_home() / "processes.json"
         running_leak = checkpoint.exists() and "TENANT-PROCESS-PRIVATE" in checkpoint.read_text()
         r._write_checkpoint()  # an unscoped writer (a local process's launch) iterates hosted records too
         unscoped_leak = checkpoint.exists() and "TENANT-PROCESS-PRIVATE" in checkpoint.read_text()
         with bind_state(A):
             session.append_output("TENANT-PROCESS-OUTPUT-PRIVATE")
             r._finish_exited(session, 0)
-        receipt = get_hermes_home() / "logs" / "process-results" / f"{session.id}.json"
+        receipt = get_slave_home() / "logs" / "process-results" / f"{session.id}.json"
         assert not running_leak and not unscoped_leak and not receipt.exists()
         with bind_state(A):  # live state is still the agent's, in memory
             polled = r.poll(session.id)
@@ -266,7 +266,7 @@ def test_background_process_metadata_and_result_stay_off_host(provider, monkeypa
 
 
 def test_local_process_checkpoint_and_receipt_unchanged():
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools import process_registry as processes
     from tools.process_registry_results import save_completed_result
     r = processes.ProcessRegistry()
@@ -274,10 +274,10 @@ def test_local_process_checkpoint_and_receipt_unchanged():
     with r._lock:
         r._running[session.id] = session
     r._write_checkpoint()
-    assert "LOCAL-PROCESS" in (get_hermes_home() / "processes.json").read_text()
+    assert "LOCAL-PROCESS" in (get_slave_home() / "processes.json").read_text()
     session.output_buffer = "LOCAL-OUTPUT"
     save_completed_result(session)
-    assert "LOCAL-OUTPUT" in (get_hermes_home() / "logs" / "process-results" / "proc_localcheck.json").read_text()
+    assert "LOCAL-OUTPUT" in (get_slave_home() / "logs" / "process-results" / "proc_localcheck.json").read_text()
 
 
 # --------------------------------------------------------------------------------------------------
@@ -297,7 +297,7 @@ def test_terminal_output_spill_and_blocked_scripts_stay_off_host():
 
 def test_verification_ledger_records_nothing_for_a_hosted_agent(monkeypatch):
     from agent import verification_evidence as ve
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")
+    monkeypatch.setenv("SLAVE_VERIFY_ON_STOP", "1")
     with bind_state(A):
         assert ve._ledger_enabled() is False
     assert ve._ledger_enabled() is True

@@ -4,21 +4,21 @@ from __future__ import annotations
 
 import pytest
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 import tui_gateway.server as srv
 from tui_gateway import methods_groups, owner_forward
 
-MEMBERS = [{"member_id": "default", "profile": "default", "handle": "hermes"},
+MEMBERS = [{"member_id": "default", "profile": "default", "handle": "slave"},
            {"member_id": "ops", "profile": "ops", "handle": "ops"}]
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    path = tmp_path / ".hermes"
+    path = tmp_path / ".slave"
     (path / "profiles" / "ops").mkdir(parents=True)
     (path / "profiles" / "ops" / "config.yaml").write_text("{}\n")
-    monkeypatch.setenv("HERMES_HOME", str(path))
+    monkeypatch.setenv("SLAVE_HOME", str(path))
     methods_groups.stop_hosted_room_service(timeout=1.0)
     methods_groups.start_hosted_room_service()
     yield path
@@ -30,7 +30,7 @@ ENDPOINT = object()
 
 def _discovery(monkeypatch, *states):
     """Gateway discovery answers the given states in turn (the last one repeats)."""
-    from hermes_cli import gateway_runtime
+    from slave_cli import gateway_runtime
     seen = list(states)
 
     def discover(home, *, timeout=2.0):
@@ -66,7 +66,7 @@ def test_room_calls_go_to_the_owning_gateway_and_nothing_lands_locally(home, own
     assert listed["result"]["rooms"] == [{"room_id": "room-webapp"}]
     assert [call[0] for call in owner] == ["groups.create", "groups.list"]
     from gateway.hosted_rooms import default_db_path, list_rooms
-    assert list_rooms(storage_handle(get_hermes_home()), placement="shared") == []  # no second store, no local driver for it
+    assert list_rooms(storage_handle(get_slave_home()), placement="shared") == []  # no second store, no local driver for it
 
 
 def test_capabilities_advertise_only_what_this_wire_carries(home, owner):
@@ -83,7 +83,7 @@ def test_a_forwarded_room_state_keeps_the_full_rate_poll(home, owner):
 
 
 def test_owner_refusal_is_returned_not_run_locally(home, monkeypatch):
-    from hermes_cli.gateway_client import GatewayRPCError
+    from slave_cli.gateway_client import GatewayRPCError
     _discovery(monkeypatch, "ready")
 
     def refuse(*_args):
@@ -93,7 +93,7 @@ def test_owner_refusal_is_returned_not_run_locally(home, monkeypatch):
     reply = srv._methods["groups.create"](1, {"room_id": "room-desk", "name": "Desk", "members": MEMBERS})
     assert reply["error"]["code"] == 4030 and reply["error"]["data"] == {"reason": "permission_denied"}
     from gateway.hosted_rooms import default_db_path, list_rooms
-    assert list_rooms(storage_handle(get_hermes_home()), placement="shared") == []
+    assert list_rooms(storage_handle(get_slave_home()), placement="shared") == []
 
 
 @pytest.mark.parametrize("failure,method,code,data", [
@@ -108,7 +108,7 @@ def test_owner_refusal_is_returned_not_run_locally(home, monkeypatch):
     ("profile", "groups.stop", 4000, None),
 ])
 def test_only_sends_refused_before_forwarding_are_marked_unsent(home, monkeypatch, failure, method, code, data):
-    from hermes_cli.gateway_client import GatewayRPCError
+    from slave_cli.gateway_client import GatewayRPCError
     from tui_gateway import methods_groups_forward
 
     monkeypatch.setattr(methods_groups_forward, "_standalone_holder", lambda _: "gateway")
@@ -167,13 +167,13 @@ def test_a_starting_gateway_is_waited_for_and_nothing_lands_locally(home, owner,
     assert created["result"]["room"]["room_id"] == "room-desk"
     assert [call[0] for call in owner] == ["groups.create"]
     from gateway.hosted_rooms import default_db_path, list_rooms
-    assert list_rooms(storage_handle(get_hermes_home()), placement="shared") == []  # never a room the gateway's list would not show
+    assert list_rooms(storage_handle(get_slave_home()), placement="shared") == []  # never a room the gateway's list would not show
 
 
 def test_a_named_profile_gateway_never_hides_the_standalone_rooms(home, owner, monkeypatch):
     _discovery(monkeypatch, "absent")  # Desktop on its own first
     srv._methods["groups.create"](1, {"room_id": "room-desk", "name": "Desk", "members": MEMBERS})
-    _discovery(monkeypatch, "ready")  # then `hermes -p ops gateway` serves the selected profile
+    _discovery(monkeypatch, "ready")  # then `slave -p ops gateway` serves the selected profile
 
     listed = srv._methods["groups.list"](2, {"profile": "ops"})["result"]["rooms"]
     state = srv._methods["groups.state"](3, {"profile": "ops", "room_id": "room-desk"})
@@ -220,5 +220,5 @@ def test_a_handed_room_is_never_renamed_in_the_standalone_store_while_its_gatewa
     reply = srv._methods["groups.rename"](2, {"room_id": "room-desk", "event_id": "rename-1", "name": "After"})
 
     assert reply.get("error", {}).get("code") == OWNER_LOST_CODE, reply
-    [kept] = list_rooms(storage_handle(get_hermes_home()), placement="shared", include_disbanded=True)
+    [kept] = list_rooms(storage_handle(get_slave_home()), placement="shared", include_disbanded=True)
     assert kept["name"] == "Before"

@@ -13,7 +13,7 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource
-from hermes_cli import goals, loops
+from slave_cli import goals, loops
 
 
 class _FakeSessionEntry:
@@ -33,9 +33,9 @@ class _FakeSessionStore:
 
 @pytest.fixture
 def loop_env(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     goals._DB_CACHE.clear()
     # Pre-warm the SessionDB cache from this sync (non-loop) context. Inside
     # the async tests, a cold cache makes GoalManager.set() kick the bounded
@@ -218,7 +218,7 @@ async def test_failed_turn_with_text_never_drives_goal_or_until_judge(loop_env, 
     goal judge must not run on it (it burned the whole turn budget in seconds) and the /loop tick is
     released with no text, so a --until judge never grades it; the loop still reschedules."""
     from gateway.session_results import execution_result
-    from hermes_cli import goals
+    from slave_cli import goals
 
     runner = _make_runner()
     await GatewayRunner._handle_loop_command(runner, _make_event("/loop 5m poll CI --until CI is green"))

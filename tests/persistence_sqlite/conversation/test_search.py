@@ -12,7 +12,7 @@ from typing import Any, Callable
 
 import pytest
 
-from persistence.sqlite._state import common as hermes_state_common
+from persistence.sqlite._state import common as slave_state_common
 from persistence.sqlite._state.common import fts_rebuild_admission
 from persistence import SessionId
 from persistence.conversation.messages import NewMessage
@@ -195,7 +195,7 @@ def _bridge_seed(store, rows: int = 3) -> int:
 
 def test_bridge_rebuild_denied_by_a_live_holder_returns_zero_and_touches_nothing(backend, scope_a, monkeypatch,
                                                                                   no_foreign_holders):
-    monkeypatch.setattr(hermes_state_common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 0.3)
+    monkeypatch.setattr(slave_state_common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 0.3)
     store = backend.open(scope_a)
     _bridge_seed(store)
     with fts_rebuild_admission(store_for(scope_a)) as holder:
@@ -219,7 +219,7 @@ def test_bridge_retry_completes_a_deferred_recovery(backend, scope_a, no_foreign
 def test_bridge_read_only_store_rebuilds_nothing_serves_status_and_answers_false(backend, scope_a):
     _bridge_seed(backend.open(scope_a))
     _seed_deferred_rebuild(scope_a, total=8, indexed=2)
-    reader = SQLiteBackend({scope_a.hermes_home_key: store_for(scope_a)}, read_only=True)
+    reader = SQLiteBackend({scope_a.slave_home_key: store_for(scope_a)}, read_only=True)
     try:
         search = reader.open(scope_a).search
         assert search.rebuild_search_index() == 0

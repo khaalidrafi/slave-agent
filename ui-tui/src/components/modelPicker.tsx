@@ -1,11 +1,11 @@
-import { Box, Text, useInput, useStdout } from '@hermes/ink'
-import { fuzzyRank } from '@hermes/shared/fuzzy'
-import type { ModelOptionProvider, ModelOptionsResult } from '@hermes/shared/gateway-events'
-import { modelSearchText } from '@hermes/shared/model-search-text'
-import { hasTopTier, planBlocks, planLimitLine, sectionAt, usageLevel, usageTag } from '@hermes/shared/plan-usage'
-import { providerDisplayNames } from '@hermes/shared/provider-names'
-import { REASONING_EFFORTS } from '@hermes/shared/reasoning-effort'
-import { TUI_SESSION_MODEL_FLAG } from '@hermes/shared/slash-input'
+import { Box, Text, useInput, useStdout } from '@slave-agent/ink'
+import { fuzzyRank } from '@slave-agent/shared/fuzzy'
+import type { ModelOptionProvider, ModelOptionsResult } from '@slave-agent/shared/gateway-events'
+import { modelSearchText } from '@slave-agent/shared/model-search-text'
+import { hasTopTier, planBlocks, planLimitLine, sectionAt, usageLevel, usageTag } from '@slave-agent/shared/plan-usage'
+import { providerDisplayNames } from '@slave-agent/shared/provider-names'
+import { REASONING_EFFORTS } from '@slave-agent/shared/reasoning-effort'
+import { TUI_SESSION_MODEL_FLAG } from '@slave-agent/shared/slash-input'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { GatewayClient } from '../gatewayClient.js'
@@ -371,7 +371,7 @@ export function ModelPicker({
                         authenticated: false,
                         models: [],
                         total_models: 0,
-                        warning: p.key_env ? M.pasteKeyToActivate(p.key_env) : M.runHermesModelToConfigure
+                        warning: p.key_env ? M.pasteKeyToActivate(p.key_env) : M.runSlaveModelToConfigure
                       }
                     : p
                 )
@@ -495,7 +495,7 @@ export function ModelPicker({
             setFilter('')
           }
 
-          // Other auth types: no-op (warning shown tells them to run hermes model)
+          // Other auth types: no-op (warning shown tells them to run slave model)
           return
         }
 
@@ -551,7 +551,7 @@ export function ModelPicker({
     }
 
     // Persist-global toggle moved to Ctrl+G so 'g' can be typed into the
-    // filter. With Ctrl held, @hermes/ink reports `ch` as the key name ('g'),
+    // filter. With Ctrl held, @slave-agent/ink reports `ch` as the key name ('g'),
     // not the raw control byte (see input-event.ts: input = ctrl ? name : seq).
     if (allowPersistGlobal && key.ctrl && ch === 'g') {
       setPersistGlobal(v => !v)

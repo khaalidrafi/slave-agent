@@ -4,7 +4,7 @@ otherwise live only in the scheduler log. Drives the real ``run_job`` path with 
 ``resolve_runtime_provider`` mocked."""
 from unittest.mock import MagicMock, patch
 
-from hermes_cli.auth import AuthError
+from slave_cli.auth import AuthError
 from tests.cron.test_scheduler import _run_owned_job, close_storage_handles
 
 _JOB = {"id": "fb-test", "name": "fb test", "prompt": "hello", "model": None, "provider": None,
@@ -26,13 +26,13 @@ def _run(tmp_path, *, response: str, primary_fails: bool):
         return {"api_key": "k", "base_url": "https://example.invalid/v1",
                 "provider": kwargs.get("requested") or "openai-codex", "api_mode": "chat_completions"}
 
-    with patch("cron.scheduler._hermes_home", tmp_path), \
-         patch("cron.scheduler._get_hermes_home", return_value=tmp_path), \
+    with patch("cron.scheduler._slave_home", tmp_path), \
+         patch("cron.scheduler._get_slave_home", return_value=tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+         patch("slave_cli.env_loader.load_slave_dotenv"), \
+         patch("slave_cli.env_loader.reset_secret_source_cache"), \
          patch("persistence_assembly.open_persistence", return_value=fake_db), \
-         patch("hermes_cli.runtime_provider.resolve_runtime_provider", side_effect=_resolve), \
+         patch("slave_cli.runtime_provider.resolve_runtime_provider", side_effect=_resolve), \
          patch("run_agent.AIAgent") as agent_cls:
         agent_cls.return_value.run_conversation.return_value = {"final_response": response}
         # Cron turns execute inside the gateway owner: drive the production owner bridge.

@@ -8,9 +8,9 @@ session row but never touches kanban.db, so those cards kept notifying the subag
 import sqlite3
 from unittest.mock import patch
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_notify as kbn
+from slave_cli import kanban_db as kb
+from slave_cli import kanban_db_connect as kbc
+from slave_cli import kanban_db_notify as kbn
 from persistence import SessionId
 from persistence.conversation.lineage import CompressionChild
 from persistence.conversation.messages import NewMessage

@@ -1,5 +1,5 @@
 """A host gateway that booted with ONE profile comes up standalone (``SINGLE_PROFILE_REASON``), and
-multiplexing is settled once per boot. A profile created afterwards (Desktop's New Agent, ``hermes
+multiplexing is settled once per boot. A profile created afterwards (Desktop's New Agent, ``slave
 profile create``) was then never served: every ticket the Desktop minted for it through the host's
 control socket was refused, so its sessions, chat and Delete all failed with "Invalid gateway ticket
 response" (#141623). The creator's ``rescan-profiles`` signal (and the 30 s watcher) must start serving
@@ -12,23 +12,23 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_constants
+import slave_constants
 from agent.secret_scope import is_multiplex_active
 from gateway.config import GatewayConfig
 from gateway.run import GatewayRunner
 from gateway.status import flush_runtime_status, write_runtime_status
-from hermes_cli import gateway_migrate as gm
-from hermes_cli.gateway_multiplex_mode import SINGLE_PROFILE_REASON
+from slave_cli import gateway_migrate as gm
+from slave_cli.gateway_multiplex_mode import SINGLE_PROFILE_REASON
 
 
 @pytest.fixture
 def standalone_host(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     (home / "profiles").mkdir(parents=True)
     (home / "config.yaml").write_text("model: {default: m}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(slave_constants, "_default_slave_root_memo", None)
     # The migration preflight's service-manager probes: nothing else on this host runs a gateway.
     monkeypatch.setattr(gm, "_installed_services", lambda _home: [])
     monkeypatch.setattr(gm, "_live_gateway_pid", lambda _home: None)
@@ -113,7 +113,7 @@ async def test_a_blocked_new_profile_is_served_once_the_blocker_clears(standalon
     _mkprofile(home, "coder")
     own = {"coder": True}
     monkeypatch.setattr(gm, "_live_gateway_pid", lambda h: os.getpid() if own.get(
-        hermes_constants.profile_name_for_home(h)) else None)
+        slave_constants.profile_name_for_home(h)) else None)
     result = await runner.reconcile_served_profiles(reason="watcher")
     assert result["multiplex"] is False and not is_multiplex_active()
 

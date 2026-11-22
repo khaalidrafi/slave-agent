@@ -42,7 +42,7 @@ def _busy_telegram_turn():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("ingress", ["durable", "relay"])
 async def test_telegram_followup_within_grace_uses_durable_fifo(monkeypatch, ingress):
-    monkeypatch.setenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3")
+    monkeypatch.setenv("SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3")
     runner, event, source, key = _busy_telegram_turn()
 
     with (
@@ -62,7 +62,7 @@ async def test_telegram_followup_within_grace_uses_durable_fifo(monkeypatch, ing
 
 @pytest.mark.asyncio
 async def test_telegram_followup_after_grace_can_still_preempt(monkeypatch):
-    monkeypatch.setenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3")
+    monkeypatch.setenv("SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3")
     runner, event, source, key = _busy_telegram_turn()
     runner._resolve_busy_steer_or_redirect = AsyncMock(
         return_value=SimpleNamespace(steered=False, redirected=False)
@@ -83,8 +83,8 @@ async def test_telegram_long_followup_uses_send_time_before_default_batch_flush(
     from gateway.config import PlatformConfig
     from plugins.platforms.telegram.adapter import TelegramAdapter
 
-    monkeypatch.delenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", raising=False)
-    monkeypatch.delenv("HERMES_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", raising=False)
+    monkeypatch.delenv("SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", raising=False)
+    monkeypatch.delenv("SLAVE_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", raising=False)
     runner, event, source, key = _busy_telegram_turn()
     event.text = "One more detail " * 80  # >1,024 chars: default long-text delay, not the fast tier
     event.timestamp = datetime.fromtimestamp(102.0, UTC)
@@ -106,7 +106,7 @@ async def test_telegram_edited_followup_is_judged_by_its_edit_time(monkeypatch, 
     """An edit keeps the message's original ``date``; the grace reads the edit's own time instead."""
     from datetime import UTC, datetime
 
-    monkeypatch.delenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", raising=False)
+    monkeypatch.delenv("SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", raising=False)
     runner, event, source, key = _busy_telegram_turn()
     runner._resolve_busy_steer_or_redirect.side_effect = None  # the out-of-grace edit is expected to preempt
     event.timestamp = datetime.fromtimestamp(sent_at, UTC)  # the turn started at 100
@@ -121,7 +121,7 @@ async def test_telegram_edited_followup_is_judged_by_its_edit_time(monkeypatch, 
 async def test_telegram_voice_followup_within_grace_does_not_preempt(monkeypatch):
     """A voice note sent seconds after the one being answered waits; interrupting dropped the
     in-flight reply to the earlier voice (#31328)."""
-    monkeypatch.setenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3")
+    monkeypatch.setenv("SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3")
     runner, event, source, key = _busy_telegram_turn()
     event.message_type = MessageType.VOICE
     event.media_urls, event.media_types = ["/cache/audio/voice_3.ogg"], ["audio/ogg"]

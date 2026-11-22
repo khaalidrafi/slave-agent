@@ -139,11 +139,11 @@ def test_the_cache_moves_with_the_full_route_and_dies_at_compaction(monkeypatch)
 
 
 def test_nous_ceiling_is_data_on_the_wire_and_in_the_clock(tmp_path, monkeypatch):
-    """Nous Portal drops 1h upstream: Hermes asks for 5m there and the clock says 5m. Lifting the
+    """Nous Portal drops 1h upstream: slave-agent asks for 5m there and the clock says 5m. Lifting the
     ceiling is a config entry, not a code change, and a ``custom`` route at the Portal host counts."""
     from agent.prompt_caching import effective_cache_ttl
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     portal = "https://inference-api.nousresearch.com/v1"
     for provider in ("nous", "custom"):
         assert effective_cache_ttl("1h", provider=provider, model="anthropic/claude-sonnet-4.6", base_url=portal) == "5m"
@@ -165,7 +165,7 @@ def test_a_configured_ceiling_applies_on_the_measured_provider_path_too(tmp_path
     """opencode-go returns early as a measured 1h route; a configured 5m ceiling must still win there."""
     from agent.prompt_caching import effective_cache_ttl
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     assert effective_cache_ttl("1h", provider="opencode-go", model="qwen3.6-plus") == "1h"
     (tmp_path / "config.yaml").write_text("prompt_caching:\n  route_ttl_ceilings:\n    opencode-go: 5m\n",
                                           encoding="utf-8")

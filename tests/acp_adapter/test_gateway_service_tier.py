@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from acp_adapter.gateway_server import GatewayACPAgent
-from hermes_cli.gateway_client import GatewayRPCError
+from slave_cli.gateway_client import GatewayRPCError
 from tests.acp_adapter.test_gateway_sessions import editor, viewer
 from tests.acp_adapter.test_gateway_session_metadata import _updates
 from tests.waiting import async_wait_until

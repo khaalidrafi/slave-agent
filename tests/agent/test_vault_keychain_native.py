@@ -1,6 +1,6 @@
 """The vault key against the host's REAL OS keychain (macOS Keychain, Windows Credential Manager).
 
-Everything else in the vault suite uses an in-memory keyring, which proves Hermes' plumbing but not
+Everything else in the vault suite uses an in-memory keyring, which proves slave-agent’ plumbing but not
 that the platform store accepts, returns and deletes an entry the way ``agent.vault_keychain``
 expects. These run only on the macOS and Windows CI lanes (never on Linux, so a developer's Secret
 Service is never touched), use uniquely named dummy entries, and delete them in teardown.
@@ -34,7 +34,7 @@ def os_keychain():
 
 @pytest.mark.platforms("macos", "windows")
 def test_real_keychain_stores_reads_and_deletes_a_dummy_entry(os_keychain):
-    ref = {"storage": "keychain", "service": kc.SERVICE, "account": f"hermes-ci-smoke-{uuid.uuid4().hex}"}
+    ref = {"storage": "keychain", "service": kc.SERVICE, "account": f"slave-ci-smoke-{uuid.uuid4().hex}"}
     os_keychain.append(ref)
     key = Fernet.generate_key()
     kc.store_key(ref, key)  # raises unless the store hands the same bytes back
@@ -45,10 +45,10 @@ def test_real_keychain_stores_reads_and_deletes_a_dummy_entry(os_keychain):
 
 @pytest.mark.platforms("macos", "windows")
 def test_keychain_mode_vault_round_trips_through_the_real_keychain(os_keychain, tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "slave-home"
     home.mkdir()
     (home / "config.yaml").write_text("vault:\n  key_storage: keychain\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     vault = home / "vault"
 
     item = VaultStore().add_item("login", "Example", dict(_LOGIN), origin="https://example.com").id

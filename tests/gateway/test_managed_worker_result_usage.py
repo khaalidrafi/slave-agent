@@ -4,7 +4,7 @@ accounting fields of ``run_conversation`` and the owner commits them with ``usag
 import io
 
 from agent.managed_worker import accept_result, encode_frame, read_frame, result_frame
-from hermes_cli.oneshot import _USAGE_KEYS
+from slave_cli.oneshot import _USAGE_KEYS
 from tests.fixtures.storage_seed import seed_session
 
 

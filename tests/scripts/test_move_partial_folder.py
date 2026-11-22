@@ -14,7 +14,7 @@ PARTIAL = [("tools/cronjob_job_args.py", "cron/job_args.py"), ("tools/blueprints
            ("tools/environments/__init__.py", "sandboxes/__init__.py"),
            ("tools/environments/local.py", "sandboxes/local.py"),
            ("tests/tools/test_blueprints.py", "tests/cron/test_blueprints.py")]
-WHOLE = [(path, f"hermes_agent/{path}") for path in TREE if path.startswith("tools/")]
+WHOLE = [(path, f"slave_agent/{path}") for path in TREE if path.startswith("tools/")]
 
 
 def _load(name):
@@ -40,9 +40,9 @@ def test_path_strings_name_a_moved_folder_only_when_the_move_emptied_it():
     assert partial.departed_files == {"cronjob_job_args.py", "blueprints.py", "test_blueprints.py"}
 
     whole = renames.MovedPaths(tuple(WHOLE), renames.emptied_folders(TREE, WHOLE))
-    assert whole.find_path("tools/") == ("tools/", "hermes_agent/tools/")
-    assert whole.find_path("tools/registry.py") == ("tools/registry.py", "hermes_agent/tools/registry.py")
-    assert whole.find_path("tools/environments/") == ("tools/environments/", "hermes_agent/tools/environments/")
+    assert whole.find_path("tools/") == ("tools/", "slave_agent/tools/")
+    assert whole.find_path("tools/registry.py") == ("tools/registry.py", "slave_agent/tools/registry.py")
+    assert whole.find_path("tools/environments/") == ("tools/environments/", "slave_agent/tools/environments/")
     assert whole.folders == {"tools"}
     assert whole.departed_files == frozenset()
 
@@ -60,8 +60,8 @@ def test_docs_glob_follows_a_move_only_when_every_file_it_matches_moved_together
         "and `cron/blueprints.py`")
     assert stats.skips["partial-glob"] == 3
 
-    whole = rewrite_docs.Plan({"tools": "hermes_agent.tools"}, WHOLE, TREE)
+    whole = rewrite_docs.Plan({"tools": "slave_agent.tools"}, WHOLE, TREE)
     assert rewrite_docs.rewrite_text(text, whole) == (
-        "each `hermes_agent/tools/*.py` file, `hermes_agent/tools/blueprint*.py`, "
-        "`hermes_agent/tools/cronjob_job_*.py`, `hermes_agent/tools/environments/*.py` "
-        "and `hermes_agent/tools/blueprints.py`")
+        "each `slave_agent/tools/*.py` file, `slave_agent/tools/blueprint*.py`, "
+        "`slave_agent/tools/cronjob_job_*.py`, `slave_agent/tools/environments/*.py` "
+        "and `slave_agent/tools/blueprints.py`")

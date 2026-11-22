@@ -1,5 +1,5 @@
 name: wazoo
-repo: https://github.com/wazootech/wazoo-hermes
+repo: https://github.com/wazootech/wazoo-slave
 sha: b78aec8834f7fd3bd21ed4e4cc7cd7ac1e672eaa
 version: "1.0.0"
 description: Wazoo world-model memory provider — typed memories (decision, preference, person, project,
@@ -9,7 +9,7 @@ description: Wazoo world-model memory provider — typed memories (decision, pre
 maintainer: wazootech
 tier: community
 category: memory
-docs_url: https://github.com/wazootech/wazoo-hermes#readme
+docs_url: https://github.com/wazootech/wazoo-slave#readme
 capabilities:
   provides_tools: []
   provides_hooks: []

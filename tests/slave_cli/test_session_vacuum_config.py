@@ -1,0 +1,61 @@
+from pathlib import Path
+from unittest.mock import MagicMock
+
+
+
+
+
+
+
+
+def test_explicit_auto_prune_false_is_respected(monkeypatch, tmp_path: Path):
+    """Migration guard: an install that explicitly opted out keeps its choice."""
+    import cli
+    import slave_cli.config
+    import slave_constants
+
+    session_db = MagicMock()
+    session_db.get_meta.return_value = "already-done"
+    monkeypatch.setattr(
+        slave_cli.config,
+        "load_config",
+        lambda: {"sessions": {"auto_prune": False, "retention_days": 90}},
+    )
+    monkeypatch.setattr(slave_constants, "get_slave_home", lambda: tmp_path)
+
+    cli._run_state_db_auto_maintenance(session_db)
+
+    session_db.maybe_auto_prune_and_vacuum.assert_not_called()
+
+
+def test_cli_auto_maintenance_forwards_vacuum_interval(monkeypatch, tmp_path: Path):
+    import cli
+    import slave_cli.config
+    import slave_constants
+
+    session_db = MagicMock()
+    session_db.get_meta.return_value = "already-done"
+    monkeypatch.setattr(
+        slave_cli.config,
+        "load_config",
+        lambda: {
+            "sessions": {
+                "auto_prune": True,
+                "retention_days": 90,
+                "vacuum_after_prune": True,
+                "min_interval_hours": 24,
+                "min_vacuum_interval_days": 17,
+            }
+        },
+    )
+    monkeypatch.setattr(slave_constants, "get_slave_home", lambda: tmp_path)
+
+    cli._run_state_db_auto_maintenance(session_db)
+
+    session_db.maybe_auto_prune_and_vacuum.assert_called_once_with(
+        retention_days=90,
+        min_interval_hours=24,
+        min_vacuum_interval_days=17,
+        vacuum=True,
+        sessions_dir=tmp_path / "sessions",
+    )

@@ -61,16 +61,16 @@ def test_real_guards_review_complete_multiline_input(tmp_path, monkeypatch, rout
     from types import SimpleNamespace
 
     import agent.auxiliary_client as auxiliary
-    from hermes_cli import config
+    from slave_cli import config
     from tools.approval import check_all_command_guards, check_execute_code_guard
     from tools.approval_context import reset_current_session_key, set_current_session_key
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
-    monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
+    monkeypatch.delenv("SLAVE_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("SLAVE_CRON_SESSION", raising=False)
+    monkeypatch.delenv("SLAVE_EXEC_ASK", raising=False)
+    monkeypatch.delenv("SLAVE_YOLO_MODE", raising=False)
     monkeypatch.setattr("tools.approval._YOLO_MODE_FROZEN", False)
     (tmp_path / "config.yaml").write_text(
         "approvals:\n  mode: smart\nsecurity:\n  tirith_enabled: false\n", encoding="utf-8",
@@ -88,7 +88,7 @@ def test_real_guards_review_complete_multiline_input(tmp_path, monkeypatch, rout
     try:
         if route == "execute_code":
             compile(command, "<review-test>", "exec")
-            monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+            monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
             result = check_execute_code_guard(command, "local")
         else:
             prefix = "python -c 'print(1)'; "

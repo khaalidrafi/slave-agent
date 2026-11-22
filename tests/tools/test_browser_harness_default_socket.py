@@ -1,7 +1,7 @@
 """browser_exec outside a served profile: each profile's own harness daemon socket binds under a deep HOME.
 
 browser-harness binds ``<home>/.config/browser-harness/runtime/bu-<BU_NAME>.sock`` unless
-``BH_RUNTIME_DIR`` says otherwise. A container's profile home (``$HERMES_HOME/home``) or a long
+``BH_RUNTIME_DIR`` says otherwise. A container's profile home (``$SLAVE_HOME/home``) or a long
 account home overflowed sun_path and every call died with ``AF_UNIX path too long``.
 """
 import json
@@ -36,7 +36,7 @@ def harness_env(tmp_path, monkeypatch):
             return None
 
     monkeypatch.setattr(browser_supervisor, "SUPERVISOR_REGISTRY", _Registry())
-    monkeypatch.setattr("hermes_cli.config_effective.load_user_config_effective", lambda: {"browser": {}})
+    monkeypatch.setattr("slave_cli.config_effective.load_user_config_effective", lambda: {"browser": {}})
     monkeypatch.setattr("tools.browser_session_cdp.resolve_cdp_override", lambda url: url)
     cli = tmp_path / "browser-harness"
     cli.write_text('#!/bin/sh\ncat > /dev/null\necho "{\\"home\\": \\"$HOME\\", \\"runtime\\": \\"$BH_RUNTIME_DIR\\", '
@@ -92,7 +92,7 @@ def test_a_64_char_session_under_an_ordinary_home_gets_a_socket_the_kernel_accep
 
 
 def test_each_cli_profile_drives_its_own_harness_daemon(tmp_path, monkeypatch):
-    """#149829: outside a served turn two ``hermes -p`` profiles resolved the same
+    """#149829: outside a served turn two ``slave -p`` profiles resolved the same
     ``<harness home>/runtime/bu-default.pid``, so one profile's browser_exec drove the daemon the other
     left attached to its (real-profile, logged-in) browser."""
     monkeypatch.setattr(bs, "build_browser_env", lambda: {"HOME": str(tmp_path / "u")})
@@ -100,7 +100,7 @@ def test_each_cli_profile_drives_its_own_harness_daemon(tmp_path, monkeypatch):
     for name in ("work", "personal"):
         home = tmp_path / "profiles" / name
         home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("SLAVE_HOME", str(home))
         env = bu_cli._base_subprocess_env()
         seen[name] = (harness_dirs.daemon_identity(env), harness_dirs.harness_pid_file(env),
                       env.get("BH_TMP_DIR"))

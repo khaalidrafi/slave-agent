@@ -78,7 +78,7 @@ def ident(epoch: Any, sequence: Any = 1, *, generation: Any = 0, execution_id: A
 def worker_birth() -> float:
     import psutil
 
-    from hermes_cli.process_identity import worker_birth as birth
+    from slave_cli.process_identity import worker_birth as birth
 
     return birth(psutil.Process(os.getpid()))
 
@@ -139,7 +139,7 @@ def crash_child(path: str, scope_name: str, epoch: int, operation: str, signal: 
     from tests.contracts._scopes import profile_scope
 
     scope = profile_scope(scope_name)
-    store = SQLiteBackend({scope.hermes_home_key: Path(path)}).open(scope)
+    store = SQLiteBackend({scope.slave_home_key: Path(path)}).open(scope)
     holder = store.holder()
     holder._execute_write(lambda conn: None)
 

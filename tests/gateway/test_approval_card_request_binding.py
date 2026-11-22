@@ -67,7 +67,7 @@ async def _press_slack_card(request_id):
     await adapter.send_exec_approval(chat_id="C1", command="rm -rf build", session_key=SESSION, request_id=request_id)
     body = {"message": {"ts": "1.2", "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": "x"}}]},
             "channel": {"id": "C1"}, "user": {"name": "alice", "id": "U1"}}
-    await adapter._handle_approval_action(AsyncMock(), body, {"action_id": "hermes_approve_once", "value": SESSION})
+    await adapter._handle_approval_action(AsyncMock(), body, {"action_id": "slave_approve_once", "value": SESSION})
 
 
 async def _press_feishu_card(request_id):
@@ -114,7 +114,7 @@ async def _press_teams_card(request_id):
     with patch.object(sys.modules[TeamsAdapter.__module__], "ExecuteAction", lambda **kw: buttons.append(kw)):
         await adapter.send_exec_approval(chat_id="c1", command="rm -rf build", session_key=SESSION, request_id=request_id)
     ctx = MagicMock()
-    ctx.activity.value.action.data = next(b["data"] for b in buttons if b["data"]["hermes_action"] == "approve_once")
+    ctx.activity.value.action.data = next(b["data"] for b in buttons if b["data"]["slave_action"] == "approve_once")
     await adapter._on_card_action(ctx)
 
 

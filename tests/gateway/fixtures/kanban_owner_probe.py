@@ -60,10 +60,10 @@ class Model(BaseHTTPRequestHandler):
 
 def main():
     root = Path(__file__).resolve().parents[3]
-    home = Path(os.environ['HERMES_HOME'])
+    home = Path(os.environ['SLAVE_HOME'])
     home.mkdir(parents=True, exist_ok=True)
     Path(os.environ['HOME']).mkdir(parents=True, exist_ok=True)
-    os.environ['HERMES_KANBAN_HOME'] = str(home)
+    os.environ['SLAVE_KANBAN_HOME'] = str(home)
     peer = ThreadingHTTPServer(('127.0.0.1', 0), Model)
     peer.requests = []
     peer.mode = os.environ.get('KANBAN_PROBE_MODE', 'complete')
@@ -84,12 +84,12 @@ def main():
         'terminal': {'backend': 'local'}, 'agent': {'api_max_retries': 1}, 'kanban': {'dispatch_in_gateway': False},
         'hooks': {'post_tool_call': [{'command': f'{sys.executable} {hook}'}]}}
     (home / 'config.yaml').write_text(json.dumps(cfg), encoding='utf-8')
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
-    from hermes_cli import kanban_db_dispatch as dispatch
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db_dispatch as dispatch
     # Pin the installed launcher to this checkout for base/fixed argv comparisons.
-    dispatch._resolve_hermes_argv = lambda: [sys.executable, '-m', 'hermes_cli.main']
-    os.environ['HERMES_KANBAN_CRASH_GRACE_SECONDS'] = '0'
+    dispatch._resolve_slave_argv = lambda: [sys.executable, '-m', 'slave_cli.main']
+    os.environ['SLAVE_KANBAN_CRASH_GRACE_SECONDS'] = '0'
     kb.create_board('owned')  # explicit creation; connect() never creates a board (#43243)
     with closing(connect(board='owned')) as conn:
         tid = kb.create_task(conn, title='KANBAN_TASK_SENTINEL', body='Acceptance: finish owned card', assignee='default',
@@ -101,7 +101,7 @@ def main():
     original_popen = subprocess.Popen
     def spawn(*args, **kwargs):
         child = original_popen(*args, **kwargs)
-        if 'hermes_cli.kanban_worker_client' in args[0]:
+        if 'slave_cli.kanban_worker_client' in args[0]:
             clients.append(child)
             if peer.mode == 'timeout':
                 assert peer.blocked.wait(55), 'managed worker did not reach loopback'

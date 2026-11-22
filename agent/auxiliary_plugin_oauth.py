@@ -1,7 +1,7 @@
 """Auxiliary client for OAuth-shaped model-provider plugins (``auth_type`` oauth_external / oauth_device_code).
 
 Built-in OAuth routes (nous, openai-codex, xai-oauth) have their own branches in ``auxiliary_client``.
-A plugin OAuth provider reaches this one: its credential is the pooled row ``hermes auth add <name>``
+A plugin OAuth provider reaches this one: its credential is the pooled row ``slave auth add <name>``
 wrote, and its transport comes from ``ProviderProfile.create_client``. ``CredentialPool.select()``
 rotates an expiring row before leasing it, so compression and titling never send a dead bearer.
 """
@@ -14,8 +14,8 @@ from typing import Any
 def _configured_endpoint(provider: str) -> str:
     """The endpoint the main runtime would use: ``model.base_url`` when ``model.provider`` is this
     provider (a relay / proxy override), else the registered profile's own."""
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.runtime_provider import _config_base_url_for_provider, _get_model_config
+    from slave_cli.auth import PROVIDER_REGISTRY
+    from slave_cli.runtime_provider import _config_base_url_for_provider, _get_model_config
     pconfig = PROVIDER_REGISTRY.get(provider)
     return _config_base_url_for_provider(_get_model_config(), provider) or (pconfig.inference_base_url if pconfig else "")
 

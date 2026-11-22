@@ -21,14 +21,14 @@ def owner_run(tmp_path, monkeypatch):
     """The owner holds a handle on its profile's store; ``owner.db`` is the handle cron opens on it."""
     from persistence_assembly import profile_scope
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = MagicMock()
     db.lineage.tip.return_value = None
     owner = SimpleNamespace(db=db, persistence=MagicMock(scope=profile_scope(home=tmp_path)))
     job = {"id": "owner-db", "name": "test", "prompt": "hello"}
     execution_id = "owner-fire"
     token = session_cron._execution.set((owner, "owner-session", job["id"], execution_id))
-    monkeypatch.setattr(scheduler, "_hermes_home", tmp_path)
+    monkeypatch.setattr(scheduler, "_slave_home", tmp_path)
     monkeypatch.setattr(scheduler, "_reload_dotenv_and_publish_delivery_target", lambda *_: None)
     monkeypatch.setattr(scheduler, "_resolve_cron_agent_setup", lambda *_: scheduler._CronAgentSetup(
         model="test", runtime={"provider": "test"}))
@@ -41,7 +41,7 @@ def owner_run(tmp_path, monkeypatch):
 
 
 def test_sessiondb_init_preserves_multiplex_profile_context(owner_run, tmp_path):
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
     from persistence_assembly import profile_scope
 
     owner, job, execution_id, agent_cls = owner_run
@@ -50,15 +50,15 @@ def test_sessiondb_init_preserves_multiplex_profile_context(owner_run, tmp_path)
     observed = []
 
     def acquire(scope, *, eager=False):
-        observed.append((scope, eager, get_hermes_home()))
+        observed.append((scope, eager, get_slave_home()))
         return owner.db
 
-    token = set_hermes_home_override(profile_home)
+    token = set_slave_home_override(profile_home)
     try:
         with patch("persistence_assembly.open_persistence", side_effect=acquire):
             success, _, response, error = scheduler.run_job(job, execution_id=execution_id)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert (success, response, error) == (True, "ok", None)
     assert observed == [(owner.persistence.scope, True, profile_home)]
     assert agent_cls.call_args.kwargs["session_db"] is owner.db
@@ -69,9 +69,9 @@ def test_sessiondb_init_preserves_multiplex_profile_context(owner_run, tmp_path)
 def test_run_job_does_not_hang_when_sessiondb_init_wedges(owner_run, tmp_path, monkeypatch, setting):
     owner, job, execution_id, agent_cls = owner_run
     if setting == "env":
-        monkeypatch.setenv("HERMES_CRON_SESSION_DB_TIMEOUT", "0.02")
+        monkeypatch.setenv("SLAVE_CRON_SESSION_DB_TIMEOUT", "0.02")
     else:
-        monkeypatch.delenv("HERMES_CRON_SESSION_DB_TIMEOUT", raising=False)
+        monkeypatch.delenv("SLAVE_CRON_SESSION_DB_TIMEOUT", raising=False)
         (tmp_path / "config.yaml").write_text("cron:\n  session_db_timeout_seconds: 0.02\n")
     entered, release, closed = threading.Event(), threading.Event(), threading.Event()
     owner.db.close.side_effect = closed.set
@@ -128,7 +128,7 @@ def test_a_store_replaced_under_the_owner_refuses_the_run(owner_run, tmp_path, m
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_holder import raw_holder
     owner, job, _execution_id, _agent_cls = owner_run
-    monkeypatch.setenv("HERMES_CRON_SESSION_DB_TIMEOUT", "0")
+    monkeypatch.setenv("SLAVE_CRON_SESSION_DB_TIMEOUT", "0")
     with open_persistence(profile_scope(home=tmp_path), eager=True) as persistence:
         owner.persistence = persistence
         persistence.state_meta.set("who", "original")
@@ -149,7 +149,7 @@ def test_a_store_replaced_under_the_owner_refuses_the_run(owner_run, tmp_path, m
 
 def test_guard_is_released_and_job_refires_after_sessiondb_hang(owner_run, monkeypatch):
     owner, _job, _, agent_cls = owner_run
-    monkeypatch.setenv("HERMES_CRON_SESSION_DB_TIMEOUT", "0.02")
+    monkeypatch.setenv("SLAVE_CRON_SESSION_DB_TIMEOUT", "0.02")
     from cron import jobs
 
     release = threading.Event()

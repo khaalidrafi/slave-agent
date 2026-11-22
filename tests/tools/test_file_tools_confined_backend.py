@@ -47,7 +47,7 @@ def _dispatch(name, task_id, **arguments):
 @pytest.fixture
 def mounted(tmp_path, monkeypatch, request):
     """``(env, view, real, task_id)`` with the env active for the task; ``a.txt`` holds two lines."""
-    monkeypatch.delenv("HERMES_NATIVE_FILE_READ", raising=False)  # the fast path at its default: on
+    monkeypatch.delenv("SLAVE_NATIVE_FILE_READ", raising=False)  # the fast path at its default: on
     view, real = tmp_path / "view", tmp_path / "real"
     real.mkdir()
     (real / "a.txt").write_text("alpha\nbeta\n", encoding="utf-8")

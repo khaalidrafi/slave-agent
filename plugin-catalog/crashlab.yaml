@@ -2,7 +2,7 @@ name: crashlab
 title: CrashLab
 repo: https://github.com/dolepee/crashlab
 sha: 40932f8b828f584e64c985ddc8920dfd06d43693
-description: "Test recovery before delivery, after commit and across restart; inspect saved records, verify the repair and keep a reusable regression. Disclosure — After a Hermes approval prompt, runs the `app.start` command declared by a case file or a model-prepared experiment as a local process outside the Hermes sandbox, and drives it with a Node/Playwright runner and a local Chromium launched with `--no-sandbox`; stores runs, experiments, exports and watch files under `~/.local/share/crashlab` (or `CRASHLAB_DATA_DIR`), shared across Hermes profiles; the opt-in `crashlab_experiment_watch` adds a `pre_verify` reminder that asks Hermes to continue after edits in a watched project; the dashboard tab can start an approved run after its own confirmation."
+description: "Test recovery before delivery, after commit and across restart; inspect saved records, verify the repair and keep a reusable regression. Disclosure — After a slave-agent approval prompt, runs the `app.start` command declared by a case file or a model-prepared experiment as a local process outside the slave-agent sandbox, and drives it with a Node/Playwright runner and a local Chromium launched with `--no-sandbox`; stores runs, experiments, exports and watch files under `~/.local/share/crashlab` (or `CRASHLAB_DATA_DIR`), shared across slave-agent profiles; the opt-in `crashlab_experiment_watch` adds a `pre_verify` reminder that asks slave-agent to continue after edits in a watched project; the dashboard tab can start an approved run after its own confirmation."
 maintainer: dolepee
 tier: community
 category: tools
@@ -25,8 +25,8 @@ known_issues:
   - "Kist and Flaskr retain model-repair records; Shiori is a supplied-diagnosis guided model patch with operator verifier runs, not autonomous discovery or adoption."
   - "Flaskr repair covers fresh databases; existing databases need migration and legacy tokenless POSTs are unprotected."
   - "Project freshness covers tracked and nonignored untracked files, not ignored files, dependencies or runtime configuration."
-  - "Completion reminders are opt-in, project-scoped and bounded by Hermes continuation limits; they are not an execution barrier."
-  - "The native Desktop pane is view-only; approved execution uses Hermes tools or the web dashboard. The pane is SDK-validated, not visually verified in an installed Desktop app."
+  - "Completion reminders are opt-in, project-scoped and bounded by slave-agent continuation limits; they are not an execution barrier."
+  - "The native Desktop pane is view-only; approved execution uses slave-agent tools or the web dashboard. The pane is SDK-validated, not visually verified in an installed Desktop app."
   - "External application templates require their own checkout, dependencies and case configuration."
   - "HTTP state observers trust application responses; SQLite observers read directly but are not an operating-system isolation boundary."
   - "Legacy mixed browser/inventory campaigns remain validation-only; inventory uses a deliberate fixture scheduling gate. Recovery campaigns execute supported local apps."

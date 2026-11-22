@@ -2,7 +2,7 @@
 
 Stateless by default (``store: false``): every request carries the whole conversation as typed steps, the
 same contract as ``generateContent``, so compaction, branching and model switches keep working and nothing
-is retained server-side. Thought signatures live in dedicated ``thought`` steps; they ride back to Hermes
+is retained server-side. Thought signatures live in dedicated ``thought`` steps; they ride back to slave-agent
 in ``extra_content.google.thought_signature`` (the slot the generateContent path already uses) and are
 replayed as ``thought`` steps ahead of the output they preceded.
 

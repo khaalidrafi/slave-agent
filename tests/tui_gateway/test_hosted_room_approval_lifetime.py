@@ -21,7 +21,7 @@ def pending_approval(tmp_path):
     db = storage_handle(tmp_path)
     service = _service(db)
     service.create_room(room_id="room", name="Approval lifetime", members=[
-        {"member_id": "default", "profile": "default", "handle": "hermes"},
+        {"member_id": "default", "profile": "default", "handle": "slave"},
         {"member_id": "ops", "profile": "ops", "handle": "ops"}])
     service.send(room_id="room", event_id="ask", payload={"text": "@ops Inspect", "thread_id": "ask"})
     task, = driver.list_tasks(db, placement="profile", room_id="room", status="queued")
@@ -138,7 +138,7 @@ def test_peer_approval_is_scoped_visible_and_resolvable(tmp_path: Path, monkeypa
             {
                 "member_id": "default",
                 "profile": "default",
-                "handle": "hermes",
+                "handle": "slave",
             },
             {
                 "member_id": "member-peer",

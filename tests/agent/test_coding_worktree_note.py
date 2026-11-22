@@ -1,6 +1,6 @@
 """A gateway-owned session opened in a linked git worktree gets the isolated-worktree guidance.
 
-Regression for #134889 (CLI-4): the classic CLI appended its ``hermes -w`` worktree note to its
+Regression for #134889 (CLI-4): the classic CLI appended its ``slave -w`` worktree note to its
 own system prompt, which the gateway never reads. The gateway now derives the note from the
 session's frozen cwd, so every local surface opened in a worktree carries it.
 """
@@ -31,7 +31,7 @@ def worktree(tmp_path):
     _git(primary, "add", "-A")
     _git(primary, "commit", "-q", "-m", "init")
     linked = tmp_path / "linked"
-    _git(primary, "worktree", "add", "-q", "-b", "hermes/wt-feature", str(linked))
+    _git(primary, "worktree", "add", "-q", "-b", "slave/wt-feature", str(linked))
     return primary, linked
 
 
@@ -62,7 +62,7 @@ def test_gateway_session_in_linked_worktree_carries_isolation_guidance(worktree,
     prompt = _gateway_prompt(source, linked)
 
     note = next(line for line in prompt.splitlines() if line.startswith("- Worktree: linked"))
-    assert "isolated on branch hermes/wt-feature" in note
+    assert "isolated on branch slave/wt-feature" in note
     assert "do not affect the main working tree or other agents" in note
     assert "commit and push" in note and "PR" in note
     # The primary tree path stays out of the prompt: a second absolute path makes the model

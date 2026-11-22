@@ -26,16 +26,16 @@ class Model(BaseModel):
 
 def main():
     root = Path(__file__).resolve().parents[3]
-    home = Path(os.environ['HERMES_HOME'])
+    home = Path(os.environ['SLAVE_HOME'])
     home.mkdir(parents=True)
     user = Path(os.environ['HOME'])
     user.mkdir(parents=True)
     mode = os.environ['KANBAN_RECOVERY_MODE']
     owner = home / 'profiles/assigned' if mode == 'cross_profile' else home
     owner.mkdir(parents=True, exist_ok=True)
-    os.environ['HERMES_KANBAN_HOME'] = str(home / 'shared')
+    os.environ['SLAVE_KANBAN_HOME'] = str(home / 'shared')
     board_path = home / 'custom.sqlite' if mode == 'custom' else home / 'shared/kanban/boards/owned/kanban.db'
-    os.environ['HERMES_KANBAN_DB'] = str(board_path)
+    os.environ['SLAVE_KANBAN_DB'] = str(board_path)
     peer = ThreadingHTTPServer(('127.0.0.1', 0), Model)
     peer.requests, peer.mode = [], 'complete'
     peer.blocked, peer.release = threading.Event(), threading.Event()
@@ -48,18 +48,18 @@ def main():
            'auxiliary': {'title_generation': {'enabled': False}}, 'updates': {'check': False},
            'platform_toolsets': {'cli': []}, 'kanban': {'dispatch_in_gateway': False}}
     (owner / 'config.yaml').write_text(json.dumps(cfg))
-    env = dict(os.environ, HERMES_HOME=str(owner), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
+    env = dict(os.environ, SLAVE_HOME=str(owner), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
     # Already-running owner deliberately has no dispatcher-specific board overrides.
     for key in list(env):
-        if key.startswith('HERMES_KANBAN_'):
+        if key.startswith('SLAVE_KANBAN_'):
             env.pop(key)
-    from hermes_cli import kanban_db as kb, kanban_db_dispatch as dispatch
-    from hermes_cli.kanban_db_connect import connect
-    os.environ['HERMES_KANBAN_CRASH_GRACE_SECONDS'] = '0'
+    from slave_cli import kanban_db as kb, kanban_db_dispatch as dispatch
+    from slave_cli.kanban_db_connect import connect
+    os.environ['SLAVE_KANBAN_CRASH_GRACE_SECONDS'] = '0'
     clients, receipt = [], {'mode': mode}
     original_popen = subprocess.Popen
     def spawn(*args, **kwargs):
-        if 'hermes_cli.kanban_worker_client' in args[0]:
+        if 'slave_cli.kanban_worker_client' in args[0]:
             # Trace only the transport client's tree, not the independently started owner.
             args = (['strace', '-f', '-e', 'trace=openat', '-o', str(home / 'client.strace'), *args[0]], *args[1:])
             child = original_popen(*args, **kwargs)
@@ -95,7 +95,7 @@ def main():
                                    admission_id=value['admission_id'], execution_generation=value['execution_generation'])
                 assert 'result' in result, result
             return answer['result']
-    # A dispatcher iterating a slug under a HERMES_KANBAN_DB pin resolves through the pin (the
+    # A dispatcher iterating a slug under a SLAVE_KANBAN_DB pin resolves through the pin (the
     # gateway's embedded dispatcher does the same); an unfenced explicit board= would bypass it.
     pinned = kb.pin_first_board_resolution()
     pinned.__enter__()

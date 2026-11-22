@@ -185,7 +185,7 @@ class TestPruneStaleSessionsLocked:
         rather than mocking its result.
         """
         key = "agent:main:telegram:dm:5140768830"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         db = storage_handle(tmp_path)
         peer = {
             "user_id": "5140768830",

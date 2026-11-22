@@ -1,5 +1,5 @@
 name: speckle
-repo: https://github.com/NikolaosArgy/hermes-speckle
+repo: https://github.com/NikolaosArgy/slave-speckle
 sha: c642a186274b6e89d3d4690eff9a3d45cf9a7ff6
 version: "0.1.0"
 title: Speckle
@@ -7,7 +7,7 @@ description: >-
   Browse, query and diff 3D/BIM models (mainly for the AECO industry) from Speckle
   (Revit, Rhino, IFC, Archicad, Tekla, ETABS, Civil 3D, Blender), run saved checks on
   every new version, get a chat message when a watched model gets a new version, and see
-  the model in a live 3D viewer in Hermes Desktop. Requires a Speckle personal access
+  the model in a live 3D viewer in slave-agent Desktop. Requires a Speckle personal access
   token (SPECKLE_TOKEN). Disclosure — network connections go to the configured Speckle
   server (app.speckle.systems by default), the only host that receives the token, and to
   the file storage that server links to for model downloads, without the token; the 3D
@@ -20,11 +20,11 @@ maintainer: NikolaosArgy
 tier: community
 category: tools
 requires_hermes: ">=0.22"
-docs_url: https://github.com/NikolaosArgy/hermes-speckle/blob/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/README.md
+docs_url: https://github.com/NikolaosArgy/slave-speckle/blob/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/README.md
 screenshots:
-  - https://raw.githubusercontent.com/NikolaosArgy/hermes-speckle/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/assets/screenshots/model-in-pane.jpg
-  - https://raw.githubusercontent.com/NikolaosArgy/hermes-speckle/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/assets/screenshots/colour-by-category.jpg
-  - https://raw.githubusercontent.com/NikolaosArgy/hermes-speckle/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/assets/screenshots/empty-pane.jpg
+  - https://raw.githubusercontent.com/NikolaosArgy/slave-speckle/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/assets/screenshots/model-in-pane.jpg
+  - https://raw.githubusercontent.com/NikolaosArgy/slave-speckle/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/assets/screenshots/colour-by-category.jpg
+  - https://raw.githubusercontent.com/NikolaosArgy/slave-speckle/c642a186274b6e89d3d4690eff9a3d45cf9a7ff6/assets/screenshots/empty-pane.jpg
 capabilities:
   provides_tools:
     - speckle_list_projects

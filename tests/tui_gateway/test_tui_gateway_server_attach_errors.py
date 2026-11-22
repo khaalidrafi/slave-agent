@@ -23,7 +23,7 @@ def session(tmp_path, monkeypatch):
     fake_cli = types.ModuleType("cli")
     fake_cli._IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_slave_home", tmp_path)
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     record = {

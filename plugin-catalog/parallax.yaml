@@ -1,14 +1,14 @@
 name: parallax
-title: Hermes Parallax
+title: slave-agent Parallax
 description: Multi-perspective fact-vs-frame lens, blind code security taste-test, and rubric-gated DPO/SFT dataset forge
-repo: https://github.com/kruschdev/Hermes-Parallax
+repo: https://github.com/kruschdev/Slave-Parallax
 sha: "4fff9b4873ed1be606fbf7dabe375efb53408df6"
 maintainer: kruschdev
 tier: community
 category: tools
 version: "0.1.0"
 requires_hermes: ">=0.23.1"
-image: https://raw.githubusercontent.com/kruschdev/Hermes-Parallax/4fff9b4873ed1be606fbf7dabe375efb53408df6/docs/assets/hermes-parallax-video-card.jpg
+image: https://raw.githubusercontent.com/kruschdev/Slave-Parallax/4fff9b4873ed1be606fbf7dabe375efb53408df6/docs/assets/slave-parallax-video-card.jpg
 readme: true
 platforms:
   - linux

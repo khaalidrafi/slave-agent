@@ -1,12 +1,12 @@
 name: session-receipts
-repo: https://github.com/ryanomara/hermes-plugin-receipts
+repo: https://github.com/ryanomara/slave-plugin-receipts
 sha: 54088cdea3c808dda31406c18690ec27b7b882bc
 title: "Session Receipts: session flight recorder + weekly process digest"
 description: >-
-  Session Receipts turns a Hermes session, a date range, or a kanban card's evidence chain into
+  Session Receipts turns a slave-agent session, a date range, or a kanban card's evidence chain into
   one self-contained offline HTML document: the original ask, every tool call as a timed node,
   failures and retries exactly as recorded (never collapsed into the success that followed),
-  per-model token spend, and the cost Hermes recorded, with a reconciliation delta. A client
+  per-model token spend, and the cost slave-agent recorded, with a reconciliation delta. A client
   theme renders the same data as a paper document for sharing; `--redact` writes a share-safe
   copy with a redaction manifest (secrets, emails, user paths, IPs, phones, plus a user word
   list); and `receipts rollup --since 7d` aggregates a window into a deterministic weekly
@@ -18,7 +18,7 @@ description: >-
 maintainer: Ryan O'Mara
 tier: community
 category: tools
-docs_url: https://github.com/ryanomara/hermes-plugin-receipts#readme
+docs_url: https://github.com/ryanomara/slave-plugin-receipts#readme
 version: "1.2.1"
 platforms: []
 capabilities:

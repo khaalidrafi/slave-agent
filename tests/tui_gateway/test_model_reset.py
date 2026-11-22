@@ -18,7 +18,7 @@ class _Agent:
 
 def test_reset_drops_the_pin_and_adopts_config_without_repinning(monkeypatch, tmp_path):
     (tmp_path / "config.yaml").write_text(json.dumps({"model": {"default": "cfg-model", "provider": "cfg-prov"}}))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_slave_home", tmp_path)
     resolved = []
 
     def _switch_model(**kw):  # provider resolution is the boundary; record what reset asks for
@@ -28,7 +28,7 @@ def test_reset_drops_the_pin_and_adopts_config_without_repinning(monkeypatch, tm
             api_key="k", api_mode="chat_completions", warning_message="", model_info=None, error_message="",
             runtime_capabilities=None, request_overrides=None, usage_notice="")
 
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", _switch_model)
+    monkeypatch.setattr("slave_cli.model_switch.switch_model", _switch_model)
     agent = _Agent()
     session = {"agent": agent, "model_override": {"model": "pinned", "provider": "pin-prov"},
                "one_turn_model_restore": {"model": "pinned"}, "config_model_seen": ("cfg-model", "cfg-prov")}

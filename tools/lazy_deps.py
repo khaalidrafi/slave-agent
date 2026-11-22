@@ -12,7 +12,7 @@ from typing import NoReturn
 
 def ensure(feature: str, *, prompt: bool = True) -> NoReturn:
     # Never claims readiness; callers see a dependency-unavailable failure.
-    raise ImportError(f"lazy install of {feature!r} is retired; provision it with `hermes pm`.")
+    raise ImportError(f"lazy install of {feature!r} is retired; provision it with `slave pm`.")
 
 
 def install_specs(specs: list[str] | tuple[str, ...], *, timeout: int = 300,
@@ -20,5 +20,5 @@ def install_specs(specs: list[str] | tuple[str, ...], *, timeout: int = 300,
     # Plugins still call this retired API during normal agent construction.
     raise ImportError(
         "tools.lazy_deps.install_specs is retired; runtime dependency "
-        "installation is unavailable. Use `hermes pm`."
+        "installation is unavailable. Use `slave pm`."
     )

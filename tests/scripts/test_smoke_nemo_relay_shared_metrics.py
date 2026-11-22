@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 
 from gateway import status
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability.shared_metrics import SharedMetricsStore
-from hermes_cli.observability.shared_metrics_update import update_receipt_fields
+from slave_cli.observability import shared_metrics_contract as contract
+from slave_cli.observability.shared_metrics import SharedMetricsStore
+from slave_cli.observability.shared_metrics_update import update_receipt_fields
 from scripts import smoke_nemo_relay_shared_metrics as smoke
 
 # The smoke spawns a real chat and is not run by CI; these pin its expectations to the contract, so a
@@ -24,11 +24,11 @@ _EXACT_EXPECTATIONS = {
 @pytest.mark.parametrize(
     "relative_path",
     [
-        Path(".venv") / "bin" / "hermes",
-        Path(".venv") / "Scripts" / "hermes.exe",
+        Path(".venv") / "bin" / "slave",
+        Path(".venv") / "Scripts" / "slave.exe",
     ],
 )
-def test_resolve_hermes_executable_from_repository_venv(
+def test_resolve_slave_executable_from_repository_venv(
     tmp_path,
     monkeypatch,
     relative_path,
@@ -38,14 +38,14 @@ def test_resolve_hermes_executable_from_repository_venv(
     executable.touch()
     monkeypatch.setattr(smoke.shutil, "which", lambda _name: None)
 
-    assert smoke._resolve_hermes_executable(tmp_path) == executable
+    assert smoke._resolve_slave_executable(tmp_path) == executable
 
 
-def test_resolve_hermes_executable_reports_missing_binary(tmp_path, monkeypatch):
+def test_resolve_slave_executable_reports_missing_binary(tmp_path, monkeypatch):
     monkeypatch.setattr(smoke.shutil, "which", lambda _name: None)
 
     with pytest.raises(SystemExit, match="or on PATH"):
-        smoke._resolve_hermes_executable(tmp_path)
+        smoke._resolve_slave_executable(tmp_path)
 
 
 def test_smoke_expects_only_contract_metrics_with_their_current_fields():
@@ -66,9 +66,9 @@ def test_gateway_stop_spares_a_process_that_is_not_the_homes_live_gateway(tmp_pa
     decoy = subprocess.Popen(["sleep", "300"])
     try:
         record = json.dumps({
-            "pid": decoy.pid, "kind": "hermes-gateway", "argv": ["hermes", "gateway", "run"],
+            "pid": decoy.pid, "kind": "slave-gateway", "argv": ["slave", "gateway", "run"],
             "start_time": status._get_process_start_time(decoy.pid) + start_time_shift,
-            "hermes_home": str(tmp_path),
+            "slave_home": str(tmp_path),
         })
         (tmp_path / "gateway.pid").write_text(record)
         with open(tmp_path / "gateway.lock", "w") as lock:
@@ -88,22 +88,22 @@ def test_gateway_turn_wait_settles_only_on_the_rows_in_the_real_store(tmp_path):
     assert not smoke._wait_for_gateway_turn_rows(database, timeout=0)
     assert not database.exists()  # polling never creates the store ahead of the gateway
 
-    resource = {"architecture": "x86_64", "hermes_version": "0.0.0", "install_method": "git", "os_family": "linux"}
+    resource = {"architecture": "x86_64", "slave_version": "0.0.0", "install_method": "git", "os_family": "linux"}
     store = SharedMetricsStore(database, tmp_path / "outbox")
     for name, dimensions in [
         *smoke.GATEWAY_TURN_EXPECTED_DIMENSIONS.items(),
-        ("hermes.gateway.reply_latency", {"first_response_bucket": "lt_2s", "platform": "local"}),
-        ("hermes.startup.latency", {"latency_bucket": "lt_500ms", "surface": "cli"}),
+        ("slave.gateway.reply_latency", {"first_response_bucket": "lt_2s", "platform": "local"}),
+        ("slave.startup.latency", {"latency_bucket": "lt_500ms", "surface": "cli"}),
     ]:
         store.record_counter(name, dimensions, resource)
     assert not smoke._wait_for_gateway_turn_rows(database, timeout=0)  # gateway_boot still pending
 
-    store.record_counter("hermes.startup.latency", {"latency_bucket": "2s_to_5s", "surface": "gateway_boot"}, resource)
+    store.record_counter("slave.startup.latency", {"latency_bucket": "2s_to_5s", "surface": "gateway_boot"}, resource)
     assert smoke._wait_for_gateway_turn_rows(database, timeout=0)
 
 
 def test_smoke_update_expectations_match_the_receipt_projection():
     run, stage_rows = update_receipt_fields(smoke.UPDATE_RECEIPT)
 
-    assert run == smoke.FAILURE_EXPECTED_DIMENSIONS["hermes.update.run"]
+    assert run == smoke.FAILURE_EXPECTED_DIMENSIONS["slave.update.run"]
     assert sorted((row["stage"], row["outcome"]) for row in stage_rows) == smoke.expected_update_stages()

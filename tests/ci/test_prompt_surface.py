@@ -3,9 +3,9 @@
 ``tests/fixtures/prompt_surface/`` holds the system prompt and ``tools[]`` array a stock install
 sends on each surface (see ``scripts/ci/prompt_surface.py``). A code change that alters either
 must carry the regenerated snapshot, so the change shows up in review as real prompt text and
-real schemas, and the snapshot path needs a hermes-agent-core approval to merge.
+real schemas, and the snapshot path needs a slave-agent-core approval to merge.
 
-Regenerate with ``scripts/run-in-hermes-env python scripts/ci/prompt_surface.py render``.
+Regenerate with ``scripts/run-in-slave-env python scripts/ci/prompt_surface.py render``.
 """
 
 from __future__ import annotations
@@ -38,8 +38,8 @@ def test_committed_prompt_surface_is_current(tmp_path):
     differences = _tree_differences(prompt_surface.SNAPSHOT, rendered)
     assert not differences, (
         "The system prompt or tool schemas changed. Regenerate the snapshot and commit it with the "
-        "change (merging it needs a hermes-agent-core approval):\n"
-        "    scripts/run-in-hermes-env python scripts/ci/prompt_surface.py render\n"
+        "change (merging it needs a slave-agent-core approval):\n"
+        "    scripts/run-in-slave-env python scripts/ci/prompt_surface.py render\n"
         + "\n".join(differences[:20])
     )
 

@@ -2,7 +2,7 @@ name: Check the checkout is clean
 description: >-
   Fail (or warn) when the job left tracked changes or untracked, non-ignored
   files in the checkout. Tests and CI steps must write under their own temp
-  dirs (pytest's tmp_path, the HERMES_HOME fixture, $RUNNER_TEMP), not into the
+  dirs (pytest's tmp_path, the SLAVE_HOME fixture, $RUNNER_TEMP), not into the
   repo: stray files from test runs have reached main more than once. Run it as
   the last step of a job, after the checkout exists, with no `if:` (the default
   success() keeps it off jobs where an earlier step failed and may have left its
@@ -70,7 +70,7 @@ runs:
           esac
           echo "::$level title=Dirty checkout::$path: $what"
         done <<< "$(sed -n '1,9p' <<< "$status")"
-        echo "::$level title=Dirty checkout::this job left $count changed or untracked path(s) in the checkout (full list in the log above). Tests must write under tmp_path / the HERMES_HOME fixture and CI steps under \$RUNNER_TEMP; a genuine build artifact gets a precise .gitignore entry. Reproduce: run the job's command, then git status --porcelain=v1 --untracked-files=normal."
+        echo "::$level title=Dirty checkout::this job left $count changed or untracked path(s) in the checkout (full list in the log above). Tests must write under tmp_path / the SLAVE_HOME fixture and CI steps under \$RUNNER_TEMP; a genuine build artifact gets a precise .gitignore entry. Reproduce: run the job's command, then git status --porcelain=v1 --untracked-files=normal."
         if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
           {
             echo "### Dirty checkout ($count paths, mode=$_MODE)"

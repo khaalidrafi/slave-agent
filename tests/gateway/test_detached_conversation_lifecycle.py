@@ -66,7 +66,7 @@ async def test_what_the_old_conversation_schedules_for_here_names_the_app_not_th
     live = authority.sessions[ref_a.session_id]
     entry = runner.session_store.get_or_create_session(live.source)
     with runner._session_env_scope(build_session_context(live.source, runner.config, entry)):
-        env = {name: get_session_env(f'HERMES_SESSION_{name}') for name in ('PLATFORM', 'CHAT_ID', 'KEY')}
+        env = {name: get_session_env(f'SLAVE_SESSION_{name}') for name in ('PLATFORM', 'CHAT_ID', 'KEY')}
         origin = _origin_from_env()
     assert env == {'PLATFORM': 'local', 'CHAT_ID': ref_a.session_id, 'KEY': live.route}
     assert origin is None or origin['platform'] == 'local', origin
@@ -135,7 +135,7 @@ def _process_event(runner, live, session_id, kind='completion', **fields):
     from gateway.session_context import get_session_env
     entry = runner.session_store.get_or_create_session(live.source)
     with runner._session_env_scope(build_session_context(live.source, runner.config, entry)):
-        env = {name: get_session_env(f'HERMES_SESSION_{name}') for name in ('KEY', 'PLATFORM', 'CHAT_ID', 'CHAT_TYPE')}
+        env = {name: get_session_env(f'SLAVE_SESSION_{name}') for name in ('KEY', 'PLATFORM', 'CHAT_ID', 'CHAT_TYPE')}
     return {'type': kind, 'event_id': f'{kind}-1', 'session_id': 'proc_1', 'started_at': 1000.0,
             'session_key': env['KEY'], 'parent_session_id': session_id, 'command': 'sleep 1',
             'platform': env['PLATFORM'], 'chat_id': env['CHAT_ID'], 'chat_type': env['CHAT_TYPE'],

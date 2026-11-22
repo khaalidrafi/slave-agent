@@ -64,15 +64,15 @@ def _save_blocked_payload(command: str) -> str | None:
     if not host_feature_enabled("tool_host_artifacts"):
         return None
     try:
-        from hermes_constants import get_hermes_home
-        script_dir = get_hermes_home() / "cache" / "blocked-scripts"
+        from slave_constants import get_slave_home
+        script_dir = get_slave_home() / "cache" / "blocked-scripts"
         script_dir.mkdir(parents=True, exist_ok=True)
         # Opportunistic cleanup: blocked payloads older than 7 days.
         unlink_files_older_than(script_dir, "blocked-*.sh", 7 * 86400)
         path = script_dir / f"blocked-{int(time.time())}-{uuid.uuid4().hex[:8]}.sh"
         path.write_text(
             "#!/usr/bin/env bash\n"
-            "# Auto-saved by Hermes: this command exceeded the inline command\n"
+            "# Auto-saved by slave-agent: this command exceeded the inline command\n"
             "# parser limit and was blocked from direct execution. The approval\n"
             "# guard has not read it: review all of it before running it yourself.\n"
             + command + ("" if command.endswith("\n") else "\n"),

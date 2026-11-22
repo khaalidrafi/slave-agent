@@ -136,7 +136,7 @@ class TestAllowPrivateUrlsConfig:
 
     def test_browser_config_string_false_stays_disabled(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "slave_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {"allow_private_urls": "false"}},
         )
 
@@ -151,9 +151,9 @@ class TestAllowPrivateUrlsConfig:
         self, tmp_path, profile_order
     ):
         """The browser's independent guard must follow the active profile."""
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from slave_constants import (
+            reset_slave_home_override,
+            set_slave_home_override,
         )
 
         allowed_home = tmp_path / "allowed"
@@ -168,11 +168,11 @@ class TestAllowPrivateUrlsConfig:
         )
 
         def under_profile(home):
-            token = set_hermes_home_override(home)
+            token = set_slave_home_override(home)
             try:
                 return browser_session_cloud.allow_private_urls()
             finally:
-                reset_hermes_home_override(token)
+                reset_slave_home_override(token)
 
         homes = {"allowed": allowed_home, "blocked": blocked_home}
         expected = {"allowed": True, "blocked": False}

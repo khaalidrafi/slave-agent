@@ -15,7 +15,7 @@ time is positive proof the turn never finished. Contract pinned here:
   disabled / crash-looping / already-running cases, and bounds attempts via
   the marker's attempt counter;
 * a marker whose writer is still alive is ownership evidence, not crash
-  evidence: a second backend resuming the same session over one HERMES_HOME
+  evidence: a second backend resuming the same session over one SLAVE_HOME
   schedules nothing and leaves the marker for its owner to clear (#94778).
 """
 
@@ -92,8 +92,8 @@ def emits(monkeypatch):
 
 @pytest.fixture()
 def marker_home(monkeypatch, tmp_path):
-    """Point the server's marker storage at a temp HERMES_HOME."""
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    """Point the server's marker storage at a temp SLAVE_HOME."""
+    monkeypatch.setattr(server, "_slave_home", tmp_path)
     return tmp_path
 
 
@@ -137,9 +137,9 @@ def test_marker_survives_corrupt_sidecar(tmp_path):
 
 
 def test_sibling_backend_record_does_not_resurrect_a_cleared_marker(tmp_path, monkeypatch):
-    """Two backends on one HERMES_HOME: B loads the marker file to start S2, A clears its concluded
+    """Two backends on one SLAVE_HOME: B loads the marker file to start S2, A clears its concluded
     S1, then B stores — B's stale snapshot must not bring S1 back (resume would re-run a finished turn)."""
-    from hermes_cli import auth
+    from slave_cli import auth
     from tests.tui_gateway._turn_marker_backend import record_after_parent_moves
 
     record_turn_start(tmp_path, "S1", "first prompt")
@@ -554,7 +554,7 @@ def test_failed_agent_build_leaves_marker_for_retry(
 # ── Marker writer identity: a live writer is an owner, not a corpse ────
 #
 # The scheduler used to treat every marker it found as proof the writing
-# process died. Two backends over one HERMES_HOME break that assumption: A is
+# process died. Two backends over one SLAVE_HOME break that assumption: A is
 # mid-turn on session S while B resumes S — B read A's live marker as a crash
 # and started a second turn over it (#94778). Ownership now comes from the
 # writer's pid + create time.
@@ -597,7 +597,7 @@ def test_marker_writer_state_rejects_a_recycled_pid():
 
 
 def test_second_backend_defers_to_a_live_marker_writer(emits, schedule_env, marker_home):
-    """Two backends, one HERMES_HOME, one session: A is mid-turn (alive writer)
+    """Two backends, one SLAVE_HOME, one session: A is mid-turn (alive writer)
 
     B resumes S and must read the marker as ownership evidence, not crash
     evidence — no continuation, no misleading "Resuming interrupted turn…"

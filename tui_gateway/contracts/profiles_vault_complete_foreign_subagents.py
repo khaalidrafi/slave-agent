@@ -13,7 +13,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from hermes_cli.profile_provision import ProfileCreateReceipt
+from slave_cli.profile_provision import ProfileCreateReceipt
 
 from .base import JsonValue, Params, Result, WireEnum
 from .common import OpenModel, ProfileParams, SessionParams, SubagentStatus
@@ -204,7 +204,7 @@ class ProfilesCreateParams(ProfileParams):
     provider: str | None = None
     share_auth: bool | str | None = None
     mirror_credentials: bool | str | None = None
-    # ``hermes profile create`` through the gateway: ``--clone`` (copy the caller's profile),
+    # ``slave profile create`` through the gateway: ``--clone`` (copy the caller's profile),
     # ``--sync-imports``, and ``report`` (return the receipt the CLI prints).
     clone_config: bool | str | None = None
     sync_imports: bool | str | None = None
@@ -229,7 +229,7 @@ class ProfilesCreateResult(Result):
     model_set: bool = False
     mirrored: ProfileMirrored
     warnings: list[str] = []  # best-effort steps that did not fully apply (create still succeeded)
-    # With ``report``: what ``hermes profile create`` prints. One definition, shared with the CLI that reads it.
+    # With ``report``: what ``slave profile create`` prints. One definition, shared with the CLI that reads it.
     receipt: ProfileCreateReceipt | None = None
 
 
@@ -369,14 +369,14 @@ method("profiles.get_asset", params=ProfilesGetAssetParams, result=ProfilesGetAs
 
 class OnboardingStateParams(Params):
     """``assume_fresh``: the unpackaged desktop's ``--fresh-install`` launch; the backend treats this
-    machine as one that never used Hermes. Packaged builds never send it."""
+    machine as one that never used Slave. Packaged builds never send it."""
 
     assume_fresh: bool = False
 
 
 class OnboardingRunStateResult(Result):
     """``run``: onboarding opens on this launch (root config ``onboarding.run``, else a machine that
-    never used Hermes). ``eligible``: this is the desktop's local backend and the welcome trial or a
+    never used slave-agent). ``eligible``: this is the desktop's local backend and the welcome trial or a
     configured provider can carry the first chat.
     ``session_id``: the stored id of the onboarding chat still in progress, so a relaunch reopens it;
     ``run_id``: that run's id, which ``onboarding.ended`` names."""
@@ -602,7 +602,7 @@ class ForeignSource(WireEnum):
 
 
 class ForeignSessionRow(Result):
-    """``hermes_cli/foreign_sessions_browser.py::list_foreign_sessions`` — ``id`` is an opaque
+    """``slave_cli/foreign_sessions_browser.py::list_foreign_sessions`` — ``id`` is an opaque
     handle, never a path."""
 
     id: str

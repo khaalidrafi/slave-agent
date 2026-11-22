@@ -42,7 +42,7 @@ in FORK.org's bloat queue.
 
 | Path | Role |
 |---|---|
-| `agent/`, `hermes*/`, `slave_*`, `run_agent.py`, `cli.py` | The core loop: model conversation, tool execution, learning. `hermes_*` names are upstream heritage; `slave_*` are fork-owned modules. |
+| `agent/`, `slave*/`, `slave_*`, `run_agent.py`, `cli.py` | The core loop: model conversation, tool execution, learning. `slave_*` names are upstream heritage; `slave_*` are fork-owned modules. |
 | `acp_adapter/` | `slave-acp`: the stdio Agent Client Protocol server editors drive. |
 | `gateway/`, `plugins/`, `plugin-catalog/`, `optional-mcps/` | The plugin surface: platform channels, capabilities, the catalog a deployment chooses from. |
 | `persona/`, `specs/` | The deployment-profile seam (specs/013) and the numbered spec series (brand, plugins, embedding, pluggability). |

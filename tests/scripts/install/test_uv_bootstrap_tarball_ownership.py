@@ -3,7 +3,7 @@
 GNU tar restores archived owners when it runs as root, and astral's release tarballs record
 uid 1001: the staged uv that root then executes belonged to whichever account holds 1001.
 
-The tests run the real install.sh ``ensure_uv`` and setup-hermes.sh as root inside an
+The tests run the real install.sh ``ensure_uv`` and setup-slave.sh as root inside an
 unprivileged user namespace that maps only uid 0. Restoring an archived owner there fails
 (uid 1001 is unmapped), so an extraction that still tries to adopt it fails the stage
 instead of silently chowning.
@@ -67,7 +67,7 @@ curl() {{ while [ "$#" -gt 0 ]; do [ "$1" = -o ] && {{ cp {shlex.quote(str(archi
 ensure_uv
 stat -c '%u:%g' "$UV_CMD"
 """
-    env = {**os.environ, "HERMES_RUNTIME_DIR": str(store), "HERMES_HOME": str(tmp_path / "home"),
+    env = {**os.environ, "SLAVE_RUNTIME_DIR": str(store), "SLAVE_HOME": str(tmp_path / "home"),
            "TMPDIR": str(tmp_path)}
     result = subprocess.run(["unshare", "-r", "bash", "-c", script], capture_output=True, text=True,
                             env=env, timeout=60, check=False)
@@ -76,11 +76,11 @@ stat -c '%u:%g' "$UV_CMD"
 
 
 @pytest.mark.skipif(not _userns_root_available(), reason="needs an unprivileged user namespace (unshare -r)")
-def test_root_setup_hermes_uv_staging_does_not_adopt_archive_owner(tmp_path: Path) -> None:
-    """setup-hermes.sh stages the same pinned uv tarball through its own extraction."""
+def test_root_setup_slave_uv_staging_does_not_adopt_archive_owner(tmp_path: Path) -> None:
+    """setup-slave.sh stages the same pinned uv tarball through its own extraction."""
     checkout = tmp_path / "checkout"
     (checkout / "pm").mkdir(parents=True)
-    shutil.copy2(ROOT / "setup-hermes.sh", checkout / "setup-hermes.sh")
+    shutil.copy2(ROOT / "setup-slave.sh", checkout / "setup-slave.sh")
     shutil.copy2(ROOT / "pm" / "artifact-mirror.json", checkout / "pm" / "artifact-mirror.json")
     archive = tmp_path / "uv.tar.gz"
     digest = _uv_archive(archive)
@@ -95,9 +95,9 @@ def test_root_setup_hermes_uv_staging_does_not_adopt_archive_owner(tmp_path: Pat
                     encoding="utf-8")
     curl.chmod(0o755)
     store = tmp_path / "store"
-    env = {**os.environ, "HERMES_RUNTIME_DIR": str(store), "PATH": f"{shims}:{os.environ['PATH']}"}
+    env = {**os.environ, "SLAVE_RUNTIME_DIR": str(store), "PATH": f"{shims}:{os.environ['PATH']}"}
     # The fixture uv cannot install Python, so the script stops right after staging uv.
-    result = subprocess.run(["unshare", "-r", "bash", str(checkout / "setup-hermes.sh")], capture_output=True,
+    result = subprocess.run(["unshare", "-r", "bash", str(checkout / "setup-slave.sh")], capture_output=True,
                             text=True, env=env, timeout=60, check=False)
     assert "uv installed" in result.stdout, result.stdout + result.stderr
     staged = next(store.glob("uv-0.0.0-linux-*/uv"))

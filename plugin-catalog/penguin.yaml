@@ -1,6 +1,6 @@
 name: penguin
 title: Penguin
-repo: https://github.com/Crystal32378/hermes-penguin
+repo: https://github.com/Crystal32378/slave-penguin
 sha: d63015de74effae451d5286cc080b6a3afddd6ad
 version: "0.2.2"
 requires_hermes: ">=0.23.0"
@@ -15,9 +15,9 @@ description: >-
   music and a halftone sky use bundled audio and offline analysis; no microphone access.
   No external runtime requests, shell commands, credentials, telemetry or calendar writes.
 screenshots:
-  - https://raw.githubusercontent.com/Crystal32378/hermes-penguin/d63015de74effae451d5286cc080b6a3afddd6ad/docs/native-planner-0.2.jpg
-  - https://raw.githubusercontent.com/Crystal32378/hermes-penguin/d63015de74effae451d5286cc080b6a3afddd6ad/docs/native-arrival-0.2.jpg
-  - https://raw.githubusercontent.com/Crystal32378/hermes-penguin/d63015de74effae451d5286cc080b6a3afddd6ad/docs/native-commander-0.2.jpg
+  - https://raw.githubusercontent.com/Crystal32378/slave-penguin/d63015de74effae451d5286cc080b6a3afddd6ad/docs/native-planner-0.2.jpg
+  - https://raw.githubusercontent.com/Crystal32378/slave-penguin/d63015de74effae451d5286cc080b6a3afddd6ad/docs/native-arrival-0.2.jpg
+  - https://raw.githubusercontent.com/Crystal32378/slave-penguin/d63015de74effae451d5286cc080b6a3afddd6ad/docs/native-commander-0.2.jpg
 platforms: []
 capabilities:
   provides_tools: [penguin_convert, penguin_overlap, penguin_save_team, penguin_get_team]

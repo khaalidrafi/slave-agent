@@ -50,7 +50,7 @@ def test_loop_liveness_watchdog_stop_during_dump_disarms_hard_exit():
 
 def test_loop_liveness_death_leaves_its_stacks_in_the_dump_file(tmp_path, monkeypatch):
     # A console-less launcher discards stderr; the file is the only copy that survives (#120356).
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     exit_codes, ref, handle_ready = [], {}, threading.Event()
 
     def exit_and_stop(code: int) -> None:  # a patched exit returns, so stop the loop like a real one
@@ -74,7 +74,7 @@ def test_loop_liveness_death_leaves_its_stacks_in_the_dump_file(tmp_path, monkey
 
 def test_loop_liveness_dump_names_the_monitored_loop_thread(tmp_path, monkeypatch):
     """The dump must say WHICH thread runs the loop, and lead with that thread's own stack."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     exit_codes, ref, handle_ready = [], {}, threading.Event()
     starter_ident = threading.get_ident()
 
@@ -107,7 +107,7 @@ def test_loop_liveness_dump_names_the_monitored_loop_thread(tmp_path, monkeypatc
 
 def test_loop_liveness_dump_identifies_a_loop_on_another_thread(tmp_path, monkeypatch):
     """A real loop on a non-caller thread is named, with its frozen frame ahead of the rest."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     state: dict[str, object] = {}
     frozen, release, fired = threading.Event(), threading.Event(), threading.Event()
 
@@ -384,7 +384,7 @@ def test_load_gateway_config_bridges_loop_watchdog_keys(tmp_path, monkeypatch):
         "  loop_watchdog_max_strikes: 12\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr("gateway.config.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.config.get_slave_home", lambda: tmp_path)
 
     cfg = load_gateway_config()
     assert cfg.loop_watchdog is False

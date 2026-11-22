@@ -1,4 +1,4 @@
-import { inlineSlashTrigger } from '@hermes/shared/slash-input'
+import { inlineSlashTrigger } from '@slave-agent/shared/slash-input'
 import { describe, expect, it } from 'vitest'
 
 import { completionRequestForInput } from '../hooks/useCompletion.js'

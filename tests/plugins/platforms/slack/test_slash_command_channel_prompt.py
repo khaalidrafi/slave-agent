@@ -1,10 +1,10 @@
 """Slack slash-command turns carry the same channel prompt, skill binding and source names as messages.
 
-A ``/hermes <question>`` turn is a human turn, so the gateway re-pins ``channel_pin`` and the
+A ``/slave <question>`` turn is a human turn, so the gateway re-pins ``channel_pin`` and the
 session-context key from it. Built without ``channel_prompt``, ``chat_name`` and ``user_name``,
 it ran without the configured channel prompt and flipped both pins, and the next ordinary
 message flipped them back: two agent rebuilds and two prompt-cache misses per slash turn. Without
-``auto_skill``, a session opened by ``/hermes <question>`` never loaded the channel's bound skill,
+``auto_skill``, a session opened by ``/slave <question>`` never loaded the channel's bound skill,
 and neither did the turn a ``/goal <text>`` kickoff queues.
 """
 
@@ -34,7 +34,7 @@ def _adapter(channel_id: str) -> SlackAdapter:
             {"id": channel_id, "is_im": True, "user": "U_ALICE"} if channel_id.startswith("D")
             else {"id": channel_id, "name": "ops"})})
     a._bot_user_id = "U_BOT"
-    a._bot_display_name = "HermesBot"
+    a._bot_display_name = "SlaveBot"
     a._running = True
     a.handle_message = AsyncMock()
     return a
@@ -81,7 +81,7 @@ async def test_slash_turn_matches_message_turn_prompt_and_names(channel_id, chan
                "channel_type": channel_type, "ts": "1700.000100", "thread_ts": "1700.000050"}
     await adapter._handle_slack_message(message, {"team_id": "T1"})
     await adapter._handle_slash_command(
-        {"command": "/hermes", "text": text, "user_id": "U_ALICE",
+        {"command": "/slave", "text": text, "user_id": "U_ALICE",
          "channel_id": channel_id, "team_id": "T1", "thread_ts": "1700.000050"})
     await adapter._handle_slack_message(dict(message, ts="1700.000200"), {"team_id": "T1"})
     assert adapter.handle_message.await_count == 3
@@ -97,7 +97,7 @@ async def test_slash_turn_matches_message_turn_prompt_and_names(channel_id, chan
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("channel_id, authorized, command, reaches_runner", [
-    ("C_OPS", False, "/hermes", 0), ("D_ALICE", False, "/hermes", 1),
+    ("C_OPS", False, "/slave", 0), ("D_ALICE", False, "/slave", 1),
     ("C_OPS", True, "/stop", 1), ("C_OPS", True, "/approve", 1), ("C_OPS", True, "/pause", 1),
 ], ids=["rejected-channel", "rejected-dm", "stop", "approve", "pause"])
 async def test_slash_that_starts_no_turn_costs_no_slack_lookup(channel_id, authorized, command, reaches_runner):
@@ -111,7 +111,7 @@ async def test_slash_that_starts_no_turn_costs_no_slack_lookup(channel_id, autho
     adapter = _adapter(channel_id)
     adapter.set_authorization_check(lambda *_args, **_kwargs: authorized)
     await adapter._handle_slash_command(
-        {"command": command, "text": "what broke?" if command == "/hermes" else "",
+        {"command": command, "text": "what broke?" if command == "/slave" else "",
          "user_id": "U_MALLORY", "channel_id": channel_id, "team_id": "T1"})
     adapter._app.client.users_info.assert_not_awaited()
     adapter._app.client.conversations_info.assert_not_awaited()
@@ -141,7 +141,7 @@ async def test_thread_routed_sender_is_checked_against_the_routed_thread():
 
 @pytest.mark.asyncio
 async def test_concurrent_slashes_reach_the_gateway_in_arrival_order():
-    """Two ``/hermes queue`` slashes through the Bolt listener: the first is held on a cold
+    """Two ``/slave queue`` slashes through the Bolt listener: the first is held on a cold
     ``users.info`` while the second's lookup is warm. They still reach the gateway in arrival
     order, and a ``/stop`` sent meanwhile is handed over at once, not behind the held lookup."""
     adapter, entered, release = _adapter("C_OPS"), asyncio.Event(), asyncio.Event()
@@ -153,11 +153,11 @@ async def test_concurrent_slashes_reach_the_gateway_in_arrival_order():
         return {"user": {"profile": {"display_name": "Alice"}, "real_name": "Alice"}}
 
     adapter._app.client.users_info = AsyncMock(side_effect=users_info)
-    base = {"command": "/hermes", "user_id": "U_ALICE", "channel_id": "C_OPS", "team_id": "T1"}
-    first = asyncio.create_task(adapter._handle_hermes_command(AsyncMock(), {**base, "text": "queue first"}))
+    base = {"command": "/slave", "user_id": "U_ALICE", "channel_id": "C_OPS", "team_id": "T1"}
+    first = asyncio.create_task(adapter._handle_slave_command(AsyncMock(), {**base, "text": "queue first"}))
     await asyncio.wait_for(entered.wait(), 5)
-    second = asyncio.create_task(adapter._handle_hermes_command(AsyncMock(), {**base, "text": "queue second"}))
-    await asyncio.wait_for(adapter._handle_hermes_command(AsyncMock(), {**base, "text": "stop"}), 5)
+    second = asyncio.create_task(adapter._handle_slave_command(AsyncMock(), {**base, "text": "queue second"}))
+    await asyncio.wait_for(adapter._handle_slave_command(AsyncMock(), {**base, "text": "stop"}), 5)
     handed = lambda: [c.args[0].text for c in adapter.handle_message.await_args_list]
     assert handed() == ["/stop"]
     release.set()

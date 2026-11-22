@@ -5,7 +5,7 @@
 # own files. Its only network calls are the configured OCR/Jev backend and, when
 # the user passes one, the public https document URL being read.
 name: minicpm-ocr
-repo: https://github.com/PovedaAqui/minicpm-ocr-hermes
+repo: https://github.com/PovedaAqui/minicpm-ocr-slave
 sha: 5ebb76905a65fe425e229d278dc63ce67840fe69
 subdir: minicpm_ocr
 title: MiniCPM-OCR
@@ -18,7 +18,7 @@ description: >-
   Disclosure — hosted mode sends the document and any scored region text to
   api.modelbest.ai; local mode uploads nothing. Reads only the path or public
   https URL passed to a tool, and stores review-queue state and CSV exports
-  under Hermes' plugin data directory. No telemetry, analytics, self-updater,
+  under slave-agent’ plugin data directory. No telemetry, analytics, self-updater,
   shell commands or background processes. The optional MODELBEST_API_KEY is read
   through agent.secret_scope.get_secret; the plugin never reads .env, auth.json
   or another tool's credential store.
@@ -26,7 +26,7 @@ maintainer: PovedaAqui
 tier: community
 category: tools
 requires_hermes: ">=0.22.0"
-docs_url: https://github.com/PovedaAqui/minicpm-ocr-hermes#readme
+docs_url: https://github.com/PovedaAqui/minicpm-ocr-slave#readme
 readme: true
 platforms: []
 known_issues:

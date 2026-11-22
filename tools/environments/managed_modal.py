@@ -43,7 +43,7 @@ def _result(output: str, returncode: int = 1) -> dict:
 
 
 class ManagedModalEnvironment(BaseEnvironment):
-    """Gateway-owned Modal sandbox with Hermes-compatible execute/cleanup."""
+    """Gateway-owned Modal sandbox with Slave-compatible execute/cleanup."""
 
     _stdin_mode = "payload"
     # The askpass prologue checks sudo ``-A`` support inside each command, so no capability probe

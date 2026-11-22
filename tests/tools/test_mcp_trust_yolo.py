@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 
 from gateway.session_context import clear_session_vars, set_session_vars
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tools import approval, mcp_tool, mcp_tool_costs
 from tools import mcp_tool_handlers as handlers
 from tools import mcp_tool_registration as registration
@@ -73,7 +73,7 @@ def test_yolo_and_mode_off_skip_the_trust_prompt_for_the_calling_session_only():
         assert handlers._trust_gate_check("srv", "write") is not None
     assert yolo.cards == [] and len(other.cards) == 1
 
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"approvals": {"mode": "off"}}))
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"approvals": {"mode": "off"}}))
     with _Chat("tg:other") as other:
         assert handlers._trust_gate_check("srv", "write") is None
     assert other.cards == []
@@ -90,7 +90,7 @@ def test_spend_limit_still_asks_under_yolo_and_refuses_when_nobody_can_answer():
     assert "spend limit is 50 credits" in json.loads(refused)["error"]
 
     # A cron run under approvals.mode: off: the untrusted write runs unattended, the limit still refuses.
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"approvals": {"mode": "off"}}))
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"approvals": {"mode": "off"}}))
     tokens, key = set_session_vars(cron_session="1"), set_current_session_key("cron:job")
     try:
         assert handlers._trust_gate_check("srv", "write") is None

@@ -1,8 +1,8 @@
 """Bridge ownership markers never carry a bridged value, and never reach an agent's child process.
 
 ``TELEGRAM_PROXY`` (a proxy URL can embed credentials) and the allowlists are bridged from YAML and
-stripped from every agent subprocess. Their ``HERMES_BRIDGED_*`` markers used to hold the same
-plaintext, and the ``HERMES_`` prefix passed the scrub, so a terminal command could read them.
+stripped from every agent subprocess. Their ``SLAVE_BRIDGED_*`` markers used to hold the same
+plaintext, and the ``SLAVE_`` prefix passed the scrub, so a terminal command could read them.
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ _NAMES = ("TELEGRAM_PROXY", "TELEGRAM_ALLOWED_USERS", "TELEGRAM_REQUIRE_MENTION"
 
 @pytest.fixture(autouse=True)
 def clean_bridge(monkeypatch):
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
 
     monkeypatch.setattr(env_loader, "_LOADED_DOTENV_KEYS", set())
     monkeypatch.setattr(env_loader, "_MANAGED_DOTENV_KEYS", set())
@@ -39,17 +39,17 @@ def _write(home, text):
 
 def test_no_bridged_value_reaches_an_agent_subprocess(tmp_path, monkeypatch):
     from gateway.config import load_gateway_config
-    from tools.environments.local import _sanitize_subprocess_env, hermes_subprocess_env
+    from tools.environments.local import _sanitize_subprocess_env, slave_subprocess_env
 
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     _write(home, f"telegram:\n  allow_from: ['111']\n  proxy_url: '{_PROXY}'\n")
 
     load_gateway_config()
 
     assert os.environ["TELEGRAM_PROXY"] == _PROXY  # the gateway itself still gets the value
-    for child in (hermes_subprocess_env(), _sanitize_subprocess_env(dict(os.environ))):
-        assert not [k for k, v in child.items() if "s3cretpw" in v or k.startswith("HERMES_BRIDGED_")]
+    for child in (slave_subprocess_env(), _sanitize_subprocess_env(dict(os.environ))):
+        assert not [k for k, v in child.items() if "s3cretpw" in v or k.startswith("SLAVE_BRIDGED_")]
         assert "TELEGRAM_ALLOWED_USERS" not in child
 
 
@@ -57,7 +57,7 @@ def test_bridge_still_refreshes_a_changed_yaml_value(tmp_path, monkeypatch):
     from gateway.config import load_gateway_config
 
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     _write(home, f"telegram:\n  allow_from: ['111', '222']\n  proxy_url: '{_PROXY}'\n")
     load_gateway_config()
     assert os.environ[bridged_env_marker("TELEGRAM_PROXY")] == bridged_env_digest(_PROXY)
@@ -74,7 +74,7 @@ def test_only_a_same_profile_restart_child_keeps_the_markers(tmp_path, monkeypat
     from tools.environments.local import served_profile_child_env
 
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     _write(home, "telegram:\n  reactions: false\n")
     load_gateway_config()
 
@@ -83,25 +83,25 @@ def test_only_a_same_profile_restart_child_keeps_the_markers(tmp_path, monkeypat
                                      inherit_credentials=True)
 
     assert restart[bridged_env_marker("TELEGRAM_REACTIONS")] == bridged_env_digest("false")
-    assert not [k for k in other if k.startswith("HERMES_BRIDGED_")]
+    assert not [k for k in other if k.startswith("SLAVE_BRIDGED_")]
 
 
 def test_a_load_for_another_home_never_rewrites_the_launch_profiles_values(tmp_path, monkeypatch):
-    """No secret scope bound: the HERMES_HOME override alone must keep B's YAML off A's env."""
+    """No secret scope bound: the SLAVE_HOME override alone must keep B's YAML off A's env."""
     from gateway.config import load_gateway_config
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     launch, other = tmp_path / "a", tmp_path / "b"
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     _write(launch, "telegram:\n  allow_from: ['111']\n  require_mention: true\n")
     _write(other, "telegram:\n  allow_from: ['999']\n")
     load_gateway_config()
 
-    token = set_hermes_home_override(other)
+    token = set_slave_home_override(other)
     try:
         load_gateway_config()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     assert os.environ["TELEGRAM_ALLOWED_USERS"] == "111"
     assert os.environ["TELEGRAM_REQUIRE_MENTION"] == "true"
@@ -117,21 +117,21 @@ print(json.dumps({k: os.environ.get(k) for k in json.loads(sys.argv[3])}))
 """
 
 
-@pytest.mark.parametrize("shell", ["hermes_subprocess_env", "terminal"])
+@pytest.mark.parametrize("shell", ["slave_subprocess_env", "terminal"])
 def test_a_gateway_restarted_from_an_agent_shell_applies_the_tightened_yaml(tmp_path, monkeypatch, shell):
-    """The agent's shell runs ``hermes gateway restart``: the bridged allowlists it inherited are the
+    """The agent's shell runs ``slave gateway restart``: the bridged allowlists it inherited are the
     bridge's, so the new gateway must re-derive them from config.yaml, not keep them as operator-set."""
     from gateway.config import load_gateway_config
     from tools.environments.local import (
-        _sanitize_subprocess_env, hermes_subprocess_env, served_profile_child_env)
+        _sanitize_subprocess_env, slave_subprocess_env, served_profile_child_env)
 
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     _write(home, "discord:\n  allowed_roles: ['55', '66']\n  allow_bots: all\ntelegram:\n  allow_from: ['1', '2']\n")
     load_gateway_config()
     assert os.environ["DISCORD_ALLOWED_ROLES"] == "55,66"
 
-    agent_shell = (hermes_subprocess_env(inherit_credentials=True) if shell == "hermes_subprocess_env"
+    agent_shell = (slave_subprocess_env(inherit_credentials=True) if shell == "slave_subprocess_env"
                    else _sanitize_subprocess_env(dict(os.environ)))
     _write(home, "discord:\n  allowed_roles: ['66']\n  allow_bots: none\ntelegram:\n  allow_from: ['2']\n")
     restart = served_profile_child_env(base=agent_shell, target_home=home, inherit_credentials=True)
@@ -146,12 +146,12 @@ def test_a_gateway_restarted_from_an_agent_shell_applies_the_tightened_yaml(tmp_
 
 
 def test_an_operator_set_value_survives_the_marker_scrub(monkeypatch):
-    from tools.environments.local import hermes_subprocess_env
+    from tools.environments.local import slave_subprocess_env
 
     monkeypatch.setenv("DISCORD_ALLOWED_ROLES", "77")
     monkeypatch.setenv(bridged_env_marker("DISCORD_ALLOWED_ROLES"), bridged_env_digest("55"))
 
-    child = hermes_subprocess_env(inherit_credentials=True)
+    child = slave_subprocess_env(inherit_credentials=True)
 
     assert child["DISCORD_ALLOWED_ROLES"] == "77"
     assert bridged_env_marker("DISCORD_ALLOWED_ROLES") not in child

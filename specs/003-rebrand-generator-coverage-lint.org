@@ -39,7 +39,7 @@ vocabulary), so the signal was useless.
    - ~.js~ must not be dropped from ~CODE_EXTS~ when editing the table (the
      session nearly lost it and restored it).
 2. New mode ~--blind~ behind ~blindspots()~: walks the same tracked file set
-   (~git grep -l -I -i -e hermes -- .~; ~-I~ skips binaries) and diffs the
+   (~git grep -l -I -i -e slave -- .~; ~-I~ skips binaries) and diffs the
    extensions a tier reads against the extensions the tree actually carries
    the word in; fails (nonempty report) when any file is unreachable.
 3. New mode ~--lint~ behind ~hand_brands()~: finds brand words a person typed
@@ -95,7 +95,7 @@ vocabulary), so the signal was useless.
   ~.py~ with ~tokenize~, ~.ts/.tsx/.js/.mjs/.cjs/.rs/.mts/.cts/.h/.cs~ with a
   quoted-region regex, remaining prose/config formats whole-text.
 - Whole-text prose rewriting over ~.html/.css/.svg~ is deliberately stronger;
-  identity-tier renaming of ~.hermes-foo~ class names stays consistent
+  identity-tier renaming of ~.slave-foo~ class names stays consistent
   because the matching ~.tsx~/~.ts~ usages are covered too.
 - Landed in the ~ai/light-core~ brand commit ~e3edc4e6d3~ and the docs commit
   ~4255916916~ (FORK.org numbers + allow-list + plugin.yaml) — not yet

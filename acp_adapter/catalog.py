@@ -16,7 +16,7 @@ def read_catalog_rows(home):
     scope = _store_scope(home)
     if not store_exists(scope):
         return {}
-    from hermes_cli.gateway_session_store import SurfaceLabelReader
+    from slave_cli.gateway_session_store import SurfaceLabelReader
     from persistence.conversation.sessions import SessionQuery, SessionWindow
     # The owner stores an editor thread as ``local`` with ``created_source='acp'``; the surface
     # labels match both in SQL, before the LIMIT.

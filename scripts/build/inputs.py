@@ -9,11 +9,11 @@ import tomllib
 
 
 RESOURCE_ENV = {
-    "skills": "HERMES_BUNDLED_SKILLS",
-    "optional-skills": "HERMES_OPTIONAL_SKILLS",
-    "plugins": "HERMES_BUNDLED_PLUGINS",
-    "locales": "HERMES_BUNDLED_LOCALES",
-    "optional-mcps": "HERMES_OPTIONAL_MCPS",
+    "skills": "SLAVE_BUNDLED_SKILLS",
+    "optional-skills": "SLAVE_OPTIONAL_SKILLS",
+    "plugins": "SLAVE_BUNDLED_PLUGINS",
+    "locales": "SLAVE_BUNDLED_LOCALES",
+    "optional-mcps": "SLAVE_OPTIONAL_MCPS",
 }
 
 
@@ -102,7 +102,7 @@ class AgentInputs:
         if not pm_python.is_file() or not pm_site.is_dir():
             raise ValueError("prepared PM runtime is incomplete")
         if self.stamp is not None:
-            from hermes_constants import PACKAGED_RUNTIMES
+            from slave_constants import PACKAGED_RUNTIMES
 
             stamp = json.loads(self.stamp.read_text(encoding="utf-8-sig"))
             # A sealed Python environment must name the PM runtime the assembler was

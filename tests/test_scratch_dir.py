@@ -1,4 +1,4 @@
-"""Scratch dir contract: TMPDIR/TMP/TEMP follow HERMES_HOME/cache/scratch unless the user set them."""
+"""Scratch dir contract: TMPDIR/TMP/TEMP follow SLAVE_HOME/cache/scratch unless the user set them."""
 
 import contextlib
 import os
@@ -16,21 +16,21 @@ from tests.waiting import wait_until
 import psutil
 import pytest
 
-from hermes_constants import apply_scratch_tmp_env, get_scratch_dir, prune_scratch_dir
+from slave_constants import apply_scratch_tmp_env, get_scratch_dir, prune_scratch_dir
 
 
 def test_boot_hook_and_prompt_hand_the_prune_to_one_child(scratch_prune_spawns, tmp_path, monkeypatch):
     """The boot hook returns with TMPDIR pointing at a scratch dir that already exists and
     starts exactly one prune process, for that dir; the prompt build starts no other. A routed
     caller's process prunes the routed home's dir, never the launch home's."""
-    import hermes_constants as constants
+    import slave_constants as constants
     from agent.prompt_builder import _local_host_hints
 
     monkeypatch.setattr(constants, "_scratch_pruned_once", False)
     home = tmp_path / "launch"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     scratch = home / "cache" / "scratch"
-    env = {"HERMES_HOME": str(home)}
+    env = {"SLAVE_HOME": str(home)}
     assert apply_scratch_tmp_env(env) is True
     hints = _local_host_hints()
     assert env["TMPDIR"] == str(scratch) and scratch.is_dir()
@@ -39,11 +39,11 @@ def test_boot_hook_and_prompt_hand_the_prune_to_one_child(scratch_prune_spawns, 
 
     monkeypatch.setattr(constants, "_scratch_pruned_once", False)  # the routed caller's own process
     routed = tmp_path / "routed"
-    token = constants.set_hermes_home_override(routed)
+    token = constants.set_slave_home_override(routed)
     try:
         assert get_scratch_dir() == routed / "cache" / "scratch"
     finally:
-        constants.reset_hermes_home_override(token)
+        constants.reset_slave_home_override(token)
     assert scratch_prune_spawns == [scratch, routed / "cache" / "scratch"]
 
 
@@ -58,7 +58,7 @@ def _idle_entry(scratch: Path, name: str) -> Path:
 
 
 def test_a_short_lived_process_still_completes_its_due_prune(tmp_path):
-    """A `hermes` command that exits right after boot still gets its pass: the detached child
+    """A `slave` command that exits right after boot still gets its pass: the detached child
     removes the idle entry of the (routed) home the command resolved, after the command is gone,
     and leaves the launch home alone. Red on a daemon-thread prune, which dies with the command.
     The user's shell stays the pass's own even when everything between it and the pass exited
@@ -68,13 +68,13 @@ def test_a_short_lived_process_still_completes_its_due_prune(tmp_path):
     doomed = _idle_entry(get_scratch_dir(routed, prune=False), "routed-lane")
     shell_entry = _idle_entry(get_scratch_dir(routed, prune=False), "shell-lane")
     repo = Path(__file__).resolve().parents[1]
-    launcher = ("import sys; sys.path.insert(0, sys.argv[1]); from pathlib import Path; import hermes_constants as h; "
-                "h.set_hermes_home_override(Path(sys.argv[2])); h.get_scratch_dir()")
+    launcher = ("import sys; sys.path.insert(0, sys.argv[1]); from pathlib import Path; import slave_constants as h; "
+                "h.set_slave_home_override(Path(sys.argv[2])); h.get_scratch_dir()")
     # shell (cwd in an idle entry, stays) -> wrapper (exits once the launcher does) -> launcher
     run = "import subprocess, sys; subprocess.run(sys.argv[1:], cwd={!r}, stdin=subprocess.DEVNULL, check=True)"
     wrapper = [sys.executable, "-c", run.format(str(tmp_path)), sys.executable, "-c", launcher, str(repo), str(routed)]
     shell = [sys.executable, "-c", run.format(str(tmp_path)) + "; import time; time.sleep(120)", *wrapper]
-    env = {**os.environ, "HERMES_HOME": str(launch)}
+    env = {**os.environ, "SLAVE_HOME": str(launch)}
     user_shell = subprocess.Popen(shell, env=env, cwd=shell_entry / "sub", stdin=subprocess.DEVNULL)
     log_file = routed / "logs" / "scratch-prune.log"
 
@@ -86,7 +86,7 @@ def test_a_short_lived_process_still_completes_its_due_prune(tmp_path):
         assert not doomed.exists() and kept.exists() and shell_entry.exists()
         assert user_shell.poll() is None, "the user's shell was signalled"
         log = log_file.read_text(encoding="utf-8-sig")
-        assert f"kept {str(shell_entry)!r} — live Hermes process pid={user_shell.pid}" in log, log
+        assert f"kept {str(shell_entry)!r} — live slave-agent process pid={user_shell.pid}" in log, log
     finally:
         user_shell.kill()
         user_shell.wait(timeout=30)
@@ -98,7 +98,7 @@ def test_launcher_ancestry_stamp_is_boot_relative_even_for_a_non_utf8_name(tmp_p
     wall-clock birth that a clock step moves: a process whose name was cut mid-UTF-8 (comm is
     15 bytes) still gets its tick, and is recognised as itself. A wall-clock fallback there
     disowned the user's shell after a clock step and the pass killed it."""
-    import hermes_constants_scratch as rules
+    import slave_constants_scratch as rules
 
     ready = tmp_path / "ready"
     child = subprocess.Popen([sys.executable, "-c", (
@@ -117,30 +117,30 @@ def test_launcher_ancestry_stamp_is_boot_relative_even_for_a_non_utf8_name(tmp_p
 
 
 def test_scratch_env_follows_home_and_respects_user_tmpdir(tmp_path):
-    """Unset temp vars → scratch of env HERMES_HOME; a Hermes-exported value re-derives for a routed
+    """Unset temp vars → scratch of env SLAVE_HOME; a Slave-exported value re-derives for a routed
     home; a user/OS-set value (macOS ``/var/folders``, ``%TEMP%``) is never touched."""
     home_a, home_b = tmp_path / "a", tmp_path / "b"
-    env = {"HERMES_HOME": str(home_a)}
+    env = {"SLAVE_HOME": str(home_a)}
     assert apply_scratch_tmp_env(env) is True
     scratch_a = str(home_a / "cache" / "scratch")
-    assert env["TMPDIR"] == env["TMP"] == env["TEMP"] == env["HERMES_SCRATCH_DIR"] == scratch_a
+    assert env["TMPDIR"] == env["TMP"] == env["TEMP"] == env["SLAVE_SCRATCH_DIR"] == scratch_a
     assert os.path.isdir(scratch_a)
 
-    env["HERMES_HOME"] = str(home_b)  # child served under another profile's home
+    env["SLAVE_HOME"] = str(home_b)  # child served under another profile's home
     assert apply_scratch_tmp_env(env) is True
     assert env["TMPDIR"] == str(home_b / "cache" / "scratch")
 
-    user_env = {"HERMES_HOME": str(home_a), "TMPDIR": "/var/folders/zz"}
+    user_env = {"SLAVE_HOME": str(home_a), "TMPDIR": "/var/folders/zz"}
     assert apply_scratch_tmp_env(user_env) is False
-    assert user_env["TMPDIR"] == "/var/folders/zz" and "HERMES_SCRATCH_DIR" not in user_env
+    assert user_env["TMPDIR"] == "/var/folders/zz" and "SLAVE_SCRATCH_DIR" not in user_env
     assert "TMP" not in user_env  # a partially user-set triple is left exactly as found
 
 
 def test_bootstrap_import_exports_scratch_to_process_and_children(tmp_path):
-    """``import hermes_bootstrap`` alone makes ``tempfile`` (this process AND a child) land in scratch."""
-    env = {k: v for k, v in os.environ.items() if k not in ("TMPDIR", "TMP", "TEMP", "HERMES_SCRATCH_DIR")}
-    env["HERMES_HOME"] = str(tmp_path)
-    code = ("import tempfile, os, subprocess, sys; import hermes_bootstrap; "
+    """``import slave_bootstrap`` alone makes ``tempfile`` (this process AND a child) land in scratch."""
+    env = {k: v for k, v in os.environ.items() if k not in ("TMPDIR", "TMP", "TEMP", "SLAVE_SCRATCH_DIR")}
+    env["SLAVE_HOME"] = str(tmp_path)
+    code = ("import tempfile, os, subprocess, sys; import slave_bootstrap; "
             "print(tempfile.gettempdir()); "
             "print(subprocess.run([sys.executable, '-c', 'import tempfile;print(tempfile.gettempdir())'],"
             " capture_output=True, text=True).stdout.strip())")
@@ -191,7 +191,7 @@ def test_prune_ignores_freshened_hardlinks_shared_with_a_live_repo(tmp_path):
 @pytest.mark.platforms("posix")  # POSIX directory modes
 class TestScratchDirPermissionPolicy:
     """get_scratch_dir must honor the home permission policy instead of a blanket 0700:
-    an explicit HERMES_HOME_MODE and a managed/shared home win (#117347)."""
+    an explicit SLAVE_HOME_MODE and a managed/shared home win (#117347)."""
 
     @staticmethod
     def _native_mode_after_chmod(path, requested=0o2770):
@@ -208,9 +208,9 @@ class TestScratchDirPermissionPolicy:
         # A known, marker-free effective home: each case below plants `.managed` in the home whose
         # scratch dir it exercises (`get_scratch_dir(home)` reads the marker there), and the real
         # home's own marker must not leak into callers that still resolve the effective home.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-        for var in ("HERMES_HOME_MODE", "HERMES_MANAGED", "HERMES_CONTAINER",
-                    "HERMES_SKIP_CHMOD", "HERMES_UID", "HERMES_GID"):
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
+        for var in ("SLAVE_HOME_MODE", "SLAVE_MANAGED", "SLAVE_CONTAINER",
+                    "SLAVE_SKIP_CHMOD", "SLAVE_UID", "SLAVE_GID"):
             monkeypatch.delenv(var, raising=False)
 
     def test_default_is_owner_only(self, tmp_path, monkeypatch):
@@ -223,13 +223,13 @@ class TestScratchDirPermissionPolicy:
         probe = tmp_path / "mode-probe"
         probe.mkdir()
         expected = self._native_mode_after_chmod(probe)
-        monkeypatch.setenv("HERMES_HOME_MODE", "2770")
+        monkeypatch.setenv("SLAVE_HOME_MODE", "2770")
         scratch = get_scratch_dir(tmp_path, prune=False)
         assert stat.S_IMODE(os.stat(scratch).st_mode) == expected
 
     def test_managed_env_leaves_preexisting_mode_untouched(self, tmp_path, monkeypatch):
         self._isolate_env(monkeypatch, tmp_path)
-        monkeypatch.setenv("HERMES_MANAGED", "nixos")
+        monkeypatch.setenv("SLAVE_MANAGED", "nixos")
         pre = tmp_path / "cache" / "scratch"
         pre.mkdir(parents=True)
         expected = self._native_mode_after_chmod(pre)
@@ -274,8 +274,8 @@ class TestScratchDirPermissionPolicy:
 
     def test_effective_home_marker_does_not_govern_another_homes_scratch(self, tmp_path, monkeypatch):
         # The caller's home decides the policy. A boot caller (``export_scratch_tmp_env``) and
-        # ``hermes doctor`` have already resolved theirs, so the marker lookup must not fall back
-        # to ``get_hermes_home()``: for a sticky profile with HERMES_HOME unset that lookup warns
+        # ``slave doctor`` have already resolved theirs, so the marker lookup must not fall back
+        # to ``get_slave_home()``: for a sticky profile with SLAVE_HOME unset that lookup warns
         # about the default profile on every command, and it is the wrong home to judge by anyway.
         selected = tmp_path / "home"
         selected.mkdir()
@@ -288,10 +288,10 @@ class TestScratchDirPermissionPolicy:
         assert stat.S_IMODE(os.stat(get_scratch_dir(other, prune=False)).st_mode) == 0o700
 
     def test_canonical_container_signal_without_env_override_keeps_operator_mode(self, tmp_path, monkeypatch):
-        # Podman/containerd/K8s runtimes often don't export HERMES_CONTAINER; the canonical
+        # Podman/containerd/K8s runtimes often don't export SLAVE_CONTAINER; the canonical
         # _detect_container breadth (not the narrower legacy signal set) must skip the chmod.
         self._isolate_env(monkeypatch, tmp_path)
-        monkeypatch.setattr("hermes_constants._detect_container", lambda: True)
+        monkeypatch.setattr("slave_constants._detect_container", lambda: True)
         pre = tmp_path / "cache" / "scratch"
         pre.mkdir(parents=True)
         os.chmod(pre, 0o750)
@@ -303,7 +303,7 @@ class TestScratchDirPermissionPolicy:
         probe = tmp_path / "mode-probe"
         probe.mkdir()
         expected = self._native_mode_after_chmod(probe)
-        monkeypatch.setenv("HERMES_HOME_MODE", "2770")
+        monkeypatch.setenv("SLAVE_HOME_MODE", "2770")
         first = get_scratch_dir(tmp_path, prune=False)
         second = get_scratch_dir(tmp_path, prune=False)
         assert first == second
@@ -311,7 +311,7 @@ class TestScratchDirPermissionPolicy:
 
     def test_container_keeps_operator_mode_but_honors_explicit(self, tmp_path, monkeypatch):
         self._isolate_env(monkeypatch, tmp_path)
-        monkeypatch.setenv("HERMES_CONTAINER", "1")
+        monkeypatch.setenv("SLAVE_CONTAINER", "1")
         pre = tmp_path / "cache" / "scratch"
         pre.mkdir(parents=True)
         os.chmod(pre, 0o750)
@@ -319,13 +319,13 @@ class TestScratchDirPermissionPolicy:
         probe = tmp_path / "mode-probe"
         probe.mkdir()
         expected = self._native_mode_after_chmod(probe)
-        monkeypatch.setenv("HERMES_HOME_MODE", "2770")
+        monkeypatch.setenv("SLAVE_HOME_MODE", "2770")
         assert stat.S_IMODE(os.stat(get_scratch_dir(tmp_path, prune=False)).st_mode) == expected
 
-    def test_hermes_uid_gid_applied_to_scratch(self, tmp_path, monkeypatch):
+    def test_slave_uid_gid_applied_to_scratch(self, tmp_path, monkeypatch):
         self._isolate_env(monkeypatch, tmp_path)
-        monkeypatch.setenv("HERMES_UID", "1000")
-        monkeypatch.setenv("HERMES_GID", "911")
+        monkeypatch.setenv("SLAVE_UID", "1000")
+        monkeypatch.setenv("SLAVE_GID", "911")
         with patch.object(os, "chown") as mock_chown:
             get_scratch_dir(tmp_path, prune=False)
         mock_chown.assert_called_once_with(tmp_path / "cache" / "scratch", 1000, 911)
@@ -334,13 +334,13 @@ class TestScratchDirPermissionPolicy:
 @pytest.mark.platforms("posix")  # POSIX file modes
 def test_secure_file_skips_chmod_on_canonical_container_signal(tmp_path, monkeypatch):
     """_secure_file skips on the same canonical container signal that apply_secure_dir_policy /
-    get_scratch_dir already honor (one policy implementation in hermes_constants)."""
-    from hermes_cli import config
+    get_scratch_dir already honor (one policy implementation in slave_constants)."""
+    from slave_cli import config
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    for var in ("HERMES_MANAGED", "HERMES_CONTAINER", "HERMES_SKIP_CHMOD"):
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
+    for var in ("SLAVE_MANAGED", "SLAVE_CONTAINER", "SLAVE_SKIP_CHMOD"):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setattr("hermes_constants._detect_container", lambda: True)
+    monkeypatch.setattr("slave_constants._detect_container", lambda: True)
     f = tmp_path / "config.yaml"
     f.write_text("", encoding="utf-8")
     os.chmod(f, 0o640)
@@ -401,7 +401,7 @@ def test_prune_records_removals_and_kills_in_scratch_prune_log(tmp_path: Path) -
             real_rmtree(path, *args, **kwargs)
 
     try:
-        with patch("hermes_constants_scratch.shutil.rmtree", rmtree):
+        with patch("slave_constants_scratch.shutil.rmtree", rmtree):
             assert prune_scratch_dir(scratch) == 1
         assert worker.wait(timeout=10) is not None
     finally:
@@ -450,7 +450,7 @@ def test_prune_log_keeps_record_when_another_prune_rotated_first(
     """Two prunes of one home can both reach rollover: the other one renames
     ``scratch-prune.log`` between this one's existence check and its rename. The rotation is
     already done, so the record goes to the new file instead of being dropped."""
-    import hermes_constants_scratch
+    import slave_constants_scratch
 
     scratch = get_scratch_dir(tmp_path, prune=False)
     entry = scratch / "idle-lane"
@@ -460,7 +460,7 @@ def test_prune_log_keeps_record_when_another_prune_rotated_first(
     log = tmp_path / "logs" / "scratch-prune.log"
     log.parent.mkdir()
     log.write_bytes(b"x" * 200)
-    monkeypatch.setattr(hermes_constants_scratch, "_PRUNE_LOG_MAX_BYTES", 100)
+    monkeypatch.setattr(slave_constants_scratch, "_PRUNE_LOG_MAX_BYTES", 100)
     real_rename = os.rename
     raced: list[str] = []
 
@@ -520,7 +520,7 @@ def test_write_during_size_walk_is_rescued(tmp_path: Path) -> None:
     A writer overwrites an old file while the prune is sizing the doomed entry; the
     re-check must still see it. Red when the size walk runs after the re-check: the
     entry is destroyed with the fresh write inside."""
-    import hermes_constants_scratch as scratch_mod
+    import slave_constants_scratch as scratch_mod
 
     scratch = get_scratch_dir(tmp_path, prune=False)
     entry = scratch / "sized-lane"
@@ -536,7 +536,7 @@ def test_write_during_size_walk_is_rescued(tmp_path: Path) -> None:
         payload.write_text("FRESH", encoding="utf-8")
         return real_tree_bytes(path)
 
-    with patch("hermes_constants_scratch._tree_bytes", write_during_size_walk):
+    with patch("slave_constants_scratch._tree_bytes", write_during_size_walk):
         assert prune_scratch_dir(scratch) == 0
     assert payload.read_text(encoding="utf-8-sig") == "FRESH", "write during size walk was destroyed"
     log = (tmp_path / "logs" / "scratch-prune.log").read_text(encoding="utf-8-sig")
@@ -564,7 +564,7 @@ def test_midprune_resumed_write_is_rescued(tmp_path: Path) -> None:
         fresh.write_text("FRESH RESUMED WORK\n", encoding="utf-8")
         return 0
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", write_during_reap):
+    with patch("slave_constants_scratch.reap_processes_rooted_in", write_during_reap):
         assert prune_scratch_dir(scratch) == 0  # rescued — not counted as removed
     assert fresh.exists(), "fresh mid-prune write was destroyed"
     assert entry.exists()
@@ -598,7 +598,7 @@ def test_midprune_nested_overwrite_is_rescued_by_descending_recheck(tmp_path: Pa
         payload.write_text("FRESH OVERWRITE, DEEP\n", encoding="utf-8")
         return 0
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", overwrite_during_reap):
+    with patch("slave_constants_scratch.reap_processes_rooted_in", overwrite_during_reap):
         assert prune_scratch_dir(scratch) == 0  # rescued — not counted as removed
     assert payload.read_text(encoding="utf-8-sig") == "FRESH OVERWRITE, DEEP\n", (
         "deep mid-prune overwrite was destroyed"
@@ -627,7 +627,7 @@ def test_midprune_vanished_entry_is_recorded_not_counted(tmp_path: Path) -> None
         shutil.rmtree(entry)
         return 0
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", remove_during_reap):
+    with patch("slave_constants_scratch.reap_processes_rooted_in", remove_during_reap):
         assert prune_scratch_dir(scratch) == 0  # gone, but not by our hand
     assert not entry.exists()
     log = (tmp_path / "logs" / "scratch-prune.log").read_text(encoding="utf-8-sig")
@@ -668,9 +668,9 @@ def test_postremoval_unreadable_entry_is_not_counted_as_removed(tmp_path: Path) 
             raise PermissionError("post-rmtree visibility denied")
         return real_lstat(path, *args, **kwargs)
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", lambda *a, **k: 0), \
-         patch("hermes_constants_scratch.shutil.rmtree", rmtree_leaves_residue), \
-         patch("hermes_constants_scratch.os.lstat", lstat):
+    with patch("slave_constants_scratch.reap_processes_rooted_in", lambda *a, **k: 0), \
+         patch("slave_constants_scratch.shutil.rmtree", rmtree_leaves_residue), \
+         patch("slave_constants_scratch.os.lstat", lstat):
         assert prune_scratch_dir(scratch) == 0  # unknown, not removed
     assert entry.exists() and payload.read_text(encoding="utf-8-sig") == "still here"
     log = log_file.read_text(encoding="utf-8-sig")
@@ -681,14 +681,14 @@ def test_postremoval_unreadable_entry_is_not_counted_as_removed(tmp_path: Path) 
 
 @pytest.mark.platforms("posix")
 @pytest.mark.live_system_guard_bypass  # a red run must kill the orphan this test made (reparented to init)
-def test_prune_keeps_entry_a_registered_hermes_process_works_in_but_reaps_orphans(tmp_path, monkeypatch):
-    """#132401 live-worker guard: a background process Hermes itself started (tracked in the
+def test_prune_keeps_entry_a_registered_slave_process_works_in_but_reaps_orphans(tmp_path, monkeypatch):
+    """#132401 live-worker guard: a background process slave-agent itself started (tracked in the
     process registry's ``processes.json``) is never reaped, and the idle entry it works in is
     kept with an audit line. The orphaned grandchild of a registered shell that already exited
-    is no longer Hermes' — it is still reaped and its entry removed. Red on the cwd-only reap."""
+    is no longer slave-agent’ — it is still reaped and its entry removed. Red on the cwd-only reap."""
     from tools.process_registry import ProcessRegistry
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     scratch = get_scratch_dir(tmp_path, prune=False)
     owned_dir, orphan_dir = scratch / "live-worker", scratch / "dead-lane"
     owned_dir.mkdir()
@@ -709,7 +709,7 @@ def test_prune_keeps_entry_a_registered_hermes_process_works_in_but_reaps_orphan
     try:
         assert prune_scratch_dir(scratch) == 1
         assert owned_dir.exists() and not orphan_dir.exists()
-        assert worker.process.poll() is None, "registered Hermes worker was reaped"
+        assert worker.process.poll() is None, "registered slave-agent worker was reaped"
         def _orphan_gone():
             try:
                 return psutil.Process(orphan).status() == psutil.STATUS_ZOMBIE
@@ -717,7 +717,7 @@ def test_prune_keeps_entry_a_registered_hermes_process_works_in_but_reaps_orphan
                 return True
         wait_until(_orphan_gone, timeout=10, what="orphan reaped")
         log = (tmp_path / "logs" / "scratch-prune.log").read_text(encoding="utf-8-sig")
-        assert f"kept {str(owned_dir)!r} — live Hermes process pid=" in log, log
+        assert f"kept {str(owned_dir)!r} — live slave-agent process pid=" in log, log
     finally:
         registry.kill_process(worker.id)
         with contextlib.suppress(psutil.Error):
@@ -726,7 +726,7 @@ def test_prune_keeps_entry_a_registered_hermes_process_works_in_but_reaps_orphan
 
 @pytest.mark.platforms("posix")
 def test_prune_keeps_entry_the_pruning_sessions_own_lineage_works_in(tmp_path, monkeypatch):
-    """#132401 review: a live session inside an idle entry that launches another Hermes
+    """#132401 review: a live session inside an idle entry that launches another slave-agent
     command is the pruner's ancestor — never signalled, and its entry must not be deleted
     from under it either."""
     scratch = get_scratch_dir(tmp_path, prune=False)
@@ -745,12 +745,12 @@ def test_prune_owner_lookup_survives_symlinked_scratch_and_drops_orphaned_mcp_he
     """#132401 review: the owning home comes from the configured scratch path even when it is a
     symlink onto another disk, and an MCP helper whose recorded spawner died is an orphan again
     (reaped, entry removed) while a live background worker keeps its entry."""
-    from hermes_cli import process_identity
+    from slave_cli import process_identity
     from tools.process_registry import ProcessRegistry
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     elsewhere = tmp_path / "other-disk" / "scratch"
     elsewhere.mkdir(parents=True)
     (home / "cache").mkdir()
@@ -767,9 +767,9 @@ def test_prune_owner_lookup_survives_symlinked_scratch_and_drops_orphaned_mcp_he
     repo = str(Path(__file__).resolve().parents[1])
     spawner = subprocess.Popen(
         [sys.executable, "-c",
-         f"import sys; sys.path.insert(0, {repo!r}); from hermes_cli.process_identity import register_child; "
+         f"import sys; sys.path.insert(0, {repo!r}); from slave_cli.process_identity import register_child; "
          f"assert register_child({helper.pid}, 'mcp-helper'); import time; time.sleep(60)"],
-        stdin=subprocess.DEVNULL, env={**os.environ, "HERMES_HOME": str(home)})
+        stdin=subprocess.DEVNULL, env={**os.environ, "SLAVE_HOME": str(home)})
     wait_until(lambda: helper.pid in {e.get("pid") for e in process_identity.ledger_entries(all_installs=True)},
                timeout=20, what="spawner registered the mcp-helper")
     spawner.kill()

@@ -118,10 +118,10 @@ def _run_turn_with_compaction(tmp_path, monkeypatch, summary):
     from agent.context_compressor import ContextCompressor
     from agent.conversation_compression import compress_context
 
-    hermes_home, atof_dir = tmp_path / "hermes-home", tmp_path / "atof"
-    hermes_home.mkdir()
+    slave_home, atof_dir = tmp_path / "slave-home", tmp_path / "atof"
+    slave_home.mkdir()
     atof_dir.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
     monkeypatch.setenv(relay_runtime.RELAY_PLUGINS_CONFIG_ENV, str(_write_plugins_toml(tmp_path, atof_dir)))
     relay_runtime._reset_for_tests()
 
@@ -181,9 +181,9 @@ def test_committed_compaction_mark_resets_freshness_for_the_next_llm_start(tmp_p
 
     [mark] = _compaction_marks(events)
     assert mark["name"] == "compaction"
-    assert mark["data_schema"] == {"name": "hermes.compaction", "version": "1"}
+    assert mark["data_schema"] == {"name": "slave.compaction", "version": "1"}
     assert (mark["data"]["kind"], mark["data"]["outcome"], mark["data"]["method"]) == ("summarize", "committed", method)
-    [turn_start] = [e for e in events if e.get("name") == "hermes.turn" and e.get("scope_category") == "start"]
+    [turn_start] = [e for e in events if e.get("name") == "slave.turn" and e.get("scope_category") == "start"]
     assert mark["parent_uuid"] == turn_start["uuid"]
     raw = json.dumps(mark)
     assert SECRET not in raw and "SANITIZED SUMMARY" not in raw

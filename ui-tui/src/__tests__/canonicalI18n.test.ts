@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { canonicalRequest } from '@hermes/shared/gateway-canonical'
+import { canonicalRequest } from '@slave-agent/shared/gateway-canonical'
 import { afterEach, expect, it } from 'vitest'
 
 import { applyLocale, resetLocale, t } from '../i18n/runtime.js'

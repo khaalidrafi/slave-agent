@@ -1,4 +1,4 @@
-"""SIGUSR1 (systemd ``ExecReload`` / ``hermes gateway restart``) is a graceful restart, and the
+"""SIGUSR1 (systemd ``ExecReload`` / ``slave gateway restart``) is a graceful restart, and the
 gateway says so in its log when the signal lands (#117267)."""
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ class _AbortedStartupRunner:
         # The unified bootstrap builds the session authority against the runner's real store
         # and stops it on every exit path (same shape as test_startup_restart_race.py).
         from gateway.session import SessionStore
-        from hermes_constants import get_hermes_home
-        self.session_store = SessionStore(get_hermes_home() / 'sessions', config)
+        from slave_constants import get_slave_home
+        self.session_store = SessionStore(get_slave_home() / 'sessions', config)
         self._session_db = self.persistence = self.session_store._scoped_persistence()
         self._draining = False
         self.config = config
@@ -50,7 +50,7 @@ class _AbortedStartupRunner:
 
 @pytest.mark.asyncio
 async def test_sigusr1_handler_installed_by_start_gateway_logs_graceful_restart(tmp_path, monkeypatch, caplog):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     for target, value in (
         ("gateway.status.get_running_pid", lambda: None),
         ("gateway.status.acquire_gateway_runtime_lock", lambda: True),
@@ -58,7 +58,7 @@ async def test_sigusr1_handler_installed_by_start_gateway_logs_graceful_restart(
         ("gateway.status.remove_pid_file", lambda: None),
         ("gateway.status.release_gateway_runtime_lock", lambda: None),
         ("tools.skills_sync.sync_skills", lambda quiet=True: None),
-        ("hermes_logging.setup_logging", lambda hermes_home, mode: None),
+        ("slave_logging.setup_logging", lambda slave_home, mode: None),
         ("tools.mcp_tool_lifecycle.shutdown_mcp_servers", lambda: None),
     ):
         monkeypatch.setattr(target, value)

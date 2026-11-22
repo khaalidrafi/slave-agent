@@ -1,14 +1,14 @@
 name: cloro
 title: cloro
-repo: https://github.com/cloro-dev/hermes-plugin-cloro
+repo: https://github.com/cloro-dev/slave-plugin-cloro
 sha: 7189fbd9ab14aafaa3fb18f419ca76d46aa1bc4a
 version: "1.0.0"
-description: "cloro web search backend: live Google Search results for the built-in web_search tool (search only; pair it with an extract backend for web_extract). Disclosure — sends each search query and the configured country to api.cloro.dev with your CLORO_API_KEY, and each search uses cloro credits. Reads the key only through Hermes's secret scope. Registers no tools, hooks or middleware, writes no files, starts no processes, has no telemetry or self-updater, and uses only the Python standard library."
+description: "cloro web search backend: live Google Search results for the built-in web_search tool (search only; pair it with an extract backend for web_extract). Disclosure — sends each search query and the configured country to api.cloro.dev with your CLORO_API_KEY, and each search uses cloro credits. Reads the key only through slave-agent’s secret scope. Registers no tools, hooks or middleware, writes no files, starts no processes, has no telemetry or self-updater, and uses only the Python standard library."
 maintainer: cloro-dev
 tier: community
 category: web
 requires_hermes: ">=0.21.6"
-docs_url: https://github.com/cloro-dev/hermes-plugin-cloro#readme
+docs_url: https://github.com/cloro-dev/slave-plugin-cloro#readme
 readme: true
 platforms: []
 capabilities:

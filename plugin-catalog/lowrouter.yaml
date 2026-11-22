@@ -1,25 +1,25 @@
 name: lowrouter
-repo: https://github.com/carboniferio/hermes-lowrouter-provider
+repo: https://github.com/carboniferio/slave-lowrouter-provider
 sha: 93a8353d495443d8157c423979ac9df2a8589db6
 subdir: lowrouter
 description: >-
-  LowRouter as a Hermes model provider (`--provider lowrouter`, or LowRouter in `hermes model`).
+  LowRouter as a slave-agent model provider (`--provider lowrouter`, or LowRouter in `slave model`).
   The picker shows the `auto/` chat models with tool calling and 64K+ context, plus the user's
   own `alias/` models, instead of every ID from /v1/models. Context windows come from
-  LowRouter's catalog instead of Hermes' 256K fallback, and /usage shows the credit balance in
-  euros. LowRouter bills in EUR, so the plugin reports no USD cost and Hermes shows it as unknown.
+  LowRouter's catalog instead of slave-agent’ 256K fallback, and /usage shows the credit balance in
+  euros. LowRouter bills in EUR, so the plugin reports no USD cost and slave-agent shows it as unknown.
   Maintained by LowRouter. Disclosure — registers one model provider and nothing else (no tools,
   hooks, commands or threads). Prompts, tool schemas and LOWROUTER_API_KEY go to
-  https://api.lowrouter.ai/v1 (or the configured model.base_url) through Hermes' client, and
+  https://api.lowrouter.ai/v1 (or the configured model.base_url) through slave-agent’ client, and
   LowRouter forwards each request to the host serving the model. The plugin's own requests are
   GET /v1/models (cached for an hour per key and base URL) and GET /v1/credits on /usage, to the
-  same base URL with the same key, through Hermes' open_credentialed_url. No files read or written,
+  same base URL with the same key, through slave-agent’ open_credentialed_url. No files read or written,
   no processes.
 maintainer: carboniferio
 tier: community
 category: models
 requires_hermes: ">=0.21.5"
-docs_url: https://github.com/carboniferio/hermes-lowrouter-provider#readme
+docs_url: https://github.com/carboniferio/slave-lowrouter-provider#readme
 version: "0.1.1"
 platforms: []
 capabilities:

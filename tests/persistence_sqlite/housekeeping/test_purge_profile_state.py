@@ -1,4 +1,4 @@
-"""Regression tests for the SQLite profile identity repository's ``purge_profile`` on `hermes profile delete`.
+"""Regression tests for the SQLite profile identity repository's ``purge_profile`` on `slave profile delete`.
 
 `delete_profile` removes the profile directory and the multiplexer tears its runtime down, but the
 profile name is also baked into session keys (``agent:<name>:*``), ``gateway_heartbeats.profile``,

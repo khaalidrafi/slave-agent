@@ -1,5 +1,5 @@
 name: tmewai
-repo: https://github.com/hadialjurdi7-dot/hermes-tmewai
+repo: https://github.com/hadialjurdi7-dot/slave-tmewai
 sha: 14a4c2b8c8942ca742badb481e1d7ee28bc6ba56
 subdir: tmewai
 description: >-
@@ -17,7 +17,7 @@ description: >-
   events, 4000 characters) with a metadata-only consent row that cannot carry
   excerpt text. Imports are idempotent by content fingerprint. Python standard
   library only, no network access, no API key, no environment variable; the
-  database lives under $HERMES_HOME/plugin-data/tmewai/ and TMEWAI_DB_PATH
+  database lives under $SLAVE_HOME/plugin-data/tmewai/ and TMEWAI_DB_PATH
   overrides it. Disclosure — the plugin reads a personal social export the user
   points it at and stores it unencrypted in that local SQLite file; it never
   sends archive content anywhere, and archive_evidence only returns its capped
@@ -25,7 +25,7 @@ description: >-
 maintainer: hadialjurdi7-dot
 tier: community
 category: memory
-docs_url: https://github.com/hadialjurdi7-dot/hermes-tmewai#readme
+docs_url: https://github.com/hadialjurdi7-dot/slave-tmewai#readme
 version: "1.0.0"
 platforms: []
 readme: true

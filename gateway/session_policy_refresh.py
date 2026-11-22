@@ -1,6 +1,6 @@
 """A resumed local session re-reads its config-derived settings (CFG-2); its MCP servers change the same way (CFG-3).
 
-Main's ``hermes -c`` was a new process: toolsets, MCP servers, ``terminal.backend``, ``max_turns``, checkpoints
+Main's ``slave -c`` was a new process: toolsets, MCP servers, ``terminal.backend``, ``max_turns``, checkpoints
 and the reasoning default came from the config it started with, while the stored session kept its model/provider.
 The owner keeps that line on ``session.resume``: it re-derives exactly those fields from the session profile's
 current config and commits them as a new policy generation. ``reload.mcp`` commits the MCP part alone for the
@@ -94,7 +94,7 @@ def _mcp_servers(policy, config, live, toolsets, secrets, replaced):
     off as build_policy does (a managed worker binds this config, so it connects exactly these), and their
     names into the returned toolsets. An editor-MCP session keeps its frozen servers."""
     from gateway.session_policy import _extract_config_secrets, _resolve_toolsets
-    from hermes_cli.tools_config import enabled_mcp_server_names
+    from slave_cli.tools_config import enabled_mcp_server_names
     from persistence.core.errors import AuthorityRefusal
     if policy.editor_mcp_json is not None:
         return toolsets

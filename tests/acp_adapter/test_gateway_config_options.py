@@ -2,7 +2,7 @@
 import pytest
 from acp.schema import ModelInfo, SessionModelState
 
-from acp_adapter.server import HermesACPAgent
+from acp_adapter.server import SlaveACPAgent
 
 
 @pytest.mark.asyncio
@@ -22,7 +22,7 @@ async def test_effort_pick_applies_through_the_reasoning_mutation_and_returns_th
                 return dict(info)
             return {'revision': 1, 'execution_generation': 1, 'info': dict(info)}
 
-    agent = HermesACPAgent()
+    agent = SlaveACPAgent()
     agent._gateway = RPC()
     agent._snapshots['s'] = {'revision': 1, 'execution_generation': 1}
     reply = await agent.set_config_option(config_id='reasoning_effort', session_id='s', value='high')

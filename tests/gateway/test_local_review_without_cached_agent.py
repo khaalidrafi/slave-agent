@@ -53,7 +53,7 @@ def test_local_review_reviews_the_stored_conversation_once_the_cached_agent_is_g
                                                   {'role': 'assistant', 'content': 'Noted.'}]))
     (home / 'config.yaml').write_text(json.dumps(config))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENROUTER_API_KEY='loopback-only', OPENAI_API_KEY='loopback-only', PYTHONUNBUFFERED='1')
     out = {}
 

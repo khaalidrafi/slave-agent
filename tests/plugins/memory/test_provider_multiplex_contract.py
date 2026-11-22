@@ -2,7 +2,7 @@
 
 On a multiplexed gateway every profile's agents share one process. Each agent's manager owns its own
 provider instance, and the contract (``agent/memory_provider.py``) is that the instance binds its
-store from the ``hermes_home`` ``initialize`` receives, keeps that binding on the instance, and
+store from the ``slave_home`` ``initialize`` receives, keeps that binding on the instance, and
 never rebinds a module/class-level one per call. These tests drive the real providers through real
 managers with two profiles interleaving on threads, with only the network/CLI backend faked.
 """
@@ -15,17 +15,17 @@ from pathlib import Path
 import pytest
 
 from agent.memory_manager import MemoryManager
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 from tests.waiting import wait_until
 
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     alpha, beta = root / "profiles" / "alpha", root / "profiles" / "beta"
     for home in (alpha, beta):
         home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))  # the launch profile: neither alpha nor beta
+    monkeypatch.setenv("SLAVE_HOME", str(root))  # the launch profile: neither alpha nor beta
     return alpha, beta
 
 
@@ -34,10 +34,10 @@ class _Scope:
         self.home = home
 
     def __enter__(self):
-        self.token = set_hermes_home_override(str(self.home))
+        self.token = set_slave_home_override(str(self.home))
 
     def __exit__(self, *exc):
-        reset_hermes_home_override(self.token)
+        reset_slave_home_override(self.token)
 
 
 # -- ByteRover ---------------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ def test_byterover_binds_the_home_initialize_receives(homes):
     from plugins.memory.byterover import ByteRoverMemoryProvider
     alpha, _ = homes
     provider = ByteRoverMemoryProvider({})
-    provider.initialize("s", hermes_home=str(alpha))  # no context override: the ambient home is the root
+    provider.initialize("s", slave_home=str(alpha))  # no context override: the ambient home is the root
     assert Path(provider._cwd) == alpha / "byterover"
 
 
@@ -67,7 +67,7 @@ def test_byterover_two_profiles_interleaving_stay_in_their_own_trees(homes, monk
         manager = MemoryManager()
         with _Scope(home):
             manager.add_provider(byterover.ByteRoverMemoryProvider({}))
-            manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", hermes_home=str(home))
+            manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", slave_home=str(home))
         managers[home] = manager
     _run_interleaved(managers, "brv_curate", {"content": None})
     wait_until(lambda: len(calls) >= 2 * 3 * 5, what="every brv call from both profiles")
@@ -111,10 +111,10 @@ def fake_retaindb(monkeypatch):
 def test_retaindb_binds_the_home_initialize_receives(homes, fake_retaindb):
     alpha, _ = homes
     provider = fake_retaindb.RetainDBMemoryProvider()
-    provider.initialize("s", hermes_home=str(alpha))  # no context override: the ambient home is the root
+    provider.initialize("s", slave_home=str(alpha))  # no context override: the ambient home is the root
     try:
         assert provider._queue._db_path == alpha / "retaindb_queue.db"
-        assert provider._client.project == "hermes-alpha"
+        assert provider._client.project == "slave-alpha"
     finally:
         provider.shutdown()
 
@@ -125,7 +125,7 @@ def test_retaindb_two_profiles_interleaving_stay_in_their_own_projects(homes, fa
         manager = MemoryManager()
         with _Scope(home):
             manager.add_provider(fake_retaindb.RetainDBMemoryProvider())
-            manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", hermes_home=str(home))
+            manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", slave_home=str(home))
         managers[home] = manager
     try:
         _run_interleaved(managers, "retaindb_remember", {"content": None})
@@ -136,7 +136,7 @@ def test_retaindb_two_profiles_interleaving_stay_in_their_own_projects(homes, fa
     for home in homes:
         mine = [c for c in _FakeClient.calls if f"{home.name}-" in c[2]]
         assert {c[0] for c in mine} == {"add_memory", "ingest_session"}, mine
-        assert all(project == f"hermes-{home.name}" for _, project, _ in mine), mine
+        assert all(project == f"slave-{home.name}" for _, project, _ in mine), mine
         assert (home / "retaindb_queue.db").exists()
 
 

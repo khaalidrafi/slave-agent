@@ -10,11 +10,11 @@ from threading import Thread
 
 import agent.checkpoints.manager as checkpoints
 from agent.checkpoints import maintenance as checkpoint_maintenance
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 def test_active_snapshot_owns_store_until_its_ref_is_published(tmp_path, monkeypatch):
-    base = get_hermes_home() / "checkpoints"
+    base = get_slave_home() / "checkpoints"
     project = tmp_path / "project"
     project.mkdir()
     (project / "initial.txt").write_text("initial", encoding="utf-8")

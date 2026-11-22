@@ -297,7 +297,7 @@ def _render_emphasis(tokens: list, stash, escape) -> str:
 
 
 # A link target Telegram can open: a scheme URL (https:, tg:, mailto:) or a bare domain. A schemeless
-# title ("[Title](Title)") or Hermes' desktop-only "@session:" reference is shown as raw syntax.
+# title ("[Title](Title)") or Slave' desktop-only "@session:" reference is shown as raw syntax.
 _RENDERABLE_LINK_TARGET_RE = re.compile(
     r'(?i)^(?:[a-z][a-z0-9+.-]*:[^\s@]\S*|[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:[/?#:]\S*)?)$')
 _MD_LINK_RE = re.compile(r'\[([^\]]+)\]\(([^()]*(?:\([^()]*\)[^()]*)*)\)')

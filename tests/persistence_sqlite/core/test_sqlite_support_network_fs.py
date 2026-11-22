@@ -16,7 +16,7 @@ import sqlite3
 
 import pytest
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import sqlite_support
 from sqlite_support import apply_wal_with_fallback
 
@@ -29,7 +29,7 @@ def _detect_network_fs(directory, mountinfo_path):
 def _isolate(monkeypatch, tmp_path):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: False)
     monkeypatch.setattr(sqlite_support, "path_on_cross_vm_fs", lambda p: False)
     for name in ("_network_fs_warned_paths", "_network_fs_new_store_warned_paths",
@@ -127,7 +127,7 @@ def test_existing_wal_store_on_network_fs_keeps_wal_and_names_the_offline_remedy
     lines = [r for r in caplog.records if "network filesystem" in r.getMessage()]
     assert len(lines) == 1 and lines[0].levelno == logging.WARNING
     text = lines[0].getMessage()
-    assert "hermes sessions set-journal-mode delete" in text
+    assert "slave sessions set-journal-mode delete" in text
     assert "database.journal_mode: delete" in text
 
 
@@ -164,8 +164,8 @@ def test_fresh_db_on_network_fs_unconfigured_starts_in_delete_and_says_so(tmp_pa
 
 # Realistic mountinfo rows (id parent major:minor root mountpoint opts ... - fstype source superopts)
 ROOT_EXT4 = "25 1 8:1 / / rw,relatime shared:1 - ext4 /dev/sda1 rw"
-BIND_NFS = "620 25 0:60 / /srv/nas rw,relatime - nfs nas:/export/hermes rw"
-BIND_CIFS = "621 25 0:61 / /mnt/share rw,relatime - cifs //fileserver/hermes rw"
+BIND_NFS = "620 25 0:60 / /srv/nas rw,relatime - nfs nas:/export/slave rw"
+BIND_CIFS = "621 25 0:61 / /mnt/share rw,relatime - cifs //fileserver/slave rw"
 BIND_FUSE_SSHFS = "622 25 0:62 / /home/remote rw,relatime - fuse.sshfs host:/home/user rw"
 BIND_VIRTIOFS = "623 25 0:63 / /data rw,relatime - virtiofs mount0 rw"
 
@@ -179,8 +179,8 @@ def _linux(monkeypatch):
 @pytest.mark.parametrize("path,expected", [
     ("/srv/nas/agent", True),
     ("/mnt/share/db", True),
-    ("/home/remote/.hermes", True),
-    ("/home/local/.hermes", False),
+    ("/home/remote/.slave", True),
+    ("/home/local/.slave", False),
     ("/data/agent", False),  # virtiofs belongs to the cross-VM class, not this one
 ])
 def test_only_network_mounts_are_flagged(tmp_path, path, expected):
@@ -194,7 +194,7 @@ def test_only_network_mounts_are_flagged(tmp_path, path, expected):
 ])
 def test_local_and_generic_fuse_filesystems_never_flagged(tmp_path, fstype):
     mi = _mountinfo(tmp_path, [f"25 1 8:1 / / rw,relatime shared:1 - {fstype} /dev/sda1 rw"])
-    assert _detect_network_fs("/home/user/.hermes", mountinfo_path=mi) is False
+    assert _detect_network_fs("/home/user/.slave", mountinfo_path=mi) is False
 
 
 @pytest.mark.usefixtures("_linux")
@@ -205,7 +205,7 @@ def test_network_fstypes_cover_nfs_and_smb_variants(tmp_path):
     mi = _mountinfo(tmp_path, rows)
     for fs in ("nfs", "nfs4", "cifs", "smb3", "fuse_sshfs"):
         assert _detect_network_fs(f"/mnt/{fs}/home", mountinfo_path=mi) is True
-    assert _detect_network_fs("/home/user/.hermes", mountinfo_path=mi) is False
+    assert _detect_network_fs("/home/user/.slave", mountinfo_path=mi) is False
 
 
 def test_missing_mountinfo_conservative_false(tmp_path):

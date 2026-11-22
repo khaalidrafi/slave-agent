@@ -19,7 +19,7 @@ def _compressed(api, owner):
 
 def _chat(client):
     return client.post('/v1/chat/completions', json={'messages': [{'role': 'user', 'content': 'next'}]},
-                       headers={'Authorization': 'Bearer ' + KEY, 'X-Hermes-Session-Id': 'tip'})
+                       headers={'Authorization': 'Bearer ' + KEY, 'X-Slave-Session-Id': 'tip'})
 
 
 def _runs(client):

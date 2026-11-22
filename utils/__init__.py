@@ -1,4 +1,4 @@
-"""Small helpers that several top-level packages share and that know nothing about Hermes as a product.
+"""Small helpers that several top-level packages share and that know nothing about slave-agent as a product.
 
 - ``utils.files``: files on disk: atomic writes and replaces, temp files, directory sync,
   cleanup, file mode and owner, file signatures for caches, JSON and YAML file helpers.

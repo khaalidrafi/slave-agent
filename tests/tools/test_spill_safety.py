@@ -45,7 +45,7 @@ def test_private_dir_is_0700_and_tightened(tmp_path):
 
 @posix_only
 def test_keep_group_tightens_only_world_bits(tmp_path):
-    """A shared-group home (HERMES_HOME_MODE=2770) keeps group access on an existing dir."""
+    """A shared-group home (SLAVE_HOME_MODE=2770) keeps group access on an existing dir."""
     d = tmp_path / "spills"
     d.mkdir()
     # macOS gives a new dir its parent's group and drops setgid on chmod when the

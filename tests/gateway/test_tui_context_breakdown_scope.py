@@ -25,7 +25,7 @@ async def test_context_breakdown_without_a_resident_agent_estimates_the_stored_f
     sid = (await owner.call('session.create', request_id='idle', source='tui', cwd=str(owner.workdir)))['session_id']
     db = owner.authority.persistence
     stored = _stored_id(owner.authority, SimpleNamespace(session_id=sid))
-    prompt = 'You are Hermes. ' * 50 + '\n<available_skills>\n  - plan: write plans\n</available_skills>'
+    prompt = 'You are Slave. ' * 50 + '\n<available_skills>\n  - plan: write plans\n</available_skills>'
     tools = [{'type': 'function', 'function': {'name': 'terminal', 'parameters': {'type': 'object'}}},
              {'type': 'function', 'function': {'name': 'mcp_docs_search', 'description': 'search ' * 20}}]
     db.sessions.update_system_prompt(stored, prompt)
@@ -54,7 +54,7 @@ async def test_agentless_breakdown_refreshes_when_the_stored_prompt_or_tools_cha
     stored = _stored_id(owner.authority, SimpleNamespace(session_id=sid))
     seed_messages(db, stored, {'role': 'user', 'content': 'hello'})
     before = await owner.call('session.context_breakdown', session_id=sid)
-    db.sessions.update_system_prompt(stored, 'You are Hermes. ' * 50)
+    db.sessions.update_system_prompt(stored, 'You are Slave. ' * 50)
     prompted = await owner.call('session.context_breakdown', session_id=sid)
     assert prompted['estimated_total'] > before['estimated_total'], prompted
     db.sessions.update_tool_pin(stored, {'version': 'v', 'tools': [
@@ -68,7 +68,7 @@ async def _agentless_session(owner, request_id, pin):
 
     sid = (await owner.call('session.create', request_id=request_id, source='tui', cwd=str(owner.workdir)))['session_id']
     stored = _stored_id(owner.authority, SimpleNamespace(session_id=sid))
-    owner.authority.persistence.sessions.update_system_prompt(stored, 'You are Hermes. ' * 50)
+    owner.authority.persistence.sessions.update_system_prompt(stored, 'You are Slave. ' * 50)
     owner.authority.persistence.sessions.update_tool_pin(stored, pin)
     seed_messages(owner.authority.persistence, stored, {'role': 'user', 'content': 'hello'})
     return sid, stored

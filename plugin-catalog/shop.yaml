@@ -3,7 +3,7 @@ repo: https://github.com/khaalidrafi/slave-agent-plugins
 sha: b42de0812d6316669b2a1db5aabe60f6ed3c62df
 subdir: plugins/shop
 description: 'Read-only, config-driven REST storefront adapter: four tools (shop_queue, shop_orders,
-  shop_order, shop_catalog) over one adapter contract, plus `hermes shop` and `/shop`. The shop''s
+  shop_order, shop_catalog) over one adapter contract, plus `slave shop` and `/shop`. The shop''s
   URL, path layout, filter names, status vocabulary and page shape are all settings, so one plugin
   serves any REST-shaped order queue. Money never routes through a model; read-only by construction.
   Formerly built into the core; existing users are migrated automatically.'

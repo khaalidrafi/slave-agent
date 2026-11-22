@@ -17,7 +17,7 @@ capabilities:
     - ros2_camera_snapshot
     - ros2_docs
     - ros2_publish
-image: https://raw.githubusercontent.com/vgenev/ros2-console/6075de670b65985dc1f966c2f3ceebad97cc66ef/docs/assets/hermes-plate.jpg
+image: https://raw.githubusercontent.com/vgenev/ros2-console/6075de670b65985dc1f966c2f3ceebad97cc66ef/docs/assets/slave-plate.jpg
 screenshots:
   - https://raw.githubusercontent.com/vgenev/ros2-console/6075de670b65985dc1f966c2f3ceebad97cc66ef/docs/assets/pane-topology.png
   - https://raw.githubusercontent.com/vgenev/ros2-console/6075de670b65985dc1f966c2f3ceebad97cc66ef/docs/assets/pane-table.png

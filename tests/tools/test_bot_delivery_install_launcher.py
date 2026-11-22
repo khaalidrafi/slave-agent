@@ -9,8 +9,8 @@ from tools import bot_relay
 
 def _delivery_argv(profile, query_file):
     # Bot-chat delivery runs over the gateway here; the DM path (tools/bot_mode_dm.py) still spawns
-    # ``_hermes_cli() -p <profile> ...``, so the launcher it picks is the invariant under test.
-    return [bot_relay._hermes_cli(), "-p", profile, "--query-file", query_file]
+    # ``_slave_cli() -p <profile> ...``, so the launcher it picks is the invariant under test.
+    return [bot_relay._slave_cli(), "-p", profile, "--query-file", query_file]
 
 
 @pytest.fixture
@@ -19,14 +19,14 @@ def launchers(tmp_path, monkeypatch):
     module = root / "tools" / "bot_relay.py"
     module.parent.mkdir(parents=True)
     module.touch()
-    monkeypatch.setattr("hermes_cli._startup_fast.project_root_str", lambda: str(root))
+    monkeypatch.setattr("slave_cli._startup_fast.project_root_str", lambda: str(root))
     old_bin = tmp_path / "old generation" / "bin"
     old_bin.mkdir(parents=True)
-    name = "hermes.exe" if sys.platform == "win32" else "hermes"
+    name = "slave.exe" if sys.platform == "win32" else "slave"
     sibling = old_bin / name
     sibling.touch()
     monkeypatch.setattr(sys, "executable", str(old_bin / "python"))
-    published = root / ".hermes" / "bin" / name
+    published = root / ".slave" / "bin" / name
     published.parent.mkdir(parents=True)
     return published, sibling
 
@@ -54,10 +54,10 @@ def test_windows_delivery_does_not_select_batch_shims(launchers):
 def test_path_then_bare_fallback_remain_available(launchers, monkeypatch):
     _, sibling = launchers
     sibling.unlink()
-    monkeypatch.setattr(bot_relay.shutil, "which", lambda name: "external-hermes")
-    assert bot_relay._hermes_cli() == "external-hermes"
+    monkeypatch.setattr(bot_relay.shutil, "which", lambda name: "external-slave")
+    assert bot_relay._slave_cli() == "external-slave"
     monkeypatch.setattr(bot_relay.shutil, "which", lambda name: None)
-    assert bot_relay._hermes_cli() == "hermes"
+    assert bot_relay._slave_cli() == "slave"
 
 
 @pytest.mark.platforms("windows")
@@ -65,20 +65,20 @@ def test_real_delivery_launcher_imports_new_generation(tmp_path, monkeypatch):
     import json
     import os
     import subprocess
-    from hermes_cli import _launchers
+    from slave_cli import _launchers
     from pm.environments import runtime_facts_path, site_packages
 
     real_python = Path(sys.executable)
     real_root = Path(bot_relay.__file__).resolve().parents[1]
     root = tmp_path / "install with spaces"
-    package = root / "hermes_cli"
+    package = root / "slave_cli"
     package.mkdir(parents=True)
     # Load the checkout's constants before the launcher's bootstrap import;
     # an editable test interpreter may also expose an older installed checkout.
     import shutil
-    shutil.copyfile(real_root / "hermes_constants.py", root / "hermes_constants.py")
+    shutil.copyfile(real_root / "slave_constants.py", root / "slave_constants.py")
     (package / "__init__.py").write_text(
-        f"__path__.append({str(real_root / 'hermes_cli')!r})\n", encoding="utf-8")
+        f"__path__.append({str(real_root / 'slave_cli')!r})\n", encoding="utf-8")
     (package / "main.py").write_text(
         "import json, sys\n"
         "def main():\n"
@@ -86,29 +86,29 @@ def test_real_delivery_launcher_imports_new_generation(tmp_path, monkeypatch):
         "    print(json.dumps([plugin_generation_probe.VALUE, sys.argv[1:]]))\n"
         "    return 0\n", encoding="utf-8")
     # Keep the entry point local and non-networked, but run real PM selection.
-    (root / "hermes_bootstrap.py").write_text(
+    (root / "slave_bootstrap.py").write_text(
         f"import sys\nsys.path.append({str(real_root)!r})\n"
         "from pathlib import Path\nfrom pm.environments import activate_dependencies\n"
         "activate_dependencies(Path(__file__).resolve().parent)\n", encoding="utf-8")
     runtime = tmp_path / "runtime"
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(runtime))
-    out = root / ".hermes" / "bin"
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(runtime))
+    out = root / ".slave" / "bin"
     out.mkdir(parents=True)
-    published = _launchers.mint_launcher("hermes", root, out, real_python, None)
+    published = _launchers.mint_launcher("slave", root, out, real_python, None)
     assert published is not None
     record = runtime_facts_path(root)
     record.parent.mkdir(parents=True, exist_ok=True)
     old_bin = tmp_path / "old" / "Scripts"
     old_bin.mkdir(parents=True)
     # Both choices are executable: the old console script reports missing deps.
-    old_package = tmp_path / "old source" / "hermes_cli"
+    old_package = tmp_path / "old source" / "slave_cli"
     old_package.mkdir(parents=True)
     (old_package / "__init__.py").write_text("", encoding="utf-8")
     (old_package / "main.py").write_text(
         "def main():\n    print('old-generation')\n    return 0\n", encoding="utf-8")
-    (old_package.parent / "hermes_bootstrap.py").write_text("", encoding="utf-8")
-    assert _launchers.mint_launcher("hermes", old_package.parent, old_bin, real_python, None)
-    monkeypatch.setattr("hermes_cli._startup_fast.project_root_str", lambda: str(root))
+    (old_package.parent / "slave_bootstrap.py").write_text("", encoding="utf-8")
+    assert _launchers.mint_launcher("slave", old_package.parent, old_bin, real_python, None)
+    monkeypatch.setattr("slave_cli._startup_fast.project_root_str", lambda: str(root))
     monkeypatch.setattr(sys, "executable", str(old_bin / "python.exe"))
     argv = _delivery_argv("researcher", str(tmp_path / "message&extra.txt"))
     for generation in ("first", "new-plugin"):
@@ -132,14 +132,14 @@ def test_real_delivery_launcher_imports_new_generation(tmp_path, monkeypatch):
     assert "old-generation" not in result.stdout
 
 
-@pytest.mark.parametrize("name", ["hermes", "hermes.exe"])
+@pytest.mark.parametrize("name", ["slave", "slave.exe"])
 def test_launcher_shape_preserves_profile(tmp_path, monkeypatch, name):
     from tools import bot_mode_dm, bot_mode_probe
 
     home = tmp_path / "home"
     target = home / "profiles" / "researcher"
     monkeypatch.setattr(bot_mode_dm, "_default_home", lambda: str(home))
-    monkeypatch.setattr(bot_mode_probe, "_hermes_root", lambda path: home)
+    monkeypatch.setattr(bot_mode_probe, "_slave_root", lambda path: home)
     monkeypatch.setattr(bot_mode_probe, "_roster", lambda root: [("researcher", target)])
     argv = [str(tmp_path / name), "-p", "researcher", "chat"]
     assert bot_mode_dm._local_delivery_home(argv) == target

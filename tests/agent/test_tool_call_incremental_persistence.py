@@ -64,8 +64,8 @@ def _make_tool_defs(*names: str) -> list:
 
 
 def _make_agent():
-    hermes_home = Path(tempfile.mkdtemp(prefix="hermes-test-home-"))
-    (hermes_home / "logs").mkdir(parents=True, exist_ok=True)
+    slave_home = Path(tempfile.mkdtemp(prefix="slave-test-home-"))
+    (slave_home / "logs").mkdir(parents=True, exist_ok=True)
     with (
         patch(
             "model_tools.get_tool_definitions",
@@ -73,7 +73,7 @@ def _make_agent():
         ),
         patch("model_tools.check_toolset_requirements", return_value={}),
         patch("agent.process_bootstrap.OpenAI"),
-        patch("run_agent._hermes_home", hermes_home),
+        patch("run_agent._slave_home", slave_home),
         patch("agent.model_metadata.fetch_model_metadata", return_value={}),
     ):
         agent = AIAgent(

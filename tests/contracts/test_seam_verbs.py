@@ -146,7 +146,7 @@ def test_g1_empty_fenced_batch_is_a_no_op_even_with_a_lost_lease(backend, scope_
 
 
 def test_g1_refused_append_commits_no_renewal(backend, scope_a):
-    """The lease check, the closed-parent refusal, and the renewal share the legacy write transaction (hermes_state_messages.SessionMessagesMixin._check_transcript_write_guards): an append refused for the closed parent rolls its renewal back, so a contender reclaims the expired lease."""
+    """The lease check, the closed-parent refusal, and the renewal share the legacy write transaction (slave_state_messages.SessionMessagesMixin._check_transcript_write_guards): an append refused for the closed parent rolls its renewal back, so a contender reclaims the expired lease."""
     require_capability(backend, "transactional_claims")
     coord, repo, sessions = backend.open(scope_a).coordination, backend.open(scope_a).messages, backend.open(scope_a).sessions
     sessions.create(NewSession(session_id=ROOT, source="cli"))
@@ -164,7 +164,7 @@ def test_g1_refused_append_commits_no_renewal(backend, scope_a):
 
 
 def test_g1_refused_append_on_an_absent_id_leaves_it_creatable(backend, scope_a):
-    """A refusal appends nothing and retires nothing: the id an unfenced writer never got to use is still creatable afterwards (the constructor's tombstone check, hermes_state_worker_lifecycle.insert_session_row_in_transaction, only refuses deleted sessions)."""
+    """A refusal appends nothing and retires nothing: the id an unfenced writer never got to use is still creatable afterwards (the constructor's tombstone check, slave_state_worker_lifecycle.insert_session_row_in_transaction, only refuses deleted sessions)."""
     require_capability(backend, "transactional_claims")
     repo, sessions = backend.open(scope_a).messages, backend.open(scope_a).sessions
     with pytest.raises(TurnLeaseLost):
@@ -309,7 +309,7 @@ def test_g2_target_archived_by_watermark_compaction_resolves_to_its_active_clone
 
 # ── NewSession carries system_prompt / display_name / origin into persistence.conversation.sessions.SessionRepository.create ──
 
-PROMPT = "You are Hermes.\n\n  spaced\u00a0nbsp\ttab\n"
+PROMPT = "You are Slave.\n\n  spaced\u00a0nbsp\ttab\n"
 ORIGIN = {"platform": "telegram", "chat_id": "c9", "thread_id": None}
 
 
@@ -357,7 +357,7 @@ def test_g3_compression_continuation_inherits_peer_facets_not_the_prompt(backend
 
 
 def test_g3_late_parent_facets_are_inherited_on_the_next_construction(backend, scope_a):
-    """The legacy constructor runs the compression-fork inheritance after the keep-existing upsert whenever a parent is named (hermes_state_worker_lifecycle.insert_session_row_in_transaction): a continuation constructed before its parent carried the peer facets fills them on the next construction, and never overwrites its own."""
+    """The legacy constructor runs the compression-fork inheritance after the keep-existing upsert whenever a parent is named (slave_state_worker_lifecycle.insert_session_row_in_transaction): a continuation constructed before its parent carried the peer facets fills them on the next construction, and never overwrites its own."""
     sessions = backend.open(scope_a).sessions
     sessions.create(NewSession(session_id=ROOT, source="telegram", session_key=f"telegram:{ROOT}", chat_id="c9"))
     sessions.end(ROOT, END_REASON_COMPRESSION)
@@ -531,7 +531,7 @@ def remaining(root: Path) -> set:
 
 @pytest.fixture
 def transcript_dir(tmp_path: Path) -> Path:
-    # A dedicated directory: the test harness parks HERMES_HOME inside tmp_path itself.
+    # A dedicated directory: the test harness parks SLAVE_HOME inside tmp_path itself.
     return tmp_path / "sessions"
 
 
@@ -589,7 +589,7 @@ def test_g7_delete_if_empty_removes_files_only_when_it_deleted(backend, scope_a,
 
 
 def test_g7_delete_if_empty_refuses_a_transcript_bearing_session_and_keeps_its_files(backend, scope_a, transcript_dir):
-    """The legacy eligibility guard is title-less AND message-less AND childless in one transaction (hermes_state_sessions.SessionSessionsMixin.delete_session_if_empty): a stored row of any visibility keeps the session and its files."""
+    """The legacy eligibility guard is title-less AND message-less AND childless in one transaction (slave_state_sessions.SessionSessionsMixin.delete_session_if_empty): a stored row of any visibility keeps the session and its files."""
     repo, sessions = backend.open(scope_a).messages, backend.open(scope_a).sessions
     art = SessionArtifacts(transcript_dir=transcript_dir)
     sessions.create(NewSession(session_id=ROOT, source="cli"))

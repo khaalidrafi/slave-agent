@@ -23,7 +23,7 @@ async def _owner(tmp_path, monkeypatch):
     from gateway.run_shutdown_session_end import GatewaySessionEndMixin
     from gateway.session_authority import initialize_session_authority
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     calls = []
@@ -35,7 +35,7 @@ async def _owner(tmp_path, monkeypatch):
     async def housekeeping(func, *args):
         return func(*args)
 
-    monkeypatch.setattr('hermes_cli.lifecycle.invoke_hook', lambda name, **kwargs: calls.append((name, kwargs)))
+    monkeypatch.setattr('slave_cli.lifecycle.invoke_hook', lambda name, **kwargs: calls.append((name, kwargs)))
     runner = SimpleNamespace(session_store=store, adapters={}, _draining=False,
                              _cached_agent_for=lambda route: None,
                              _evict_cached_agent_at_boundary=lambda key: calls.append(('commit', key)),

@@ -1,11 +1,11 @@
 """Usage-window allowances as the server sends them: one list, in display order.
 
 The Portal account (``usage_window.gauges``) and the API (``x-nous-credits-window-gauges``, also on the 402)
-send the same shape, so Hermes draws whatever arrives and a new allowance needs no Hermes release.
+send the same shape, so slave-agent draws whatever arrives and a new allowance needs no slave-agent release.
 ``scope`` says which models a full gauge stops: ``all`` = every paid model, ``top_tier`` = the models the
 gateway marks top tier. Free models draw on nothing.
 
-Hermes keeps only its own words for the ids it knows (they are translated and fitted to each surface);
+slave-agent keeps only its own words for the ids it knows (they are translated and fitted to each surface);
 any other id shows the server's ``label``.
 """
 
@@ -49,7 +49,7 @@ class WindowGauge:
 def parse_gauges(value: Any) -> Optional[tuple[WindowGauge, ...]]:
     """The wire list (a JSON array, or its string form from a header) → gauges in order. None when absent,
     unreadable or empty. An entry with an unknown scope, a repeated id or a bad percent is dropped: an
-    older Hermes must never misread a kind of limit it does not know."""
+    older slave-agent must never misread a kind of limit it does not know."""
     if isinstance(value, tuple) and all(isinstance(g, WindowGauge) for g in value):
         return value or None
     if isinstance(value, str):
@@ -108,7 +108,7 @@ def binding_gauge(gauges: Iterable[WindowGauge]) -> Optional[WindowGauge]:
     return max(alls, key=lambda g: g.used_bp)
 
 
-# Hermes's words for the ids it knows: (row title, "for <phrase>", "your <name> limit", picker short name).
+# Slave's words for the ids it knows: (row title, "for <phrase>", "your <name> limit", picker short name).
 _WORDS: dict[str, tuple[str, str, str, str]] = {
     "day": ("Today", "today", "daily", "today"),
     "week": ("This week", "this week", "weekly", "week"),

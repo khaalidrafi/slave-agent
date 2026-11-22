@@ -76,7 +76,7 @@ async def test_owner_login_chat_is_not_replaced_while_its_legacy_writer_is_live(
     from pathlib import Path
 
     import gateway.session_worker_reservation as reservation
-    from hermes_cli.active_sessions import (
+    from slave_cli.active_sessions import (
         release_active_session,
         try_acquire_active_session,
     )

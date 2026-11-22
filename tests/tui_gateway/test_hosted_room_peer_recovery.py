@@ -86,7 +86,7 @@ def _peer_room(db, peer: _FakePeerClient) -> HostedRoomService:
         room_id="room-1",
         name="Peer room",
         members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {
                 "member_id": "member-peer",
                 "profile": "reviewer",
@@ -226,7 +226,7 @@ def test_stop_of_a_deferred_peer_turn_whose_gateway_is_down_frees_the_room(tmp_p
     assert driver.get_task(db, identity, placement="profile")["status"] == "deferred"
     assert len(peer.recoveries) == replays and peer.dispatches == []
     service.send(room_id="room-1", event_id="user-2",
-                 payload={"text": "@hermes next question", "thread_id": "thread-2"})
+                 payload={"text": "@slave next question", "thread_id": "thread-2"})
     queued = driver.list_tasks(db, placement="profile", room_id="room-1", status="queued")
     assert [t["payload"]["target_member_id"] for t in queued] == ["default"]
 
@@ -353,7 +353,7 @@ def test_deferred_turn_on_an_in_process_route_retries_as_before(tmp_path: Path):
     """Only a member the room's roster places on another gateway replays its generation on Retry.
     A local member reached through its own session transport (the gateway's canonical member
     route) is requeued at once, as before."""
-    turn = _crashed_turn(tmp_path, _RecoveringPeerClient(), text="@hermes check this", lease_ttl_seconds=30)
+    turn = _crashed_turn(tmp_path, _RecoveringPeerClient(), text="@slave check this", lease_ttl_seconds=30)
     service, db, task, binding, lease, now = turn.service, turn.db, turn.task, turn.binding, turn.lease, turn.now
     peer_route, member_route = service.runtime.transport_resolver, FakeSessionRPC(auto_complete=False)
     service.runtime.transport_resolver = lambda binding, task: (
@@ -373,7 +373,7 @@ def test_a_failing_route_lookup_still_lets_an_uncertain_turn_reach_its_deadline(
     """Resolving a member's route can fail during recovery (here a member on this gateway whose
     session route is gone). The failure is recorded and the turn still reaches its deferral
     deadline, instead of aborting every recovery cycle."""
-    turn = _crashed_turn(tmp_path, _RecoveringPeerClient(), text="@hermes check this")
+    turn = _crashed_turn(tmp_path, _RecoveringPeerClient(), text="@slave check this")
     runtime = turn.service.runtime
 
     def missing_route(binding, task):

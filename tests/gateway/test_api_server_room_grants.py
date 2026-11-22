@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 from gateway.platforms import api_server
 
@@ -16,7 +16,7 @@ def test_room_grant_secret_stays_gateway_owned_on_named_profile(
 
     adapter = api_server.APIServerAdapter.__new__(api_server.APIServerAdapter)
     adapter._api_key = "gateway-api-key-1234567890"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     profile_token = api_server._api_request_profile.set("reviewer")
     try:
         assert adapter._room_grant_secret() == gateway_room_grant_secret()
@@ -30,7 +30,7 @@ def test_superseded_room_authority_cannot_reuse_its_grant(tmp_path, monkeypatch)
         issue_room_grant,
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     secret = gateway_room_grant_secret()
     now = time.time()
     common = {
@@ -62,20 +62,20 @@ def test_superseded_room_authority_cannot_reuse_its_grant(tmp_path, monkeypatch)
         }
     }
     hosted_rooms.reserve_peer_room(
-        storage_handle(get_hermes_home()), placement="shared",
+        storage_handle(get_slave_home()), placement="shared",
         claims=old_claims,
         expires_at=now + 3600,
         now=now,
     )
 
     adapter = api_server.APIServerAdapter.__new__(api_server.APIServerAdapter)
-    request = MagicMock(headers={"Authorization": f"HermesRoom {old_grant}"})
+    request = MagicMock(headers={"Authorization": f"SlaveRoom {old_grant}"})
     assert adapter._room_grant_claims(request, permission="status")[
         "authority_gateway_id"
     ] == "gateway-old"
 
     hosted_rooms.reserve_peer_room(
-        storage_handle(get_hermes_home()), placement="shared",
+        storage_handle(get_slave_home()), placement="shared",
         claims={
             **old_claims,
             "authority_gateway_id": "gateway-new",

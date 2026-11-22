@@ -1,5 +1,5 @@
 name: thomas
-repo: https://github.com/keppy/hermes-plugin-thomas
+repo: https://github.com/keppy/slave-plugin-thomas
 sha: 7302ab947f99e3adb16e78e139794fe1696134f8
 description: >-
   Fine-tune a small calibrated encoder classifier on Modal and rate it with gonogo. Every GPU launch
@@ -8,7 +8,7 @@ description: >-
   the chosen training JSONL rows to Modal after the human approval gate; the base model is downloaded
   from Hugging Face on the Modal side. Training and inference run in a separate Python interpreter the
   user configures via THOMAS_PYTHON (with the author's thomas package, torch and modal installed); the
-  Hermes venv only gets gonogo-eval. Runs and artifacts are written under HERMES_HOME/thomas/runs; the
+  slave-agent venv only gets gonogo-eval. Runs and artifacts are written under SLAVE_HOME/thomas/runs; the
   eval tool writes report files to the path the model supplies.
 maintainer: keppy
 tier: community
@@ -16,7 +16,7 @@ category: tools
 requires_hermes: ">=0.21"
 platforms: [linux, macos]
 version: "0.1.3"
-docs_url: https://github.com/keppy/hermes-plugin-thomas#readme
+docs_url: https://github.com/keppy/slave-plugin-thomas#readme
 capabilities:
   provides_tools:
     - thomas_check_data

@@ -27,8 +27,8 @@ _DEPLETED_LINE = "Status: access depleted — top up to restore"
 # Usage-window plans: allowances are shown as percent used.
 _WINDOW_TOP_TIER_USED_UP = "Monthly large-model usage is used up."
 _WINDOW_PAUSED_LINE = ("Status: included usage paused. Your subscription payment failed. Update your card to restore it. "
-                       "Until then, Hermes uses your credits.")
-_WINDOW_PAUSED_OTHER_LINE = "Status: included usage paused. See Billing in the Portal. Until then, Hermes uses your credits."
+                       "Until then, slave-agent uses your credits.")
+_WINDOW_PAUSED_OTHER_LINE = "Status: included usage paused. See Billing in the Portal. Until then, slave-agent uses your credits."
 
 
 def _fmt_usd(d: float) -> str:
@@ -74,7 +74,7 @@ def _window_top_tier_line(reset_at: Optional[datetime], keep_going_on_credits: A
 
 
 _WINDOW_KEEP_GOING_OFF_STATUS = "Keep going on credits: off. Nous sessions wait for the reset."
-_WINDOW_KEEP_GOING_OFF_LINE = "Keep going on credits: off. Hermes waits for the reset (turn on in /topup)."
+_WINDOW_KEEP_GOING_OFF_LINE = "Keep going on credits: off. slave-agent waits for the reset (turn on in /topup)."
 _WINDOW_KEEP_GOING_ON_LINE = "Keep going on credits: on. Uses your credits when included usage runs out."
 
 
@@ -116,7 +116,7 @@ def build_nous_credits_snapshot(account_info, *, cta: bool = True) -> Optional[A
     its allowances as percent used, the large-model line and its top-up balance instead. Fail-open → None."""
     from agent.account_usage import AccountUsageWindow
     try:
-        from hermes_cli.nous_account import nous_portal_topup_url
+        from slave_cli.nous_account import nous_portal_topup_url
         if account_info is None or not getattr(account_info, "logged_in", False):
             return None
         access = getattr(account_info, "paid_service_access_info", None)
@@ -177,7 +177,7 @@ def build_nous_credits_snapshot(account_info, *, cta: bool = True) -> Optional[A
 def _nous_logged_in() -> bool:
     """Cheap local auth-state check: a Nous access token is present. Fail-open False."""
     try:
-        from hermes_cli.auth import get_provider_auth_state
+        from slave_cli.auth import get_provider_auth_state
         tok = (get_provider_auth_state("nous") or {}).get("access_token")
         return isinstance(tok, str) and bool(tok.strip())
     except Exception:
@@ -196,7 +196,7 @@ def _fetch_portal_account(timeout: float, *, stored_token_only: bool = False):
     token, never refreshing it (``stored_token_account_info``)."""
     import contextvars
     from functools import partial
-    from hermes_cli.nous_account import get_nous_portal_account_info, stored_token_account_info
+    from slave_cli.nous_account import get_nous_portal_account_info, stored_token_account_info
     from tools.daemon_pool import DaemonThreadPoolExecutor
 
     context = contextvars.copy_context()
@@ -259,7 +259,7 @@ def nous_credits_lines(*, markdown: bool = False, timeout: float = 10.0, credits
                        nous_route: bool = True) -> list[str]:
     """Rendered Nous-credits /usage lines, or [] when there's nothing to show. Independent of any live agent
     (logged-in gate, then a bounded portal fetch); shared by CLI ``_show_usage`` and the TUI ``session.usage`` RPC.
-    Fail-open: any hiccup or timeout → []. HERMES_DEV_CREDITS_FIXTURE renders from the fixture instead of the portal.
+    Fail-open: any hiccup or timeout → []. SLAVE_DEV_CREDITS_FIXTURE renders from the fixture instead of the portal.
     ``credits_state`` is the last response's header gauge; when it is ahead of the portal, the bars use it."""
     return nous_credits_view(markdown=markdown, timeout=timeout, credits_state=credits_state, nous_route=nous_route)[0]
 
@@ -358,7 +358,7 @@ def _snapshot_from_credits_state(state) -> Optional[AccountUsageSnapshot]:
                 details.append(f"Top-up credits: ${state.purchased_usd}")
             if getattr(state, "paid_access", True) is False and not window_lines:
                 details.append(_DEPLETED_LINE)
-            return _nous_snapshot(windows, details, ["(dev fixture — HERMES_DEV_CREDITS_FIXTURE)"], source="dev-fixture",
+            return _nous_snapshot(windows, details, ["(dev fixture — SLAVE_DEV_CREDITS_FIXTURE)"], source="dev-fixture",
                                   usage_window=True)
         uf = getattr(state, "used_fraction", None)
         sub_usd = getattr(state, "subscription_usd", None)
@@ -374,7 +374,7 @@ def _snapshot_from_credits_state(state) -> Optional[AccountUsageSnapshot]:
                 details.append(f"{label}: ${value}")
         if getattr(state, "paid_access", True) is False:
             details.append(_DEPLETED_LINE)
-        return _nous_snapshot(windows, details, ["(dev fixture — HERMES_DEV_CREDITS_FIXTURE)"], source="dev-fixture")
+        return _nous_snapshot(windows, details, ["(dev fixture — SLAVE_DEV_CREDITS_FIXTURE)"], source="dev-fixture")
     except (AttributeError, TypeError):
         return None
 
@@ -406,7 +406,7 @@ def build_credits_view(*, markdown: bool = False, timeout: float = 10.0) -> Cred
         return not_logged_in
     if account is None or not getattr(account, "logged_in", False):
         return not_logged_in
-    from hermes_cli.nous_account import nous_portal_topup_url
+    from slave_cli.nous_account import nous_portal_topup_url
     balance_lines = [
         line
         for line in render_account_usage_lines(build_nous_credits_snapshot(account), markdown=markdown)

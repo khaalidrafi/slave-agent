@@ -1,12 +1,12 @@
 # update-job.ps1 -- the Win32 job/process helper windows.ps1 runs every
-# hermes step through (dot-sourced after the marker claim, never before it:
+# slave step through (dot-sourced after the marker claim, never before it:
 # Add-Type is not allowed in the claim path). StartAssigned creates the step
 # SUSPENDED inside a private job (kill-on-close until Resume), so windows.ps1
 # can publish the update marker's delegate before the first instruction runs.
 
-function Initialize-HermesUpdateJob {
+function Initialize-SlaveUpdateJob {
     # Compile the helper once per PowerShell session (Add-Type cannot redefine a type).
-    if ("HermesUpdateJob" -as [type]) { return }
+    if ("SlaveUpdateJob" -as [type]) { return }
     Add-Type -TypeDefinition @'
 using System;
 using System.Diagnostics;
@@ -16,7 +16,7 @@ using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
-public static class HermesUpdateJob {
+public static class SlaveUpdateJob {
     public sealed class StartedProcess {
         public Process Process;
         public StreamReader StandardOutput;
@@ -303,4 +303,4 @@ public static class HermesUpdateJob {
 '@
 }
 
-Initialize-HermesUpdateJob
+Initialize-SlaveUpdateJob

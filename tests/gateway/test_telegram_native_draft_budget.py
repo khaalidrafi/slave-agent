@@ -148,7 +148,7 @@ def test_plain_drafts_reaches_the_adapter_from_config_yaml(tmp_path, monkeypatch
 
     from gateway.config import Platform, load_gateway_config
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     for doc in ({"telegram": {"extra": {"plain_drafts": True}}},
                 {"platforms": {"telegram": {"extra": {"plain_drafts": True}}}}):
         (tmp_path / "config.yaml").write_text(json.dumps(doc))

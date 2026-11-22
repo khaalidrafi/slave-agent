@@ -1,12 +1,12 @@
-"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
+"""ACP session manager — maps ACP sessions to slave-agent AIAgent instances.
 
-Sessions are persisted to the shared session store (``~/.hermes/state.db``) so they
+Sessions are persisted to the shared session store (``~/.slave/state.db``) so they
 survive process restarts and appear in ``session_search``; ``load_session`` /
 ``resume_session`` after an editor reconnect restore the full history from there.
 """
 from __future__ import annotations
 
-from hermes_constants import get_hermes_home, translate_cwd_for_wsl_backend, windows_path_to_wsl
+from slave_constants import get_slave_home, translate_cwd_for_wsl_backend, windows_path_to_wsl
 
 import copy
 import json
@@ -32,7 +32,7 @@ def _same_origin(a: str, b: str) -> bool:
 
 def _translate_acp_cwd(cwd: str) -> str:
     """Translate Windows ACP cwd values (``E:\\Projects``, ``\\\\wsl.localhost\\``) to POSIX form
-    when Hermes runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
+    when slave-agent runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
     return translate_cwd_for_wsl_backend(str(cwd))
 
 
@@ -109,7 +109,7 @@ def _register_task_cwd(task_id: str, cwd: str) -> None:
 def _expand_acp_enabled_toolsets(toolsets: list[str] | None = None,
                                  mcp_server_names: list[str] | None = None) -> list[str]:
     """Return ACP toolsets plus explicit MCP server toolsets for this session."""
-    names = [n for n in (["hermes-acp"] if toolsets is None else toolsets) if n]
+    names = [n for n in (["slave-acp"] if toolsets is None else toolsets) if n]
     names += [f"mcp-{s}" for s in (mcp_server_names or []) if s]
     return list(dict.fromkeys(names))
 
@@ -186,7 +186,7 @@ def _stamp_rows(history: list[dict[str, Any]], rows: Any) -> None:
 
 @dataclass
 class SessionState:
-    """Tracks per-session state for an ACP-managed Hermes agent."""
+    """Tracks per-session state for an ACP-managed slave-agent."""
 
     session_id: str
     agent: Any  # AIAgent instance
@@ -210,14 +210,14 @@ class SessionState:
 
 
 class SessionManager:
-    """Thread-safe manager for ACP sessions backed by Hermes AIAgent instances.
+    """Thread-safe manager for ACP sessions backed by slave-agent AIAgent instances.
 
     Sessions are held in-memory for fast access **and** persisted to the shared
     session store so they survive restarts and are searchable via ``session_search``."""
 
     def __init__(self, agent_factory=None, db=None):
         """``agent_factory``: AIAgent-like factory (tests); default builds a real AIAgent from
-        the runtime provider config. ``db``: the session store; default lazily opens ``~/.hermes/state.db``."""
+        the runtime provider config. ``db``: the session store; default lazily opens ``~/.slave/state.db``."""
         self._sessions: dict[str, SessionState] = {}
         self._lock = threading.Lock()
         # Serializes DB restores: session construction runs off the event loop, so two
@@ -304,7 +304,7 @@ class SessionManager:
     def _catalog_rows(self) -> dict[str, dict[str, Any]]:
         from acp_adapter.catalog import read_catalog_rows
         handle = self._persistence
-        return read_catalog_rows(handle.scope.profile_dir if handle is not None else get_hermes_home())
+        return read_catalog_rows(handle.scope.profile_dir if handle is not None else get_slave_home())
 
     def display_history(self, session_id: str) -> Optional[list[dict[str, Any]]]:
         """The DURABLE DISPLAY projection for a session (``include_compacted``): what a reopened
@@ -354,7 +354,7 @@ class SessionManager:
         this process is the session end: the client that drove the
         conversation is gone. Without this writer, source='acp' rows keep
         ``ended_at`` NULL forever and the ended-session guard shared by
-        prune/archive (``hermes_state_maintenance``) can never reach them.
+        prune/archive (``slave_state_maintenance``) can never reach them.
         A later load/resume reopens the row (see ``_restore``), the same
         contract the TUI gateway's resume path uses. Best-effort: teardown
         must never raise. Returns the number of sessions ended.
@@ -391,14 +391,14 @@ class SessionManager:
 
     def _get_db(self):
         """Lazily open the process-shared session store; ``None`` if unavailable (e.g. import
-        error in a minimal test env). ``HERMES_HOME`` is resolved here, not at import time, so
+        error in a minimal test env). ``SLAVE_HOME`` is resolved here, not at import time, so
         test fixtures that change the env var later are honoured. The store is the one in-process
         tools (delegation, session_search, goals) also open, so the ACP server holds ONE writer on
         state.db instead of two (#100896); it is its own storage interface handle."""
         if self._db_instance is None:
             try:
                 from persistence_assembly import open_persistence, profile_scope
-                self._db_instance = open_persistence(profile_scope(home=get_hermes_home()), eager=True)
+                self._db_instance = open_persistence(profile_scope(home=get_slave_home()), eager=True)
             except Exception:
                 logger.debug("Session store unavailable for ACP persistence", exc_info=True)
         if self._db_instance is not None and self._persistence is None:
@@ -594,10 +594,10 @@ class SessionManager:
 
         from run_agent import AIAgent
         from agent.skill_utils import parse_config_string_list
-        from hermes_cli.config import load_config
-        from hermes_cli.runtime_provider import resolve_runtime_provider
-        from hermes_cli.tools_config import _get_platform_tools, enabled_mcp_server_names
-        from hermes_constants import resolve_reasoning_config
+        from slave_cli.config import load_config
+        from slave_cli.runtime_provider import resolve_runtime_provider
+        from slave_cli.tools_config import _get_platform_tools, enabled_mcp_server_names
+        from slave_constants import resolve_reasoning_config
 
         config = load_config()
         model_cfg = config.get("model")
@@ -609,7 +609,7 @@ class SessionManager:
 
         if enabled_toolsets is None:
             # The same per-platform resolver as the gateway/cron/api_server: platform_toolsets.acp wins, else
-            # hermes-acp; its MCP half (every enabled server, a listed-name allowlist, or none for ``no_mcp``)
+            # slave-acp; its MCP half (every enabled server, a listed-name allowlist, or none for ``no_mcp``)
             # comes back as bare server names, which ACP keys as ``mcp-<server>`` like its session servers.
             resolved = _get_platform_tools(config, "acp")
             mcp_servers = resolved & enabled_mcp_server_names(config)
@@ -635,7 +635,7 @@ class SessionManager:
         # those rows then restore onto the endpoint they used instead of failing closed.
         requested = requested_provider or config_provider
         if requested == "custom" and base_url:
-            from hermes_cli.runtime_provider_custom import find_custom_provider_identity
+            from slave_cli.runtime_provider_custom import find_custom_provider_identity
             try:
                 requested = find_custom_provider_identity(base_url) or requested
             except Exception:
@@ -671,9 +671,9 @@ class SessionManager:
         # join a slow-but-reachable server would be invisible all session. ensure_* also
         # (re)starts discovery if the entry spawn never ran or connected zero servers.
         # Bounded by ``mcp_discovery_timeout`` (config.yaml, ~1.5s); late servers are
-        # picked up by HermesACPAgent._schedule_mcp_late_refresh.
+        # picked up by SlaveACPAgent._schedule_mcp_late_refresh.
         try:
-            from hermes_cli.mcp_startup import ensure_mcp_discovery_before_agent_build
+            from slave_cli.mcp_startup import ensure_mcp_discovery_before_agent_build
 
             ensure_mcp_discovery_before_agent_build(logger=logger, thread_name="acp-mcp-discovery")
         except Exception:
@@ -682,7 +682,7 @@ class SessionManager:
         try:
             agent = AIAgent(**kwargs)
         except Exception as exc:
-            # The bare-AIAgent fallback dies with "No LLM provider configured. Run `hermes setup`" on a
+            # The bare-AIAgent fallback dies with "No LLM provider configured. Run `slave setup`" on a
             # machine that is configured and was working a call earlier; the swallowed resolution
             # failure (revoked OAuth, disabled provider, ...) is the actionable error (#91090).
             if resolve_error is not None:

@@ -1,6 +1,6 @@
 name: samskara
 title: Samskara
-repo: https://github.com/SebaWag/hermes-samskara
+repo: https://github.com/SebaWag/slave-samskara
 sha: d807e875da3176301db9955e0352c9c8adb6cb01
 version: "0.3.1"
 description: >-
@@ -18,7 +18,7 @@ description: >-
   Disclosure — with session-end extraction enabled (default), the plugin sends
   the recent turns of a session to the user's own model through ctx.llm
   (host-owned credentials, no provider override) to extract facts. If the host
-  does not expose ctx.llm — Hermes' in-process memory-provider path does not
+  does not expose ctx.llm — slave-agent’ in-process memory-provider path does not
   today — extraction is skipped rather than redirected: the session records its
   entity mentions lexically and no model is called. The plugin reads no provider
   API key from the environment and has no default model host. The graph endpoint
@@ -31,12 +31,12 @@ maintainer: SebaWag
 requires_hermes: ">=0.19.0"
 tier: community
 category: memory
-docs_url: https://github.com/SebaWag/hermes-samskara/blob/d807e875da3176301db9955e0352c9c8adb6cb01/README.md
-image: https://raw.githubusercontent.com/SebaWag/hermes-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/banner.png
+docs_url: https://github.com/SebaWag/slave-samskara/blob/d807e875da3176301db9955e0352c9c8adb6cb01/README.md
+image: https://raw.githubusercontent.com/SebaWag/slave-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/banner.png
 screenshots:
-  - https://raw.githubusercontent.com/SebaWag/hermes-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/01-status.jpg
-  - https://raw.githubusercontent.com/SebaWag/hermes-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/02-weights.jpg
-  - https://raw.githubusercontent.com/SebaWag/hermes-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/03-conflict.jpg
+  - https://raw.githubusercontent.com/SebaWag/slave-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/01-status.jpg
+  - https://raw.githubusercontent.com/SebaWag/slave-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/02-weights.jpg
+  - https://raw.githubusercontent.com/SebaWag/slave-samskara/d807e875da3176301db9955e0352c9c8adb6cb01/docs/demo/03-conflict.jpg
 readme: true
 capabilities:
   provides_tools:

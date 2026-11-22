@@ -206,8 +206,8 @@ def test_aux_call_telemetry_records_content_free_phase_timings():
 
 
 def test_automatic_compaction_counts_once_in_shared_metrics(monkeypatch):
-    from hermes_cli.observability import shared_metrics_events
-    from hermes_cli.observability.shared_metrics_fields import compression_fields
+    from slave_cli.observability import shared_metrics_events
+    from slave_cli.observability.shared_metrics_fields import compression_fields
 
     calls = []
     monkeypatch.setattr(shared_metrics_events, "record_compression", lambda **kw: calls.append(kw))
@@ -231,8 +231,8 @@ def test_structural_no_op_is_counted_skipped_with_the_compressors_class(caplog, 
     """A transcript that fits inside the protected tail makes no summary call: the attempt log names
     ``no_compressible_window`` (not the caller's generic ``no_progress``) and the shared metric counts
     it ``skipped``, not ``failed`` (#131412)."""
-    from hermes_cli.observability import shared_metrics_events
-    from hermes_cli.observability.shared_metrics_fields import compression_fields
+    from slave_cli.observability import shared_metrics_events
+    from slave_cli.observability.shared_metrics_fields import compression_fields
 
     recorded = []
     monkeypatch.setattr(shared_metrics_events, "record_compression", lambda **kw: recorded.append(kw))
@@ -270,7 +270,7 @@ def test_structural_no_op_is_counted_skipped_with_the_compressors_class(caplog, 
     ],
 )
 def test_generic_caller_verdicts_defer_to_the_recorded_failure_class(caplog, monkeypatch, recorded, caller, expected):
-    from hermes_cli.observability import shared_metrics_events
+    from slave_cli.observability import shared_metrics_events
 
     recorded, attempt_id = recorded if isinstance(recorded, tuple) else (recorded, "this-attempt")
     monkeypatch.setattr(shared_metrics_events, "finish_compression_attempt", lambda *_args, **_kwargs: None)

@@ -70,7 +70,7 @@ class StubPlane:
         self.requests: list[dict[str, Any]] = []
         self.token_requests = 0
         self.nous_refreshes = 0
-        self.home: Optional[Path] = None  # the test's HERMES_HOME, set by the fixture
+        self.home: Optional[Path] = None  # the test's SLAVE_HOME, set by the fixture
         self.lock = threading.Lock()
         self._server = ThreadingHTTPServer(("127.0.0.1", 0), self._handler())
         self.url = f"http://127.0.0.1:{self._server.server_address[1]}"
@@ -160,13 +160,13 @@ class StubPlane:
                     plane.requests.append({
                         "method": method, "profile": profile, "body": body,
                         "auth": self.headers.get("Authorization"),
-                        "instance": self.headers.get("X-Hermes-Instance-Id"),
+                        "instance": self.headers.get("X-Slave-Instance-Id"),
                         "if_none_match": self.headers.get("If-None-Match")})
                     if plane.fail_status is not None:
                         return self._send(plane.fail_status, {"error": "unavailable", "message": "stub outage"})
                     if self.headers.get("Authorization") not in (f"Bearer {TOKEN}", f"Bearer {NOUS_TOKEN}"):
                         return self._send(401, {"error": "unauthorized", "message": "bad token"})
-                    if self.headers.get("X-Hermes-Instance-Id") != INSTANCE:
+                    if self.headers.get("X-Slave-Instance-Id") != INSTANCE:
                         return self._send(403, {"error": "config_agent_unknown", "message": "unknown instance"})
                     if method == "GET":
                         eff = plane.effective(profile)
@@ -232,9 +232,9 @@ class StubPlane:
 
 def remote_env(plane: StubPlane) -> dict[str, str]:
     return {
-        "HERMES_CONFIG_BACKEND": "remote",
-        "HERMES_CONFIG_REMOTE_URL": plane.url,
-        "HERMES_CONFIG_INSTANCE_ID": INSTANCE,
+        "SLAVE_CONFIG_BACKEND": "remote",
+        "SLAVE_CONFIG_REMOTE_URL": plane.url,
+        "SLAVE_CONFIG_INSTANCE_ID": INSTANCE,
         "GATEWAY_RELAY_IDP_TOKEN_URL": f"{plane.url}/token",
         "GATEWAY_RELAY_IDP_CLIENT_ID": CLIENT_ID,
         "GATEWAY_RELAY_IDP_CLIENT_SECRET": CLIENT_SECRET,

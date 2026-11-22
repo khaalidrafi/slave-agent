@@ -33,7 +33,7 @@ def _git(cwd, *args, env=None):
     (False, None, "", False, None),            # release tag unreachable: fail, publish nothing
     (False, "before", "", False, "before"),    # ... a rerun keeps its checkout instead
     # The release cut on a release branch, main past the fork point (v0.22.2's shape): main moves
-    # back only through `hermes update`, whose downgrade guard the installer cannot run.
+    # back only through `slave update`, whose downgrade guard the installer cannot run.
     (True, "tip", "", True, "tip"),
     (True, "tip", "stable", True, "tip"),
     (True, "before", "", True, "release"),
@@ -43,7 +43,7 @@ def test_install_ps1_lands_on_the_latest_stable_release(tmp_path, side, start, c
     if not powershell:
         pytest.skip("Windows PowerShell is required")
     origin, home = tmp_path / "origin", tmp_path / "home"
-    install = home / "hermes-agent"
+    install = home / "slave-agent"
     origin.mkdir()
     home.mkdir()
     _git(origin, "init", "-q", "-b", "main")
@@ -60,13 +60,13 @@ def test_install_ps1_lands_on_the_latest_stable_release(tmp_path, side, start, c
     gitconfig = tmp_path / "gitconfig"
     gitconfig.write_text(f'[url "{origin.as_uri()}"]\n  insteadOf = {OFFICIAL}\n', encoding="utf-8")
     env = {**os.environ, "GIT_CONFIG_GLOBAL": str(gitconfig), "NO_COLOR": "1"}
-    env.pop("HERMES_INSTALL_CHANNEL", None)
+    env.pop("SLAVE_INSTALL_CHANNEL", None)
     if start:
         _git(tmp_path, "clone", "-q", OFFICIAL, str(install), env=env)
         _git(install, "checkout", "-q", "--detach", commits[start], env=env)
     wrapper = tmp_path / "stage.ps1"
     wrapper.write_text(
-        f". '{ROOT / 'scripts' / 'install.ps1'}' -InstallDir '{install}' -HermesHome '{home}' -Channel '{channel}'\n"
+        f". '{ROOT / 'scripts' / 'install.ps1'}' -InstallDir '{install}' -SlaveHome '{home}' -Channel '{channel}'\n"
         "function Ensure-Git { return $true }\n"
         "function Get-LatestStableRelease { return 'v1.2.3' }\n"
         "Stage-Repository\n", encoding="utf-8")

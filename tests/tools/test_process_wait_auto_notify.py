@@ -9,9 +9,9 @@ import tools.process_registry as pr
 
 @pytest.fixture
 def sleeper(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     session = pr.process_registry.spawn_local("sleep 30", cwd=str(tmp_path), task_id="t-autonotify")
     session.notify_on_complete = False
     yield home, session
@@ -38,7 +38,7 @@ def test_opt_out_keeps_plain_polling(sleeper, tmp_path, monkeypatch):
     managed = tmp_path / "managed"
     managed.mkdir()
     (managed / "config.yaml").write_text("terminal:\n  process_wait_auto_notify: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", str(managed))
     for _ in range(3):
         result = _wait(session.id)
         assert result["status"] == "timeout"
@@ -49,10 +49,10 @@ def test_opt_out_keeps_plain_polling(sleeper, tmp_path, monkeypatch):
 def test_caller_that_does_not_own_the_completion_keeps_plain_polling(tmp_path, monkeypatch):
     """A caller acting through the owning task but bound to session B must not be told to stop:
     the completion is routed to session A. (Session B alone cannot reach A's process at all, #108413.)"""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     session = pr.process_registry.spawn_local("sleep 30", cwd=str(tmp_path), task_id="owner-a", session_key="owner-a")
     session.notify_on_complete = False
-    monkeypatch.setenv("HERMES_SESSION_KEY", "caller-b")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", "caller-b")
     try:
         for _ in range(3):
             result = json.loads(pr._handle_process(

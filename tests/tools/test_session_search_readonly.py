@@ -7,17 +7,17 @@ import sqlite3
 
 
 def test_search_does_not_create_current_storage_for_empty_or_foreign_reads(tmp_path, monkeypatch):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_messages, seed_session
     import tools.session_search_tool
     from tools.registry import registry
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    token = set_hermes_home_override(home)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    token = set_slave_home_override(home)
     handler = registry.get_entry("session_search").handler
     try:
         empty = json.loads(handler({}))
@@ -40,11 +40,11 @@ def test_search_does_not_create_current_storage_for_empty_or_foreign_reads(tmp_p
             assert result["messages"][0]["content"] == "owned target marker"
             assert not (home / "state.db").exists()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_search_reads_live_storage_without_a_write_commit(tmp_path, monkeypatch):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_messages, seed_session
     import tools.session_search_tool
@@ -52,8 +52,8 @@ def test_search_reads_live_storage_without_a_write_commit(tmp_path, monkeypatch)
 
     home = tmp_path / "profile"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    token = set_hermes_home_override(home)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    token = set_slave_home_override(home)
     owner = open_persistence(profile_scope(home=home), eager=True)
     observer = sqlite3.connect(home / "state.db")
     try:
@@ -67,4 +67,4 @@ def test_search_reads_live_storage_without_a_write_commit(tmp_path, monkeypatch)
     finally:
         observer.close()
         owner.close()
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)

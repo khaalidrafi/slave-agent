@@ -22,18 +22,18 @@ B_PORTAL = "https://b-portal.example.invalid"
 @pytest.fixture
 def two_homes(tmp_path, monkeypatch):
     """Launch home (root) + secondary ``profiles/b``, each with its own Portal override, multiplexing on."""
-    root = tmp_path / "hermes_home"
+    root = tmp_path / "slave_home"
     b = root / "profiles" / "b"
     b.mkdir(parents=True)
-    (root / ".env").write_text(f"HERMES_PORTAL_BASE_URL={LAUNCH_PORTAL}\n", encoding="utf-8")
-    (b / ".env").write_text(f"HERMES_PORTAL_BASE_URL={B_PORTAL}\n", encoding="utf-8")
+    (root / ".env").write_text(f"SLAVE_PORTAL_BASE_URL={LAUNCH_PORTAL}\n", encoding="utf-8")
+    (b / ".env").write_text(f"SLAVE_PORTAL_BASE_URL={B_PORTAL}\n", encoding="utf-8")
     for home, token in ((root, "tok-launch"), (b, "tok-b")):
         (home / "config.yaml").write_text("{}\n", encoding="utf-8")
         (home / "auth.json").write_text(
             json.dumps({"version": 1, "providers": {"nous": {"access_token": token}}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", LAUNCH_PORTAL)  # the launch process loaded its own .env
-    monkeypatch.setattr(server, "_hermes_home", root)
+    monkeypatch.setenv("SLAVE_HOME", str(root))
+    monkeypatch.setenv("SLAVE_PORTAL_BASE_URL", LAUNCH_PORTAL)  # the launch process loaded its own .env
+    monkeypatch.setattr(server, "_slave_home", root)
     monkeypatch.setattr(server, "_served_profile_homes", set())
     monkeypatch.setattr(lpp, "_snapshot", None)
     from agent import secret_scope
@@ -55,16 +55,16 @@ def test_session_usage_fetches_credits_in_the_sessions_profile_scope(two_homes, 
     def fake_account_info(**_kwargs):
         """Stand-in for the Portal request, past the logged-in gate and the fetch's worker-thread hop:
         records the Portal override, home and Nous token the request would have used."""
-        from hermes_cli.auth import get_provider_auth_state
-        from hermes_cli.auth_nous import _nous_portal_env_override
-        from hermes_constants import get_hermes_home
+        from slave_cli.auth import get_provider_auth_state
+        from slave_cli.auth_nous import _nous_portal_env_override
+        from slave_constants import get_slave_home
         token = (get_provider_auth_state("nous") or {}).get("access_token")
-        calls.append((_nous_portal_env_override(), Path(get_hermes_home()).resolve(), token))
+        calls.append((_nous_portal_env_override(), Path(get_slave_home()).resolve(), token))
         raise RuntimeError("no network in tests")  # fail-open: session.usage still answers
 
     # Both Portal reads: a session off a Nous route (this empty config) reads with the stored token only.
-    monkeypatch.setattr("hermes_cli.nous_account.get_nous_portal_account_info", fake_account_info)
-    monkeypatch.setattr("hermes_cli.nous_account.stored_token_account_info", fake_account_info)
+    monkeypatch.setattr("slave_cli.nous_account.get_nous_portal_account_info", fake_account_info)
+    monkeypatch.setattr("slave_cli.nous_account.stored_token_account_info", fake_account_info)
     monkeypatch.setattr(server, "_sessions", {"sa": _session(None), "sb": _session(str(b))})
 
     for sid in ("sa", "sb"):

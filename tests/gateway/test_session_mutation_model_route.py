@@ -49,11 +49,11 @@ def endpoints():
 def home(monkeypatch):
     from agent import models_dev
     from gateway import run
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     # gateway.run binds its home at first import; the loader itself is real.
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     catalog = {'custom': {'id': 'custom', 'models': {
         name: {'id': name, 'name': name, 'tool_call': True, 'cost': {'input': 0, 'output': 0},
                'limit': {'context': 100000, 'output': 4000}} for name in MODELS}}}
@@ -204,7 +204,7 @@ async def test_a_route_that_cannot_authenticate_does_not_block_switching_away(ho
     try:
         live = await _create(owner, authority, home, 'bare')
         sid = next(sid for sid, value in authority.sessions.items() if value is live)
-        from hermes_cli.auth_constants import AuthError
+        from slave_cli.auth_constants import AuthError
         with pytest.raises(AuthError):
             _route(runner, live)
 
@@ -224,7 +224,7 @@ async def test_a_stopped_local_runtime_does_not_block_switching_away(home, endpo
     out of ``session.mutate`` — only AuthError was caught — so the client got ``internal error`` and
     could never leave the dead local route, not even by picking a remote provider."""
     # A llama-server the developer runs on its default port would be detected and resolve this route.
-    monkeypatch.setattr('hermes_cli.local_runtime.endpoint.resolve_llamacpp_endpoint',
+    monkeypatch.setattr('slave_cli.local_runtime.endpoint.resolve_llamacpp_endpoint',
                         lambda *args, **kwargs: None)
     (_, url), _ = endpoints
     (home / 'config.yaml').write_text(json.dumps({

@@ -10,18 +10,18 @@ from gateway.config import GatewayConfig, Platform
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.run import GatewayRunner, _SESSION_DB_UNPINNED
 from gateway.session import SessionSource, SessionStore, build_session_key
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 @pytest.mark.asyncio
 async def test_reset_stores_the_default_model_on_the_session_row(tmp_path, monkeypatch):
     import gateway.run as gateway_run
 
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     # JSON is valid YAML; CI ships no pyyaml for test fixtures.
     (home / "config.yaml").write_text(json.dumps({"model": {"default": "cfg-model", "provider": "cfg-prov"}}))
-    monkeypatch.setattr(gateway_run, "_hermes_home", home)
+    monkeypatch.setattr(gateway_run, "_slave_home", home)
 
     source = SessionSource(platform=Platform.TELEGRAM, chat_id="c1", user_id="u1", chat_type="dm")
     key = build_session_key(source)

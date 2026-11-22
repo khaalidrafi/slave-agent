@@ -167,8 +167,8 @@ def strip_leading_message_timestamps(content: str, tz=None) -> tuple[str, Option
     return text, embedded_epoch
 
 
-# Epoch coercion, as hermes_cli.timefmt does it.
-logger = logging.getLogger("hermes_cli.timefmt")
+# Epoch coercion, as slave_cli.timefmt does it.
+logger = logging.getLogger("slave_cli.timefmt")
 
 
 EPOCH_MIN = 0.0

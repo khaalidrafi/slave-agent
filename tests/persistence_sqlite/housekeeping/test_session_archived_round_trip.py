@@ -66,7 +66,7 @@ def test_export_all_round_trips_compacted_history(backend, scope_a, scope_b):
                                            str(msg["compacted"]))
     scope_c = profile_scope("profile-c")
     profile_home(scope_c.name)
-    edited = SQLiteBackend({scope_c.hermes_home_key: store_for(scope_c)})
+    edited = SQLiteBackend({scope_c.slave_home_key: store_for(scope_c)})
     try:
         edited_store = edited.open(scope_c)
         assert edited_store.maintenance.import_sessions(payload).ok

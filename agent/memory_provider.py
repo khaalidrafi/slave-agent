@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def ctx_bound(fn: Callable[..., Any]) -> Callable[..., Any]:
     """Bind ``fn`` to the CALLER's contextvars for another thread/executor. Profile isolation
-    is a ContextVar-scoped HERMES_HOME override plus the per-turn secret scope; a worker started
+    is a ContextVar-scoped SLAVE_HOME override plus the per-turn secret scope; a worker started
     with an empty context silently lands on the default profile (or fails closed on secrets)."""
     ctx = contextvars.copy_context()
     return lambda *args, **kwargs: ctx.run(fn, *args, **kwargs)
@@ -89,14 +89,14 @@ class MemoryProvider(ABC):
 
     - hand every load a NEW instance (``register(ctx)`` / the loader constructs one per agent). The
       manager refuses an instance another profile's manager already bound, rather than rebinding it;
-    - bind every store, path, client, bank or tenant from ``initialize()``'s ``hermes_home`` (and
+    - bind every store, path, client, bank or tenant from ``initialize()``'s ``slave_home`` (and
       scoped secrets read during ``initialize``) and keep that binding on the instance;
     - keep no profile-specific mutable state at module or class level, and never "rebind" a shared
       binding per call: two profiles' calls interleave on different threads.
 
     The manager runs tool calls and lifecycle hooks only from the profile the instance was initialized
     for (refusing callers that name another profile, or none on a multiplexed process), runs its
-    background hooks under that profile's ``HERMES_HOME``, and passes ``hermes_home`` /
+    background hooks under that profile's ``SLAVE_HOME``, and passes ``slave_home`` /
     ``agent_identity`` / ``caller_gsk`` to ``handle_tool_call`` when it accepts ``**kwargs``. Those
     keywords name the same profile the instance is bound to; they are not a reason to rebind. Core
     cannot see inside a provider: one that keeps a process-wide binding still breaks this contract.
@@ -121,15 +121,15 @@ class MemoryProvider(ABC):
     def initialize(self, session_id: str, **kwargs) -> None:
         """Initialize once at agent startup (connections, resources, threads).
 
-        kwargs always include ``hermes_home`` (profile-scoped storage; never hardcode
-        ``~/.hermes``) and ``platform``; may include ``agent_context`` ("primary" |
+        kwargs always include ``slave_home`` (profile-scoped storage; never hardcode
+        ``~/.slave``) and ``platform``; may include ``agent_context`` ("primary" |
         "subagent" | "cron" | "flush" — skip writes for non-primary contexts),
         ``agent_identity``, ``agent_workspace``, ``parent_session_id``, ``user_id``, ``user_id_alt``.
         Agent builds also pass ``resumed`` (bool: an earlier turn of this session id ran) and
         ``message_count`` (int: messages already stored for it, which on TUI/Desktop can include the
         prompt being submitted). A new session id (subagent, cron run, fresh chat) or no session
         store gives ``False`` and a count of 0 or 1; a ``/branch`` child seeded with copied history
-        reports the copy. Read both with ``kwargs.get``: older Hermes omits them. A mid-process
+        reports the copy. Read both with ``kwargs.get``: older slave-agent omits them. A mid-process
         ``/resume`` rebinds through :meth:`on_session_switch` instead.
         """
 
@@ -181,11 +181,11 @@ class MemoryProvider(ABC):
         preset name under mixture-of-agents). The author trio names who wrote THIS turn (None, None, False without
         one): a shared session carries several participants, so a provider keying durable state on identity must read
         it per turn. ``previous_message`` is the secret-scrubbed text of the person's last message before this turn
-        ("" on a first turn or an image-only one), from the transcript Hermes holds, so a resumed process can redo
-        what a live one queued at the end of that turn. Context Hermes appended to an image turn (recalled memory,
+        ("" on a first turn or an image-only one), from the transcript slave-agent holds, so a resumed process can redo
+        what a live one queued at the end of that turn. Context slave-agent appended to an image turn (recalled memory,
         plugin and gateway notes) is not part of it. Best-effort: known runtime user-role rows and /steer messages
         are skipped, but a notice a gateway replays after a restart (cron delivery, process heartbeat, watch-disabled
-        notice) can come through, and so can the notes on an image turn an older Hermes stored or that repair or
+        notice) can come through, and so can the notes on an image turn an older slave-agent stored or that repair or
         compaction later merged with another turn."""
 
     def identity_signature(self) -> dict[str, Any]:
@@ -213,13 +213,13 @@ class MemoryProvider(ABC):
         """PARENT-side observation of a completed delegation (the subagent has no provider session)."""
 
     def get_config_schema(self) -> list[dict[str, Any]]:
-        """Setup fields for ``hermes memory setup`` ([] if none): ``key``, ``description``,
+        """Setup fields for ``slave memory setup`` ([] if none): ``key``, ``description``,
         optional ``secret`` (goes to .env), ``required``, ``default``, ``choices``, ``type``
         (text | integer | number | boolean), ``minimum``/``maximum``/``step``, ``url``,
         ``env_var`` (explicit secret env var; default auto-generated)."""
         return []
 
-    def save_config(self, values: dict[str, Any], hermes_home: str) -> None:
+    def save_config(self, values: dict[str, Any], slave_home: str) -> None:
         """Write non-secret setup ``values`` to the provider's native config. Plugins MUST either
         override this or use only env vars (every schema field carrying ``env_var``)."""
 
@@ -234,7 +234,7 @@ class MemoryProvider(ABC):
         """
 
     def backup_paths(self) -> list[str]:
-        """Absolute paths of provider state OUTSIDE HERMES_HOME for ``hermes backup``/``import``
+        """Absolute paths of provider state OUTSIDE SLAVE_HOME for ``slave backup``/``import``
         (paths outside the home dir are skipped). MUST work without ``initialize()`` or network."""
         return []
 
@@ -242,24 +242,24 @@ class MemoryProvider(ABC):
     # logged). Keep them fast: the dashboard and Desktop run them inside the create/rename request,
     # so put network work (creating a remote peer) on a background thread. --
 
-    def on_profile_created(self, profile_name: str, hermes_home: str) -> None:
+    def on_profile_created(self, profile_name: str, slave_home: str) -> None:
         """A profile whose config selects this provider was just created by ``create_profile`` (CLI,
         dashboard, Desktop/TUI; a clone carries ``memory.provider``). Not called for profile import.
         Set up per-profile provider state here (a peer, a host entry)."""
 
-    def on_profile_renamed(self, old_name: str, new_name: str, hermes_home: str) -> None:
-        """A profile whose config selects this provider was renamed; ``hermes_home`` is its new
+    def on_profile_renamed(self, old_name: str, new_name: str, slave_home: str) -> None:
+        """A profile whose config selects this provider was renamed; ``slave_home`` is its new
         directory. Re-key anything the provider stores under the old profile name."""
 
     # -- Dashboard config panel for a ``config_schema.py`` declaring ``storage=STORAGE_PROVIDER`` --
 
-    def read_config_fields(self, hermes_home: str) -> dict[str, Any]:
+    def read_config_fields(self, slave_home: str) -> dict[str, Any]:
         """``{"values": {field key: stored native value}, "placeholders": {field key: text}}``. A key
         absent from ``values`` reads as unset; a placeholder shows what a blank field resolves to.
         A stored secret may be included: it only marks the field as set and is never sent out."""
         return {"values": {}, "placeholders": {}}
 
-    def write_config_fields(self, values: dict[str, Any], hermes_home: str) -> None:
+    def write_config_fields(self, values: dict[str, Any], slave_home: str) -> None:
         """Persist the submitted fields (only those present): natives already coerced, ``None`` clears a
         key, non-blank secrets included (core saves each to ``.env`` under its ``env_key`` once this
         returns). Raise ``ValueError`` (a subclass such as ``json.JSONDecodeError`` counts, also under

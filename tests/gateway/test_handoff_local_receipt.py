@@ -20,7 +20,7 @@ pytestmark = pytest.mark.usefixtures("authority_cwd_in_tmp")  # symbolic profile
 @pytest.fixture(autouse=True)
 def _home(tmp_path, monkeypatch):
     from gateway import run
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda *_path: {'platform_toolsets': {'cli': []}, 'model': {'default': 'fixture'}})
 
 
@@ -464,7 +464,7 @@ async def test_a_moved_conversation_mounted_by_startup_recovery_stays_writable_o
     from gateway.session_local import create_local_session
     from tests.gateway.test_command_bypass_active_session import _StubAdapter
     monkeypatch.setenv('TELEGRAM_ALLOWED_USERS', '42')
-    monkeypatch.setattr('gateway.run._hermes_home', tmp_path)
+    monkeypatch.setattr('gateway.run._slave_home', tmp_path)
 
     def boot():
         runner = GatewayRunner(GatewayConfig(multiplex_profiles=False, sessions_dir=tmp_path / 'sessions'))
@@ -581,14 +581,14 @@ def _serve(tmp_path, monkeypatch):
     """A multiplexed gateway's homes: the default profile and a named ``bot`` profile, each with its
     own ``state.db``; ``bot`` delivers to a Telegram home channel."""
     from pathlib import Path
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.slave'
     bot = root / 'profiles' / 'bot'
     bot.mkdir(parents=True, mode=0o700)
     (bot / 'config.yaml').write_text(
         'platforms:\n  telegram:\n    enabled: true\n    token: fixture\n'
         '    home_channel: {platform: telegram, chat_id: "-1001", name: Bot Home}\n')
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)  # the profiles root is HOME-anchored
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     return root, bot
 
 

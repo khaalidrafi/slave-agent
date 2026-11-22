@@ -1,5 +1,5 @@
-"""``UsageAnalytics`` on SQLite: the dashboard's usage and model reads (hermes_cli/web_routers/analytics.py,
-hermes_cli/web_server_profiles.py) and the insights reads (agent/insights.py), one statement each, rows as fresh
+"""``UsageAnalytics`` on SQLite: the dashboard's usage and model reads (slave_cli/web_routers/analytics.py,
+slave_cli/web_server_profiles.py) and the insights reads (agent/insights.py), one statement each, rows as fresh
 dicts."""
 
 from __future__ import annotations

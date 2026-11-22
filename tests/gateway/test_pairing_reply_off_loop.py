@@ -1,6 +1,6 @@
 """Unauthorized-DM pairing replies must not block the gateway event loop on the pairing lock.
 
-``PairingStore`` edits hold a cross-process flock (the dashboard and the ``hermes pairing`` CLI
+``PairingStore`` edits hold a cross-process flock (the dashboard and the ``slave pairing`` CLI
 mutate the same files). Waiting on it inline in an async handler stalls every chat the gateway
 serves for up to the lock timeout, then raises a ``TimeoutError`` the handler never handled.
 """

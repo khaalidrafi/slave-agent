@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
@@ -303,8 +303,8 @@ async def test_room_grant_answers_the_clarify_prompt_its_run_raised(api, owner, 
         target_install_id=hosted_rooms.local_authority_gateway_id(), target_profile='default',
         issued_at=now, ttl_seconds=300, status_expires_at=now + 1000)
     claims = decode_room_grant(api._room_grant_secret(), grant, permission='status')
-    hosted_rooms.reserve_peer_room(storage_handle(get_hermes_home()), placement="shared", claims=claims, expires_at=now + 1000)
-    headers = {'Authorization': f'HermesRoom {grant}'}
+    hosted_rooms.reserve_peer_room(storage_handle(get_slave_home()), placement="shared", claims=claims, expires_at=now + 1000)
+    headers = {'Authorization': f'SlaveRoom {grant}'}
     admitted = admit_api_turn(api, session_id='room-clarify', request_id='run_room', user_message='hello',
                               conversation_history=[])
     _, ref, _row = admitted
@@ -334,7 +334,7 @@ async def test_room_grant_answers_the_clarify_prompt_its_run_raised(api, owner, 
         assert (await answered.json())['status'] == 'resolved'
         await asyncio.wait_for(run, timeout=10)
         assert api._run_statuses['run_room']['output'] == 'b'
-        hosted_rooms.revoke_room_grant_scope(storage_handle(get_hermes_home()), placement="shared", claims=claims, expires_at=now + 1000)
+        hosted_rooms.revoke_room_grant_scope(storage_handle(get_slave_home()), placement="shared", claims=claims, expires_at=now + 1000)
         denied = await client.post('/v1/runs/run_room/clarify', json=body, headers=headers)
         assert denied.status == 403
         assert (await denied.json())['error']['code'] == 'room_reauthorization_required'

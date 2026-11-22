@@ -21,7 +21,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 from tests.gateway.test_telegram_group_gating import _bot_command_entity, _group_message, _make_adapter
 
 
-def _observed_command_source(from_user_id, text="/resume@hermes_bot abc"):
+def _observed_command_source(from_user_id, text="/resume@slave_bot abc"):
     """The source the real adapter gives a ``/resume`` sent in an observed group."""
     adapter = _make_adapter(require_mention=True, allowed_chats=["-100"], group_allowed_chats=["-100"],
                             observe_unmentioned_group_messages=True)
@@ -30,7 +30,7 @@ def _observed_command_source(from_user_id, text="/resume@hermes_bot abc"):
     adapter._enqueue_text_event = seen.append
     adapter._ensure_forum_commands = AsyncMock()
     msg = _group_message(text, from_user_id=from_user_id,
-                         entities=[_bot_command_entity(text, "/resume@hermes_bot")])
+                         entities=[_bot_command_entity(text, "/resume@slave_bot")])
     asyncio.run(adapter._handle_command(SimpleNamespace(update_id=1, message=msg, effective_message=None), None))
     (event,) = seen
     assert event.source.shared_session is True and event.source.user_id == str(from_user_id)

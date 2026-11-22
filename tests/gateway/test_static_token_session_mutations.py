@@ -21,8 +21,8 @@ def test_static_token_http_mutations_reuse_ws_owner(tmp_path):
         'auxiliary': {'title_generation': {'enabled': False}},
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
-               PYTHONPATH=str(root), HERMES_DASHBOARD_SESSION_TOKEN='owned-static-token')
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
+               PYTHONPATH=str(root), SLAVE_DASHBOARD_SESSION_TOKEN='owned-static-token')
     params = dict(request_id='same-create', source='cli', cwd=str(home),
                   model='no-inference', toolsets=[])
     saved = {}

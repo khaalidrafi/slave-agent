@@ -90,7 +90,7 @@ async def commit_reasoning_command(authority, actor, ref, value, persist_global)
     from gateway.config import Platform
     from gateway.session_mutations import mutate_session
     from gateway.session_persistence import authority_persistence
-    from hermes_constants import parse_reasoning_effort
+    from slave_constants import parse_reasoning_effort
     from persistence.core.errors import MUTATION_GUARD_REFUSALS, AuthorityRefusal
     if value == 'reset' and not persist_global:  # ``reset --global`` is the handler's named refusal
         effort = None

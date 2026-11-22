@@ -59,7 +59,7 @@ async def test_a2a_forward_creation_commits_off_the_owner_loop(tmp_path, monkeyp
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {'default': 'fixture'}, 'platform_toolsets': {'cli': []}})
     monkeypatch.setattr(run, '_resolve_gateway_model', lambda config: 'fixture')
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())

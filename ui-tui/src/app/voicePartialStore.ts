@@ -1,4 +1,4 @@
-import type { AnyGatewayEvent } from '@hermes/shared/gateway-types'
+import type { AnyGatewayEvent } from '@slave-agent/shared/gateway-types'
 import { atom } from 'nanostores'
 
 // Live STT text so far while the user is still speaking (`voice.partial`, stt.streaming). The

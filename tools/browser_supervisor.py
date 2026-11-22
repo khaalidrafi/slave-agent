@@ -1,6 +1,6 @@
 """Persistent CDP supervisor for browser dialog + frame detection.
 
-One ``CDPSupervisor`` per Hermes ``task_id`` with a reachable CDP endpoint: one
+One ``CDPSupervisor`` per slave-agent ``task_id`` with a reachable CDP endpoint: one
 persistent WebSocket, ``Page`` / ``Runtime`` / ``Target`` events on every attached
 session (top page + auto-attached OOPIF / worker targets), pending dialogs + frame
 tree exposed via a thread-safe snapshot. Not in the tool schema — output reaches the
@@ -542,8 +542,8 @@ class _SupervisorRegistry:
                      dialog_timeout_s: float = DEFAULT_DIALOG_TIMEOUT_S, start_timeout: float = 15.0) -> CDPSupervisor:
         """Idempotently ensure a supervisor runs for ``(task_id, cdp_url)``; one bound to a
         different ``cdp_url`` or unhealthy (dead thread / stopped loop) is stopped and replaced."""
-        from hermes_constants import hermes_home_key
-        home = hermes_home_key()
+        from slave_constants import slave_home_key
+        home = slave_home_key()
         with self._lock:
             existing = self._by_task.get(task_id)
             if existing is not None:

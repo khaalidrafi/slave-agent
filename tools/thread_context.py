@@ -1,4 +1,4 @@
-"""Propagate agent-turn context into worker threads that dispatch Hermes tools.
+"""Propagate agent-turn context into worker threads that dispatch slave-agent tools.
 
 A bare ``threading.Thread`` / ``ThreadPoolExecutor`` worker starts with an empty
 ``contextvars.Context`` and no thread-local approval/sudo callbacks, so tool dispatch inside it
@@ -39,14 +39,14 @@ def _callback_api():
 
 def _get_tool_whitelist():
     """The thread's ``pre_tool_call`` tool whitelist as ``(allowed, deny_fmt)``, or None."""
-    from hermes_cli.plugins import _thread_tool_whitelist
+    from slave_cli.plugins import _thread_tool_whitelist
 
     allowed = getattr(_thread_tool_whitelist, "allowed", None)
     return None if allowed is None else (allowed, getattr(_thread_tool_whitelist, "fmt", None))
 
 
 def _set_tool_whitelist(state) -> None:
-    from hermes_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
+    from slave_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
 
     if state is None:
         clear_thread_tool_whitelist()

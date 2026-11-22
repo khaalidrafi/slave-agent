@@ -57,7 +57,7 @@ test.each(process.platform === 'win32' ? ['EXDEV'] : ['EXDEV', 'EBUSY'])('a tree
   const { source, env } = fixture()
   const options = { source, workspaces: ['web'], reuse: true, env }
   prepareNodeDependencies(options)
-  rmSync(join(source, 'node_modules/.hermes-node-deps'))
+  rmSync(join(source, 'node_modules/.slave-node-deps'))
   writeFileSync(join(source, 'web/node_modules/left-behind'), '')
   faults.set(join(source, 'web/node_modules'), code)
   prepareNodeDependencies(options)
@@ -73,7 +73,7 @@ test('a previous set that cannot be deleted after a successful install is left f
   const { source, env } = fixture()
   const options = { source, workspaces: ['web'], reuse: true, env }
   prepareNodeDependencies(options)
-  rmSync(join(source, 'node_modules/.hermes-node-deps'))
+  rmSync(join(source, 'node_modules/.slave-node-deps'))
   faults.set(join(source, '.cache/node-deps-previous'), 'EPERM')
   prepareNodeDependencies(options)
   expect(createRequire(join(source, 'web/package.json'))('web-only')).toBe('web-only')

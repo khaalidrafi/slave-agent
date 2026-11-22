@@ -22,7 +22,7 @@ FAR = C + 10 * 86400  # a bound after every seeded session
 
 CLI_CALLS = r'[{"id": "k1", "type": "function", "function": {"name": "skill_view", "arguments": "{\"name\": \"alpha\"}"}}, {"id": "k2", "type": "function", "function": {"name": "terminal", "arguments": "{\"command\": \"ls\"}"}}]'
 LOCAL_CALLS = r'[{"id": "l1", "type": "function", "function": {"name": "read_file", "arguments": "{\"path\": \"a\"}"}}]'
-TG_CALLS = r'[{"id": "t1", "type": "function", "function": {"name": "terminal", "arguments": "{\"command\": \"hermes skill_manage list\"}"}}]'
+TG_CALLS = r'[{"id": "t1", "type": "function", "function": {"name": "terminal", "arguments": "{\"command\": \"slave skill_manage list\"}"}}]'
 
 
 def _reads(store: Any, *names: str) -> list[Any]:
@@ -106,7 +106,7 @@ def _seed_messages(backend: Any, scope: Any, store: Any) -> None:
     append("m-local", "assistant", "", C + 7, tool_calls=(_call("l1", "read_file", '{"path": "a"}'),))
     append("m-local", "tool", "x", C + 8, tool_name="read_file", tool_call_id="l1")
     _session(backend, scope, store, "m-tg", C + 10, source="telegram")
-    append("m-tg", "assistant", "", C + 11, tool_calls=(_call("t1", "terminal", '{"command": "hermes skill_manage list"}'),))
+    append("m-tg", "assistant", "", C + 11, tool_calls=(_call("t1", "terminal", '{"command": "slave skill_manage list"}'),))
     append("m-tg", "tool", "x", C + 12, tool_name="terminal", tool_call_id="t1")
 
 

@@ -13,7 +13,7 @@ from gateway.config import GatewayConfig, Platform
 from gateway.kanban_watchers_notifier import _KanbanNotification, _notifier_collect
 from gateway.profile_routing import parse_profile_routes
 from gateway.run import GatewayRunner
-from hermes_cli import kanban_db as kb, kanban_db_connect as kbc, kanban_db_notify as kbn
+from slave_cli import kanban_db as kb, kanban_db_connect as kbc, kanban_db_notify as kbn
 
 GROUP_A = "-1001111111111"
 GROUP_B = "-1002222222222"
@@ -32,9 +32,9 @@ class RecordingAdapter:
 
 def _runner(tmp_path, monkeypatch, routes):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(home / "kanban.db"))
+    home = tmp_path / ".slave"
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_KANBAN_DB", str(home / "kanban.db"))
     for name in ("teama", "teamb"):
         profile = home / "profiles" / name
         profile.mkdir(parents=True)

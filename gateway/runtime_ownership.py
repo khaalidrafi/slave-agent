@@ -15,7 +15,7 @@ from pathlib import Path
 import stat
 import threading
 import time
-from hermes_dir_acl import make_user_dir
+from slave_dir_acl import make_user_dir
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +189,7 @@ class ProfileOwnership:
                     try:
                         if not _try_acquire_file_lock(handle) or not _still_names(path, handle.fileno()):
                             raise OwnershipConflict(f'Gateway runtime already owns profile {home}')
-                        record = {**_build_pid_record(), 'hermes_home': str(home)}
+                        record = {**_build_pid_record(), 'slave_home': str(home)}
                         if purpose:
                             record['purpose'] = purpose
                         handle.seek(0)

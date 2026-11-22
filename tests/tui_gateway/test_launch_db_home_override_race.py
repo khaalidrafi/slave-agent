@@ -1,7 +1,7 @@
 """Regression for #102526.
 
 The launch backend's lazy ``_get_db()`` handle must bind to the import-time
-launch home, not whatever ``get_hermes_home()`` resolves to at first-touch
+launch home, not whatever ``get_slave_home()`` resolves to at first-touch
 time. The desktop multiplex cron ticker installs per-profile override windows
 at startup; if the first ``session.*`` RPC races into a foreign window, the
 backend permanently serves the wrong profile's state.db.
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 from persistence.conversation.messages import NewMessage
 from persistence.conversation.sessions import NewSession
 from persistence_assembly import close_all_stores, live_stores, open_persistence, profile_scope, store_location
@@ -42,8 +42,8 @@ def launch_db_env(monkeypatch, tmp_path):
     launch_home.mkdir()
     foreign_home.mkdir()
 
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
-    monkeypatch.setattr(server, "_hermes_home", str(launch_home))
+    monkeypatch.setenv("SLAVE_HOME", str(launch_home))
+    monkeypatch.setattr(server, "_slave_home", str(launch_home))
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr(server, "_db_error", None)
     try:
@@ -55,7 +55,7 @@ def launch_db_env(monkeypatch, tmp_path):
 
 def test_get_db_first_touch_under_foreign_override_uses_launch_path(launch_db_env):
     launch_home, foreign_home = launch_db_env
-    token = set_hermes_home_override(str(foreign_home))
+    token = set_slave_home_override(str(foreign_home))
     try:
         db = server._get_db()
         assert db is not None
@@ -63,18 +63,18 @@ def test_get_db_first_touch_under_foreign_override_uses_launch_path(launch_db_en
         assert not (foreign_home / "state.db").exists()
         assert server._get_db() is db
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_get_db_follows_a_process_home_redirected_after_import(monkeypatch, tmp_path):
-    """The launch handle resolves ``HERMES_HOME`` at first use, not at import (#112692): a harness
+    """The launch handle resolves ``SLAVE_HOME`` at first use, not at import (#112692): a harness
     that redirects the env after ``tui_gateway.server`` is imported must not open the import-time
     home's state.db. Only the context-local override is ignored (#102526), never the process env."""
     redirected = tmp_path / "redirected"
     redirected.mkdir()
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr(server, "_db_error", None)
-    monkeypatch.setenv("HERMES_HOME", str(redirected))
+    monkeypatch.setenv("SLAVE_HOME", str(redirected))
     try:
         db = server._get_db()
         assert db is not None
@@ -92,7 +92,7 @@ def test_insights_get_reads_the_requested_profile_store_not_the_launch_handle(la
     profiles_root = tmp_path / "profiles"
     work = profiles_root / "work"
     work.mkdir(parents=True)
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir", lambda name: profiles_root / name)
+    monkeypatch.setattr("slave_cli.profiles.get_profile_dir", lambda name: profiles_root / name)
     monkeypatch.setattr(server, "_canonical_profile_request", lambda name: name or None)
 
     with open_persistence(profile_scope(home=work)) as seeded:

@@ -1,13 +1,13 @@
-"""Entrypoint driver for the parity matrix: the ACP stdio server (``hermes acp``).
+"""Entrypoint driver for the parity matrix: the ACP stdio server (``slave acp``).
 
 Follows the driver contract in ``_drive_cli``. The client side speaks
 newline-delimited JSON-RPC 2.0 itself (no SDK client) so the driver controls
 every byte and the shutdown path: ``initialize`` -> ``session/new`` (ACP's
 documented cwd channel) -> ``session/prompt``, collecting
 ``agent_message_chunk`` text from ``session/update`` notifications, then stdin
-EOF — the way an editor host closes the server. ``hermes acp`` runs the turn in
+EOF — the way an editor host closes the server. ``slave acp`` runs the turn in
 the profile's gateway daemon (``acp_adapter/gateway_server.py``), so the surface's
-shutdown ends with ``hermes gateway stop``.
+shutdown ends with ``slave gateway stop``.
 """
 
 from __future__ import annotations
@@ -23,13 +23,13 @@ from tests.e2e.core.parity._helpers import (
     TURN_TIMEOUT,
     DriveResult,
     ParityHome,
-    hermes_argv,
+    slave_argv,
     stop_profile_gateway,
     terminate,
 )
 from tests.fakes.fake_llm_provider import FakeLLMServer
 
-ACP_TOOLSET = "hermes-acp"  # acp_adapter/session.py::_expand_acp_enabled_toolsets default
+ACP_TOOLSET = "slave-acp"  # acp_adapter/session.py::_expand_acp_enabled_toolsets default
 EOF_EXIT_TIMEOUT = 30.0
 
 
@@ -112,7 +112,7 @@ def drive_acp(ph: ParityHome, srv: FakeLLMServer, prompt: str) -> DriveResult:
     stderr_path = ph.root / "acp_stderr.log"
     with open(stderr_path, "w", encoding="utf-8") as stderr_fh:
         proc = subprocess.Popen(
-            hermes_argv("acp"), cwd=ph.project, env=ph.env(), stdin=subprocess.PIPE,
+            slave_argv("acp"), cwd=ph.project, env=ph.env(), stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=stderr_fh, text=True, bufsize=1,
         )
         client = _AcpClient(proc)

@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 from agent import secret_scope as ss
 from gateway.config import GatewayConfig
@@ -22,11 +22,11 @@ from gateway.run_inbound_media import rehome_inbound_media
 
 @pytest.fixture
 def two_homes(tmp_path, monkeypatch):
-    a = tmp_path / ".hermes"
+    a = tmp_path / ".slave"
     b = a / "profiles" / "b"
     b.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("SLAVE_HOME", str(a))
     for home in (a, b):
         (home / "config.yaml").write_text(yaml.safe_dump({"terminal": {"backend": "local"}}), encoding="utf-8")
     ss.set_multiplex_active(True)

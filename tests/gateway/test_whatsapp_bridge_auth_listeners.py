@@ -32,7 +32,7 @@ def _bridge_app(seen: list, *, proof_for) -> web.Application:
     async def auth_proof(request):
         seen.append(("auth-proof", request.headers.get("Authorization")))
         key = proof_for(request)
-        return web.json_response({"authProof": _bridge_auth_proof(key, request.headers["X-Hermes-Bridge-Challenge"])} if key else {})
+        return web.json_response({"authProof": _bridge_auth_proof(key, request.headers["X-Slave-Bridge-Challenge"])} if key else {})
 
     async def health(request):
         seen.append(("health", request.headers.get("Authorization")))

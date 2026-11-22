@@ -15,9 +15,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_workflow as kw
+from slave_cli import kanban_db as kb
+from slave_cli import kanban_db_connect as kbc
+from slave_cli import kanban_workflow as kw
 
 W = kw.DEFAULT_WORKFLOW
 
@@ -28,7 +28,7 @@ _KNOWN_REDIRECTS = {("review", "todo"): "ready"}
 
 def _load_plugin_router():
     plugin_file = Path(__file__).resolve().parents[2] / "plugins" / "kanban" / "dashboard" / "plugin_api.py"
-    spec = importlib.util.spec_from_file_location("hermes_dashboard_plugin_kanban_workflow_test", plugin_file)
+    spec = importlib.util.spec_from_file_location("slave_dashboard_plugin_kanban_workflow_test", plugin_file)
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
@@ -37,9 +37,9 @@ def _load_plugin_router():
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     app = FastAPI()

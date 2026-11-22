@@ -101,7 +101,7 @@ def test_an_ordinary_swept_session_still_ages_out(owner):
 
 @pytest.mark.asyncio
 async def test_a_swept_caller_named_api_session_id_is_usable_again_past_the_horizon(api, owner, served):
-    """``POST /api/sessions`` and ``X-Hermes-Session-Id`` name the id: no door derives it or walks its
+    """``POST /api/sessions`` and ``X-Slave-Session-Id`` name the id: no door derives it or walks its
     generations, so its sweep marker ages out like any other, and the caller can use the id again."""
     app = _app(api)
     app.router.add_post('/api/sessions', api._handle_create_session)

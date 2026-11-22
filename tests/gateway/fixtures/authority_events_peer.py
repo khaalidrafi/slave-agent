@@ -18,7 +18,7 @@ def main():
     url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='explicit-loopback-fixture', OPENAI_BASE_URL=url,
                       TELEGRAM_ALLOWED_USERS='fixture-user')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local-wire-stub\n  provider: custom\n  base_url: {url}\n'
         'auxiliary:\n  title_generation:\n    enabled: false\n')
     from tui_gateway.transport import StdioTransport

@@ -11,8 +11,8 @@ def test_bot_chat_target_without_live_owner_is_parked_and_admitted_later(tmp_pat
     from cron.bot_chat_legacy import drain_legacy_pending
     from gateway import config
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("_HERMES_CRON_EXTERNAL_WORKER", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.delenv("_SLAVE_CRON_EXTERNAL_WORKER", raising=False)
     monkeypatch.setattr(delivery._sched, "load_config", dict)
     monkeypatch.setattr(config, "load_gateway_config", lambda: None)
     monkeypatch.setattr(jobs, "update_job", lambda key, values: None)

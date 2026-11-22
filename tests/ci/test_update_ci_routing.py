@@ -32,8 +32,8 @@ from typing import Any
 
 import pytest
 
-from hermes_agent.compat.paths import current_module, current_path, original_path
-from hermes_platform.host.facts import native_arch
+from slave_agent.compat.paths import current_module, current_path, original_path
+from slave_platform.host.facts import native_arch
 from tests.ci import _gha_expr as gha
 from tests.ci import workflow_steps
 
@@ -88,7 +88,7 @@ def _real_classifier(paths: list[str]) -> dict[str, bool]:
 
 @cache
 def _yaml(rel: str) -> dict:
-    yaml = pytest.importorskip("hermes_yaml")
+    yaml = pytest.importorskip("slave_yaml")
     return yaml.safe_load((_REPO / rel).read_text(encoding="utf-8-sig"))
 
 
@@ -292,11 +292,11 @@ def test_every_set_lane_reaches_its_consumer_whatever_the_other_lanes_say(combo)
 _R15_CASES = {
     "scripts/build/desktop.mjs": ("e2e_upgrade", "e2e_desktop_update"),
     "scripts/build/web.mjs": ("e2e_upgrade", "e2e_desktop_update"),
-    "hermes_cli/_subprocess_compat.py": ("e2e_upgrade", "e2e_desktop_update"),
-    "hermes_cli/desktop_build_lock.py": ("e2e_upgrade", "e2e_desktop_update"),
-    "hermes_cli/memory_provider_migration.py": ("e2e_upgrade", "e2e_desktop_update"),
-    "hermes_cli/source_build.py": ("e2e_upgrade", "e2e_desktop_update"),
-    "hermes_cli/source_completion.py": ("e2e_upgrade", "e2e_desktop_update"),
+    "slave_cli/_subprocess_compat.py": ("e2e_upgrade", "e2e_desktop_update"),
+    "slave_cli/desktop_build_lock.py": ("e2e_upgrade", "e2e_desktop_update"),
+    "slave_cli/memory_provider_migration.py": ("e2e_upgrade", "e2e_desktop_update"),
+    "slave_cli/source_build.py": ("e2e_upgrade", "e2e_desktop_update"),
+    "slave_cli/source_completion.py": ("e2e_upgrade", "e2e_desktop_update"),
     "apps/desktop/electron/update-marker.ts": ("desktop_updater", "e2e_desktop_update"),
     "apps/desktop/electron/handoff-result.ts": ("desktop_updater", "e2e_desktop_update"),
 }
@@ -325,7 +325,7 @@ _R6_CASES = {
     # The Tauri updater's marker claim: cargo, the only CI that builds it (review CI3).
     "apps/bootstrap-installer/src-tauri/src/marker.rs": ("rust",),
     # The launchers reach the launch repair: the Desktop update relaunches through them too.
-    "hermes_cli/_launchers.py": ("e2e_upgrade", "e2e_desktop_update"),
+    "slave_cli/_launchers.py": ("e2e_upgrade", "e2e_desktop_update"),
 }
 
 
@@ -345,7 +345,7 @@ def test_update_path_change_selects_every_suite_that_exercises_it(path, lanes):
 # Review CI2/CI3: update-path files the classifier sent to the wrong suites.
 _CI3_CASES = {
     # /api/health `commit`: the Desktop compares it before attaching after an update.
-    "hermes_cli/web_routers/status.py": ("python", "e2e_desktop_update"),
+    "slave_cli/web_routers/status.py": ("python", "e2e_desktop_update"),
     # The SSH remote's marker judge/gate: typecheck/vitest and the marker contract's script tests.
     "apps/desktop/electron/remote-update-marker-programs.ts": ("frontend", "desktop_updater"),
     "apps/desktop/electron/remote-update-marker-programs.test.ts": ("frontend", "desktop_updater"),
@@ -782,7 +782,7 @@ def test_build_scripts_the_update_runs_start_the_upgrade_suite():
 
 
 def test_desktop_build_scripts_start_the_desktop_update_suite():
-    """`hermes desktop --build-only` (the update's Desktop rebuild) runs
+    """`slave desktop --build-only` (the update's Desktop rebuild) runs
     apps/desktop's `build` script, which steps through scripts/build/desktop.mjs."""
     package = json.loads((_REPO / "apps/desktop/package.json").read_text(encoding="utf-8-sig"))
     build = re.search(r"node\s+(\S+\.mjs)", package["scripts"]["build"])
@@ -811,7 +811,7 @@ def _strict_env(run: dict, path: tuple[str, ...], rel: str, job: str, step_name:
     assert node is not None, f"{'/'.join(path)} did not run"
     step = next(s for s in _yaml(rel)["jobs"][job]["steps"] if str(s.get("name", "")).startswith(step_name))
     assert _selected_test_files(node, step_name)
-    return gha.to_string(gha.render(step["env"]["HERMES_E2E_STRICT_ACCEPTANCE"], node["ctx"]))
+    return gha.to_string(gha.render(step["env"]["SLAVE_E2E_STRICT_ACCEPTANCE"], node["ctx"]))
 
 
 @pytest.mark.parametrize("value", ["upd-txn", "1"])
@@ -862,4 +862,4 @@ def test_run_tests_forwards_the_strict_switch():
     """run_tests.sh starts pytest under `env -i`: an unlisted variable never arrives."""
     text = (_REPO / "scripts/run_tests.sh").read_text(encoding="utf-8-sig")
     allow = re.search(r"for _test_var in (.*?); do", text, re.DOTALL)
-    assert allow and "HERMES_E2E_STRICT_ACCEPTANCE" in allow.group(1).split()
+    assert allow and "SLAVE_E2E_STRICT_ACCEPTANCE" in allow.group(1).split()

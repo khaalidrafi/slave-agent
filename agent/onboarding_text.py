@@ -18,7 +18,7 @@ from session_rules.onboarding_flow import Facts, next_beat
 from tools.set_theme_tool import ACCENT_SWATCHES
 
 CHAT_TITLE = "Getting started"
-GREETING = "Hi, I'm Hermes. Let's set things up for you. Then we'll get something cool done."
+GREETING = "Hi, I'm Slave. Let's set things up for you. Then we'll get something cool done."
 
 # The scripted opening in each desktop UI language (apps/desktop/src/i18n/languages.ts), played before
 # the model speaks; the model writes the rest of the run in the user's language itself. Each greeting
@@ -26,14 +26,14 @@ GREETING = "Hi, I'm Hermes. Let's set things up for you. Then we'll get somethin
 # two lines joined: keep the two equal.
 _GREETINGS = {
     "en": GREETING,
-    "ar": "مرحبًا، أنا Hermes. لنجهّز كل شيء لك، ثم ننجز معًا شيئًا رائعًا.",
-    "de": "Hallo, ich bin Hermes. Richten wir alles für Sie ein. Danach machen wir etwas Cooles.",
-    "es": "Hola, soy Hermes. Vamos a dejarlo todo listo para ti. Luego haremos algo genial.",
-    "fr": "Bonjour, je suis Hermes. Configurons tout pour vous. Ensuite, nous ferons quelque chose de génial.",
-    "ja": "こんにちは、Hermes です。まずはあなたに合わせて設定しましょう。そのあと、何かすごいものを作りましょう。",
-    "ru": "Привет, я Hermes. Давайте всё настроим под вас. А потом сделаем что-нибудь классное.",
-    "zh": "你好，我是 Hermes。我们先帮你把一切设置好，然后一起做点很酷的事。",
-    "zh-hant": "你好，我是 Hermes。我們先幫你把一切設定好，然後一起做點很酷的事。",
+    "ar": "مرحبًا، أنا Slave. لنجهّز كل شيء لك، ثم ننجز معًا شيئًا رائعًا.",
+    "de": "Hallo, ich bin Slave. Richten wir alles für Sie ein. Danach machen wir etwas Cooles.",
+    "es": "Hola, soy Slave. Vamos a dejarlo todo listo para ti. Luego haremos algo genial.",
+    "fr": "Bonjour, je suis Slave. Configurons tout pour vous. Ensuite, nous ferons quelque chose de génial.",
+    "ja": "こんにちは、slave-agent です。まずはあなたに合わせて設定しましょう。そのあと、何かすごいものを作りましょう。",
+    "ru": "Привет, я Slave. Давайте всё настроим под вас. А потом сделаем что-нибудь классное.",
+    "zh": "你好，我是 slave-agent。我们先帮你把一切设置好，然后一起做点很酷的事。",
+    "zh-hant": "你好，我是 slave-agent。我們先幫你把一切設定好，然後一起做點很酷的事。",
 }
 
 _NAME_QUESTIONS = {
@@ -100,7 +100,7 @@ _NVIDIA = {
 
 
 def facts_block(facts: Facts) -> str:
-    whose = ("the computer running Hermes, which is not the one in front of the user"
+    whose = ("the computer running slave-agent, which is not the one in front of the user"
              if facts.facts_source == "remote" else "this computer")
     lines = [f"What you know about {whose}: {facts.os} on {facts.arch or 'an unknown architecture'}, "
              f"a {facts.machine_kind}."]
@@ -116,7 +116,7 @@ def facts_block(facts: Facts) -> str:
 def opening_prompt(facts: Facts) -> str:
     """The hidden first turn of the onboarding chat: every rule of the run."""
     dimensions = "\n".join(f"- {name}: {buckets}" for name, buckets in PROFILE_DIMENSIONS)
-    return f"""[System note: This is the user's first time opening the Hermes desktop app. You run their first-run onboarding in this chat. The beats, in order: their name, the theme (accent colour; light or dark only if they ask), the layout, connectors, plugins, a tour, then the first thing you build for them.
+    return f"""[System note: This is the user's first time opening the slave-agent desktop app. You run their first-run onboarding in this chat. The beats, in order: their name, the theme (accent colour; light or dark only if they ask), the layout, connectors, plugins, a tour, then the first thing you build for them.
 
 How it works:
 - setup_beat shows a beat's card and waits for the user. setup_beat(beat="next") shows the next beat. Its result carries their answer and a reminder of what to do next. Follow the reminder.
@@ -175,7 +175,7 @@ _HOW_TO_WORK = (
     "Real data only: this computer, their connected apps, the live web. Never mock or invent data.",
     "First reply: one line, then a tool call. At most two checks and one question before you start. Something "
     "visible within a minute, finished within five.",
-    "Save every file in ~/hermes-first-task/ and say where. No test files.",
+    "Save every file in ~/slave-first-task/ and say where. No test files.",
     "Install or connect anything once, with exact ids. Never search the whole disk.",
     "Write the words they read with humanizer: short, plain, specific.",
 )
@@ -208,7 +208,7 @@ _PAGE = (
     '3D: three@0.170.0 is ES modules only. Use an import map: "three" to its build/three.module.js, '
     '"three/addons/" to its examples/jsm/.',
 )
-_PAGE_TASKS = ("hermes", "explain", "brief", "week", "youtube", "site", "repo", "own")
+_PAGE_TASKS = ("slave", "explain", "brief", "week", "youtube", "site", "repo", "own")
 
 _CONNECTORS = (
     "Never route around a connector. "
@@ -231,7 +231,7 @@ _OS_LINES = {
 _ARM_WINDOWS = ("On Windows on Arm, read arm64 vs x64 from winget's install output, not the manifest, and say when "
                 "an app is x64 only.")
 _SPARK_LINE = "This machine is built for local models; say so once when it fits what they asked."
-_REMOTE_LINE = "Hermes runs on another computer than the user's: say which machine anything is installed on."
+_REMOTE_LINE = "slave-agent runs on another computer than the user's: say which machine anything is installed on."
 
 
 def _task_prompt(option: str, label: str, resolve_skill: Callable[[str], str | None]) -> list[str]:

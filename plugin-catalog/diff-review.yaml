@@ -1,5 +1,5 @@
 name: diff-review
-repo: https://github.com/sprmn24/hermes-plugin-diff-review
+repo: https://github.com/sprmn24/slave-plugin-diff-review
 sha: ba7bb0e1c5c1e7cfc36bf627b960910c816cc697
 version: "1.1.0"
 description: Analyze git diffs for common code quality issues — debug prints, hardcoded secrets, bare
@@ -8,7 +8,7 @@ description: Analyze git diffs for common code quality issues — debug prints, 
 maintainer: sprmn24
 tier: community
 category: tools
-docs_url: https://github.com/sprmn24/hermes-plugin-diff-review#readme
+docs_url: https://github.com/sprmn24/slave-plugin-diff-review#readme
 capabilities:
   provides_tools:
   - diff_review

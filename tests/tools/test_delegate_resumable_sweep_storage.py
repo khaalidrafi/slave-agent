@@ -3,7 +3,7 @@ the continue pinned (classic and archive mode, and a pin taken while the archive
 credential from the endpoint URL yet still refuses a changed endpoint, and a failed first record write is retried
 whole instead of leaving a pin with no row and later a partial row nobody can claim.
 
-Real SQLite, real git, real sweep, real dispatch against a temp HERMES_HOME; only the model is scripted.
+Real SQLite, real git, real sweep, real dispatch against a temp SLAVE_HOME; only the model is scripted.
 """
 
 import json
@@ -51,10 +51,10 @@ def _continue_now(parent, sid, tree):
 
 @pytest.mark.parametrize("mode", ["classic", "archive"])
 def test_a_sweep_planned_before_a_continue_keeps_the_tree_the_continue_pinned(tmp_path, mode):
-    from hermes_cli import worktree_ops, worktree_sweep
-    from hermes_constants import get_hermes_home
+    from slave_cli import worktree_ops, worktree_sweep
+    from slave_constants import get_slave_home
     if mode == "classic":
-        (get_hermes_home() / "config.yaml").write_text(json.dumps({"worktrees": {"archive_dirty": False}}))
+        (get_slave_home() / "config.yaml").write_text(json.dumps({"worktrees": {"archive_dirty": False}}))
     parent = _parent()
     repo = _repo(tmp_path / "repo")
     dirty = mode == "archive"  # classic removes only clean merged trees; the archive sweep takes dirty ones
@@ -79,7 +79,7 @@ def test_a_sweep_planned_before_a_continue_keeps_the_tree_the_continue_pinned(tm
 
 
 def test_a_pin_taken_while_the_archive_snapshot_ran_keeps_the_tree(tmp_path):
-    from hermes_cli import worktree_archive, worktree_ops
+    from slave_cli import worktree_archive, worktree_ops
     parent = _parent()
     repo = _repo(tmp_path / "repo")
     resumed = _tree(repo, "subagent-resumed", dirty=True)

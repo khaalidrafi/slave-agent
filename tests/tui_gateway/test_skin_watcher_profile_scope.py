@@ -1,9 +1,9 @@
 """The shared gateway's skin watcher repaints each attached TUI with ITS profile's skin.
 
-Main ran one gateway process per profile, so ``hermes -p work --tui`` only ever saw the work home's
+Main ran one gateway process per profile, so ``slave -p work --tui`` only ever saw the work home's
 ``display.skin``. A multiplexed gateway has one watcher thread (no profile override) for every peer:
 it must not push the launch home's skin onto a work-profile TUI, and a work-profile skin switch made
-outside the TUI (``hermes -p work config set display.skin …``) must still repaint that TUI.
+outside the TUI (``slave -p work config set display.skin …``) must still repaint that TUI.
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import os
 
 import pytest
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 
 class _Peer:
@@ -48,7 +48,7 @@ def homes(tmp_path, monkeypatch):
     work.mkdir(parents=True)
     _write_skin(default, "default")
     _write_skin(work, "ares")
-    monkeypatch.setattr(server, "_hermes_home", default)
+    monkeypatch.setattr(server, "_slave_home", default)
     monkeypatch.setattr(server, "_last_skin_sig", None, raising=False)
     monkeypatch.setattr(server, "_skin_sig_by_home", {}, raising=False)
     server._cfg_cache = server._cfg_sig = server._cfg_path = None
@@ -57,11 +57,11 @@ def homes(tmp_path, monkeypatch):
 
 
 def _under(home, fn):
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         return fn()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_watcher_never_pushes_the_launch_home_skin_onto_a_profile_tui(homes):

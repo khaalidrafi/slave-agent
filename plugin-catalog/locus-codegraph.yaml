@@ -1,6 +1,6 @@
 name: locus-codegraph
 title: Locus Codegraph
-repo: https://github.com/atikur/hermes-locus
+repo: https://github.com/atikur/slave-locus
 sha: "e083a7c6df70f4f4d54a5247890deb14015d689e"
 version: "0.2.0"
 description: >-
@@ -27,11 +27,11 @@ maintainer: atikur
 tier: community
 category: tools
 requires_hermes: ">=0.22.0"
-docs_url: https://github.com/atikur/hermes-locus/blob/e083a7c6df70f4f4d54a5247890deb14015d689e/README.md
-image: https://raw.githubusercontent.com/atikur/hermes-locus/e083a7c6df70f4f4d54a5247890deb14015d689e/assets/locus-v020-demo-poster.jpg
+docs_url: https://github.com/atikur/slave-locus/blob/e083a7c6df70f4f4d54a5247890deb14015d689e/README.md
+image: https://raw.githubusercontent.com/atikur/slave-locus/e083a7c6df70f4f4d54a5247890deb14015d689e/assets/locus-v020-demo-poster.jpg
 screenshots:
-  - https://raw.githubusercontent.com/atikur/hermes-locus/e083a7c6df70f4f4d54a5247890deb14015d689e/assets/locus-v020-whatif.jpg
-  - https://raw.githubusercontent.com/atikur/hermes-locus/e083a7c6df70f4f4d54a5247890deb14015d689e/assets/locus-v020-dashboard.jpg
+  - https://raw.githubusercontent.com/atikur/slave-locus/e083a7c6df70f4f4d54a5247890deb14015d689e/assets/locus-v020-whatif.jpg
+  - https://raw.githubusercontent.com/atikur/slave-locus/e083a7c6df70f4f4d54a5247890deb14015d689e/assets/locus-v020-dashboard.jpg
 readme: true
 platforms: []
 capabilities:

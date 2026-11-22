@@ -42,10 +42,10 @@ BOB = "+15550000002"
 
 
 def _reserve_homes(tmp_path, monkeypatch, names=("guest",)):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     root.mkdir(mode=0o700)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     homes = [("default", root)]
     for name in names:
         home = root / "profiles" / name

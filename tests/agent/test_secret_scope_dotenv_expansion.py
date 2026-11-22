@@ -1,4 +1,4 @@
-"""A profile secret scope reads a ``.env`` the way ``load_hermes_dotenv`` publishes it (#137080).
+"""A profile secret scope reads a ``.env`` the way ``load_slave_dotenv`` publishes it (#137080).
 
 ``TELEGRAM_HOME_CHANNEL=${TELEGRAM_USER_ID}`` expanded in ``os.environ`` but reached the secret scope,
 and so cron home-channel delivery, as the literal template. Real files, real scope, real resolver.
@@ -17,9 +17,9 @@ def test_cron_home_target_resolves_a_dotenv_reference(tmp_path, monkeypatch):
     (home / ".env").write_text(
         "TELEGRAM_USER_ID=399611999\nTELEGRAM_HOME_CHANNEL=${TELEGRAM_USER_ID}\n"
         "DEFAULTED=${UNSET_IN_TEST:-fallback}\nPLAIN=lit$eral\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.delenv("UNSET_IN_TEST", raising=False)
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
     discover_plugins()
     from cron.scheduler_delivery import _get_home_target_chat_id
 
@@ -37,7 +37,7 @@ def test_satellite_reference_never_resolves_against_the_launch_profiles_secret(t
     satellite.mkdir(parents=True)
     (satellite / ".env").write_text(
         "OPENAI_API_KEY=${OPENAI_API_KEY:-satellite-default}\nOWN_HOME=${HOME}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setenv("OPENAI_API_KEY", "launch-profile-key")  # the gateway's own shell export
 
     scope = build_profile_secret_scope(satellite)

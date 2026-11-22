@@ -16,16 +16,16 @@ from pathlib import Path
 import pytest
 
 import tui_gateway.server as srv
-from hermes_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
+from slave_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
 from tools import bot_relay
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    h = tmp_path / ".hermes"
+    h = tmp_path / ".slave"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").write_text("{}\n")  # identity marker: a bare dir is no target
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("SLAVE_HOME", str(h))
     return h
 
 
@@ -57,7 +57,7 @@ def test_outbox_drain_replays_canonical_envelope_until_reply_acknowledged(home):
     target = {"profile": "scout", "handle": "scout", "connection_id": "cloud-1",
               "connection_label": "", "title": "", "description": ""}
     env = bot_relay.enqueue_envelope(
-        home, target=target, message="m", sender_profile="default", sender_handle="hermes"
+        home, target=target, message="m", sender_profile="default", sender_handle="slave"
     )
     first = _result(srv._methods["bot_relay.outbox.drain"](1, {}))
     assert [e["id"] for e in first["envelopes"]] == [env["id"]]
@@ -105,7 +105,7 @@ def test_deliver_forwards_stable_id_to_target_profile_authority(home, monkeypatc
 
     def _fake_run(argv, *a, **k):
         # The server module's import-time update prefetch runs `git ...`; only
-        # a `hermes` spawn would be a delivery attempt.
+        # a `slave` spawn would be a delivery attempt.
         if argv and argv[0] != "git":
             spawned.append(argv)
         return type("P", (), {"returncode": 0, "stdout": "", "stderr": ""})()
@@ -126,8 +126,8 @@ def test_deliver_forwards_stable_id_to_target_profile_authority(home, monkeypatc
     _result(srv._methods["bot_relay.deliver"](2, {"id": envelope_id, "profile": "ops", "message": "ping"}))
     assert [p["id"] for _h, p in forwarded] == [envelope_id, envelope_id]
 
-    # 'hermes' alias resolves to the default profile's home.
-    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "hermes", "message": "x"}))
+    # 'slave' alias resolves to the default profile's home.
+    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "slave", "message": "x"}))
     assert forwarded[-1][0] == home and forwarded[-1][1]["profile"] == "default"
     assert not spawned
 
@@ -209,7 +209,7 @@ def test_deliver_accepts_a_sender_from_an_admitted_non_login_client(home, monkey
     """A caller with no identity, or one holding the ``?internal=`` credential, keeps its sender fields.
 
     NOT the Desktop: it mints a ws-ticket carrying the signed-in ``{user_id, provider}`` on every
-    gateway that requires sign-in (``hermes_cli/dashboard_auth/routes.py``), so it is a login
+    gateway that requires sign-in (``slave_cli/dashboard_auth/routes.py``), so it is a login
     identity and takes the principal-author branch below."""
     from tools import bot_live_delivery as live
     forwarded = []
@@ -257,7 +257,7 @@ def test_deliver_from_a_logged_in_client_is_attributed_to_its_principal_never_to
 
 def test_deliver_restamps_relayed_sender_with_a_reply_safe_handle(home, monkeypatch):
     """#103731: the sender signs with its bare @handle, which for another machine's ``default`` is
-    ``@hermes`` — the recipient's OWN default. The text forwarded to the target authority names the
+    ``@slave`` — the recipient's OWN default. The text forwarded to the target authority names the
     sender by the form this gateway resolves back to it: its title slug when the local relay roster
     carries it, else ``handle@connection``. A stamp that is not the relay's is left alone."""
     from tools import bot_live_delivery as live
@@ -265,39 +265,39 @@ def test_deliver_restamps_relayed_sender_with_a_reply_safe_handle(home, monkeypa
     monkeypatch.setattr(live, "authority_delivery",
                         lambda home, params: seen.append(params["message"]) or {"status": "queued"})
     bot_relay.write_remote_roster(home, [
-        {"profile": "default", "handle": "hermes", "connection_id": "vps-1", "title": "CoS Bot"},
+        {"profile": "default", "handle": "slave", "connection_id": "vps-1", "title": "CoS Bot"},
     ])
-    stamp = "Message from 🤖 CoS Bot (@hermes): are we done?"
-    sender = {"from_profile": "default", "from_handle": "hermes", "from_connection": "vps-1"}
+    stamp = "Message from 🤖 CoS Bot (@slave): are we done?"
+    sender = {"from_profile": "default", "from_handle": "slave", "from_connection": "vps-1"}
     _result(srv._methods["bot_relay.deliver"](1, {"id": "a" * 32, "profile": "ops", "message": stamp, **sender}))
     _result(srv._methods["bot_relay.deliver"](2, {"id": "b" * 32, "profile": "ops", "message": stamp, **sender,
                                                  "from_connection": "lan-2"}))
-    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "ops", "message": "plain text (@hermes): x",
+    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "ops", "message": "plain text (@slave): x",
                                                  **sender}))
     assert seen == ["Message from 🤖 CoS Bot (@cos-bot): are we done?",
-                    "Message from 🤖 CoS Bot (@hermes@lan-2): are we done?",
-                    "plain text (@hermes): x"]
+                    "Message from 🤖 CoS Bot (@slave@lan-2): are we done?",
+                    "plain text (@slave): x"]
 
 
 @pytest.mark.parametrize("subdir", ["profiles/ops", "dev"])
 def test_gateway_drains_the_mailbox_the_tools_write_to(tmp_path, monkeypatch, subdir):
-    """Both ends of the relay mailbox derive the install root from HERMES_HOME with ONE formula.
-    The writer side (``message_agent``'s ``_hermes_root``) and the drain side
+    """Both ends of the relay mailbox derive the install root from SLAVE_HOME with ONE formula.
+    The writer side (``message_agent``'s ``_slave_root``) and the drain side
     (``methods_bot_relay._relay_root``) must agree for a ``profiles/<name>`` home AND for an
-    arbitrary subdir of the native ``~/.hermes`` — a split here is silent non-delivery."""
-    from tools.bot_mode_probe import _default_home, _hermes_root
+    arbitrary subdir of the native ``~/.slave`` — a split here is silent non-delivery."""
+    from tools.bot_mode_probe import _default_home, _slave_root
     from tui_gateway import methods_bot_relay
 
     monkeypatch.setenv("HOME", str(tmp_path))
-    home = tmp_path / ".hermes" / subdir
+    home = tmp_path / ".slave" / subdir
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
-    writer_root = _hermes_root(Path(_default_home()))
+    writer_root = _slave_root(Path(_default_home()))
     target = {"profile": "scout", "handle": "scout", "connection_id": "cloud-1",
               "connection_label": "", "title": "", "description": ""}
     env = bot_relay.enqueue_envelope(
-        writer_root, target=target, message="m", sender_profile="default", sender_handle="hermes")
+        writer_root, target=target, message="m", sender_profile="default", sender_handle="slave")
 
     assert methods_bot_relay._relay_root() == writer_root
     drained = _result(srv._methods["bot_relay.outbox.drain"](1, {}))

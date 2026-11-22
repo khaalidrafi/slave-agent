@@ -128,13 +128,13 @@ def test_turn_wait_seconds_falls_back_to_module_constant(monkeypatch):
     def _boom():
         raise RuntimeError("no config")
 
-    monkeypatch.setattr("hermes_cli.config.load_config", _boom)
+    monkeypatch.setattr("slave_cli.config.load_config", _boom)
     assert bot_relay.turn_wait_seconds() == float(bot_relay.TURN_WAIT_SECONDS_FALLBACK)
 
 
 def test_turn_wait_seconds_reads_config(monkeypatch):
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "slave_cli.config.load_config",
         lambda: {"bot_mode": {"turn_wait_seconds": 7}},
     )
     assert bot_relay.turn_wait_seconds() == 7.0
@@ -147,9 +147,9 @@ def test_turn_wait_seconds_reads_config(monkeypatch):
 
 def test_peer_stdin_delivery_skips_local_lock(root, tmp_path, monkeypatch):
     """Peer transports run their turn on the remote gateway — no local lock."""
-    home = root / ".hermes"
+    home = root / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     dm = tmp_path / "dm.txt"
     dm.write_text("hi", encoding="utf-8")
 
@@ -170,7 +170,7 @@ def test_peer_stdin_delivery_skips_local_lock(root, tmp_path, monkeypatch):
 
         monkeypatch.setattr(bot_mode_dm.subprocess, "run", _fake_run)
         rc = bot_mode_dm._run_delivery(
-            ["hermes", "peer", "dm", "spark/ops"], str(dm), stdin_file=True
+            ["slave", "peer", "dm", "spark/ops"], str(dm), stdin_file=True
         )
         assert rc == 0  # did not contend with the held 'ops' lock
     finally:

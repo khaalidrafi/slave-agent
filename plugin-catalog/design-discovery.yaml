@@ -1,6 +1,6 @@
 name: design-discovery
 title: Design Discovery
-repo: https://github.com/adip1303/hermes-design-discovery
+repo: https://github.com/adip1303/slave-design-discovery
 sha: 374d83b7d69d96d0bbdc04d71265ef39bb25bad3
 description: "Turns a vague product idea into a DESIGN.md a coding agent can build from: a few plain questions, three visual directions, changes in your own words. Loads fonts from Google Fonts. Disclosure — the Desktop pane and the exported DESIGN.md load fonts from Google Fonts (fonts.googleapis.com / fonts.gstatic.com), so the user's IP reaches Google when the pane renders; while a design session is active the plugin blocks non-design tools in that session until DESIGN.md is exported or the session is ended (ask the agent to stop designing)."
 maintainer: adip1303
@@ -8,7 +8,7 @@ tier: community
 category: desktop
 requires_hermes: ">=0.23.0"
 version: "0.1.1"
-docs_url: https://github.com/adip1303/hermes-design-discovery/blob/374d83b7d69d96d0bbdc04d71265ef39bb25bad3/README.md
+docs_url: https://github.com/adip1303/slave-design-discovery/blob/374d83b7d69d96d0bbdc04d71265ef39bb25bad3/README.md
 readme: true
 platforms: []
 known_issues:

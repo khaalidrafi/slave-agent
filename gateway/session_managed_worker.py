@@ -82,7 +82,7 @@ def _bootstrap(authority, ref, row, policy, scope, text=None):
     request['construct_v1'] = construct_inputs(authority, policy, live.source.chat_id, live.source)
     # This owner consumes the worker's ACTIVITY_FRAME, often enough for its wedge timeout.
     from gateway.run import _float_env
-    request['activity_frames_v1'] = {'interval': activity_interval(_float_env("HERMES_AGENT_TIMEOUT", 1800))}
+    request['activity_frames_v1'] = {'interval': activity_interval(_float_env("SLAVE_AGENT_TIMEOUT", 1800))}
     config = _worker_config(authority, policy)
     hydrated = replace(policy, config_json=json.dumps(config), request_json=json.dumps(request),
                        terminal_json=json.dumps(terminal), credential_ref=None, config_secret_ref=None)
@@ -316,7 +316,7 @@ class ManagedWorker:
             return
         try:
             proc = psutil.Process(self.worker[0])
-            from hermes_cli.process_identity import worker_birth
+            from slave_cli.process_identity import worker_birth
             if worker_birth(proc) == self.worker[1]:
                 (proc.kill if kill else proc.terminate)()
         except psutil.Error:
@@ -416,7 +416,7 @@ def _prompt_frame(authority, ref, row, worker, frame):
 
 
 def _worker_env(authority):
-    """Child env for the OWNING profile under multiplex: its HERMES_HOME plus its ``.env``
+    """Child env for the OWNING profile under multiplex: its SLAVE_HOME plus its ``.env``
     secrets over a scrubbed base, never the launch profile's process environment (the same
     rule MCP stdio children and shell hooks follow) — except for the launch profile's own
     worker, whose scope legitimately includes its frozen launch env. Single-profile gateways
@@ -437,7 +437,7 @@ def _worker_env(authority):
     # The scrub removes credentials, not settings: the launch profile's TERMINAL_* policy and
     # its ``.env`` settings would otherwise reach the secondary's worker (cron/kanban rule).
     # Strip the RAW environ before the constructor injects this turn's own session/bridge context:
-    # a launch ``.env`` name (HERMES_SESSION_ID...) must not erase a value derived for this turn.
+    # a launch ``.env`` name (SLAVE_SESSION_ID...) must not erase a value derived for this turn.
     env = build_subprocess_env(base=strip_launch_profile_env(os.environ.copy(), home), scrub_secrets=True)
     secrets = build_profile_secret_scope(home)
     if routed:
@@ -447,8 +447,8 @@ def _worker_env(authority):
     else:
         secrets = {**_launch_env_only_credentials(home, env), **secrets}
     env.update({k: v for k, v in secrets.items() if v is not None})
-    env['HERMES_HOME'] = str(home)
-    from hermes_constants import apply_subprocess_home_env
+    env['SLAVE_HOME'] = str(home)
+    from slave_constants import apply_subprocess_home_env
     apply_subprocess_home_env(env)
     return env
 
@@ -458,14 +458,14 @@ def _launch_env_only_credentials(home, env):
     (``launch_secret_scope``: systemd ``Environment=`` / ``op run`` keys with no ``.env`` line) that
     the scrub removed from *env* — the same mapping the owner's own ``get_secret`` reads for this
     profile. Credential names only: non-credential names the constructor removed on purpose
-    (unbound session context, venv markers) stay removed, and Hermes-internal secrets
+    (unbound session context, venv markers) stay removed, and Slave-internal secrets
     (``AUXILIARY_*_API_KEY``, relay auth) never reach a child. Only the launch home's worker calls
     this; a routed home's worker sees its own files only."""
     from tools.environments.local import _scrub_credentials
-    from tools.environments.local_env_policy import _is_hermes_internal_secret
+    from tools.environments.local_env_policy import _is_slave_internal_secret
     from tui_gateway.launch_profile_policy import launch_secret_scope
     missing = {k: v for k, v in launch_secret_scope(home).items()
-               if k not in env and not _is_hermes_internal_secret(k)}
+               if k not in env and not _is_slave_internal_secret(k)}
     plain = _scrub_credentials(dict(missing), inherit_credentials=False)
     return {k: v for k, v in missing.items() if k not in plain}
 
@@ -654,7 +654,7 @@ def _unsupported_command_result(row):
     if not isinstance(text, str):
         return None
     from gateway.platforms.event import MessageEvent
-    from hermes_cli.commands import resolve_command
+    from slave_cli.commands import resolve_command
     name = MessageEvent(text=text).get_command()
     command = resolve_command(name) if name else None
     if command is None or command.name != 'moa':

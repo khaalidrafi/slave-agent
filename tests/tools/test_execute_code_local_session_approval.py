@@ -68,8 +68,8 @@ def turn(monkeypatch, tmp_path):
         """``viewer``: the turn is one the session's viewer submitted (``execute_admission`` binds it);
         ``False`` is a plugin injection or another producer admission into the session. ``attached``: see
         ``_viewer_session``."""
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")  # start_gateway() sets it process-wide
-        for name in ("HERMES_INTERACTIVE", "HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION"):
+        monkeypatch.setenv("SLAVE_EXEC_ASK", "1")  # start_gateway() sets it process-wide
+        for name in ("SLAVE_INTERACTIVE", "SLAVE_GATEWAY_SESSION", "SLAVE_CRON_SESSION"):
             monkeypatch.delenv(name, raising=False)
         answers.update(set_answers)
         vars_tokens = set_session_vars(platform=platform, session_key=SESSION_KEY, session_id=SESSION_KEY)
@@ -102,7 +102,7 @@ def turn(monkeypatch, tmp_path):
 def _rm_script(victim) -> tuple[str, str]:
     command = f"rm -rf {victim}"
     assert detect_dangerous_command(command)[0], "probe command must trip a per-command guard"
-    return command, ("import json\nfrom hermes_tools import terminal\n"
+    return command, ("import json\nfrom slave_tools import terminal\n"
                      f"print(json.dumps(terminal({command!r})))")
 
 

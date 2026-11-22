@@ -1,11 +1,11 @@
-import { driveChargeSettlement, type SettlementOutcome } from '@hermes/shared/charge-settlement'
+import { driveChargeSettlement, type SettlementOutcome } from '@slave-agent/shared/charge-settlement'
 import type {
   BillingChargeResponse,
   BillingChargeStatusResponse,
   BillingErrorPayload,
   BillingMutationResponse,
   BillingStateResponse
-} from '@hermes/shared/gateway-types'
+} from '@slave-agent/shared/gateway-types'
 
 import { t } from '../../../i18n/runtime.js'
 import { openExternalUrl } from '../../../lib/openExternalUrl.js'
@@ -68,7 +68,7 @@ const renderBillingError = (
 
     case 'remote_spending_disabled':
       // Account-wide switch is OFF (dual-emitted error/code). A billing admin can
-      // turn it on from the portal's Hermes Agent page; this is NOT a per-terminal stop.
+      // turn it on from the portal's Slave Agent page; this is NOT a per-terminal stop.
       sys(t('slashCmd.topup.error.remoteSpendingDisabled'))
 
       break

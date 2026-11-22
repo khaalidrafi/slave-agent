@@ -129,7 +129,7 @@ def route_identity(
     a fresh grant must replay an accepted dispatch byte for byte: it keeps the pair already stored
     for that room and member (a route registered before the pair was derived keeps its random
     trace). A new route derives it: the trace from home, room and member, and the cancellation
-    scope from the room, as ``hermes serve`` has always named it."""
+    scope from the room, as ``slave serve`` has always named it."""
     from gateway import hosted_rooms
     stored = next((row for row in hosted_rooms.list_room_link_records(store, placement=placement)
                    if (row["room_id"], row["member_id"]) == (room_id, member_id)), None)

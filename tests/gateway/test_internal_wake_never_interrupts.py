@@ -91,7 +91,7 @@ async def test_idle_loop_tick_runs_as_a_fifo_turn_not_beside_it(monkeypatch):
     from gateway.session_authority import initialize_session_authority
     from gateway.session_ingress import executing_admission
     from gateway.session_results import execution_result
-    from hermes_cli import loops
+    from slave_cli import loops
     from plugins.platforms.discord.adapter import DiscordAdapter
 
     monkeypatch.setenv('DISCORD_ALLOWED_USERS', '42')

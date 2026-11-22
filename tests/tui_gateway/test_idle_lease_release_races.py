@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.active_sessions import try_acquire_active_session
+from slave_cli.active_sessions import try_acquire_active_session
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_seed import seed_session
 from tui_gateway import server
@@ -43,10 +43,10 @@ class _Agent:
 
 @pytest.fixture
 def chat(monkeypatch):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     monkeypatch.setattr(server, "_emit", lambda *a, **k: None)
-    db = open_persistence(profile_scope(home=get_hermes_home()))
+    db = open_persistence(profile_scope(home=get_slave_home()))
     monkeypatch.setattr(server, "_db", db)
     competitors = []
     sid = "idle-race"
@@ -81,9 +81,9 @@ def chat(monkeypatch):
 def test_reaper_never_releases_a_lease_mid_model_switch(chat, monkeypatch):
     """The reaper's unlocked idle probe ran before the switch refreshed ``last_active``; its release under
     history_lock must re-check the whole predicate and see the switch's claim."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from slave_cli.model_switch import ModelSwitchResult
 
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
+    monkeypatch.setattr("slave_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
         success=True, new_model="other/model", target_provider="prov"))
     monkeypatch.setattr(server, "_expensive_model_confirm", lambda *a, **k: None)
     monkeypatch.setattr(server, "_merge_preflight_warning", lambda *a, **k: None)
@@ -140,7 +140,7 @@ def test_a_slow_compute_host_compression_keeps_its_lease_until_the_late_ack(chat
 def test_a_refused_loop_tick_never_clears_a_user_turn_that_started_in_the_gap(chat, monkeypatch):
     """Admission clears ``running`` before reporting the refusal; a user prompt can claim the turn right then.
     The tick's rollback restores the loop countdown but must leave that turn's ``running`` alone."""
-    from hermes_cli.loops import LoopManager, save_loop
+    from slave_cli.loops import LoopManager, save_loop
 
     server._reap_idle_sessions()  # the real idle tick frees the chat
     competitor = chat.compete()

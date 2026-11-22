@@ -1,0 +1,15 @@
+name: slave-office
+repo: https://github.com/Adolanium/slave-office
+sha: 614f3cb69670bd16c1421866ae1bb20d4178ee0c
+description: View and manage Bot Mode agents in a shared office in slave-agent Desktop.
+maintainer: Adolanium
+tier: community
+category: desktop
+docs_url: https://github.com/Adolanium/slave-office#readme
+image: https://raw.githubusercontent.com/Adolanium/slave-office/614f3cb69670bd16c1421866ae1bb20d4178ee0c/assets/catalog-banner.png
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []
+subdir: catalog

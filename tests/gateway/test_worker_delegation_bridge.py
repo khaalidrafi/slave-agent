@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import psutil
 import pytest
 
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 from persistence_assembly import open_persistence, profile_scope
 from persistence.core.errors import AuthorityRefusal
 from tests.fixtures.storage_holder import raw_holder

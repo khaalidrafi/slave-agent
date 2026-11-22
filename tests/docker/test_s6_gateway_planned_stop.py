@@ -1,4 +1,4 @@
-"""E2E: ``hermes gateway stop`` inside the s6 image is a PLANNED stop.
+"""E2E: ``slave gateway stop`` inside the s6 image is a PLANNED stop.
 
 ``S6ServiceManager.stop()`` must find the supervised PID through the real s6
 binaries and write the planned-stop marker before ``s6-svc -d``. Otherwise the
@@ -7,7 +7,7 @@ gateway reads the SIGTERM as an unexpected kill: it exits 1, persists
 and skips the clean-shutdown marker. Unit fakes cannot prove this; only the
 real ``s6-svstat`` shipped in the image can.
 
-Every ``docker exec`` runs as ``hermes`` per the conftest module docstring.
+Every ``docker exec`` runs as ``slave`` per the conftest module docstring.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import time
 
 from tests.docker.conftest import docker_exec_sh, start_container, wait_for_docker_logs
 
-SLOT = "/run/hermes-service/gateway-default"
+SLOT = "/run/slave-service/gateway-default"
 
 
 def _svstat_field(container: str, field: str) -> str:
@@ -70,7 +70,7 @@ def test_gateway_stop_under_s6_is_planned(built_image: str, container_name: str)
     )
     _wait(lambda: "Press Ctrl+C to stop" in _agent_log(container_name), "gateway startup done")
 
-    r = docker_exec_sh(container_name, "hermes gateway stop", timeout=90)
+    r = docker_exec_sh(container_name, "slave gateway stop", timeout=90)
     assert r.returncode == 0, f"gateway stop failed: stdout={r.stdout!r} stderr={r.stderr!r}"
 
     _wait(lambda: _svstat_field(container_name, "up") == "false", "gateway-default down")

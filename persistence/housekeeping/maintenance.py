@@ -1,6 +1,6 @@
 """Session maintenance contract: prune, orphan and ghost sweeps, idle archive, logical export and import, foreign import, backend heartbeats and the worktree retention reads.
 
-Every verb is one transaction (the worktree and change-watcher probes are read-only). Composite chores are not verbs: ``session_retention``'s ``run_auto_prune_and_vacuum``, ``run_auto_archive`` and ``archive_sessions``, ``hermes_cli.session_export.assert_exports_safe`` and lineage adoption are helpers outside the store that call these verbs; the plugin hook, retired-media collection and transcript-file removal after a delete run in ``after_sessions_removed`` over the ids a verb returns.
+Every verb is one transaction (the worktree and change-watcher probes are read-only). Composite chores are not verbs: ``session_retention``'s ``run_auto_prune_and_vacuum``, ``run_auto_archive`` and ``archive_sessions``, ``slave_cli.session_export.assert_exports_safe`` and lineage adoption are helpers outside the store that call these verbs; the plugin hook, retired-media collection and transcript-file removal after a delete run in ``after_sessions_removed`` over the ids a verb returns.
 
 Prune selection: ``older_than_days`` becomes ``last_active_before = now - days * 86400`` unless the criteria set ``last_active_before`` or ``started_before``; a negative value is a ``ValueError``. Only ended rows match unless ``include_open``. Recency (``last_active``) is the freshest of ``last_activity_at`` and the newest stored message timestamp, and ``started_at`` only when the row has neither. ``last_active_before`` also requires an orphan-swept row (``end_reason == ORPHAN_REAP_END_REASON``) to have ended before the cutoff. ``*_like`` filters are case-insensitive substrings, ``provider`` is compared lower-cased, ``cwd_prefix`` is the exact cwd or a path below it, the message bounds read the stored ``message_count``, the token bounds input plus output tokens, the cost bounds the actual cost else the estimate else 0, the tool-call bounds the stored ``tool_call_count``; numeric bounds are inclusive and an empty text filter is unset. ``archived`` is tri-state. Pinned rows, and the unpinned continuations of a pinned segment, are excluded unless ``include_pinned``. ``lineage_tips_only`` drops compression-ended rows and rows titled :data:`~persistence.conversation.sessions.CANONICAL_BOT_CHAT_TITLE`.
 """
@@ -245,7 +245,7 @@ class SessionLineageExport:
 
 @dataclass(frozen=True, slots=True)
 class ForeignOrigin:
-    """Provenance of a foreign coding-agent snapshot (hermes_cli/foreign_sessions_browser.py): the tool (also the imported session's source), the snapshot path, and the tool's own session id when it has one. Identity is ``foreign_session_id`` when set, else ``path``."""
+    """Provenance of a foreign coding-agent snapshot (slave_cli/foreign_sessions_browser.py): the tool (also the imported session's source), the snapshot path, and the tool's own session id when it has one. Identity is ``foreign_session_id`` when set, else ``path``."""
 
     tool: str
     path: str
@@ -297,7 +297,7 @@ class ImportResult:
 
 @dataclass(frozen=True, slots=True)
 class TreeServeFacts:
-    """What the store says about a retained worktree (hermes_cli/worktree_ops.py:810-835): ``served`` when a session inside it is open or holds an active loop, heartbeat or goal; otherwise the local chat ids of its sessions, for the caller's cron check."""
+    """What the store says about a retained worktree (slave_cli/worktree_ops.py:810-835): ``served`` when a session inside it is open or holds an active loop, heartbeat or goal; otherwise the local chat ids of its sessions, for the caller's cron check."""
 
     served: bool
     chat_ids: frozenset[str] = frozenset()
@@ -352,7 +352,7 @@ class SessionMaintenance(Protocol):
         ...
 
     def prune_reclaim_estimate(self, older_than_days: Optional[float], source: Optional[str] = None, *, criteria: PruneCriteria = PruneCriteria(), whole_lineages: bool = True, measure_total_bytes: bool = True) -> PruneReclaimEstimate:
-        """The prune's selection counted against every row, then, only when it selects a row, the stored size of the selected rows' messages and, with ``measure_total_bytes``, of every message row (hermes_cli/prune_advisor.py:171-191). The selection and its cutoff are built once, as ``list_prune_candidates`` builds them. A message row's size is the summed stored length of its text and binary fields; active and inactive rows both count. A negative ``older_than_days`` raises ``ValueError``."""
+        """The prune's selection counted against every row, then, only when it selects a row, the stored size of the selected rows' messages and, with ``measure_total_bytes``, of every message row (slave_cli/prune_advisor.py:171-191). The selection and its cutoff are built once, as ``list_prune_candidates`` builds them. A message row's size is the summed stored length of its text and binary fields; active and inactive rows both count. A negative ``older_than_days`` raises ``ValueError``."""
         ...
 
     def list_idle_archive_candidates(self, idle_days: float, *, exclude_pinned: bool = True) -> tuple[SessionId, ...]:
@@ -384,9 +384,9 @@ class SessionMaintenance(Protocol):
         ...
 
     def retained_tree_is_live(self, worktree_path: str, *, pending_only: bool = False) -> bool:
-        """Whether a session whose cwd is the tree or below it has a non-terminal admission, or (without ``pending_only``) any message (hermes_cli/worktree_ops.py:886-907)."""
+        """Whether a session whose cwd is the tree or below it has a non-terminal admission, or (without ``pending_only``) any message (slave_cli/worktree_ops.py:886-907)."""
         ...
 
     def tree_served_sessions(self, worktree_path: str) -> TreeServeFacts:
-        """Whether a session inside the tree is open or has an active ``loop:``, ``heartbeat:`` or ``goal:`` state row (a row that is not JSON, or has no status, counts as active); when not served, the chat ids of the sessions inside it (hermes_cli/worktree_ops.py:804-835)."""
+        """Whether a session inside the tree is open or has an active ``loop:``, ``heartbeat:`` or ``goal:`` state row (a row that is not JSON, or has no status, counts as active); when not served, the chat ids of the sessions inside it (slave_cli/worktree_ops.py:804-835)."""
         ...

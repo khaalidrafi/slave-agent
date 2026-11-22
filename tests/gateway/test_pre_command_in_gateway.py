@@ -29,9 +29,9 @@ from pathlib import Path
 
 def register(ctx):
     def seen(**kw):
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
         with open(%r, "a") as log:
-            log.write(json.dumps(dict(kw, pid=os.getpid(), home=str(get_hermes_home()))) + "\\n")
+            log.write(json.dumps(dict(kw, pid=os.getpid(), home=str(get_slave_home()))) + "\\n")
     ctx.register_hook("pre_command", seen)
     ctx.register_command("probe-hook-cmd", lambda arg: "ok", description="Probe command")
     ctx.register_skill("probe", Path(__file__).with_name("SKILL.md"), "Probe plugin skill")
@@ -94,8 +94,8 @@ def _gateway(tmp_path, *, isolation=None, beta=False, project=False):
                'plugins': {'enabled': ['probe-hook'], **({'isolation': isolation} if isolation else {})}}
     if project:
         (work / '.git').mkdir()
-        (work / '.hermes' / 'skills' / 'repo-skill').mkdir(parents=True)
-        (work / '.hermes' / 'skills' / 'repo-skill' / 'SKILL.md').write_text(
+        (work / '.slave' / 'skills' / 'repo-skill').mkdir(parents=True)
+        (work / '.slave' / 'skills' / 'repo-skill' / 'SKILL.md').write_text(
             '---\nname: repo-skill\ndescription: Repo-only skill\n---\nSay REPO_SKILL_BODY.\n')
         profile['skills'] = {'trusted_project_dirs': [str(work)], 'auto_load': ['probe-hook:probe']}
     (home / 'config.yaml').write_text(json.dumps({'gateway': {'multiplex_profiles': beta}, **profile}))
@@ -104,7 +104,7 @@ def _gateway(tmp_path, *, isolation=None, beta=False, project=False):
         (home / 'profiles' / 'beta' / 'config.yaml').write_text(json.dumps(profile))
         _probe_plugin(home / 'profiles' / 'beta', tmp_path / 'beta.jsonl')
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     try:
         with daemon(root, home, env, barrier=False) as (proc, desc):
@@ -174,9 +174,9 @@ def test_real_cli_startup_and_commands_run_no_plugin_code_in_the_cli(tmp_path, m
 
 @pytest.mark.platforms("linux")
 def test_pre_command_fires_once_in_the_gateway_and_cli_plugins_reads_its_list(tmp_path, monkeypatch, capsys):
-    import hermes_cli.plugins as plugins_mod
+    import slave_cli.plugins as plugins_mod
     from agent.i18n import t
-    from cli import HermesCLI
+    from cli import SlaveCLI
     root = Path(__file__).resolve().parents[2]
     home, user, work = tmp_path / 'state', tmp_path / 'user', tmp_path / 'work'
     home.mkdir(mode=0o700)
@@ -197,7 +197,7 @@ def test_pre_command_fires_once_in_the_gateway_and_cli_plugins_reads_its_list(tm
         'plugins': {'enabled': ['probe-hook']},
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
 
     def no_local_plugin(*_a, **_k):
@@ -228,9 +228,9 @@ def test_pre_command_fires_once_in_the_gateway_and_cli_plugins_reads_its_list(tm
 
                 # The classic CLI: a command it forwards fires once, in the gateway; /plugins lists
                 # the gateway's loaded plugins. Both read this profile's home as the CLI process does.
-                monkeypatch.setenv('HERMES_HOME', str(home))
-                monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: wire)
-                c = HermesCLI.__new__(HermesCLI)
+                monkeypatch.setenv('SLAVE_HOME', str(home))
+                monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: wire)
+                c = SlaveCLI.__new__(SlaveCLI)
                 c.config, c.session_id = {}, sent['cli']
                 assert c.process_command('/busy queue') is True
                 assert [(r['pid'], r['command'], r['args_raw'], r['session_key'])
@@ -248,7 +248,7 @@ def test_pre_command_fires_once_in_the_gateway_and_cli_plugins_reads_its_list(tm
         thread.join(timeout=5)
 
     assert proc.pid != os.getpid()
-    assert not [m for m in sys.modules if m.startswith('hermes_plugins.')]
+    assert not [m for m in sys.modules if m.startswith('slave_plugins.')]
     assert 'plugins.list' in wire.calls
     detail = (f"(1 {t('cli.plugins.count_noun_tools')}, 1 {t('cli.plugins.count_noun_hooks')}, "
               f"1 {t('cli.plugins.count_noun_commands')})")
@@ -260,7 +260,7 @@ def test_accepted_cron_commands_fire_once_and_refused_ones_fire_nothing(tmp_path
     """``/cron`` runs on the owner for every local session (a TUI session's reads, a write the classic CLI
     sends on its own command socket) and fires once through both RPCs; a ``/cron`` refused before it runs
     (an unclosed quote) fires nothing."""
-    from hermes_cli.gateway_client import GatewayClientError
+    from slave_cli.gateway_client import GatewayClientError
     with _gateway(tmp_path) as (_proc, desc, home, work, _env, log, _peer):
         wire, command_socket = _Wire(home, desc), _Wire(home, desc)
         try:
@@ -328,7 +328,7 @@ class _ProfileWire(_Wire):
 
         async def _open():
             return await connect(desc['api_origin'].replace('http:', 'ws:') + '/api/ws',
-                                 subprotocols=['hermes-gateway-v1', 'hermes-gateway-ticket.' + grant['ticket']])
+                                 subprotocols=['slave-gateway-v1', 'slave-gateway-ticket.' + grant['ticket']])
         self.ws = self._run(_open())
 
 
@@ -382,7 +382,7 @@ def test_a_command_ink_answers_itself_fires_once_in_the_gateway_when_observed(tm
     profile, with main's values. A name only Ink knows (``/fortune``) is refused and fires nothing.
     This sends ``command.observe`` by hand (the gateway side); when Ink sends it, only once a command
     ran, is covered by ``ui-tui/src/__tests__/canonicalCommandObserve.test.ts``."""
-    from hermes_cli.gateway_client import GatewayClientError
+    from slave_cli.gateway_client import GatewayClientError
     with _gateway(tmp_path) as (proc, desc, home, work, _env, log, _peer):
         wire = _Wire(home, desc)
         try:
@@ -431,8 +431,8 @@ def test_commands_the_cli_does_not_run_on_the_gateway_fire_nothing(monkeypatch, 
     """A registry command with no classic CLI handler runs nothing in the CLI, so no
     ``command.observe`` goes out; a command the CLI runs (``/reload``, ``/handoff`` through the
     owner's handoff verbs, #143608) is reported before it runs."""
-    from cli import HermesCLI
-    from hermes_cli.commands import COMMAND_REGISTRY
+    from cli import SlaveCLI
+    from slave_cli.commands import COMMAND_REGISTRY
 
     class Connection:
         epoch, final, closed = 1, False, False
@@ -445,10 +445,10 @@ def test_commands_the_cli_does_not_run_on_the_gateway_fire_nothing(monkeypatch, 
         def call_tagged(self, method, **params):
             return self.call(method, **params), self.epoch
     connection = Connection()
-    monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: connection)
-    monkeypatch.setattr('hermes_cli.plugins.fire_pre_command_hook', lambda **_k: pytest.fail('fired locally'))
-    unhandled = next(cmd.name for cmd in COMMAND_REGISTRY if HermesCLI._slash_handler(cmd.name) is None)
-    c = HermesCLI.__new__(HermesCLI)
+    monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: connection)
+    monkeypatch.setattr('slave_cli.plugins.fire_pre_command_hook', lambda **_k: pytest.fail('fired locally'))
+    unhandled = next(cmd.name for cmd in COMMAND_REGISTRY if SlaveCLI._slash_handler(cmd.name) is None)
+    c = SlaveCLI.__new__(SlaveCLI)
     c.config, c.session_id, c._agent_running = {}, 's1', False
     c.process_command('/' + unhandled)
     assert [call for call in connection.calls if call[0] == 'command.observe'] == []
@@ -477,7 +477,7 @@ def test_only_the_escape_hatches_skip_pre_command_during_a_turn(monkeypatch, sta
     monkeypatch.setattr('gateway.session_local.authorize_local_source', lambda _r, _s: True)
     monkeypatch.setattr('gateway.session_policy.policy_for_source', lambda _r, _s: SimpleNamespace(platform='tui'))
     monkeypatch.setattr('gateway.run._profile_runtime_scope', lambda _home: nullcontext())
-    monkeypatch.setattr('hermes_cli.plugins.fire_pre_command_hook', lambda **kw: calls.append(kw))
+    monkeypatch.setattr('slave_cli.plugins.fire_pre_command_hook', lambda **kw: calls.append(kw))
     asyncio.run(session_commands._pre_command_before(_authority(state), SimpleNamespace(session_id='s1'),
                                                      command, command, ''))
     assert calls == [dict(surface='cli', command=command, alias_used=command, args_raw='',
@@ -495,7 +495,7 @@ def test_a_hung_pre_command_callback_is_bounded_and_each_session_keeps_its_order
     from contextlib import nullcontext
     from types import SimpleNamespace
     from gateway import session_commands
-    from hermes_cli.plugins import PluginManager
+    from slave_cli.plugins import PluginManager
     release, seen = threading.Event(), []
 
     def hung(session_key, command, **_kw):
@@ -506,8 +506,8 @@ def test_a_hung_pre_command_callback_is_bounded_and_each_session_keeps_its_order
         seen.append((session_key, command, threading.current_thread().name.split('-')[1]))
     manager = PluginManager()
     manager._hooks['pre_command'] = [hung, record]
-    monkeypatch.setattr('hermes_cli.plugins.get_plugin_manager', lambda: manager)
-    monkeypatch.setattr('hermes_cli.plugins._resolve_hook_callback_timeout', lambda: 0.5)
+    monkeypatch.setattr('slave_cli.plugins.get_plugin_manager', lambda: manager)
+    monkeypatch.setattr('slave_cli.plugins._resolve_hook_callback_timeout', lambda: 0.5)
     monkeypatch.setattr('gateway.session_local.authorize_local_source', lambda _r, _s: True)
     monkeypatch.setattr('gateway.run._profile_runtime_scope', lambda _home: nullcontext())
     live = SimpleNamespace(source=object(), route='agent:main:local:dm:s1')
@@ -549,7 +549,7 @@ def test_callbacks_waiting_out_their_bound_hold_no_worker_another_session_needs(
     from contextlib import nullcontext
     from types import SimpleNamespace
     from gateway import session_commands
-    from hermes_cli.plugins import PluginManager
+    from slave_cli.plugins import PluginManager
     slow, inside, seen, lock = [f'S{n}' for n in range(6)], [], [], threading.Lock()
     release, all_in = threading.Event(), threading.Event()
 
@@ -564,8 +564,8 @@ def test_callbacks_waiting_out_their_bound_hold_no_worker_another_session_needs(
         release.wait()
     manager = PluginManager()
     manager._hooks['pre_command'] = [callback]
-    monkeypatch.setattr('hermes_cli.plugins.get_plugin_manager', lambda: manager)
-    monkeypatch.setattr('hermes_cli.plugins._resolve_hook_callback_timeout', lambda: 30)
+    monkeypatch.setattr('slave_cli.plugins.get_plugin_manager', lambda: manager)
+    monkeypatch.setattr('slave_cli.plugins._resolve_hook_callback_timeout', lambda: 30)
     monkeypatch.setattr('gateway.session_local.authorize_local_source', lambda _r, _s: True)
     monkeypatch.setattr('gateway.run._profile_runtime_scope', lambda _home: nullcontext())
     live = SimpleNamespace(source=object(), route='agent:main:local:dm:s1')
@@ -592,23 +592,23 @@ def test_callbacks_waiting_out_their_bound_hold_no_worker_another_session_needs(
 
 
 def test_an_older_gateway_without_plugins_list_is_named_and_loads_nothing(monkeypatch, capsys):
-    from hermes_cli import gateway_plugin_commands
-    from hermes_cli.gateway_client import GatewayRPCError
+    from slave_cli import gateway_plugin_commands
+    from slave_cli.gateway_client import GatewayRPCError
 
     class Older:
         def call(self, method, **_params):
             raise GatewayRPCError('unknown_method', code=-32601)
-    monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: Older())
-    monkeypatch.setattr('hermes_cli.plugins.get_plugin_manager', lambda: pytest.fail('loaded plugins locally'))
+    monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: Older())
+    monkeypatch.setattr('slave_cli.plugins.get_plugin_manager', lambda: pytest.fail('loaded plugins locally'))
     assert gateway_plugin_commands.loaded(object()) == {}
     assert "predates this CLI" in capsys.readouterr().out
-    monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: None)
+    monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: None)
     assert gateway_plugin_commands.loaded(object()) is None  # off the gateway: main's in-process listing
 
 
 def test_an_older_gateway_without_command_observe_is_named_once_and_nothing_fires_locally(monkeypatch, capsys):
-    from hermes_cli import gateway_plugin_commands
-    from hermes_cli.gateway_client import GatewayRPCError
+    from slave_cli import gateway_plugin_commands
+    from slave_cli.gateway_client import GatewayRPCError
 
     class Older:
         epoch = 1
@@ -618,9 +618,9 @@ def test_an_older_gateway_without_command_observe_is_named_once_and_nothing_fire
             self.calls.append((method, params))
             raise GatewayRPCError('unknown_method', code=-32601)
     older = Older()
-    monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: older)
-    monkeypatch.setattr('hermes_cli.plugins.fire_pre_command_hook', lambda **_k: pytest.fail('fired locally'))
-    monkeypatch.setattr('hermes_cli.plugins.get_plugin_manager', lambda: pytest.fail('loaded plugins locally'))
+    monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: older)
+    monkeypatch.setattr('slave_cli.plugins.fire_pre_command_hook', lambda **_k: pytest.fail('fired locally'))
+    monkeypatch.setattr('slave_cli.plugins.get_plugin_manager', lambda: pytest.fail('loaded plugins locally'))
     cli = type('CLI', (), {'session_id': 's1'})()
     assert gateway_plugin_commands.observe(cli, 'history', '') is True
     assert gateway_plugin_commands.observe(cli, 'version', '') is True
@@ -629,5 +629,5 @@ def test_an_older_gateway_without_command_observe_is_named_once_and_nothing_fire
     older.epoch = 2  # a redial (maybe to a restarted, newer gateway) asks again, without a second notice
     assert gateway_plugin_commands.observe(cli, 'history', 'x') is True
     assert len(older.calls) == 2 and 'predates' not in capsys.readouterr().out
-    monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: None)
+    monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: None)
     assert gateway_plugin_commands.observe(cli, 'history', '') is False  # off the gateway: main's own hook

@@ -11,7 +11,7 @@ import hashlib
 
 MIME_EXT = {'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif', 'image/webp': '.webp'}
 # A settled admission's inline ``data:`` image is replaced by this reference to its committed bytes.
-RETAINED = 'hermes-retained:'
+RETAINED = 'slave-retained:'
 
 
 def data_url_bytes(url):

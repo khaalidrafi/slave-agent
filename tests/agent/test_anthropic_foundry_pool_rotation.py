@@ -21,13 +21,13 @@ OAUTH_TOKEN = "sk-ant-" + "oat01-" + "A" * 40  # concatenated: push protection r
 
 @pytest.mark.parametrize(("base_url", "after_429"), [(FOUNDRY_URL, "azure-key"), (ANTHROPIC_URL, OAUTH_TOKEN)])
 def test_rate_limit_rotation_takes_the_oauth_row_only_off_foundry(tmp_path, monkeypatch, base_url, after_429):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN", "AZURE_ANTHROPIC_KEY"):
         monkeypatch.delenv(name, raising=False)
     (tmp_path / ".credentials.json").write_text(json.dumps({"claudeAiOauth": {
         "accessToken": OAUTH_TOKEN, "refreshToken": "r" * 30, "expiresAt": int((time.time() + 86400) * 1000)}}))
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path))
-    (get_hermes_home() / "config.yaml").write_text(
+    (get_slave_home() / "config.yaml").write_text(
         f"model:\n  provider: anthropic\n  base_url: {base_url}\n  default: claude-sonnet-4-5\n")
     from agent.agent_runtime_helpers import recover_with_credential_pool
     from agent.client_lifecycle import ClientLifecycleMixin

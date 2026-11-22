@@ -16,7 +16,7 @@ RUNNER = Path(__file__).resolve().parents[2] / "scripts" / "run_tests_parallel.p
 
 
 def _run(*args: str) -> subprocess.CompletedProcess:
-    env = {k: v for k, v in os.environ.items() if k != "HERMES_TEST_PATHS"}
+    env = {k: v for k, v in os.environ.items() if k != "SLAVE_TEST_PATHS"}
     return subprocess.run([sys.executable, str(RUNNER), "--require-paths", *args],
                           capture_output=True, text=True, timeout=120, check=False, env=env)
 

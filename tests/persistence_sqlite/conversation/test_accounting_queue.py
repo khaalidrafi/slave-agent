@@ -66,7 +66,7 @@ class _Backend:
         monkeypatch.setattr(_holder, "_token_delta_applier", counting)
 
     def reader(self):
-        backend = SQLiteBackend({self.store.scope.hermes_home_key: self.path}, read_only=True)
+        backend = SQLiteBackend({self.store.scope.slave_home_key: self.path}, read_only=True)
         return _Backend(backend.open(self.store.scope), self.path, owned=backend)
 
     def close(self):

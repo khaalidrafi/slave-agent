@@ -7,7 +7,7 @@ from agent.prompt_builder import build_skills_system_prompt, clear_skills_system
 from agent.skill_utils import SKILL_PROMPT_DESC_LIMIT, clip_skill_description
 from agent.skills_index_delta import index_entries
 
-LONG = "Use when cutting, publishing, or abandoning a hermes-agent release and its notes."
+LONG = "Use when cutting, publishing, or abandoning a slave-agent release and its notes."
 
 
 @pytest.fixture(autouse=True)
@@ -24,14 +24,14 @@ def _skill(root, rel, desc):
 
 
 def test_index_rows_carry_each_name_once_and_never_a_half_word(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     skills = tmp_path / "skills"
     _skill(skills, "creative/ascii-art", "ASCII art banners.")
     _skill(skills, "creative/pixel-art", "Pixel art sprites.")
     (skills / "creative" / "DESCRIPTION.md").write_text(
         "---\ndescription: Creative content generation and visual design tools.\n---\n", encoding="utf-8")
     _skill(skills, "computer-use", "Drive the desktop.")  # a top-level skill is its own category
-    _skill(skills, "github/hermes-release", LONG)
+    _skill(skills, "github/slave-release", LONG)
 
     prompt = build_skills_system_prompt()
     block = re.search(r"<available_skills>\n(.*?)\n</available_skills>", prompt, re.DOTALL).group(1)
@@ -39,14 +39,14 @@ def test_index_rows_carry_each_name_once_and_never_a_half_word(monkeypatch, tmp_
 
     assert "  creative:" in lines and "Creative content generation" not in block
     assert "  - computer-use: Drive the desktop." in lines and "  computer-use:" not in lines
-    release = next(line for line in lines if "hermes-release" in line)
-    assert release.startswith("  - hermes-release: ")
+    release = next(line for line in lines if "slave-release" in line)
+    assert release.startswith("  - slave-release: ")
     shown = release.split(": ", 1)[1]
     assert len(shown) <= SKILL_PROMPT_DESC_LIMIT and shown.endswith("...")
     kept = shown[:-3]
     assert LONG.startswith(kept) and LONG[len(kept)] in " ,"  # cut lands between words
     # The turn-delta parser reads flattened rows like nested ones.
-    assert set(index_entries(prompt)) == {"ascii-art", "pixel-art", "computer-use", "hermes-release"}
+    assert set(index_entries(prompt)) == {"ascii-art", "pixel-art", "computer-use", "slave-release"}
 
 
 @pytest.mark.parametrize("sep", ["\t", "\u00a0"], ids=["tab", "nbsp"])

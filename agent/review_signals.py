@@ -1,6 +1,6 @@
 """The self-learning cadence a turn ended on, for ``post_llm_call`` (``review_signals``).
 
-Hermes runs its background memory/skill review on two counters: user turns since the last
+slave-agent runs its background memory/skill review on two counters: user turns since the last
 memory review (``memory.nudge_interval``) and tool-calling iterations since the last skill review
 (``skills.creation_nudge_interval``). A plugin that does its own after-turn work (a review-style
 :meth:`PluginContext.fork_session`, say) can follow the same cadence instead of counting tool calls

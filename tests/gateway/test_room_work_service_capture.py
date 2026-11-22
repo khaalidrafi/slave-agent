@@ -13,7 +13,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 async def test_canonical_send_and_stop_retain_driver_evidence(tmp_path, monkeypatch):
     from gateway.session_hosted_service import CanonicalHostedRoomService
     from gateway import hosted_room_work_records as work
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with storage_handle(tmp_path) as db:
         authority = SimpleNamespace(db=db, persistence=storage_handle(tmp_path), profile_id=str(tmp_path),
                                     epoch=db.runtime.begin_epoch(instance_id='test'))

@@ -2,7 +2,7 @@
 with ``subagent_id``; adapted from #140477's ``subagent.transcript`` fixture).
 
 Real gateway runner, session authority, ticketed WebSocket and the profile's own ``state.db``
-under a temp HERMES_HOME; no inference. Child rows are written the way a delegated child writes
+under a temp SLAVE_HOME; no inference. Child rows are written the way a delegated child writes
 them (``source='subagent'``, ``_delegate_from`` + ``_subagent_id`` markers, messages as it runs).
 Every reply lands in ``receipt.json`` for the test to judge.
 """
@@ -80,14 +80,14 @@ async def probe():
     from gateway.run_api import start_gateway_api, stop_gateway_api
     from gateway.session_contract import SessionRef
     from gateway.session_persistence import authority_persistence
-    from hermes_cli import web_server
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from slave_cli import web_server
+    from slave_cli.dashboard_auth.ws_tickets import mint_ticket
     from tests.gateway.fixtures.local_recovery_probe import rpc
     from tools.delegate_tool_child_run import _register_child
     from tools.delegate_tool_registry import _unregister_subagent
     from websockets.asyncio.client import connect
 
-    home = Path(os.environ['HERMES_HOME'])
+    home = Path(os.environ['SLAVE_HOME'])
     (home / 'config.yaml').write_text('gateway:\n  multiplex_profiles: false\nmodel:\n  provider: custom\n  default: no-inference\n  base_url: http://127.0.0.1:1/v1\nauxiliary:\n  title_generation:\n    enabled: false\n')
     runner = GatewayRunner()
     authority = await initialize_session_authority(runner, profile_id=str(home), instance_id='subagent-transcript')

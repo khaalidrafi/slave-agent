@@ -25,7 +25,7 @@ from persistence_assembly import profile_scope
 
 @pytest.fixture(autouse=True)
 def _fresh_db(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(dl, "_scope", lambda: profile_scope(home=home))
     yield

@@ -51,7 +51,7 @@ def test_observed_group_command_resets_shared_session_and_tools_see_the_sender(t
     try:
         gw.start()
         director.script("t1", Text("ONE"))
-        director.script("t2", ToolCall("terminal", {"command": "echo ACTOR=$HERMES_SESSION_ACTOR_ID ROUTE=$HERMES_SESSION_USER_ID."}), Text("TWO"))
+        director.script("t2", ToolCall("terminal", {"command": "echo ACTOR=$SLAVE_SESSION_ACTOR_ID ROUTE=$SLAVE_SESSION_USER_ID."}), Text("TWO"))
         drv.group("hello [in:t1]", mention=True)
         _await_turn(director, "t1")
         shared = f"agent:main:telegram:group:{gid}"

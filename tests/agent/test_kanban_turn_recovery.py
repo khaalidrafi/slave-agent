@@ -4,12 +4,12 @@ Unit contracts first (retry authority, the live run/claim proof, the recovery
 loop), then call-site behaviour, then the goal-mode veto as one table.
 
 Under the unified gateway runtime a dispatcher-spawned worker no longer runs the
-agent: ``hermes_cli.kanban_worker_client`` submits the claim to the profile owner,
+agent: ``slave_cli.kanban_worker_client`` submits the claim to the profile owner,
 and the owner runs the turns in ``gateway.session_kanban.run_worker_turns`` against
 the bound frame's db/run/claim carrier. The call-site tests therefore drive that
 real owner seam (real board, real claim, real lease proof) and read the outcome the
 dispatcher books — ``worker_exit_code`` — plus the client's exit/summary half. The
-exit mapping itself is ``hermes_cli.turn_exit.turn_exit_code`` (pinned row by row by
+exit mapping itself is ``slave_cli.turn_exit.turn_exit_code`` (pinned row by row by
 ``tests/gateway/test_kanban_result_exit.py``); the in-process one-shot mapper keeps
 its stripped worker predicate pinned here.
 """
@@ -35,16 +35,16 @@ from agent.kanban_turn_recovery import (
     should_recover_turn,
     worker_claim_is_live,
 )
-from hermes_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
+from slave_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
 
 KANBAN_ENV = (
-    "HERMES_KANBAN_TASK",
-    "HERMES_KANBAN_GOAL_MODE",
-    "HERMES_KANBAN_TURN_RECOVERY",
-    "HERMES_KANBAN_RUN_ID",
-    "HERMES_KANBAN_CLAIM_LOCK",
-    "HERMES_KANBAN_DB",
-    "HERMES_KANBAN_BOARD",
+    "SLAVE_KANBAN_TASK",
+    "SLAVE_KANBAN_GOAL_MODE",
+    "SLAVE_KANBAN_TURN_RECOVERY",
+    "SLAVE_KANBAN_RUN_ID",
+    "SLAVE_KANBAN_CLAIM_LOCK",
+    "SLAVE_KANBAN_DB",
+    "SLAVE_KANBAN_BOARD",
 )
 
 #: Any "live" lease for these tests (2100-01-01 UTC).
@@ -105,30 +105,30 @@ def test_disabled_without_kanban_task(clear_kanban_env):
 
 
 def test_env_zero_disables_and_blank_ids_are_not_workers(clear_kanban_env):
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
-    clear_kanban_env.setenv("HERMES_KANBAN_TURN_RECOVERY", "0")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TURN_RECOVERY", "0")
     assert kanban_turn_recovery_enabled() is False
     assert should_recover_turn(_failed(), attempt=0) is False
 
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "   ")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "   ")
     assert kanban_task_id() is None  # whitespace-only is NOT a worker, anywhere
     assert kanban_turn_recovery_enabled() is False
-    clear_kanban_env.delenv("HERMES_KANBAN_TURN_RECOVERY", raising=False)
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "  t_probe  ")
+    clear_kanban_env.delenv("SLAVE_KANBAN_TURN_RECOVERY", raising=False)
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "  t_probe  ")
     assert kanban_task_id() == "t_probe"  # padded ids are the same worker
     assert kanban_turn_recovery_enabled() is True
 
 
 def test_max_attempts_parsing_and_clamp(clear_kanban_env):
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
     assert max_recovery_attempts() == DEFAULT_MAX_RECOVERY_ATTEMPTS  # unset
-    clear_kanban_env.setenv("HERMES_KANBAN_TURN_RECOVERY", "2")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TURN_RECOVERY", "2")
     assert max_recovery_attempts() == 2
-    clear_kanban_env.setenv("HERMES_KANBAN_TURN_RECOVERY", "99")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TURN_RECOVERY", "99")
     assert max_recovery_attempts() == 10  # clamped
-    clear_kanban_env.setenv("HERMES_KANBAN_TURN_RECOVERY", "abc")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TURN_RECOVERY", "abc")
     assert max_recovery_attempts() == DEFAULT_MAX_RECOVERY_ATTEMPTS
-    clear_kanban_env.setenv("HERMES_KANBAN_TURN_RECOVERY", "false")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TURN_RECOVERY", "false")
     assert max_recovery_attempts() == 0
 
 
@@ -144,7 +144,7 @@ def test_delay_schedule_repeats_last_entry():
 
 
 def test_retryable_failed_turn_is_eligible(clear_kanban_env):
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
     assert should_recover_turn(_failed(reason="timeout"), attempt=0) is True
     assert should_recover_turn(_failed(reason="timeout"), attempt=2) is True  # budget 3
     assert should_recover_turn(_failed(reason="timeout"), attempt=3) is False
@@ -168,7 +168,7 @@ def test_retryable_failed_turn_is_eligible(clear_kanban_env):
 def test_should_recover_turn_refuses(result, clear_kanban_env):
     """Nothing but a retryable failed turn is retry authority. The aggregator's upstream
     429 is the same quota-class wall as a direct one — the dispatcher owns the cooldown."""
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
     assert should_recover_turn(result, attempt=0) is False
 
 
@@ -201,10 +201,10 @@ def _make_board(tmp_path, *, status="running", task_pid=None, run_id=1, lock="lk
 
 def _pin_carrier(monkeypatch, db, *, task="t_live", run_id="1", lock="lk"):
     """Pin the full dispatcher-spawn carrier: DB + run id + claim lock."""
-    monkeypatch.setenv("HERMES_KANBAN_TASK", task)
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(db))
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", run_id)
-    monkeypatch.setenv("HERMES_KANBAN_CLAIM_LOCK", lock)
+    monkeypatch.setenv("SLAVE_KANBAN_TASK", task)
+    monkeypatch.setenv("SLAVE_KANBAN_DB", str(db))
+    monkeypatch.setenv("SLAVE_KANBAN_RUN_ID", run_id)
+    monkeypatch.setenv("SLAVE_KANBAN_CLAIM_LOCK", lock)
 
 
 @pytest.mark.parametrize(
@@ -236,11 +236,11 @@ def test_claim_ownership_matrix(clear_kanban_env, tmp_path, overrides):
 
 def test_claim_check_fails_closed_without_a_board(clear_kanban_env, tmp_path):
     """No proof, no retry: a missing board must not authorise model re-entry."""
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_live")
-    clear_kanban_env.setenv("HERMES_KANBAN_DB", str(tmp_path / "missing.db"))
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_live")
+    clear_kanban_env.setenv("SLAVE_KANBAN_DB", str(tmp_path / "missing.db"))
     assert worker_claim_is_live() is False
-    clear_kanban_env.delenv("HERMES_KANBAN_DB", raising=False)
-    clear_kanban_env.setenv("HERMES_KANBAN_BOARD", "no-such-board-xyz")
+    clear_kanban_env.delenv("SLAVE_KANBAN_DB", raising=False)
+    clear_kanban_env.setenv("SLAVE_KANBAN_BOARD", "no-such-board-xyz")
     assert worker_claim_is_live() is False  # and no ambient fallback rescues it
 
 
@@ -252,34 +252,34 @@ def test_missing_pinned_carrier_fails_closed(clear_kanban_env, tmp_path):
     _pin_carrier(clear_kanban_env, db)
     assert worker_claim_is_live() is True  # sanity: the full carrier proves live
 
-    for missing, value in (("HERMES_KANBAN_DB", str(db)), ("HERMES_KANBAN_RUN_ID", "1"),
-                           ("HERMES_KANBAN_CLAIM_LOCK", "lk")):
+    for missing, value in (("SLAVE_KANBAN_DB", str(db)), ("SLAVE_KANBAN_RUN_ID", "1"),
+                           ("SLAVE_KANBAN_CLAIM_LOCK", "lk")):
         clear_kanban_env.delenv(missing, raising=False)
         assert worker_claim_is_live() is False, missing  # a missing pin denies
         clear_kanban_env.setenv(missing, value)
 
 
 def test_missing_db_pin_never_resolves_an_ambient_board(tmp_path, monkeypatch):
-    """Round-2 P1: the old code reconstructed the board from ``HERMES_KANBAN_BOARD`` /
+    """Round-2 P1: the old code reconstructed the board from ``SLAVE_KANBAN_BOARD`` /
     the default when the pin was absent — the proof could silently move to whatever board
     is ambient NOW. With the pin gone the canonical resolver must not be consulted at all,
     even when it would return a fully live board whose row matches this worker (built with
     the real board API, so this is not a strawman)."""
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     with kbc.connect() as conn:
         task_id = kb.create_task(conn, title="ambient live task")
         assert kb.claim_task(conn, task_id, claimer="lk", ttl_seconds=3600) is not None
-    monkeypatch.delenv("HERMES_KANBAN_DB", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_RUN_ID", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_CLAIM_LOCK", raising=False)
-    monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
+    monkeypatch.delenv("SLAVE_KANBAN_DB", raising=False)
+    monkeypatch.delenv("SLAVE_KANBAN_RUN_ID", raising=False)
+    monkeypatch.delenv("SLAVE_KANBAN_CLAIM_LOCK", raising=False)
+    monkeypatch.setenv("SLAVE_KANBAN_TASK", task_id)
 
     import agent.kanban_turn_recovery as rec
 
@@ -328,7 +328,7 @@ def _loop_ok(result=None):
 
 
 def test_recovery_loop_retries_until_success_and_reports(clear_kanban_env):
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
     latest = {"r": _failed()}
     turns: list[str] = []
     delays: list[float] = []
@@ -351,7 +351,7 @@ def test_recovery_loop_retries_until_success_and_reports(clear_kanban_env):
 
 
 def test_recovery_loop_bounded_when_result_never_changes(clear_kanban_env):
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
     delays: list[float] = []
     attempts = recover_failed_kanban_turns(
         lambda nudge: None,
@@ -366,8 +366,8 @@ def test_recovery_loop_order_is_check_sleep_check_turn(clear_kanban_env):
     """Round-5 finding F1, both halves in one pass: the proof is taken BEFORE the backoff
     and re-taken immediately before model re-entry (check → sleep → check → turn), so a run
     lost during the 15/45/90s sleep stops the loop WITHOUT re-entering the model."""
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
-    clear_kanban_env.setenv("HERMES_KANBAN_TURN_RECOVERY", "3")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TURN_RECOVERY", "3")
     events: list[str] = []
     latest = {"r": _failed()}
     proofs = {"n": 0}
@@ -400,7 +400,7 @@ def test_recovery_loop_order_is_check_sleep_check_turn(clear_kanban_env):
 
 
 def test_nudge_terminal_contract(clear_kanban_env):
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_probe")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_probe")
     nudge = build_recovery_nudge(_failed(error="peer closed connection"), attempt=1, max_attempts=3)
     assert "t_probe" in nudge
     assert "1/3" in nudge
@@ -420,17 +420,17 @@ def test_exit_mapping_composes_with_the_stripped_worker_predicate(monkeypatch):
     bare-whitespace id would hand a quota wall the neutral 75."""
     from cli import _single_query_exit_code
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "   ")
+    monkeypatch.setenv("SLAVE_KANBAN_TASK", "   ")
     assert _single_query_exit_code(_failed(reason="rate_limit")) == 1
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "  t_probe  ")
+    monkeypatch.setenv("SLAVE_KANBAN_TASK", "  t_probe  ")
     assert _single_query_exit_code(_failed(reason="rate_limit")) == KANBAN_RATE_LIMIT_EXIT_CODE
 
 
 def test_explicit_blank_carrier_never_falls_back_to_the_env_pin(clear_kanban_env):
     """Owner-side workers pass the bound frame's task id explicitly; a blank explicit id is
-    not a worker and must not be rescued by whatever ``HERMES_KANBAN_TASK`` the owner
+    not a worker and must not be rescued by whatever ``SLAVE_KANBAN_TASK`` the owner
     process happens to carry."""
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_foreign")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_foreign")
     assert should_recover_turn(_failed(), attempt=0, task_id="   ") is False
     assert should_recover_turn(_failed(), attempt=0, task_id="  t_bound  ") is True
 
@@ -452,19 +452,19 @@ def owner_worker(tmp_path, clear_kanban_env, monkeypatch):
     """
     import agent.kanban_turn_recovery as rec
     from gateway import session_kanban
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect_closing
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect_closing
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    for key, value in (("HERMES_KANBAN_TASK", "t_foreign"), ("HERMES_KANBAN_DB", str(tmp_path / "nope.db")),
-                       ("HERMES_KANBAN_RUN_ID", "999"), ("HERMES_KANBAN_CLAIM_LOCK", "foreign")):
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    for key, value in (("SLAVE_KANBAN_TASK", "t_foreign"), ("SLAVE_KANBAN_DB", str(tmp_path / "nope.db")),
+                       ("SLAVE_KANBAN_RUN_ID", "999"), ("SLAVE_KANBAN_CLAIM_LOCK", "foreign")):
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(rec, "RECOVERY_DELAYS_SECONDS", (0.0,))
     monkeypatch.setattr("agent.skill_commands.build_preloaded_skills_prompt", lambda *a, **k: ("", [], []))
 
     def install(script, *, goal_mode=False, expires=None, recovery=None):
         if recovery is not None:
-            monkeypatch.setenv("HERMES_KANBAN_TURN_RECOVERY", str(recovery))
+            monkeypatch.setenv("SLAVE_KANBAN_TURN_RECOVERY", str(recovery))
         kb.init_db()
         path = kb.kanban_db_path()
         with connect_closing(path) as conn:
@@ -555,7 +555,7 @@ def test_non_worker_frame_is_never_recovered(clear_kanban_env, monkeypatch):
     process whose environment names a task: one model entry, result returned untouched."""
     from gateway import session_kanban
 
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_foreign")
+    clear_kanban_env.setenv("SLAVE_KANBAN_TASK", "t_foreign")
     entered: list[str] = []
     failed = _failed()
 
@@ -588,8 +588,8 @@ def test_worker_client_reports_the_owner_exit_and_reply(owner_worker, monkeypatc
     import asyncio
     from contextlib import asynccontextmanager
 
-    from hermes_cli import gateway_client, kanban_worker_client
-    from hermes_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
+    from slave_cli import gateway_client, kanban_worker_client
+    from slave_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
 
     run, _entered, context = owner_worker(_failed, recovery=1)
     assert run() == KANBAN_RATE_LIMIT_EXIT_CODE
@@ -608,11 +608,11 @@ def test_worker_client_reports_the_owner_exit_and_reply(owner_worker, monkeypatc
         yield _Owner()
 
     monkeypatch.setattr(gateway_client, "connect_gateway", _connect)
-    monkeypatch.delenv("HERMES_TUI_GATEWAY_URL", raising=False)
-    for key, value in (("HERMES_KANBAN_BOARD", "default"), ("HERMES_KANBAN_TASK", context["task_id"]),
-                       ("HERMES_KANBAN_RUN_ID", str(context["run_id"])),
-                       ("HERMES_KANBAN_CLAIM_LOCK", context["claim_lock"]),
-                       ("HERMES_KANBAN_DB", context["db"])):
+    monkeypatch.delenv("SLAVE_TUI_GATEWAY_URL", raising=False)
+    for key, value in (("SLAVE_KANBAN_BOARD", "default"), ("SLAVE_KANBAN_TASK", context["task_id"]),
+                       ("SLAVE_KANBAN_RUN_ID", str(context["run_id"])),
+                       ("SLAVE_KANBAN_CLAIM_LOCK", context["claim_lock"]),
+                       ("SLAVE_KANBAN_DB", context["db"])):
         monkeypatch.setenv(key, value)
     capsys.readouterr()
 
@@ -630,7 +630,7 @@ async def test_non_worker_one_shot_prints_its_exit_summary(capsys):
     admission — recovery is never a client-side resubmit."""
     import asyncio
 
-    from hermes_cli.gateway_chat_view import GatewayChatView
+    from slave_cli.gateway_chat_view import GatewayChatView
 
     submitted = []
 
@@ -680,7 +680,7 @@ def goal_spy(monkeypatch):
     pre-existing (its status check sees only run identity, not the claim lease); the
     invariant under test is the call-site veto."""
     calls: list = []
-    monkeypatch.setattr("hermes_cli.goals.run_kanban_goal_loop", lambda **kw: calls.append(kw))
+    monkeypatch.setattr("slave_cli.goals.run_kanban_goal_loop", lambda **kw: calls.append(kw))
     return calls
 
 

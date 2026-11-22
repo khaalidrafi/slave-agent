@@ -19,19 +19,19 @@ description: >-
   add_phone (buys Lusor Phones after a price quote), search and execute need an API key instead of
   sign-in. The package marks the server untrusted, but the required sign-in step writes a config.yaml
   entry that replaces the package's own, trust included, unless the user adds trust: untrusted to it.
-  Hermes stores and refreshes the OAuth tokens. The tool list comes from Lusor's server at run time,
+  slave-agent stores and refreshes the OAuth tokens. The tool list comes from Lusor's server at run time,
   so the pinned commit doesn't cover it. OAuth must be enabled with
-  `hermes mcp add lusor --url https://mcp.lusor.ai/mcp --auth oauth`; the bundled mcp.json alone
+  `slave mcp add lusor --url https://mcp.lusor.ai/mcp --auth oauth`; the bundled mcp.json alone
   yields 401.
 maintainer: Lusor
 tier: community
 category: automation
 requires_hermes: ">=0.22.0"
-docs_url: https://docs.lusor.ai/connect/hermes
+docs_url: https://docs.lusor.ai/connect/slave
 version: "1.0.0"
 platforms: []
 known_issues:
-  - "Sign in once after installing: hermes mcp add lusor --url https://mcp.lusor.ai/mcp --auth oauth"
+  - "Sign in once after installing: slave mcp add lusor --url https://mcp.lusor.ai/mcp --auth oauth"
 capabilities:
   provides_tools: []
   provides_hooks: []

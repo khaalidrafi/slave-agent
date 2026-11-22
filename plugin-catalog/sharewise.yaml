@@ -18,7 +18,7 @@ description: >-
   and app-managed libraries. Writes only new copies to a Sharewise/ folder inside that folder and
   never writes or overwrites originals. sharewise_share takes check ids, photo numbers, fixed keep
   choices, the user's selection codes and areas to add (never file paths), is validated by its own
-  pre_tool_call hook, and keeping location is escalated to Hermes' human-approval gate (fails
+  pre_tool_call hook, and keeping location is escalated to slave-agent’ human-approval gate (fails
   closed with no human present). The agent can add areas but cannot switch them off; switching
   off comes from the review page's selection code (a design rule, not a cryptographic barrier).
   Stores the last 10 checks (paths, yes/no findings, area boxes), review pages with downsized

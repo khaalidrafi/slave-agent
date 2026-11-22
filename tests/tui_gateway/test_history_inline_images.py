@@ -55,9 +55,9 @@ def test_resume_cold_carries_the_switch(tmp_path, monkeypatch):
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_session
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     db = open_persistence(profile_scope(home=home))
     seed_session(db, "img-chat", "desktop")
     db.messages.append_batch("img-chat", [NewMessage.from_live({"role": "user", "content": IMAGE_TURN[0]["content"]})])
@@ -90,7 +90,7 @@ def test_resume_live_reattach_carries_the_switch(tmp_path, monkeypatch, inline_i
     """The live-session fast path projects through ``_live_session_payload`` too."""
     from persistence_assembly import open_persistence, profile_scope
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir(parents=True)
     db = open_persistence(profile_scope(home=home))
     record = {

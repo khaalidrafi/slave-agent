@@ -12,7 +12,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 
 
 def test_adopted_hidden_bot_chat_is_canonical_but_not_recent(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     sid = '20261006_105832_fixture'
     actor = SessionActor('fixture-owner', str(tmp_path), frozenset({'session:read'}), 'fixture')
     with open_persistence(profile_scope(home=tmp_path)) as db:
@@ -53,7 +53,7 @@ def test_adopted_hidden_bot_chat_is_canonical_but_not_recent(tmp_path, monkeypat
 
 
 def test_unbound_native_chat_is_not_a_local_bot_chat(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     actor = SessionActor('owner', str(tmp_path), frozenset({'session:read', 'session:operator'}), 'fixture')
     with open_persistence(profile_scope(home=tmp_path)) as db:
         authority = SimpleNamespace(profile_id=str(tmp_path), persistence=storage_handle(tmp_path))

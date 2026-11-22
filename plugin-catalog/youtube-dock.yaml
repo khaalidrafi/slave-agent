@@ -1,10 +1,10 @@
 name: youtube-dock
-repo: https://github.com/metamindedu/hermes-youtube-dock
+repo: https://github.com/metamindedu/slave-youtube-dock
 sha: 31d2635ed1ef49250dc89a5707281a5fa66dd76e
 title: YouTube Dock
 description: >-
   Open your signed-in YouTube Home recommendations and Shorts in the existing
-  Hermes Desktop Browser beside your conversation, without pasting video URLs
+  slave-agent Desktop Browser beside your conversation, without pasting video URLs
   or launching an external browser. Desktop-only SDK launcher; no agent tools,
   hooks, middleware or API keys. Disclosure — explicit user clicks load YouTube
   and its normal service/CDN requests in the native Browser; this plugin does
@@ -16,9 +16,9 @@ tier: community
 category: desktop
 requires_hermes: ">=0.22.2"
 version: "1.1.0"
-docs_url: https://github.com/metamindedu/hermes-youtube-dock
+docs_url: https://github.com/metamindedu/slave-youtube-dock
 screenshots:
-  - https://raw.githubusercontent.com/metamindedu/hermes-youtube-dock/31d2635ed1ef49250dc89a5707281a5fa66dd76e/docs/menu.png
+  - https://raw.githubusercontent.com/metamindedu/slave-youtube-dock/31d2635ed1ef49250dc89a5707281a5fa66dd76e/docs/menu.png
 readme: true
 platforms: []
 known_issues:

@@ -7,23 +7,23 @@ import types
 
 import pytest
 
-import hermes_constants
+import slave_constants
 from gateway.config import GatewayConfig
 from gateway.run import GatewayRunner
 from gateway.status import flush_runtime_status, write_runtime_status
-from hermes_cli import gateway_migrate as gm
-from hermes_cli.gateway_multiplex_mode import SINGLE_PROFILE_REASON
+from slave_cli import gateway_migrate as gm
+from slave_cli.gateway_multiplex_mode import SINGLE_PROFILE_REASON
 from tests.fixtures.storage_seed import seed_session
 
 
 @pytest.fixture
 def standalone_host(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     (home / "profiles").mkdir(parents=True)
     (home / "config.yaml").write_text("model: {default: m}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(slave_constants, "_default_slave_root_memo", None)
     monkeypatch.setattr(gm, "_installed_services", lambda _home: [])
     monkeypatch.setattr(gm, "_live_gateway_pid", lambda _home: None)
     monkeypatch.setattr(gm, "_host_supports_migration", lambda: None)
@@ -118,7 +118,7 @@ async def test_default_profiles_mcp_connections_survive_the_flip(standalone_host
         with _profile_runtime_scope(home):           # the re-wired primary handler's scope
             assert check(), "default profile's live MCP server vanished after the flip"
     finally:
-        for stale in (key, (hermes_constants.hermes_home_key(home), key)):
+        for stale in (key, (slave_constants.slave_home_key(home), key)):
             core._servers.pop(stale, None)
             core._server_scope_keys.pop(stale, None)
             core._server_tool_scopes.pop(stale, None)
@@ -236,7 +236,7 @@ async def _native_turn_across_activation(tmp_path, profile_home):
 
 @pytest.mark.asyncio
 async def test_native_launch_turn_in_flight_across_activation_keeps_its_credentials(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("OPENROUTER_API_KEY", "launch-env-key")
     seen = await _native_turn_across_activation(tmp_path, tmp_path)
     assert seen == ["launch-env-key", "launch-env-key"], seen
@@ -244,7 +244,7 @@ async def test_native_launch_turn_in_flight_across_activation_keeps_its_credenti
 
 @pytest.mark.asyncio
 async def test_native_named_profile_turn_never_reads_the_launch_env(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("OPENROUTER_API_KEY", "launch-env-key")
     bot = tmp_path / "profiles" / "bot"
     bot.mkdir(parents=True)
@@ -262,7 +262,7 @@ async def test_default_profiles_mcp_server_is_still_owned_after_the_flip(standal
     from tools.mcp_tool_registration import _register_server_tools
     from tools.registry import registry
     from gateway.run import _profile_runtime_scope
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     runner, home = standalone_host
     cfg = {"url": "https://mcp.example/gh"}
     closed = []
@@ -296,13 +296,13 @@ async def test_default_profiles_mcp_server_is_still_owned_after_the_flip(standal
             for name in srv_tools:                  # the task's own _deregister_tools on shutdown
                 _deregister_mcp_tool_all_scopes(srv, name)
         assert closed == ["github"], "the reload skipped the default profile's server"
-        assert (hermes_home_key(home), "github") not in core._servers
-        assert registry.get_entry("mcp__github__t", scope=hermes_home_key(home)) is None
+        assert (slave_home_key(home), "github") not in core._servers
+        assert registry.get_entry("mcp__github__t", scope=slave_home_key(home)) is None
         assert "mcp__github__t" not in registry._tools
     finally:
         for key in [k for k in core._servers if (k[1] if isinstance(k, tuple) else k) == "github"]:
             core._servers.pop(key, None)
             core._server_scope_keys.pop(key, None)
             core._server_tool_scopes.pop(key, None)
-        for slot in (None, hermes_home_key(home)):
+        for slot in (None, slave_home_key(home)):
             registry.deregister("mcp__github__t", scope=slot)

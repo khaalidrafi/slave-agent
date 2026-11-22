@@ -57,7 +57,7 @@ def make_store(tmp_path, monkeypatch):
             store._db = db
             store._persistence_beside = _beside
         else:
-            monkeypatch.setenv("HERMES_HOME", str(db.scope.profile_dir))
+            monkeypatch.setenv("SLAVE_HOME", str(db.scope.profile_dir))
         return store
 
     return build

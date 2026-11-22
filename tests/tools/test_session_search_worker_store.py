@@ -18,10 +18,10 @@ from tools.session_search_tool import session_search
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    """The worker's profile home: ``get_hermes_home()`` resolves to it, so its state.db is the DB."""
-    import hermes_constants
+    """The worker's profile home: ``get_slave_home()`` resolves to it, so its state.db is the DB."""
+    import slave_constants
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(slave_constants, "get_slave_home", lambda: tmp_path)
     return tmp_path
 
 

@@ -6,7 +6,7 @@ identities (``chat-1`` / ``user-1`` / ``wx-chat``), with matching
 ``gateway_routing`` scopes pointing at ``pytest-of-*`` temp directories.
 
 The escape is structural, not a one-off test bug.  Hermetic isolation rides
-entirely on the process environment: ``HERMES_HOME`` says *where* to write and
+entirely on the process environment: ``SLAVE_HOME`` says *where* to write and
 ``PYTEST_CURRENT_TEST`` / ``PYTEST_VERSION`` say *whether the guard is armed*.
 Both live in the same carrier, so a child spawned with a rebuilt environment
 loses them together — it aims at the developer's real ``state.db`` and
@@ -33,7 +33,7 @@ from persistence.sqlite._state import guard as state_guard
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # Probe run in the child: resolve the REAL platform state root (not a
-# hardcoded ~/.hermes — that root is %LOCALAPPDATA%\hermes on Windows) and
+# hardcoded ~/.slave — that root is %LOCALAPPDATA%\slave on Windows) and
 # report whether the guard refuses it.
 _CHILD_PROBE = """
 import sys
@@ -57,7 +57,7 @@ else:
 def _scrubbed_env(**overrides):
     """The environment a rebuilt-from-scratch child spawn ends up with.
 
-    Also strips ``HERMES_TEST_ISOLATION`` — the conftest-exported marker
+    Also strips ``SLAVE_TEST_ISOLATION`` — the conftest-exported marker
     layer would otherwise arm the guard first and these tests would no
     longer prove anything about the ancestry fallback they exist to pin.
     """
@@ -65,7 +65,7 @@ def _scrubbed_env(**overrides):
         k: v
         for k, v in os.environ.items()
         if not k.startswith("PYTEST_")
-        and k not in ("HERMES_HOME", "HERMES_TEST_ISOLATION")
+        and k not in ("SLAVE_HOME", "SLAVE_TEST_ISOLATION")
     }
     env.update(overrides)
     return env
@@ -93,10 +93,10 @@ def _run_probe(env):
 
 class TestScrubbedChildEnvironment:
     def test_child_without_pytest_env_still_refuses_production_db(self):
-        """The #82770 escape: no PYTEST_* and no HERMES_HOME, yet still a test.
+        """The #82770 escape: no PYTEST_* and no SLAVE_HOME, yet still a test.
 
         This is the exact shape of the leak — the child resolves the real
-        ``state.db`` because ``HERMES_HOME`` is gone, and the env-only guard
+        ``state.db`` because ``SLAVE_HOME`` is gone, and the env-only guard
         sees a "normal user run" because ``PYTEST_*`` is gone with it.
         """
         assert _run_probe(_scrubbed_env()) == "REFUSED"
@@ -104,7 +104,7 @@ class TestScrubbedChildEnvironment:
     def test_child_inheriting_pytest_env_still_refuses_production_db(self):
         """The pre-existing env path must keep working unchanged."""
         env = dict(os.environ)
-        env.pop("HERMES_HOME", None)
+        env.pop("SLAVE_HOME", None)
         env.setdefault("PYTEST_CURRENT_TEST", "tests/x.py::test_x (call)")
         assert _run_probe(env) == "REFUSED"
 
@@ -146,16 +146,16 @@ class TestPytestProcessRecognition:
     @pytest.mark.parametrize(
         "cmdline",
         [
-            ["hermes", "gateway", "start"],
-            ["/usr/bin/python", "-m", "hermes_cli.main", "sessions", "list"],
+            ["slave", "gateway", "start"],
+            ["/usr/bin/python", "-m", "slave_cli.main", "sessions", "list"],
             # A path that merely *contains* "pytest" is not a pytest process:
             # tmp paths like /tmp/pytest-of-dev/... show up in real argv.
-            ["hermes", "run", "--file", "/tmp/pytest-of-dev/test0/input.txt"],
+            ["slave", "run", "--file", "/tmp/pytest-of-dev/test0/input.txt"],
             # Naming the test runner is not running it: only the script a
             # Python interpreter runs counts.
-            ["hermes", "chat", "-q", "fix the timeout in scripts/run_tests_parallel.py"],
+            ["slave", "chat", "-q", "fix the timeout in scripts/run_tests_parallel.py"],
             ["nvim", "scripts/run_tests_parallel.py"],
-            ["/usr/bin/python", "-m", "hermes_cli.main", "chat", "-q", "scripts/run_tests_parallel.py"],
+            ["/usr/bin/python", "-m", "slave_cli.main", "chat", "-q", "scripts/run_tests_parallel.py"],
         ],
     )
     def test_ignores_non_pytest_invocations(self, cmdline):

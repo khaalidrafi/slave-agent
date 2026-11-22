@@ -155,7 +155,7 @@ def slash_confirm_refusal(session_key: str, confirm_id: str, actor_id: Any, *, a
     reply would resolve: the same rule, read from the pending confirm, with the confirmed command as
     the slash floor (answering runs it). Nothing pending (or another confirm id) is never refused: the
     resolver reports it as before."""
-    from hermes_cli.commands import resolve_command
+    from slave_cli.commands import resolve_command
     from tools.slash_confirm import get_pending
 
     pending = get_pending(session_key) or {}
@@ -218,11 +218,11 @@ def update_prompt_refusal(actor_id: Any, *, admin_ids: Iterable[str] = (), extra
     recorded in its pending marker. No marker or no authority in it is never refused."""
     import json
 
-    from hermes_constants import get_process_hermes_home  # where /update wrote it (gateway.run._hermes_home)
+    from slave_constants import get_process_slave_home  # where /update wrote it (gateway.run._slave_home)
 
     for name in (".update_pending.claimed.json", ".update_pending.json"):
         try:
-            marker = json.loads((get_process_hermes_home() / name).read_text(encoding="utf-8-sig"))
+            marker = json.loads((get_process_slave_home() / name).read_text(encoding="utf-8-sig"))
         except (OSError, ValueError):
             continue
         return _authority_refusal(marker.get("authority") if isinstance(marker, dict) else None, actor_id, admin_ids, extra)

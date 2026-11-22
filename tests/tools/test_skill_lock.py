@@ -16,7 +16,7 @@ def locked_home(tmp_path, monkeypatch):
                          ("training/accelerate", "huggingface-accelerate")):
         (skills / rel / "scripts").mkdir(parents=True)
         (skills / rel / "SKILL.md").write_text(f"---\nname: {display}\ndescription: x\n---\nbody\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     from tools import skill_usage
     assert skill_usage.set_locked("locked-skill", True)
     return home
@@ -50,7 +50,7 @@ def test_file_tools_refuse_a_locked_skill_and_its_record(locked_home):
     ("bash -c 'cp /etc/hosts {L}/SKILL.md'", True),
     ("python3 -c \"open('{L}/SKILL.md','w').write('x')\"", True),
     ("echo {{}} > {H}/skills/.usage.json", True),
-    ("hermes curator unlock locked-skill", True),
+    ("slave curator unlock locked-skill", True),
     ("echo checking\nsed -i s/body/x/ {L}/SKILL.md", True),
     ("sudo -u root rm -rf {L}", True),
     ("cd {L} && (cd /) ; echo x > SKILL.md", True),
@@ -178,7 +178,7 @@ def test_a_damaged_lock_record_stays_protected_with_no_skills_on_disk(tmp_path, 
     record = home / "skills/.usage.json"
     record.parent.mkdir(parents=True)
     record.write_text('{"archived-skill": {"locked": true}', encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     assert "cannot be read" in (path_refusal([str(record)]) or "")
     for command in (f"echo '{{}}' > {record}", f"find {home}/skills -name .usage.json -exec rm {{}} +"):
         assert "cannot be read" in (command_refusal(command, str(home)) or ""), command

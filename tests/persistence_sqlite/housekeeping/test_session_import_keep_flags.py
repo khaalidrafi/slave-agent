@@ -1,6 +1,6 @@
 """A restored or adopted session keeps the user's durable flags.
 
-``import_sessions`` (the dashboard import of a ``hermes sessions export`` backup, and stranded-session
+``import_sessions`` (the dashboard import of a ``slave sessions export`` backup, and stranded-session
 adoption) restored ``archived`` but not ``pinned`` or ``hidden``. Pinned is the "keep" flag the startup
 prune and the stale-archive sweep both exempt, so an old pinned session came back unpinned and the next
 startup deleted it; an adopted Bot Mode chat came back visible and no longer canonical; and without

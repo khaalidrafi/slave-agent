@@ -1,4 +1,4 @@
-"""Relay/connector support package for the Hermes gateway.
+"""Relay/connector support package for the slave-agent gateway.
 
 EXPERIMENTAL gateway side of the "Gateway Gateway" relay design: a generic
 ``RelayAdapter`` plus the wire-serializable ``CapabilityDescriptor`` the connector
@@ -96,9 +96,9 @@ def _launch_profile_scope():
     if not is_multiplex_active():
         return contextlib.nullcontext()
     from gateway.run import _profile_runtime_scope  # late import to avoid cycle
-    from hermes_constants import get_process_hermes_home
+    from slave_constants import get_process_slave_home
 
-    return _profile_runtime_scope(get_process_hermes_home())
+    return _profile_runtime_scope(get_process_slave_home())
 
 
 def _env_or_cfg(env_var: str, cfg_key: str) -> str:
@@ -124,10 +124,10 @@ def relay_explicitly_disabled() -> bool:
     """
     from gateway.config import Platform, PlatformConfig
     from gateway.config_loader import bridge_platform_shared_keys, merge_platform_sections, read_yaml_layers
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     try:
-        cfg = read_yaml_layers(get_hermes_home())
+        cfg = read_yaml_layers(get_slave_home())
     except Exception:
         return False
     if not isinstance(cfg, dict):
@@ -257,16 +257,16 @@ def relay_display_name() -> Optional[str]:
     value = os.environ.get("GATEWAY_RELAY_DISPLAY_NAME", "").strip()
     if not value:
         try:
-            from hermes_cli.skin_engine import get_active_skin  # late import: boot-safe
+            from slave_cli.skin_engine import get_active_skin  # late import: boot-safe
 
             value = str(get_active_skin().get_branding("agent_name", "") or "").strip()
         except Exception:
             value = ""
         # The stock brand is identical on every default install: forwarding it would
-        # prefix every reply "**Hermes Agent:**" and shadow the connector's
+        # prefix every reply "**Slave Agent:**" and shadow the connector's
         # linked-owner fallback, which actually disambiguates. Only a customized
         # name is forwarded.
-        if value == "Hermes Agent":
+        if value == "slave-agent":
             value = ""
     # Mirror the connector's ingest sanitization (trim + 64-char cap).
     return value[:64] or None
@@ -444,7 +444,7 @@ def _post_provision(
 def _resolve_relay_identity_token() -> str:
     """Resolve the caller-identity bearer token the connector introspects to a tenant.
 
-    Canonical resolver shared by runtime self-provision and ``hermes gateway enroll``.
+    Canonical resolver shared by runtime self-provision and ``slave gateway enroll``.
     Modes, in precedence order:
       1.  Generic OIDC client-credentials (self-hosted IdP): ``gateway.idp.token_url``
           (``GATEWAY_RELAY_IDP_TOKEN_URL``) set together with client id + secret ->
@@ -470,7 +470,7 @@ def _resolve_relay_identity_token() -> str:
     token_url, client_id, client_secret, scope = (env[k] for k in _IDP_KEYS)
 
     if not token_url:
-        from hermes_cli.auth import resolve_nous_access_token
+        from slave_cli.auth import resolve_nous_access_token
 
         # Only the Nous refresh is scoped: the gateway config read above and the IdP modes below
         # keep resolving ``${VAR}`` refs from the launch env, as they always have.
@@ -539,7 +539,7 @@ def self_provision_relay() -> bool:
     identity token, POSTs ``/relay/provision`` for EACH fronted platform and sets
     ``GATEWAY_RELAY_ID`` / ``_SECRET`` / ``_DELIVERY_KEY`` in ``os.environ`` for
     ``register_relay_adapter()``. Creds live ONLY in process memory (never
-    ``~/.hermes/.env``), so a hosted container re-provisions every boot; the
+    ``~/.slave/.env``), so a hosted container re-provisions every boot; the
     connector's rotation window covers a still-connected prior instance. The trigger
     is deliberately NOT ``is_managed()`` (False on a NAS-hosted Fly agent): "pointed
     at a connector without a pinned secret" is the real signal and self-guards (an
@@ -583,7 +583,7 @@ def _self_provision() -> str:
         host = socket.gethostname().strip()
     except OSError:
         host = ""
-    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'hermes'}"
+    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'slave'}"
     endpoint = relay_endpoint()
     route_keys = relay_route_keys()
     instance_id = relay_instance_id()

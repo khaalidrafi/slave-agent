@@ -16,7 +16,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 
 def hello(process):
     """A direct child's self-introduction (no launcher: chain length 0)."""
-    from hermes_cli.process_identity import worker_birth
+    from slave_cli.process_identity import worker_birth
     return {'type': 'hello', 'pid': process.pid, 'birth': worker_birth(psutil.Process(process.pid)), 'ancestors': [os.getpid()]}
 
 
@@ -102,7 +102,7 @@ async def test_input_queued_behind_a_live_worker_is_released_then_runs_when_it_f
     from gateway.session_worker import worker_request
     from gateway import session_finite
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     seed_session(db, 'owned', 'telegram')
     runner = SimpleNamespace(_draining=False, config=SimpleNamespace(multiplex_profiles=False),
@@ -162,7 +162,7 @@ def test_reservation_survives_a_clock_step_on_macos(tmp_path, stale_psutil_boot_
     shifted, while the worker reports its own unshifted one, so the exact match refused every
     managed worker. ``process_birth`` (the kernel start) is what both processes see."""
     from gateway.session_worker_reservation import reserve_admission_worker
-    from hermes_cli.process_identity import process_birth
+    from slave_cli.process_identity import process_birth
     db = storage_handle(tmp_path)
     process = subprocess.Popen([sys.executable, '-c', 'import sys; sys.stdin.read()'], stdin=subprocess.PIPE,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -195,8 +195,8 @@ def test_process_fingerprints_survive_a_clock_step_on_macos(stale_psutil_boot_re
     ``owner_started_at`` and the spawn ledger's ``_pid_alive_matches`` read the same live process
     the same way before and after a clock step."""
     from gateway.status import get_process_start_time
-    from hermes_cli.kanban_db_dispatch import _pid_recycled, _process_fingerprint
-    from hermes_cli.process_identity import _pid_alive_matches, _process_create_time
+    from slave_cli.kanban_db_dispatch import _pid_recycled, _process_fingerprint
+    from slave_cli.process_identity import _pid_alive_matches, _process_create_time
     process = subprocess.Popen([sys.executable, '-c', 'import sys; sys.stdin.read()'], stdin=subprocess.PIPE,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
@@ -252,7 +252,7 @@ def test_process_birth_is_create_time_where_psutil_applies_no_reference():
     row written before KB-6 still matches there; on macOS with no step psutil returns the kernel
     start unchanged too (``adjust_proc_create_time`` ignores |drift| < 1 s)."""
     from gateway.status import get_process_start_time
-    from hermes_cli.process_identity import _pid_alive_matches, process_birth
+    from slave_cli.process_identity import _pid_alive_matches, process_birth
     proc = psutil.Process()
     assert process_birth(proc) == proc.create_time()
     assert _pid_alive_matches(os.getpid(), proc.create_time(), strict=True) is True

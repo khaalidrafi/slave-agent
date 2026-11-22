@@ -40,26 +40,26 @@ def set_multiplex_active(active: bool) -> None:
     """Mark whether the process is a profile multiplexer (get_secret fails closed).
 
     Activation also pins the launch home for routed-profile decisions
-    (``hermes_constants.pin_process_hermes_home``) unless an embedding host already pinned one:
+    (``slave_constants.pin_process_slave_home``) unless an embedding host already pinned one:
     from here on "is this task routed" compares the override against the home the process was
-    launched with, not against whatever a host later mirrors into ``os.environ["HERMES_HOME"]``.
+    launched with, not against whatever a host later mirrors into ``os.environ["SLAVE_HOME"]``.
     Deactivation releases only the pin activation itself created — a transient toggle
     (``gateway_migrate._multiplex_read_mode``, a cron worker restoring the caller's mode) must not
     drop the host's explicit pin (#119242)."""
     global _MULTIPLEX_ACTIVE, _AUTO_PINNED_HOME
-    from hermes_constants import (
-        get_routing_process_hermes_home,
-        pin_process_hermes_home,
-        process_hermes_home_is_pinned,
+    from slave_constants import (
+        get_routing_process_slave_home,
+        pin_process_slave_home,
+        process_slave_home_is_pinned,
     )
     _MULTIPLEX_ACTIVE = bool(active)
     if _MULTIPLEX_ACTIVE:
-        if not process_hermes_home_is_pinned():
-            _AUTO_PINNED_HOME = get_routing_process_hermes_home()
-            pin_process_hermes_home(_AUTO_PINNED_HOME)
+        if not process_slave_home_is_pinned():
+            _AUTO_PINNED_HOME = get_routing_process_slave_home()
+            pin_process_slave_home(_AUTO_PINNED_HOME)
     elif _AUTO_PINNED_HOME is not None:
-        if get_routing_process_hermes_home() == _AUTO_PINNED_HOME:
-            pin_process_hermes_home(None)
+        if get_routing_process_slave_home() == _AUTO_PINNED_HOME:
+            pin_process_slave_home(None)
         _AUTO_PINNED_HOME = None
 
 
@@ -80,26 +80,26 @@ def is_multiplex_active() -> bool:
 
 def serves_routed_profile() -> bool:
     """True when the current task runs for a profile other than the process's own: always under
-    multiplexing, else when a HERMES_HOME override names another home (dashboard/desktop backend,
+    multiplexing, else when a SLAVE_HOME override names another home (dashboard/desktop backend,
     per-profile cron ticker) or a secret scope stamped with a foreign home is bound. The MCP
     registry scope and the check_fn cache key both follow this predicate so a served profile's
     view never aliases the launch profile's (#111151). A host that mirrors the turn's profile into
-    ``HERMES_HOME`` pins its own home with ``hermes_constants.pin_process_hermes_home`` so the
+    ``SLAVE_HOME`` pins its own home with ``slave_constants.pin_process_slave_home`` so the
     mirror cannot flip this predicate."""
     if is_multiplex_active():
         return True
-    from hermes_constants import get_hermes_home_override, get_routing_process_hermes_home, hermes_home_key
-    own = hermes_home_key(get_routing_process_hermes_home())
+    from slave_constants import get_slave_home_override, get_routing_process_slave_home, slave_home_key
+    own = slave_home_key(get_routing_process_slave_home())
     bound = _bound_secrets()
-    if bound is not None and bound.profile_home and hermes_home_key(bound.profile_home) != own:
+    if bound is not None and bound.profile_home and slave_home_key(bound.profile_home) != own:
         return True
-    override = get_hermes_home_override()
-    return override is not None and hermes_home_key(override) != own
+    override = get_slave_home_override()
+    return override is not None and slave_home_key(override) != own
 
 
 def _bound_secrets():
     """The installed secret scope: the ``secrets`` field of the runtime scope state."""
-    from hermes_scope import current_state
+    from slave_scope import current_state
     return current_state().secrets
 
 
@@ -136,9 +136,9 @@ class UnscopedSecretError(RuntimeError):
             secret_name, developer_detail = "", secret_name
         what = f"this profile's {secret_name}" if secret_name else "this profile's API key"
         super().__init__(
-            f"Hermes could not read {what} (an internal profile-scoping bug on the multiplexed "
-            "gateway, not your configuration). Run `hermes gateway restart`; if it keeps happening, "
-            "report it with `hermes debug share`."
+            f"slave-agent could not read {what} (an internal profile-scoping bug on the multiplexed "
+            "gateway, not your configuration). Run `slave gateway restart`; if it keeps happening, "
+            "report it with `slave debug share`."
         )
         self.secret_name = secret_name
         self.developer_detail = developer_detail
@@ -152,14 +152,14 @@ def set_secret_scope(secrets: Optional[Mapping[str, str]], *, profile_home: Opti
 
     ``profile_home`` stamps the home the mapping was built for so
     ``serves_routed_profile`` detects a foreign-home scope even when the binder
-    deliberately skips the HERMES_HOME override.
+    deliberately skips the SLAVE_HOME override.
 
     Legacy setter: new code binds a scope (``agent.runtime_scope.bind_profile_scope``). With a
     scope bound, a mapping for another profile (``profile_home``; unstamped means the process
     home) moves the whole scope to that profile with *secrets* as its secret scope (local) or
     raises ``ScopeSwitchRefused`` (hosted); clearing raises ``ScopeSwitchRefused`` too, since the
     scope's home and terminal policy would stay behind."""
-    from hermes_scope import BoundSecrets, ScopeSwitchRefused, current_scope, push_state
+    from slave_scope import BoundSecrets, ScopeSwitchRefused, current_scope, push_state
     scope = current_scope()
     if scope is not None:
         if secrets is None:
@@ -167,9 +167,9 @@ def set_secret_scope(secrets: Optional[Mapping[str, str]], *, profile_home: Opti
                 "set_secret_scope(None) inside a bound scope would leave its home and terminal "
                 "policy without their secrets; bind a scope at the activity's entry point")
         from agent.runtime_scope import legacy_switch
-        from hermes_constants import get_routing_process_hermes_home
+        from slave_constants import get_routing_process_slave_home
         # Unstamped marks the launch profile, by the same identity serves_routed_profile uses.
-        switched = legacy_switch(profile_home or get_routing_process_hermes_home(), secrets=secrets)
+        switched = legacy_switch(profile_home or get_routing_process_slave_home(), secrets=secrets)
         if switched is not None:
             return switched
     bound = None if secrets is None else BoundSecrets(secrets, str(profile_home) if profile_home else None)
@@ -197,20 +197,20 @@ def current_secret_scope_home() -> Optional[str]:
 # fail-closed path would wrongly crash). Keep this tight — when in doubt a
 # value is a profile secret. Membership is exact name OR prefix.
 _GLOBAL_ENV_EXACT = frozenset({
-    # Hermes runtime / deployment
-    "HERMES_HOME", "HERMES_PROFILE", "HERMES_GATEWAY_LOCK_DIR",
-    "HERMES_MAX_ITERATIONS", "HERMES_API_TIMEOUT",
-    "HERMES_REDACT_SECRETS", "HERMES_NOUS_TIMEOUT_SECONDS",
-    "_HERMES_GATEWAY",
-    # Managed-scope bootstrap: launch-only (see hermes_constants.LAUNCH_ONLY_ENV_KEYS) —
+    # Slave runtime / deployment
+    "SLAVE_HOME", "SLAVE_PROFILE", "SLAVE_GATEWAY_LOCK_DIR",
+    "SLAVE_MAX_ITERATIONS", "SLAVE_API_TIMEOUT",
+    "SLAVE_REDACT_SECRETS", "SLAVE_NOUS_TIMEOUT_SECONDS",
+    "_SLAVE_GATEWAY",
+    # Managed-scope bootstrap: launch-only (see slave_constants.LAUNCH_ONLY_ENV_KEYS) —
     # every process must resolve the SAME directory or a routed child silently loses
     # administrator policy, so it is never residue and never profile-scoped (#135200).
-    "HERMES_MANAGED_DIR",
+    "SLAVE_MANAGED_DIR",
     # OS / interpreter
     "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "PWD", "SHELL", "TMPDIR",
     "VIRTUAL_ENV", "PYTHONPATH", "SSL_CERT_FILE",
     # Kanban paths (per-board, not per-profile-secret)
-    "HERMES_KANBAN_DB", "HERMES_KANBAN_WORKSPACES_ROOT", "HERMES_KANBAN_BOARD",
+    "SLAVE_KANBAN_DB", "SLAVE_KANBAN_WORKSPACES_ROOT", "SLAVE_KANBAN_BOARD",
     # API-server LISTENER settings — deployment config (compose/systemd env),
     # which the scoped runner reload must keep seeing or containers silently
     # lose the api_server platform. API_SERVER_KEY is a credential: NOT here.
@@ -229,15 +229,15 @@ _GLOBAL_ENV_EXACT = frozenset({
     "GATEWAY_RELAY_WAKE_URL", "GATEWAY_RELAY_DISPLAY_NAME",
 })
 _GLOBAL_ENV_PREFIXES = (
-    "HERMES_KANBAN_",
-    "HERMES_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
+    "SLAVE_KANBAN_",
+    "SLAVE_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
     "TERMINAL_",          # terminal/sandbox backend settings
 )
 
 
 def _is_global_env(name: str) -> bool:
     """True for genuinely process-global (non-profile-secret) env vars."""
-    from hermes_constants import is_launch_only_env_key  # case-folded: Windows env names (#135200)
+    from slave_constants import is_launch_only_env_key  # case-folded: Windows env names (#135200)
     return name in _GLOBAL_ENV_EXACT or name.startswith(_GLOBAL_ENV_PREFIXES) or is_launch_only_env_key(name)
 
 
@@ -283,7 +283,7 @@ def get_secret(name: str, default: Optional[str] = None) -> Optional[str]:
 def secret_source_label(name: str) -> str:
     """``" (from Bitwarden)"``-style suffix naming the external secret source (a secret-source plugin)
     that supplied env var *name*; ``""`` for ``.env`` / shell values. Public for plugins' status lines."""
-    from hermes_cli.env_loader import format_secret_source_suffix
+    from slave_cli.env_loader import format_secret_source_suffix
 
     return format_secret_source_suffix(name)
 
@@ -319,7 +319,7 @@ def _strip_inline_comment(value: str) -> str:
 
 
 def _parse_env_value(raw_value: str) -> str:
-    """Parse the small .env value subset Hermes writes itself (bare, 'single', or "double" with
+    """Parse the small .env value subset slave-agent writes itself (bare, 'single', or "double" with
     ``\\"`` / ``\\\\`` escapes)."""
     value = raw_value.strip()
     if len(value) >= 2 and value[0] == value[-1] == '"':
@@ -346,8 +346,8 @@ def _parse_env_value(raw_value: str) -> str:
 # in-place same-size rewrite inside one tick, and ``/reload`` then served the old value (CI run
 # 39146191939). The open keeps close-to-open revalidation on NFS, and a vanished/unreadable file
 # fails the open and is never cached (a transient EACCES must not become "this profile has no
-# secrets"). ``invalidate_env_file_cache()`` is the explicit knob; ``hermes_cli.config.
-# invalidate_env_cache()`` calls it for Hermes's own .env writers.
+# secrets"). ``invalidate_env_file_cache()`` is the explicit knob; ``slave_cli.config.
+# invalidate_env_cache()`` calls it for Slave's own .env writers.
 _ENV_FILE_CACHE: OrderedDict[str, tuple[bytes, dict[str, str]]] = OrderedDict()
 _ENV_FILE_CACHE_LOCK = threading.Lock()
 _ENV_FILE_CACHE_MAX = 64  # one entry per profile home in practice
@@ -389,7 +389,7 @@ def _parse_env_text(text: str) -> dict[str, str]:
 
 
 def load_env_file(env_path: Path) -> dict[str, str]:
-    """THE ``.env`` tokenizer: every reader (profile scope, ``hermes_cli.config.load_env``, the dashboard
+    """THE ``.env`` tokenizer: every reader (profile scope, ``slave_cli.config.load_env``, the dashboard
     scrub, skill secret capture, managed .env, setup prompts) parses through here so no two boundaries
     disagree on which keys/values a file defines. Dict only — never touches ``os.environ``. ``export``
     prefix, ``#`` comments, quote escapes reversed; a BOM is stripped so it doesn't prefix the first key.
@@ -423,22 +423,22 @@ def load_env_file(env_path: Path) -> dict[str, str]:
     return secrets
 
 
-def build_profile_secret_scope(hermes_home: Path) -> dict[str, str]:
+def build_profile_secret_scope(slave_home: Path) -> dict[str, str]:
     """Build a profile's secret mapping from ``<home>/.env`` plus its external
     secret sources. Global vars are NOT copied in — ``get_secret`` reads those
     from ``os.environ`` — so the scope holds only profile secrets."""
-    secrets = load_env_file(Path(hermes_home) / ".env")
+    secrets = load_env_file(Path(slave_home) / ".env")
     # Launch-only keys are never profile secrets (#135200): get_secret consults
     # _is_global_env first, but direct scope.get readers (e.g. platform_gate_env
     # under multiplexing) do not — a planted .env entry would otherwise survive
     # into the mapping as a readable value. The external/managed paths below
     # already drop them via _is_global_env; this is the one entry that doesn't.
-    from hermes_constants import is_launch_only_env_key
+    from slave_constants import is_launch_only_env_key
     secrets = {k: v for k, v in secrets.items() if not is_launch_only_env_key(k)}
     dotenv = dict(secrets)
     try:
-        from hermes_cli.env_loader import get_secret_source_values
-        external_secrets = get_secret_source_values(Path(hermes_home))
+        from slave_cli.env_loader import get_secret_source_values
+        external_secrets = get_secret_source_values(Path(slave_home))
     except Exception:
         external_secrets = {}
     secrets.update((k, v) for k, v in external_secrets.items() if not _is_global_env(k))
@@ -447,7 +447,7 @@ def build_profile_secret_scope(hermes_home: Path) -> dict[str, str]:
     # into that profile's own mapping. A secondary never inherits it (#80099 class).
     from gateway.config_loader import bridged_allow_all_users
     bridged = bridged_allow_all_users()
-    if bridged is not None and _is_process_home(hermes_home):
+    if bridged is not None and _is_process_home(slave_home):
         secrets.setdefault("GATEWAY_ALLOW_ALL_USERS", bridged)
     # Administrator-managed ``.env`` LAST, with override: the launch process applies it that way
     # (``env_loader._apply_managed_env``) so policy beats a user's own value. Under multiplex
@@ -456,17 +456,17 @@ def build_profile_secret_scope(hermes_home: Path) -> dict[str, str]:
     # managed-vs-user collision (#111187 review). Every multiplex-authoritative scope — gateway
     # turn, routed cron fire, external worker — is built here, so managed authority is composed
     # once, not restored by each consumer.
-    from hermes_cli.managed_scope import load_managed_env  # fail-open: {} when no managed scope
+    from slave_cli.managed_scope import load_managed_env  # fail-open: {} when no managed scope
 
     managed = {k: v for k, v in load_managed_env().items() if not _is_global_env(k)}
     secrets.update(managed)
-    _expand_dotenv_templates(secrets, hermes_home, {**dotenv, **managed})
+    _expand_dotenv_templates(secrets, slave_home, {**dotenv, **managed})
     return secrets
 
 
-def _expand_dotenv_templates(secrets: dict[str, str], hermes_home: Path, raw: dict[str, str]) -> None:
+def _expand_dotenv_templates(secrets: dict[str, str], slave_home: Path, raw: dict[str, str]) -> None:
     """Resolve ``${VAR}`` / ``${VAR:-default}`` in values that came from the dotenv layers, with
-    ``load_hermes_dotenv``'s own resolver, so the scope and ``os.environ`` agree on what a file says:
+    ``load_slave_dotenv``'s own resolver, so the scope and ``os.environ`` agree on what a file says:
     ``TELEGRAM_HOME_CHANNEL=${TELEGRAM_USER_ID}`` otherwise reached cron delivery as the literal
     template (#137080). A value another source replaced (an external secret) is left alone.
 
@@ -476,39 +476,39 @@ def _expand_dotenv_templates(secrets: dict[str, str], hermes_home: Path, raw: di
     templated = {k: v for k, v in raw.items() if "${" in v and secrets.get(k) == v}
     if not templated:
         return
-    from hermes_cli.env_loader import resolve_home_dotenv
-    lookup = None if _is_process_home(hermes_home) else {k: v for k, v in os.environ.items() if _is_global_env(k)}
-    resolved = resolve_home_dotenv(Path(hermes_home), lookup_env=lookup)
+    from slave_cli.env_loader import resolve_home_dotenv
+    lookup = None if _is_process_home(slave_home) else {k: v for k, v in os.environ.items() if _is_global_env(k)}
+    resolved = resolve_home_dotenv(Path(slave_home), lookup_env=lookup)
     secrets.update((k, resolved[k]) for k in templated if k in resolved)
 
 
-def _is_process_home(hermes_home: Path) -> bool:
-    """Is *hermes_home* the profile this process serves as its own? Same launch-home identity as
-    ``serves_routed_profile()``: a host that mirrors a served profile into ``HERMES_HOME`` would
+def _is_process_home(slave_home: Path) -> bool:
+    """Is *slave_home* the profile this process serves as its own? Same launch-home identity as
+    ``serves_routed_profile()``: a host that mirrors a served profile into ``SLAVE_HOME`` would
     otherwise seed the launch profile's bridged allow-all grant into that profile's scope."""
-    from hermes_constants import get_routing_process_hermes_home
+    from slave_constants import get_routing_process_slave_home
     try:
-        return Path(hermes_home).resolve() == get_routing_process_hermes_home().resolve()
+        return Path(slave_home).resolve() == get_routing_process_slave_home().resolve()
     except OSError:
         return False
 
 
-def refresh_installed_secret_scope(hermes_home: Path) -> bool:
-    """Fold a fresh build of *hermes_home*'s secrets into the INSTALLED scope, in place.
+def refresh_installed_secret_scope(slave_home: Path) -> bool:
+    """Fold a fresh build of *slave_home*'s secrets into the INSTALLED scope, in place.
 
     A scope is frozen when installed, but a fire can learn of new values afterwards: a routed cron
     fire's first agent build discovers plugin secret sources, and under multiplex semantics the
     reload that follows is hydrate-only (never ``os.environ``), so nothing else would carry those
     values into the scope this fire already holds. True when a scope was updated; False when none
-    is installed, or when the installed scope belongs to another home than *hermes_home* (its stamp;
+    is installed, or when the installed scope belongs to another home than *slave_home* (its stamp;
     unstamped means the process home): another home's secrets never replace it."""
     bound = _bound_secrets()
     scope = bound.mapping if bound is not None else None
     if not isinstance(scope, dict):
         return False
-    from hermes_constants import get_routing_process_hermes_home, hermes_home_key
-    owner = bound.profile_home or get_routing_process_hermes_home()
-    if hermes_home_key(owner) != hermes_home_key(hermes_home):
+    from slave_constants import get_routing_process_slave_home, slave_home_key
+    owner = bound.profile_home or get_routing_process_slave_home()
+    if slave_home_key(owner) != slave_home_key(slave_home):
         return False
     # REPLACE, don't merge: the rebuild is the profile's current truth, so a name a source has
     # stopped supplying (rotated, revoked, source removed) must disappear from the fire's scope
@@ -516,7 +516,7 @@ def refresh_installed_secret_scope(hermes_home: Path) -> bool:
     # ``owner_secret_scope``: the process home's scope also carries the env frozen at activation
     # (systemd / ``op run`` / docker ``-e`` keys, YAML-bridged allowlists) that no file can rebuild.
     from tui_gateway.launch_profile_policy import owner_secret_scope
-    rebuilt = owner_secret_scope(hermes_home)
+    rebuilt = owner_secret_scope(slave_home)
     # Update first, then drop what is gone: a concurrent reader never sees an emptied scope.
     scope.update(rebuilt)
     for name in [n for n in scope if n not in rebuilt]:

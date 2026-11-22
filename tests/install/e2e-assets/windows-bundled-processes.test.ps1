@@ -14,7 +14,7 @@ class BundledProcessRecord {
         $this.CommandLine = $Command
     }
 }
-$exe = 'C:\fixture\Hermes.exe'
+$exe = 'C:\fixture\Slave.exe'
 $script:processRecords = @()
 function Get-CimInstance([string]$ClassName) {
     if ($ClassName -cne 'Win32_Process') { throw 'Unexpected CIM query' }
@@ -23,7 +23,7 @@ function Get-CimInstance([string]$ClassName) {
 
 foreach ($count in 0, 1, 2) {
     $script:processRecords = @(for ($i = 0; $i -lt $count; $i++) {
-        [BundledProcessRecord]::new(100 + $i, $exe, 'Hermes.exe')
+        [BundledProcessRecord]::new(100 + $i, $exe, 'Slave.exe')
     })
     # The OLD identity check and NEW relaunch poll both assign the helper directly.
     $rows = Main-Processes $exe
@@ -35,11 +35,11 @@ foreach ($count in 0, 1, 2) {
 Write-Output 'PASS: zero, one and multiple process rows preserve Count and indexing'
 
 $script:processRecords = @(
-    [BundledProcessRecord]::new(100, $exe.ToUpperInvariant(), 'Hermes.exe'),
-    [BundledProcessRecord]::new(101, $exe, 'Hermes.exe --type=renderer'),
-    [BundledProcessRecord]::new(102, $exe, 'Hermes.exe --type utility'),
-    [BundledProcessRecord]::new(103, 'C:\other\Hermes.exe', 'Hermes.exe'),
-    [BundledProcessRecord]::new(104, '', 'Hermes.exe')
+    [BundledProcessRecord]::new(100, $exe.ToUpperInvariant(), 'Slave.exe'),
+    [BundledProcessRecord]::new(101, $exe, 'Slave.exe --type=renderer'),
+    [BundledProcessRecord]::new(102, $exe, 'Slave.exe --type utility'),
+    [BundledProcessRecord]::new(103, 'C:\other\Slave.exe', 'Slave.exe'),
+    [BundledProcessRecord]::new(104, '', 'Slave.exe')
 )
 $rows = Main-Processes $exe
 if ($rows.Count -ne 1 -or $rows[0].ProcessId -ne 100) { throw 'Installed main-process filtering changed' }

@@ -17,11 +17,11 @@ def controls(request, tmp_path, monkeypatch):
     import tui_gateway.server as srv
     from tui_gateway import methods_groups_forward
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         service = _service(db)
         service.create_room(room_id="room", name="Stop lifetime", members=[
-            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "default", "profile": "default", "handle": "slave"},
             {"member_id": "ops", "profile": "ops", "handle": "ops"}])
         monkeypatch.setattr(service.runtime, "status", lambda: {"running": True})
         monkeypatch.setattr(srv, "get_hosted_room_service", lambda: service)

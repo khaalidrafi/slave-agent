@@ -66,7 +66,7 @@ class RoomService:
 
 
 def test_execution_controls_preserve_native_wire_and_exact_task_identity(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     # The control boundary validates the roster before any service sees it: helper is a destination.
     helper = (tmp_path / 'profiles' / 'helper').resolve()
     (tmp_path / 'config.yaml').write_text(json.dumps({'hosted_rooms': {'profiles': {'helper': str(helper)}}}))
@@ -120,7 +120,7 @@ def test_execution_controls_preserve_native_wire_and_exact_task_identity(tmp_pat
 
 
 def test_execution_controls_reject_foreign_actor_profile_room_and_unready_service(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         authority = SimpleNamespace(profile_id=str(tmp_path), instance_id='owner', db=db, events={}, persistence=storage_handle(tmp_path))
         owner = AuthorityConnection(authority, object(), {'user_id': 'alice'})
@@ -178,7 +178,7 @@ def test_send_refusals_say_only_a_refusal_before_commit_admitted_nothing(tmp_pat
         def authorize_room(self, actor_subject, room_id, *, create=False, conn=None):
             pass
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         authority = SimpleNamespace(profile_id=str(tmp_path), instance_id='owner', db=db, events={}, persistence=db)
         connection = AuthorityConnection(authority, object(), {'user_id': 'alice'})

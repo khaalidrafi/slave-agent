@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 def recipient_key(raw_target: str, sender: Any) -> str:
     """The author id a turn started by ``raw_target`` would carry here, resolved in ``_dispatch``'s
     order: a registered peer, then a connection-qualified relay row, then a local bot (folder id,
-    ``hermes``, friendly name), then any relay row."""
+    ``slave``, friendly name), then any relay row."""
     from agent.turn_author import bot_author_id
     from tools.bot_mode_dm import _PEER_TARGET_RE, _resolve_local_name
 
@@ -60,7 +60,7 @@ def _peer_key(peer_name: str, peer_profile: str, sender: Any) -> str:
 
 
 def _peer_url(peer_name: str, sender: Any) -> str:
-    from hermes_cli.config_backend import read_config_doc_readonly
+    from slave_cli.config_backend import read_config_doc_readonly
 
     doc = read_config_doc_readonly(sender.root / "config.yaml")
     peers = doc.get("bot_peers") if isinstance(doc, dict) else None

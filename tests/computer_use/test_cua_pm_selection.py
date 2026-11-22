@@ -15,10 +15,10 @@ def cua_home(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
-    monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "slave"))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.delenv("SLAVE_CUA_DRIVER_CMD", raising=False)
+    monkeypatch.setenv("SLAVE_DISABLE_LAZY_INSTALLS", "1")
     monkeypatch.setattr(paths, "lockfile_path", lambda: tmp_path / "lock.json")
     return tmp_path
 
@@ -49,7 +49,7 @@ def test_pm_selection_ignores_vendor_tree_and_is_passive(cua_home, monkeypatch):
 @pytest.mark.platforms("linux")
 def test_setup_acquires_through_pm_and_validates_real_manifest(cua_home, monkeypatch):
     import pm
-    from hermes_cli.tools_config_cua import install_cua_driver
+    from slave_cli.tools_config_cua import install_cua_driver
     from tools.computer_use.cua_backend_driver import cua_driver_runtime_contract_status
 
     monkeypatch.setenv("PATH", "")
@@ -117,7 +117,7 @@ def test_private_start_uses_post_ensure_binary(cua_home, monkeypatch, permission
 
     monkeypatch.setattr(subprocess, "Popen", capture_serve)
     # The stand-in daemon has no real process group: keep it away from the owner-death supervisor.
-    from hermes_cli import process_identity
+    from slave_cli import process_identity
     monkeypatch.setattr(process_identity, "_update_supervised_pgids", lambda verb, pgids: None)
     monkeypatch.setattr(process_identity, "register_child", lambda pid, purpose: None)
     # Re-start the same backend after PM publishes another version as well.

@@ -2,7 +2,7 @@
 
 The stop's per-handle closes release the runner's handles on each profile's store, then ``close_all_stores`` closes
 every store the process holds. Startup recovery can still read through an authority after that, when the stop lands
-while the start is finishing. Such a read opens the store again with the ``hermes_state`` reopen warning, once per
+while the start is finishing. Such a read opens the store again with the ``slave_state`` reopen warning, once per
 store, and returns the store's answer.
 """
 import logging
@@ -35,7 +35,7 @@ async def test_authority_read_after_the_shutdown_closes_reopens_once_per_store(s
     assert "SessionDB close done" in caplog.text
 
     caplog.clear()
-    with caplog.at_level(logging.WARNING, logger="hermes_state"):
+    with caplog.at_level(logging.WARNING, logger="slave_state"):
         for authority in authorities:
             assert authority.persistence.sessions.get("nope") is None
             assert authority.persistence.admissions.pending_targets(statuses=frozenset({"queued"})) == frozenset()
@@ -49,7 +49,7 @@ async def test_a_retired_authority_releases_its_store_reference(served):
     from gateway.run_runtime import initialize_gateway_runtime, unserve_profile_runtime
     runner, alpha = served
     await initialize_gateway_runtime(runner)
-    key = runner.session_authorities.for_home(alpha.resolve()).persistence.scope.hermes_home_key
+    key = runner.session_authorities.for_home(alpha.resolve()).persistence.scope.slave_home_key
     held = persistence_assembly._shared[key][1]
 
     assert await unserve_profile_runtime(runner, alpha)

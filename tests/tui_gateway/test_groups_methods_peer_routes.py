@@ -1,4 +1,4 @@
-"""`hermes serve` peer routes: identity across re-registration, and Disband racing registration."""
+"""`slave serve` peer routes: identity across re-registration, and Disband racing registration."""
 from __future__ import annotations
 
 import threading
@@ -57,7 +57,7 @@ def test_reregistered_peer_route_keeps_its_trace_identity(home, monkeypatch):
 
 
 def _serve_owed():
-    """Revokes ``hermes serve`` still owes, as (room, member, target_url); the grant is not read."""
+    """Revokes ``slave serve`` still owes, as (room, member, target_url); the grant is not read."""
     import sqlite3
     with sqlite3.connect(hosted_rooms_default_db_path()) as conn:
         return conn.execute("SELECT room_id, member_id, target_url FROM hosted_room_owed_revokes "
@@ -104,7 +104,7 @@ def _scoped_grant(room):
 
 @pytest.mark.parametrize("disband_at", ["before", "probe", "publication"])
 def test_serve_disband_and_register_never_leave_a_route_or_a_grant_behind(home, monkeypatch, disband_at):
-    """`hermes serve` publishes a route only while its room is live. A grant handed in for a room
+    """`slave serve` publishes a route only while its room is live. A grant handed in for a room
     that ended first is owed, never probed; one that Disband overtakes during the probe or before
     publication is refused and owed too."""
     from gateway import hosted_room_links

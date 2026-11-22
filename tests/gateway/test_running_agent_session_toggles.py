@@ -89,7 +89,7 @@ def _make_runner():
 
     # Simulate agent actively running for this session so the guard fires.
     # Note: the stale-eviction branch calls agent.get_activity_summary() and
-    # compares seconds_since_activity against HERMES_AGENT_TIMEOUT. Return a
+    # compares seconds_since_activity against SLAVE_AGENT_TIMEOUT. Return a
     # dict with recent activity so the eviction path doesn't clear our
     # fake running agent before the toggle guard runs.
     import time
@@ -154,7 +154,7 @@ async def test_fresh_ancient_turn_remains_controllable(monkeypatch):
     }
     runner._session_state(sk).turn.started_ts = time.time() - 31_471
     runner._handle_verbose_command = AsyncMock(return_value="tool progress: new")
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", "1800")
+    monkeypatch.setenv("SLAVE_AGENT_TIMEOUT", "1800")
 
     result = await runner._handle_message(_make_event("/verbose"))
 

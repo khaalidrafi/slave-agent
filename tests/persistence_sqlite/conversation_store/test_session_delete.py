@@ -123,7 +123,7 @@ class TestDeleteEmptySessions:
     """``delete_empty_sessions`` sweeps every ended, non-archived session
     whose ``message_count`` is 0. Backs the dashboard's "Delete empty"
     button — see ``SessionsPage.tsx`` + ``DELETE /api/sessions/empty``
-    in ``hermes_cli/web_server.py``.
+    in ``slave_cli/web_server.py``.
 
     Invariants this class locks in:
 

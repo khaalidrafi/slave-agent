@@ -242,7 +242,7 @@ def not_deferrable_error(name: str, session_tool_names: Optional[Iterable[str]] 
     cited by its bare suffix instead of the full ``mcp__<server>__{tool}`` name. Telling
     the second group 'call it directly' is the opposite of what they must do.
 
-    ``_HERMES_CORE_TOOLS`` is a *static* list, so a core tool stripped from this session's
+    ``_SLAVE_CORE_TOOLS`` is a *static* list, so a core tool stripped from this session's
     toolset (clarify in a subagent, kanban worker) otherwise gets told "call it directly"
     — an instruction that can never resolve, burning a turn on a confident wrong answer.
     When the caller passes the session-scoped names, absence is reported as unavailability

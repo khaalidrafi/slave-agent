@@ -1,7 +1,7 @@
 """A memory provider refused for a profile must not serve that profile through the tools its
 ``register(ctx)`` put in the tool registry (#147659).
 
-The provider below is the reported shape (mnemosyne-hermes 0.7.1): one process-wide instance, handed
+The provider below is the reported shape (mnemosyne-slave 0.7.1): one process-wide instance, handed
 to every profile's manager, whose ``register(ctx)`` also registers its tools through ``ctx`` with a
 handler bound to that instance. The second profile's manager refuses the instance, but the registry
 tool registered during that profile's load still points at it, and so at the first profile's store.
@@ -16,7 +16,7 @@ import sys
 import pytest
 
 from agent.memory_manager import MemoryManager
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 _TOOL = "sharedmem_recall"
 
@@ -46,7 +46,7 @@ class SharedProvider(MemoryProvider):
         return True
 
     def initialize(self, session_id, **kwargs):
-        self.home = kwargs["hermes_home"]
+        self.home = kwargs["slave_home"]
 
     def get_tool_schemas(self):
         return [{"name": "sharedmem_recall", "description": "recall",
@@ -73,7 +73,7 @@ def homes(tmp_path, monkeypatch):
     shared_dir.mkdir()
     (shared_dir / "sharedmem_singleton.py").write_text(_SHARED_MODULE, encoding="utf-8")
     monkeypatch.syspath_prepend(str(shared_dir))
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     alpha, beta = root / "profiles" / "alpha", root / "profiles" / "beta"
     for home in (alpha, beta):
         plugin_dir = home / "plugins" / "sharedmem"
@@ -82,9 +82,9 @@ def homes(tmp_path, monkeypatch):
         (plugin_dir / "__init__.py").write_text(
             "# MemoryProvider\nfrom sharedmem_singleton import register\n", encoding="utf-8")
         (home / "config.yaml").write_text("memory:\n  provider: sharedmem\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     from agent.secret_scope import reset_multiplex_context, set_multiplex_context
-    from hermes_cli.plugins import _reset_plugin_managers_for_tests
+    from slave_cli.plugins import _reset_plugin_managers_for_tests
     _reset_plugin_managers_for_tests()
     token = set_multiplex_context(True)
     try:
@@ -97,11 +97,11 @@ def homes(tmp_path, monkeypatch):
 
 @contextlib.contextmanager
 def _scoped(home):
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _build_manager(home):
@@ -110,7 +110,7 @@ def _build_manager(home):
         provider = load_memory_provider("sharedmem")
         manager = MemoryManager()
         manager.add_provider(provider)
-        manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", hermes_home=str(home))
+        manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", slave_home=str(home))
     return provider, manager
 
 
@@ -165,7 +165,7 @@ def test_subclass_fallback_ctx_tool_still_refuses_shared_instance(homes, loader)
         dist.mkdir()
         (dist / "METADATA").write_text("Metadata-Version: 2.1\nName: sharedmem-ep\nVersion: 0.1\n", encoding="utf-8")
         (dist / "entry_points.txt").write_text(
-            "[hermes_agent.memory_providers]\nsharedmem = sharedmem_singleton\n", encoding="utf-8")
+            "[slave_agent.memory_providers]\nsharedmem = sharedmem_singleton\n", encoding="utf-8")
 
     owner, _ = _build_manager(beta_home)
     type(owner).stores[str(beta_home)] = ["beta-private"]

@@ -2,7 +2,7 @@
 still running when housekeeping stops never records afterwards.
 
 The curator tick also polls the plugins' idle tasks (``run_idle_jobs``). That thread stamps the
-runtime heartbeat, which ``hermes gateway status`` and ``/api/status`` read to tell a live gateway
+runtime heartbeat, which ``slave gateway status`` and ``/api/status`` read to tell a live gateway
 from a wedged one, and it runs every other chore (the cron delivery drain, misfire catch-up, the
 plugin update check, state.db maintenance). An idle task that makes model calls for minutes must
 not stall any of them, so each due run goes to its own thread and the tick moves on.
@@ -20,9 +20,9 @@ import time
 import pytest
 
 import gateway.run as gateway_run
-from hermes_cli import plugins_idle_tasks
-from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
-from hermes_cli.plugins_idle_tasks import load_state, run_plugin_idle_tasks
+from slave_cli import plugins_idle_tasks
+from slave_cli.plugins import PluginContext, PluginManager, PluginManifest
+from slave_cli.plugins_idle_tasks import load_state, run_plugin_idle_tasks
 from tests.waiting import wait_until
 
 BUDGET = 1.0  # the shutdown join budget, shortened from SHUTDOWN_JOIN_SECONDS for the test
@@ -74,9 +74,9 @@ class _Gateway:
 def gw(tmp_path, monkeypatch):
     """A manager with the ``wisdom`` plugin, the gateway's other chores stubbed, fences captured."""
     import agent.curator
-    import hermes_cli.plugins
+    import slave_cli.plugins
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     manager = PluginManager()
     gateway = _Gateway(manager, PluginContext(PluginManifest(name="wisdom", source="user"), manager))
 
@@ -87,7 +87,7 @@ def gw(tmp_path, monkeypatch):
 
     monkeypatch.setattr(plugins_idle_tasks, "IdleTaskFence", Fence)
     monkeypatch.setattr(plugins_idle_tasks, "SHUTDOWN_JOIN_SECONDS", BUDGET)
-    monkeypatch.setattr(hermes_cli.plugins, "get_plugin_manager", lambda: manager)
+    monkeypatch.setattr(slave_cli.plugins, "get_plugin_manager", lambda: manager)
     monkeypatch.setattr(agent.curator, "maybe_run_curator", lambda **kw: None)
     monkeypatch.setattr(gateway_run, "_write_runtime_status_quiet", lambda **kw: gateway.heartbeats.append(1))
     monkeypatch.setattr(gateway_run, "_housekeeping_state_db_maintenance",

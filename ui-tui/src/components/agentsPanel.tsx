@@ -1,5 +1,5 @@
-import { Box, stringWidth, Text, useStdout } from '@hermes/ink'
-import { mix } from '@hermes/shared/color'
+import { Box, stringWidth, Text, useStdout } from '@slave-agent/ink'
+import { mix } from '@slave-agent/shared/color'
 import { useStore } from '@nanostores/react'
 import { useEffect, useState } from 'react'
 

@@ -1,12 +1,12 @@
 name: usage-hud
-repo: https://github.com/aktogde1/hermes-usage-hud
+repo: https://github.com/aktogde1/slave-usage-hud
 sha: 097bbb5ef882dd6eb19d9afd9003e565130050e1
-description: Compact Codex account limits and focused-session token usage for Hermes Desktop. Disclosure — uses Hermes gateway session.usage and model.options; Hermes may refresh provider account usage; no direct credential access or author telemetry.
+description: Compact Codex account limits and focused-session token usage for slave-agent Desktop. Disclosure — uses slave-agent gateway session.usage and model.options; slave-agent may refresh provider account usage; no direct credential access or author telemetry.
 maintainer: aktogde1
 tier: community
 category: desktop
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/aktogde1/hermes-usage-hud#readme
+docs_url: https://github.com/aktogde1/slave-usage-hud#readme
 version: "0.1.0"
 platforms:
   - windows

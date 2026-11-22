@@ -1,9 +1,9 @@
 """Sidecar runtime-record persistence tests (issue #69960).
 
 The sidecar token is generated at spawn and used to exist only in the
-gateway process memory + sidecar child env — so cron/`hermes send`
+gateway process memory + sidecar child env — so cron/`slave send`
 standalone sends structurally could not authenticate. The adapter now
-persists ``<hermes-home>/photon-sidecar.json`` after the sidecar
+persists ``<slave-home>/photon-sidecar.json`` after the sidecar
 passes its /healthz readiness check, deletes it on stop/failed-start, and
 ``_standalone_send`` falls back to it when PHOTON_SIDECAR_TOKEN is unset.
 No Node, no ports, no network.
@@ -34,7 +34,7 @@ def record_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _previous_record(record_path: Path, data: dict) -> Path:
-    """A record where earlier releases kept it: ``<hermes-home>/runtime/``."""
+    """A record where earlier releases kept it: ``<slave-home>/runtime/``."""
     previous = record_path.parent / "runtime" / record_path.name
     previous.parent.mkdir(parents=True, exist_ok=True)
     previous.write_text(json.dumps(data), encoding="utf-8")
@@ -70,9 +70,9 @@ def test_write_read_delete_roundtrip(record_path: Path) -> None:
 
 
 def test_record_lives_at_the_top_of_the_profile_home() -> None:
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    assert photon_adapter._runtime_record_path() == get_hermes_home() / "photon-sidecar.json"
+    assert photon_adapter._runtime_record_path() == get_slave_home() / "photon-sidecar.json"
 
 
 def test_read_deletes_a_previous_record_unread(record_path: Path) -> None:
@@ -283,6 +283,6 @@ async def test_standalone_send_consumes_record_when_env_missing(
     assert result == {"success": True, "message_id": "m1"}
     url, _body, headers = _SendClient.calls[0]
     assert ":9111/" in url
-    assert headers["X-Hermes-Sidecar-Token"] == "record-token"
+    assert headers["X-Slave-Sidecar-Token"] == "record-token"
 
 

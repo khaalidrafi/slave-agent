@@ -41,8 +41,8 @@ def served_profile_runtime(
     mux_pid, record = served
     if gateway_pid is not None and mux_pid != gateway_pid:
         return None
-    # Fold on the profile NAME, never ``home.name``: the default root's basename is ``.hermes`` (or
-    # any custom HERMES_HOME), so its flat keys never matched (#123088).
+    # Fold on the profile NAME, never ``home.name``: the default root's basename is ``.slave`` (or
+    # any custom SLAVE_HOME), so its flat keys never matched (#123088).
     name = status.profile_name_for_home(home) or "default"
     return {**record, "platforms": status.profile_platforms_from_multiplexer(record, name)}
 

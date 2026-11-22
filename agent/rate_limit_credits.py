@@ -61,12 +61,12 @@ class RateLimitCreditsMixin:
     def _capture_nous_model_switch(self, http_response: Any) -> None:
         """Record the Nous gateway's ``x-nous-model-switch`` header (a named account asked for the
         free tier's model; the gateway served its backing model and named it). Applied between
-        calls by ``hermes_cli.anon_auth.apply_model_switch``. Fail-open."""
+        calls by ``slave_cli.anon_auth.apply_model_switch``. Fail-open."""
         headers = _response_headers(http_response)
         if not headers:
             return
         try:
-            from hermes_cli.anon_auth import note_model_switch
+            from slave_cli.anon_auth import note_model_switch
             note_model_switch(self, headers)
         except Exception:
             pass  # Never let header parsing break the agent loop
@@ -81,7 +81,7 @@ class RateLimitCreditsMixin:
         """Parse x-nous-credits-* headers, cache CreditsState, fire threshold notices.
 
         The PARSE is swallowed (miss → keep last-known); notice EVALUATION WARNS on failure so a
-        depletion-notice bug cannot vanish silently. HERMES_DEV_CREDITS_FIXTURE injects a chosen state instead.
+        depletion-notice bug cannot vanish silently. SLAVE_DEV_CREDITS_FIXTURE injects a chosen state instead.
         """
         try:
             from agent.credits_tracker import dev_fixture_credits_state
@@ -96,7 +96,7 @@ class RateLimitCreditsMixin:
                 latch["seen_below_90"] = True  # let warn90 fire without a real crossing
             logger.info(
                 "credits ▸ [FIXTURE] remaining=%d (%s) · paid=%s · denom=%s · used=%s "
-                "(real headers bypassed — `echo clear` / unset HERMES_DEV_CREDITS_FIXTURE to restore)",
+                "(real headers bypassed — `echo clear` / unset SLAVE_DEV_CREDITS_FIXTURE to restore)",
                 fixture.remaining_micros, fixture.remaining_usd or "?", fixture.paid_access, fixture.denominator_kind,
                 _pct(fixture.used_fraction))
             self._emit_credits_notices()
@@ -104,7 +104,7 @@ class RateLimitCreditsMixin:
         headers = _response_headers(http_response)
         if not headers:
             return
-        dev = is_truthy_value(os.environ.get("HERMES_DEV_CREDITS"))
+        dev = is_truthy_value(os.environ.get("SLAVE_DEV_CREDITS"))
 
         # Parse: fail-open → miss; never overwrite good state with None.
         try:
@@ -139,7 +139,7 @@ class RateLimitCreditsMixin:
         except Exception:
             logger.debug("Plan snapshot sync failed", exc_info=True)
         if dev:
-            # HERMES_DEV_CREDITS streams each capture to agent.log (`hermes logs -f`, grep 'credits ▸').
+            # SLAVE_DEV_CREDITS streams each capture to agent.log (`slave logs -f`, grep 'credits ▸').
             spent = self.get_credits_spent_micros()
             logger.info(
                 "credits ▸ remaining=%d (%s) · paid=%s · denom=%s · used=%s · Δspent=%s · age=%s%s",
@@ -212,7 +212,7 @@ class RateLimitCreditsMixin:
             return cached
         enabled = True
         try:
-            from hermes_cli.config import load_config
+            from slave_cli.config import load_config
             display = (load_config() or {}).get("display")
             if isinstance(display, dict) and "credits_notices" in display:
                 enabled = bool(display["credits_notices"])

@@ -37,7 +37,7 @@ class TestGetBrowserEngine:
     def test_config_lightpanda(self):
         """Config browser.engine = 'lightpanda' is respected."""
         cfg = {"browser": {"engine": "lightpanda"}}
-        with patch("hermes_cli.config_effective.load_user_config_effective", return_value=cfg):
+        with patch("slave_cli.config_effective.load_user_config_effective", return_value=cfg):
             assert bs_cloud.get_browser_engine() == "lightpanda"
 
 
@@ -328,7 +328,7 @@ class TestLightpandaSessionLifecycle:
     def test_orphan_reaper_survives_non_dict_record(self, tmp_path, monkeypatch):
         """A parseable-but-non-object state file is swept like an unreadable one —
         never an AttributeError that wedges the reaper."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         state_dir = lp._state_dir()
         bad = state_dir / "broken.json"
         bad.write_text('"not a record"', encoding="utf-8")
@@ -342,7 +342,7 @@ class TestLightpandaSessionLifecycle:
         it would unlink it as corrupt and the live server would never be reaped after a crash."""
         from tests.file_write_observer import observe_file_writes
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         server = lp.LightpandaServer("live", 9222, MagicMock(pid=os.getpid()), "x.log")
         monkeypatch.setitem(lp._servers, "live", server)
         with observe_file_writes(lp.reap_orphaned_lightpanda):

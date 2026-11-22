@@ -18,17 +18,17 @@ import pytest
 
 @pytest.fixture
 def worker_env(monkeypatch, tmp_path):
-    """Isolated HERMES_HOME with a running task; returns the task id."""
-    home = tmp_path / ".hermes"
+    """Isolated SLAVE_HOME with a running task; returns the task id."""
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "test-worker")
-    monkeypatch.delenv("HERMES_SESSION_ID", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_PROFILE", "test-worker")
+    monkeypatch.delenv("SLAVE_SESSION_ID", raising=False)
     from pathlib import Path as _Path
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()
     conn = kbc.connect()
@@ -38,8 +38,8 @@ def worker_env(monkeypatch, tmp_path):
         run_id = kb._current_run_id(conn, tid)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("SLAVE_KANBAN_TASK", tid)
+    monkeypatch.setenv("SLAVE_KANBAN_RUN_ID", str(run_id))
     return tid
 
 
@@ -50,8 +50,8 @@ def worker_env(monkeypatch, tmp_path):
 def test_kanban_comment_body_scrubbed_github_pat(worker_env):
     """ghp_ PAT in comment body must be masked before DB write."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     secret = "ghp_" + "A" * 40
     kt._handle_comment({"task_id": worker_env, "body": f"token: {secret}"})
     conn = kbc.connect()
@@ -68,8 +68,8 @@ def test_kanban_comment_body_scrubbed_github_pat(worker_env):
 def test_kanban_block_reason_scrubbed_jwt(worker_env):
     """JWT in block reason must be masked before DB write."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     # Minimal valid-ish JWT (header.payload.sig)
     jwt = (
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
@@ -96,8 +96,8 @@ def test_kanban_block_reason_scrubbed_jwt(worker_env):
 def test_kanban_comment_no_secret_passthrough(worker_env):
     """Plain text without credential patterns must pass through unchanged."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     plain = "hello from the pipeline — no secrets here"
     kt._handle_comment({"task_id": worker_env, "body": plain})
     conn = kbc.connect()
@@ -110,15 +110,15 @@ def test_kanban_comment_no_secret_passthrough(worker_env):
 
 
 # ---------------------------------------------------------------------------
-# Negative test — force=True bypasses HERMES_REDACT_SECRETS=false
+# Negative test — force=True bypasses SLAVE_REDACT_SECRETS=false
 # ---------------------------------------------------------------------------
 
 def test_scrub_respects_force_flag_regardless_of_config(worker_env, monkeypatch):
-    """force=True must fire even when HERMES_REDACT_SECRETS=false is set."""
-    monkeypatch.setenv("HERMES_REDACT_SECRETS", "false")
+    """force=True must fire even when SLAVE_REDACT_SECRETS=false is set."""
+    monkeypatch.setenv("SLAVE_REDACT_SECRETS", "false")
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     secret = "ghp_" + "C" * 40
     kt._handle_comment({"task_id": worker_env, "body": f"token: {secret}"})
     conn = kbc.connect()
@@ -137,8 +137,8 @@ def test_scrub_respects_force_flag_regardless_of_config(worker_env, monkeypatch)
 def test_kanban_complete_result_field_scrubbed(worker_env):
     """Legacy result field must be scrubbed just like summary."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     secret = "sk-" + "D" * 48
     kt._handle_complete({"result": f"finished with key={secret}"})
     conn = kbc.connect()
@@ -159,8 +159,8 @@ def test_kanban_create_body_scrubbed_api_key(worker_env):
     persisted free text verbatim (#92354) — every other path already
     called redact_sensitive_text(force=True)."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     secret = "sk-" + "a" * 30
     out = json.loads(kt._handle_create({
         "title": f"rotate {secret} now",
@@ -187,8 +187,8 @@ def test_kanban_create_body_scrubbed_api_key(worker_env):
 def test_kanban_create_secret_free_body_passthrough(worker_env):
     """A secret-free body must pass through byte-for-byte."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from slave_cli import kanban_db as kb
+    from slave_cli import kanban_db_connect as kbc
     body = "Investigate the flaky e2e suite and report findings."
     out = json.loads(kt._handle_create({
         "title": "plain task",
@@ -207,8 +207,8 @@ def test_kanban_create_secret_free_body_passthrough(worker_env):
 
 def test_kanban_complete_corrupting_metadata_stays_structured(worker_env):
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
 
     secret = "DB_PASSWORD=pw1longer" + "value99"
     response = json.loads(kt._handle_complete({
@@ -227,8 +227,8 @@ def test_kanban_complete_corrupting_metadata_stays_structured(worker_env):
 
 def test_kanban_request_review_corrupting_metadata_stays_structured(worker_env, monkeypatch):
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
 
     secret = "DB_PASSWORD=pw1longer" + "value99"
     conn = connect()
@@ -237,7 +237,7 @@ def test_kanban_request_review_corrupting_metadata_stays_structured(worker_env, 
     finally:
         conn.close()
     assert run is not None
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run.id))
+    monkeypatch.setenv("SLAVE_KANBAN_RUN_ID", str(run.id))
     response = json.loads(kt._handle_request_review({
         "summary": "ready for review",
         "metadata": {"headers": secret, "safe": "keep"},
@@ -255,8 +255,8 @@ def test_kanban_request_review_corrupting_metadata_stays_structured(worker_env, 
 
 def test_kanban_complete_list_held_secret_keeps_sibling_fields(worker_env):
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
 
     secret = "DB_PASSWORD=pw1longer" + "value99"
     response = json.loads(kt._handle_complete({

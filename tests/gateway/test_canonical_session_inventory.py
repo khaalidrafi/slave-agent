@@ -26,7 +26,7 @@ async def test_created_session_snapshot_carries_inventory_for_frozen_toolsets(tm
     from gateway.session import SessionStore
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
-    from hermes_cli import banner
+    from slave_cli import banner
     from tui_gateway.contracts.registry import CANONICAL_METHODS
 
     home = tmp_path / 'home'
@@ -36,8 +36,8 @@ async def test_created_session_snapshot_carries_inventory_for_frozen_toolsets(tm
     (home / 'config.yaml').write_text(
         'model: {default: gpt-5.4, provider: custom, base_url: "http://127.0.0.1:9/v1"}\n'
         'platform_toolsets: {cli: [file, terminal]}\n')
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     monkeypatch.setattr(banner, '_available_skills_cache', None)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,
@@ -79,21 +79,21 @@ async def test_created_session_snapshot_carries_inventory_for_frozen_toolsets(tm
 @pytest.mark.asyncio
 async def test_cli_surface_snapshot_carries_main_cli_toolsets_and_startup_warnings(tmp_path, monkeypatch, repo):
     """``source: cli`` is the classic CLI surface: exactly main's ``_get_platform_tools(cfg, 'cli')`` and
-    the warnings main's HermesCLI printed under its banner, computed in the process that runs the tools."""
+    the warnings main's SlaveCLI printed under its banner, computed in the process that runs the tools."""
     from gateway import run
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
-    from hermes_cli import banner
-    from hermes_cli.tools_config import _get_platform_tools
+    from slave_cli import banner
+    from slave_cli.tools_config import _get_platform_tools
 
     home = tmp_path / 'home'
     home.mkdir()
     (home / 'config.yaml').write_text(
         'model: {default: gpt-5.4, provider: custom, base_url: "http://127.0.0.1:9/v1"}\n')
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     monkeypatch.setattr(banner, '_available_skills_cache', None)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,
@@ -107,7 +107,7 @@ async def test_cli_surface_snapshot_carries_main_cli_toolsets_and_startup_warnin
         assert 'result' in reply, reply
         return reply['result']
 
-    from hermes_cli.config import load_config
+    from slave_cli.config import load_config
     cli = (await call('session.create', request_id='cli', source='cli', cwd=str(repo)))['info']
     assert cli['enabled_toolsets'] == sorted(_get_platform_tools(load_config(), 'cli'))
     assert isinstance(cli['tool_availability_warnings'], list)
@@ -118,7 +118,7 @@ async def test_cli_surface_snapshot_carries_main_cli_toolsets_and_startup_warnin
 
 @pytest.mark.asyncio
 async def test_cli_surface_counts_kanban_skills_like_main_cli_without_leaking(tmp_path, monkeypatch, repo):
-    """Main's ``cmd_chat`` pins ``HERMES_KANBAN_BOARD`` before HermesCLI starts, so its banner lists
+    """Main's ``cmd_chat`` pins ``SLAVE_KANBAN_BOARD`` before SlaveCLI starts, so its banner lists
     ``environments: [kanban]`` skills. A CLI-surface snapshot counts them; other surfaces and the
     process-wide catalog do not."""
     from gateway import run
@@ -126,7 +126,7 @@ async def test_cli_surface_counts_kanban_skills_like_main_cli_without_leaking(tm
     from gateway.session import SessionStore
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
-    from hermes_cli import banner
+    from slave_cli import banner
     from tools.skills_tool import find_all_skills
 
     home = tmp_path / 'home'
@@ -136,10 +136,10 @@ async def test_cli_surface_counts_kanban_skills_like_main_cli_without_leaking(tm
         (skill / 'SKILL.md').write_text(f'---\nname: {name}\ndescription: d.\n{extra}---\nBody.\n')
     (home / 'config.yaml').write_text(
         'model: {default: gpt-5.4, provider: custom, base_url: "http://127.0.0.1:9/v1"}\n')
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.delenv('HERMES_KANBAN_BOARD', raising=False)
-    monkeypatch.delenv('HERMES_KANBAN_TASK', raising=False)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.delenv('SLAVE_KANBAN_BOARD', raising=False)
+    monkeypatch.delenv('SLAVE_KANBAN_TASK', raising=False)
+    monkeypatch.setattr(run, '_slave_home', home)
     monkeypatch.setattr(banner, '_available_skills_cache', None)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,

@@ -9,7 +9,7 @@ from contextlib import contextmanager
 
 import pytest
 
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.housekeeping.maintenance import PruneCriteria
 from persistence.sqlite.conversation._store.compression import publish_compression_child
 from persistence.sqlite.conversation._store.gateway import list_gateway_sessions
@@ -53,7 +53,7 @@ def _prompt_count(db) -> int:
 
 
 def test_prompt_snapshots_are_deduplicated_and_hydrated_for_readers(store, db):
-    prompt = "You are Hermes.\n" + ("Follow the profile policy.\n" * 5)
+    prompt = "You are Slave.\n" + ("Follow the profile policy.\n" * 5)
     create_session(
         db,
         "s1",
@@ -91,7 +91,7 @@ def test_route_changes_keep_the_prompt_and_replacement_collects_orphans(db):
     create_session(
         db,
         "s1",
-        "hermes_browser",
+        "slave_browser",
         model="x-ai/grok-4.5",
         model_config={"_branched_from": "parent"},
         system_prompt=shared_prompt,

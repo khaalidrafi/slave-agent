@@ -137,7 +137,7 @@ def test_pre_shrunk_screenshots_do_not_trip_the_many_image_trigger(n):
     """Invariant 1 (#133999): a request whose images are all within the many-image per-side cap
     crosses no Anthropic constraint at image #21, so no prefix may be rewritten.
 
-    Hermes embeds its own tool images at 1568 px (vision_analyze / browser) and 1456 px
+    slave-agent embeds its own tool images at 1568 px (vision_analyze / browser) and 1456 px
     (computer_use), i.e. comfortably under the 2000 px cap the >20 rule would tighten. Retiring a
     batch here buys nothing and costs a full prompt-cache rewrite per batch -- plus the cache
     invalidation of every later thinking block on the preserved-thinking models. Red on base:
@@ -319,7 +319,7 @@ def test_retirement_is_latched_when_an_upload_leaves_the_request(tmp_path, monke
     from agent.chat_completion_helpers import _iteration_summary_api_messages
     from run_agent import AIAgent
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     agent = AIAgent(api_key="k", base_url="https://api.anthropic.com", provider="anthropic",
                     model="claude-sonnet-4-5", quiet_mode=True, skip_context_files=True, skip_memory=True)
     agent._cached_system_prompt = "SYS"

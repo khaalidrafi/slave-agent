@@ -22,7 +22,7 @@ async def _native(tmp_path, monkeypatch):
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store.persistence, adapters={}, _draining=False,

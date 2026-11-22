@@ -1,6 +1,6 @@
 """A peer turn into the canonical Bot Chat under session authority is that chat's own admission.
 
-``hermes peer dm`` / ``peer run`` reach the API edge; under the unified runtime the Bot Chat is
+``slave peer dm`` / ``peer run`` reach the API edge; under the unified runtime the Bot Chat is
 a LOCAL session whose only writer is the authority FIFO, so the turn goes through the
 ``bot_relay.deliver`` door (``gateway/session_bot.py``) and the reply is its admission's
 receipt. Binding the chat as an API conversation would be a second writer (``permission_denied``).
@@ -32,7 +32,7 @@ async def peer(tmp_path, monkeypatch, api_store):
     from gateway.session_local import create_local_session
     from gateway.session_local_title import title_new_session
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
     monkeypatch.setattr('tools.bot_mode_dm._LIVE_WAIT_SECONDS', 2.0)
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())

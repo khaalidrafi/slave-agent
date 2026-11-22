@@ -24,7 +24,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
   };
 });
 
-import { HERMES_BASE_PATH } from "@/lib/api";
+import { SLAVE_BASE_PATH } from "@/lib/api";
 import { MANIFEST_CACHE_KEY, usePlugins } from "./usePlugins";
 import { exposePluginSDK, getPluginComponent } from "./registry";
 import { getSlotEntries } from "./slots";
@@ -84,7 +84,7 @@ async function answer(profile: string, list: PluginManifest[]) {
 /** Run a registration as a plugin bundle loaded for ``profile`` does: from its own script. */
 function fromBundleOf(profile: string, register: () => void) {
   const script = document.createElement("script");
-  script.setAttribute("data-hermes-profile", profile);
+  script.setAttribute("data-slave-profile", profile);
   Object.defineProperty(document, "currentScript", { configurable: true, get: () => script });
   try {
     act(register);
@@ -105,11 +105,11 @@ describe("usePlugins across a profile switch", () => {
     await answer("alpha", [manifest("same", "alpha.js", "alpha.css"), manifest("alpha-only", "a.js")]);
 
     expect(latest.manifests.map((m) => m.entry)).toEqual(["beta.js", "b.js"]);
-    const scripts = attrs("script[data-hermes-plugin]", "src");
+    const scripts = attrs("script[data-slave-plugin]", "src");
     expect(scripts).toHaveLength(2);
     expect(scripts.every((src) => src.includes("/dashboard-plugins/@beta/"))).toBe(true);
     expect(attrs('link[rel="stylesheet"]', "href")).toEqual([
-      `${HERMES_BASE_PATH}/dashboard-plugins/@beta/same/beta.css`,
+      `${SLAVE_BASE_PATH}/dashboard-plugins/@beta/same/beta.css`,
     ]);
     expect(sessionStorage.getItem(`${MANIFEST_CACHE_KEY}:alpha`)).toBeNull();
   });
@@ -119,8 +119,8 @@ describe("usePlugins across a profile switch", () => {
     await answer("beta", [manifest("same", "beta.js", "beta.css")]);
     const betaTab: ComponentType<Record<string, never>> = () => null;
     fromBundleOf("beta", () => {
-      window.__HERMES_PLUGINS__!.register("same", betaTab);
-      window.__HERMES_PLUGINS__!.registerSlot("same", "header-left", none);
+      window.__SLAVE_PLUGINS__!.register("same", betaTab);
+      window.__SLAVE_PLUGINS__!.registerSlot("same", "header-left", none);
     });
     expect(latest.plugins.map((p) => [p.manifest.entry, p.component])).toEqual([["beta.js", betaTab]]);
     expect(getSlotEntries("header-left")).toHaveLength(1);
@@ -132,33 +132,33 @@ describe("usePlugins across a profile switch", () => {
     expect(getPluginComponent("same")).toBeUndefined();
     expect(getSlotEntries("header-left")).toEqual([]);
     expect(attrs('link[rel="stylesheet"]', "href")).toEqual([]);
-    expect(attrs("script[data-hermes-plugin]", "src")).toEqual([]);
+    expect(attrs("script[data-slave-plugin]", "src")).toEqual([]);
 
     // beta's bundle finishing after the switch registers nothing for alpha
     fromBundleOf("beta", () => {
-      window.__HERMES_PLUGINS__!.register("same", betaTab);
-      window.__HERMES_PLUGINS__!.registerSlot("same", "header-left", none);
+      window.__SLAVE_PLUGINS__!.register("same", betaTab);
+      window.__SLAVE_PLUGINS__!.registerSlot("same", "header-left", none);
     });
     expect(getPluginComponent("same")).toBeUndefined();
     expect(getSlotEntries("header-left")).toEqual([]);
 
     await answer("alpha", [manifest("same", "alpha.js")]);
     const alphaTab: ComponentType<Record<string, never>> = () => null;
-    fromBundleOf("alpha", () => window.__HERMES_PLUGINS__!.register("same", alphaTab));
+    fromBundleOf("alpha", () => window.__SLAVE_PLUGINS__!.register("same", alphaTab));
     expect(latest.plugins.map((p) => [p.manifest.entry, p.component])).toEqual([["alpha.js", alphaTab]]);
-    expect(attrs("script[data-hermes-plugin]", "src").every((s) => s.includes("/dashboard-plugins/@alpha/"))).toBe(true);
+    expect(attrs("script[data-slave-plugin]", "src").every((s) => s.includes("/dashboard-plugins/@alpha/"))).toBe(true);
   });
 
   it("drops a profile's assets when it is left, even after its list emptied", async () => {
     // The cached list injected a stylesheet; the server then says the plugin is gone.
     sessionStorage.setItem(`${MANIFEST_CACHE_KEY}:beta`, JSON.stringify([manifest("gone", "g.js", "g.css")]));
     await show("beta");
-    expect(attrs('link[rel="stylesheet"]', "data-hermes-profile")).toEqual(["beta"]);
+    expect(attrs('link[rel="stylesheet"]', "data-slave-profile")).toEqual(["beta"]);
     await answer("beta", []);
 
     await show("alpha");
 
-    expect(attrs("[data-hermes-profile]", "data-hermes-profile")).toEqual([]);
+    expect(attrs("[data-slave-profile]", "data-slave-profile")).toEqual([]);
   });
 
   it("seeds a profile only from its own cached list", async () => {

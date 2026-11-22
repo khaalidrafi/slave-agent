@@ -9,7 +9,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-from hermes_agent.compat.paths import PathMoves
+from slave_agent.compat.paths import PathMoves
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_profile_scope_patterns.py"
 
@@ -33,7 +33,7 @@ def test_child_env_from_environ_is_flagged_and_the_scoped_builder_is_not():
 
         def delivery_env(author):
             env = dict(os.environ)
-            env["HERMES_TURN_AUTHOR"] = author
+            env["SLAVE_TURN_AUTHOR"] = author
             return env
 
         def run(cmd):
@@ -45,7 +45,7 @@ def test_child_env_from_environ_is_flagged_and_the_scoped_builder_is_not():
 
         def delivery_env(author, profile_home):
             env = served_profile_child_env(target_home=profile_home, inherit_credentials=True)
-            env["HERMES_TURN_AUTHOR"] = author
+            env["SLAVE_TURN_AUTHOR"] = author
             return env
 
         def run(cmd, env):
@@ -84,9 +84,9 @@ def test_adapter_key_outside_the_seam_is_flagged_only_under_platforms(monkeypatc
     for owner in ("gateway/platforms/base.py", "gateway/run_startup.py", "gateway/session_recovery.py"):
         assert not [f for f in mod.scan_text(owner, free_key, patterns) if f.pattern_id == "P32"], owner
     # A path regex names old paths: a moved adapter still matches, a moved seam still does not.
-    monkeypatch.setattr(mod, "original_path", PathMoves({"gateway": "hermes_agent.gateway"}).original)
-    assert [f.pattern_id for f in mod.scan_text("hermes_agent/gateway/platforms/acme.py", free_key, patterns)] == ["P32"]
-    assert not [f for f in mod.scan_text("hermes_agent/gateway/platforms/base.py", free_key, patterns)
+    monkeypatch.setattr(mod, "original_path", PathMoves({"gateway": "slave_agent.gateway"}).original)
+    assert [f.pattern_id for f in mod.scan_text("slave_agent/gateway/platforms/acme.py", free_key, patterns)] == ["P32"]
+    assert not [f for f in mod.scan_text("slave_agent/gateway/platforms/base.py", free_key, patterns)
                 if f.pattern_id == "P32"]
 
 

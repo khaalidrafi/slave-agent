@@ -1,5 +1,5 @@
 """``transcript_revision`` keeps moving on a reaction, a display rewrite and checkpoint pruning after an older
-Hermes opened the store (#150102 review). Every writable open runs its build's ``DEFERRED_INDEX_SQL`` through
+slave-agent opened the store (#150102 review). Every writable open runs its build's ``DEFERRED_INDEX_SQL`` through
 ``_execute_ddl_skipping_settled_triggers``, which recreates a trigger whose stored body differs from the
 build's own. Every build since 1fc1999769 defines ``messages_transcript_revision_update`` with the content
 columns only, so the display columns live in a trigger of their own name that an older build never touches.

@@ -76,7 +76,7 @@ def _fire_post_api_request_hook(
             assistant_message, finish_reason, agent._usage_summary_for_api_request_hook(response)))
         return
     try:
-        from hermes_cli.lifecycle import has_hook, invoke_hook as _invoke_hook
+        from slave_cli.lifecycle import has_hook, invoke_hook as _invoke_hook
         if has_hook("post_api_request"):
             _invoke_hook(
                 "post_api_request",
@@ -198,7 +198,7 @@ def normalize_model_response(
         api_call_count=api_call_count, api_duration=api_duration, api_start_time=api_start_time,
         api_request_id=api_request_id, effective_task_id=effective_task_id, turn_id=turn_id,
     )
-    from hermes_cli.observability.shared_metrics_harness import record_reply_content
+    from slave_cli.observability.shared_metrics_harness import record_reply_content
     record_reply_content(agent, response, assistant_message)
 
     content = assistant_message.content

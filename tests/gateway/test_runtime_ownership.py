@@ -48,7 +48,7 @@ async def test_reserved_home_is_eligible_for_same_user_bootstrap(tmp_path):
     from gateway.control_socket import GatewayControlServer
     from gateway.runtime_bootstrap import TicketStore
     from gateway.runtime_ownership import ProfileOwnership
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
+    from slave_cli.gateway_runtime import discover_gateway_endpoint
 
     home = tmp_path / 'new-private-home'
     owner = ProfileOwnership()
@@ -128,7 +128,7 @@ def test_stale_unopenable_gateway_lock_is_replaced_on_boot(tmp_path, monkeypatch
     from gateway.status import acquire_gateway_runtime_lock, release_gateway_runtime_lock
     home = tmp_path / 'home'
     home.mkdir(mode=0o700)
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     lock = home / 'gateway.lock'
     lock.write_text('{"pid": 1}', encoding='utf-8')
     lock.chmod(mode)

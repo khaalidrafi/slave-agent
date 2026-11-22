@@ -16,13 +16,13 @@ from tests.fixtures.storage_seed import seed_messages, seed_session
 
 
 def test_session_search_honours_requested_profile_db(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    profile_home = hermes_home / "profiles" / "llm-wiki"
+    slave_home = tmp_path / ".slave"
+    profile_home = slave_home / "profiles" / "llm-wiki"
     profile_home.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
 
-    current_db = open_persistence(profile_scope(home=hermes_home))
+    current_db = open_persistence(profile_scope(home=slave_home))
     seed_session(current_db, "default-session", "gateway")
     seed_messages(current_db, "default-session", {"role": "user", "content": "weekly report default"})
     profile_db = open_persistence(profile_scope(home=profile_home))

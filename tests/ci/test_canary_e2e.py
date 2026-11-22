@@ -54,7 +54,7 @@ def test_the_trigger_chain_names_real_workflows():
     (after_canary(conclusion="failure"), False),
     (after_canary(conclusion="cancelled"), False),
     (after_canary(branch="fix/some-branch"), False),
-    (after_canary(repository="someone/hermes-agent"), False),
+    (after_canary(repository="someone/slave-agent"), False),
     (dispatched(), True),
 ])
 def test_only_a_successful_upstream_canary_on_the_default_branch_starts_it(ctx, runs):

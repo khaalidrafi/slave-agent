@@ -1,7 +1,7 @@
 """Idle exit for an auto-started (unmanaged) gateway.
 
 A client that finds no gateway for its home starts a detached ``gateway run --idle-exit``
-(``hermes_cli.gateway_runtime_start``). Nothing else ever stops that process, so every throwaway home
+(``slave_cli.gateway_runtime_start``). Nothing else ever stops that process, so every throwaway home
 (scripts, tests, one-shot ``chat -q``) used to leave a ~270 MB daemon behind. This watcher ends it once
 it has served nobody and has nothing to do for ``gateway.unmanaged_idle_exit_seconds`` (default 600,
 ``0`` disables):
@@ -14,7 +14,7 @@ it has served nobody and has nothing to do for ``gateway.unmanaged_idle_exit_sec
 
 Every probe fails CLOSED: an unreadable source counts as work, so the gateway stays up. A gateway with
 a supervisor (systemd/launchd/Desktop/external) or started without ``--idle-exit`` (installed services,
-``hermes gateway run`` by hand, ``hermes gateway ensure`` from Desktop) never arms this. The exit
+``slave gateway run`` by hand, ``slave gateway ensure`` from Desktop) never arms this. The exit
 publishes ``draining`` with ``drain_reason: idle_exit`` before anything else, so a client that races it
 waits for the process to go and starts a fresh one instead of failing.
 """
@@ -109,7 +109,7 @@ def _cron_busy(homes) -> str | None:
 
 
 def _kanban_busy() -> str | None:
-    from hermes_cli import kanban_db
+    from slave_cli import kanban_db
     marks = ",".join("?" * len(_KANBAN_DUE_STATUSES))
     for meta in kanban_db.list_boards(include_archived=False):
         path = kanban_db.kanban_db_path(board=meta.get("slug"))

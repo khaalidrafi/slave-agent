@@ -1,4 +1,4 @@
-"""An updated ``$HERMES_HOME`` provider plugin is swapped in whole by the forced plugin sweep.
+"""An updated ``$SLAVE_HOME`` provider plugin is swapped in whole by the forced plugin sweep.
 
 Regression for #153300: a provider plugin was imported once per process and never again, so an update reached
 a running gateway only through files the plugin imported lazily (inside ``create_client``), which then ran
@@ -65,13 +65,13 @@ def _reset_providers():
     providers._HOME_LAYERS.clear()
     providers._PROVIDER_LIST_CACHE = None
     providers._discovered = False
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_slave_user_provider")]:
         del sys.modules[mod]
 
 
 @pytest.fixture
 def plugin(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     _reset_providers()
     yield tmp_path / "plugins" / "demo-provider"
     _reset_providers()
@@ -79,7 +79,7 @@ def plugin(tmp_path, monkeypatch):
 
 def _forced_sweep():
     """What the gateway's ``reload-plugins`` verb runs after an install / enable / update."""
-    from hermes_cli.plugins import PluginManager
+    from slave_cli.plugins import PluginManager
 
     manager = PluginManager()
     manager.discover_and_load(force=True)
@@ -109,7 +109,7 @@ def test_an_update_serves_new_sessions_whole_while_old_clients_stay_on_their_ver
 
 
 def test_a_broken_update_keeps_the_previous_version_and_says_so(plugin):
-    from hermes_cli.plugins_activation import activation_hint, find_activation, plugin_activation_summary
+    from slave_cli.plugins_activation import activation_hint, find_activation, plugin_activation_summary
     from providers import get_provider_profile
     from tui_gateway.contracts.tools_mcp_plugins import PluginActivation
 

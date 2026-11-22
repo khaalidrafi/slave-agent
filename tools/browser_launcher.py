@@ -4,10 +4,10 @@ One browser per launcher key (the session layer's cache key, or ``profile:<dir>`
 profile shared by every key). Chromium picks its own DevTools port (``--remote-debugging-port=0``)
 and writes it to ``<user-data-dir>/DevToolsActivePort``; the CDP URL comes from that file, so there
 is no port race. Every owned launch leaves a record in a private (0700) launcher state dir so a later
-Hermes process can reap the Chromium of an owner that crashed, after proving the pid is still that browser:
-a throwaway profile's in its home (``<HERMES_HOME>/cache/browser/chromium-records``), a persistent profile's
+slave-agent process can reap the Chromium of an owner that crashed, after proving the pid is still that browser:
+a throwaway profile's in its home (``<SLAVE_HOME>/cache/browser/chromium-records``), a persistent profile's
 in that profile's own dir under :func:`_shared_profiles_root` (per OS user: every home pinning the dir shares
-it). A shared-profile Chromium other Hermes processes attached to is stopped only by its last holder
+it). A shared-profile Chromium other slave-agent processes attached to is stopped only by its last holder
 (``tools/browser_launcher_holders.py``).
 
 Stop is always parent-first (``ProcessRegistry._terminate_host_pid``): Chromium reaps its own
@@ -57,7 +57,7 @@ _PACKAGED_ONLY_FLAGS: tuple[str, ...] = ("--password-store=basic",)
 _MACOS_PACKAGED_ONLY_FLAGS: tuple[str, ...] = ("--use-mock-keychain",)
 
 _DEVTOOLS_FILE = "DevToolsActivePort"
-_LAUNCH_LOG = "hermes-chromium.log"
+_LAUNCH_LOG = "slave-chromium.log"
 _MIN_FIRST_LAUNCH_TIMEOUT_S = 120
 _UNRESPONSIVE_WAIT_S = 10  # how long a live browser whose endpoint went silent (paused, swapped out) is waited for
 _POLL_INTERVAL_S = 0.1
@@ -67,7 +67,7 @@ _STDERR_TAIL_CHARS = 1500
 @dataclass
 class LaunchedBrowser:
     """A Chromium this process launched (``owned``) or attached to (a running instance on a shared
-    profile, never killed by Hermes)."""
+    profile, never killed by slave-agent)."""
 
     key: str
     pid: Optional[int]
@@ -93,7 +93,7 @@ _launching: dict[int, LaunchedBrowser] = {}  # pid -> a spawned Chromium still i
 _key_locks: dict[str, threading.Lock] = {}
 _lock = threading.RLock()
 _autoinstall_attempted = False
-# Profile homes (``hermes_home_key``) this process launched or attached a browser for: the reaper reads
+# Profile homes (``slave_home_key``) this process launched or attached a browser for: the reaper reads
 # each one's records, since one process serves many profiles.
 _served_homes: set[str] = set()
 
@@ -131,18 +131,18 @@ def needs_chromium_sandbox_bypass() -> bool:
 
 
 def _chromium_missing_hint() -> str:
-    from hermes_cli.browser_runtime import chromium_missing_hint
+    from slave_cli.browser_runtime import chromium_missing_hint
     return chromium_missing_hint()
 
 
 def _resolve_executable() -> Optional[str]:
-    from hermes_cli.browser_runtime import chromium_executable
+    from slave_cli.browser_runtime import chromium_executable
     exe = chromium_executable()
     if not exe:
         return None
     if os.path.isfile(exe):
         return exe
-    from hermes_platform.resolver import locate_command
+    from slave_platform.resolver import locate_command
     found = locate_command(exe).command  # a bare command name pinned in browser.executable_path
     return found[0] if found else None
 
@@ -159,8 +159,8 @@ def _maybe_autoinstall_chromium() -> bool:
     if _autoinstall_attempted:
         return False
     _autoinstall_attempted = True
-    from hermes_cli.browser_runtime import chromium_executable
-    from hermes_constants import is_termux
+    from slave_cli.browser_runtime import chromium_executable
+    from slave_constants import is_termux
     if running_in_docker() or is_termux() or _explicit_executable_configured(chromium_executable):
         return False
     from pm import InstallError, ensure, lazy_installs_allowed
@@ -188,7 +188,7 @@ def chromium_ready() -> tuple[bool, str]:
 # ── Launch ───────────────────────────────────────────────────────────────────────────────────────────
 
 def _default_user_data_dir(key: str, home_key: str) -> str:
-    """Per process too: two Hermes processes on one profile use the same keys (``browser-exec-default``,
+    """Per process too: two slave-agent processes on one profile use the same keys (``browser-exec-default``,
     named sessions), and each launch wipes its throwaway dir first. The name carries the owner's pid and
     start time: a process that dies before its launch record exists leaves the dir to the reaper
     (:func:`_reclaim_throwaway_dirs`)."""
@@ -252,9 +252,9 @@ def build_chromium_argv(executable: str, user_data_dir: str, *, packaged: bool, 
 
 def _spawn_kwargs() -> dict[str, Any]:
     if os.name == "nt":
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from slave_cli._subprocess_compat import windows_hide_flags
         return {"creationflags": windows_hide_flags() | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)}
-    # detached-spawn: ok — a shared-profile Chromium outlives its launcher for its other holders (browser_launcher_holders); a crashed owner's throwaway one is reaped from its launch record by the next Hermes
+    # detached-spawn: ok — a shared-profile Chromium outlives its launcher for its other holders (browser_launcher_holders); a crashed owner's throwaway one is reaped from its launch record by the next Slave
     return {"start_new_session": True}
 
 
@@ -510,7 +510,7 @@ def _attach_local(key: str, user_data_dir: str, home_key: str,
         if time.monotonic() >= deadline:
             return None, (f"The browser profile {user_data_dir} is in use by Chromium pid {pid}, which is not "
                           "responding on its DevTools endpoint (paused, hung, or started without remote debugging). "
-                          "Hermes will not start a second browser on it; try again once it responds, or stop it.")
+                          "slave-agent will not start a second browser on it; try again once it responds, or stop it.")
         time.sleep(min(delay, max(0.0, deadline - time.monotonic())))
         delay *= 2
         attached = _attach_running(key, user_data_dir, home_key)
@@ -519,7 +519,7 @@ def _attach_local(key: str, user_data_dir: str, home_key: str,
 
 def _foreign_unreachable(user_data_dir: str) -> str:
     return (f"The browser profile {user_data_dir} is in use by a Chromium in another environment (a container or "
-            "the host) that this process can neither reach nor verify, so Hermes will not start a second browser "
+            "the host) that this process can neither reach nor verify, so slave-agent will not start a second browser "
             "on it. Stop that browser, or set browser.user_data_dir to another directory for this environment; if "
             f"no browser runs there any more, delete {os.path.join(user_data_dir, 'SingletonLock')}.")
 
@@ -563,13 +563,13 @@ def launch_chromium(key: str, *, executable: Optional[str] = None, user_data_dir
 
     ``executable=None`` resolves the packaged Chromium (``chromium_ready``); an explicit executable (the
     Bot Desktop's, the user's real browser) is used as given. ``user_data_dir=None`` is a fresh
-    ephemeral profile under ``<HERMES_HOME>/cache/browser/chromium/``; a persistent dir that already has
+    ephemeral profile under ``<SLAVE_HOME>/cache/browser/chromium/``; a persistent dir that already has
     a live Chromium on it is ATTACHED (``owned=False``, never killed). ``sandbox_bypass=False`` (the
     user's real browser) never gets the host's sandbox-bypass flags. ``prepare`` (a persistent dir only) runs
     right before a fresh launch, inside the same cross-process step, never when attaching: a profile copy
     written there can neither race another process's copy nor land under a browser that just came up; a
     message it returns is the launch's error, as is."""
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     # Loaded now, not first at teardown: stopping the browser from an atexit hook must not be this module's
     # first import (Python refuses new atexit registrations during shutdown, orphaning the browser). An
     # attacher needs it too: it is the one that stops a shared browser when it is the last holder.
@@ -578,7 +578,7 @@ def launch_chromium(key: str, *, executable: Optional[str] = None, user_data_dir
         existing = get_browser(key)
         if existing is not None:
             return existing, None
-        home_key = hermes_home_key()
+        home_key = slave_home_key()
         with _lock:
             _served_homes.add(home_key)
         packaged = executable is None
@@ -758,7 +758,7 @@ def _terminate(pid: Optional[int], start_time: Optional[int], proc: Optional[sub
 
 def stop_browser(key: str) -> None:
     """Let go of ``key``'s browser. A throwaway one this process launched is stopped. A shared-profile one is
-    stopped only by its LAST holder across Hermes processes (:func:`_last_holder_out`); one a human started is
+    stopped only by its LAST holder across slave-agent processes (:func:`_last_holder_out`); one a human started is
     never stopped. Holds ``key``'s launch lock: a relaunch of ``key`` waits for this stop instead of
     registering a replacement on the dir it is about to delete."""
     with _key_lock(key):
@@ -789,7 +789,7 @@ def _stop_locked(key: str) -> None:
 
 def _last_holder_out(record: Path, browser: LaunchedBrowser) -> bool:
     """Drop this process's hold on shared-profile ``browser`` (caller holds the records lock). True when it
-    must stop it now: no other live Hermes process holds it, and Hermes launched it (a launch record names
+    must stop it now: no other live slave-agent process holds it, and slave-agent launched it (a launch record names
     it). Otherwise a record this process holds, or whose owner is gone, goes to a live holder."""
     from tools import browser_launcher_holders as holders
     holders.drop_lease(record)
@@ -825,7 +825,7 @@ def _ephemeral_root(home: str) -> Path:
 
 def _records_dir(home: str) -> Path:
     """``home``'s throwaway-profile records (not the process's home): a crashed owner's Chromium is reaped by the
-    next Hermes process serving that profile. Read only after ``_private_dir`` vouches for it."""
+    next slave-agent process serving that profile. Read only after ``_private_dir`` vouches for it."""
     return Path(home) / "cache" / "browser" / "chromium-records"
 
 
@@ -855,7 +855,7 @@ def _private_dir(path: Path) -> Optional[Path]:
 
 
 def _shared_profiles_root() -> Path:
-    """Launcher state of persistent (shared) profiles, per OS user rather than per HERMES_HOME: two homes pinning
+    """Launcher state of persistent (shared) profiles, per OS user rather than per SLAVE_HOME: two homes pinning
     one ``browser.user_data_dir`` drive its one Chromium, so they must see one launch record, one lease set and
     one lock. The host rendezvous root the gateway's own cross-profile locks use."""
     from gateway.status import _get_lock_dir
@@ -1036,7 +1036,7 @@ def _reap_record(path: Path, home: Optional[str]) -> bool:
     if record.get("owner_pid") != os.getpid() and _owner_alive(record):
         return False
     others = holders.other_live_holders(path, record.get("start_time"))
-    if others:  # another live Hermes process still drives it
+    if others:  # another live Slave process still drives it
         heir = holders.successor(others)
         if heir is not None:
             holders.hand_over(path, record, heir)
@@ -1121,21 +1121,21 @@ def _reclaim_throwaway_dirs(home: str) -> None:
             logger.debug("browser: keeping the throwaway profile %s: a Chromium still runs on it", entry)
             continue
         shutil.rmtree(entry, ignore_errors=True)  # a symlink is refused, never followed
-        logger.info("browser: removed the throwaway profile %s of a Hermes process that is gone", entry)
+        logger.info("browser: removed the throwaway profile %s of a slave-agent process that is gone", entry)
 
 
 def _served_home_keys(homes) -> set[str]:
     """The launch profile, every profile this process launched a browser for, and ``homes``."""
-    from hermes_constants import get_process_hermes_home, hermes_home_key
+    from slave_constants import get_process_slave_home, slave_home_key
     with _lock:
         keys = set(_served_homes)
-    keys.add(hermes_home_key(get_process_hermes_home()))
-    keys.update(hermes_home_key(home) for home in homes)
+    keys.add(slave_home_key(get_process_slave_home()))
+    keys.update(slave_home_key(home) for home in homes)
     return keys
 
 
 def reap_orphaned_browsers(homes=()) -> int:
-    """Stop Chromium processes whose owning Hermes process is gone, in every profile this process serves
+    """Stop Chromium processes whose owning slave-agent process is gone, in every profile this process serves
     (``_served_home_keys``; the janitor and atexit run outside any profile scope, so each home's records
     are read by path); returns the count. A pid is signalled only after its start time AND its
     ``--user-data-dir`` argv token match the record. Throwaway profiles of owners that are gone go too."""

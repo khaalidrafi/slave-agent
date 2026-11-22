@@ -11,7 +11,7 @@ LibreChat, Open WebUI) can talk to it.
 
 ```bash
 # from the repo root
-python -m hermes_cli.main serve --host 127.0.0.1 --port 8080 --no-open
+python -m slave_cli.main serve --host 127.0.0.1 --port 8080 --no-open
 ```
 
 The server prints its address.  Verify it is alive:
@@ -24,12 +24,12 @@ curl -s http://127.0.0.1:8080/v1/models | head -c 400; echo
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `API_SERVER_KEY` | Bearer key clients must send (`Authorization: Bearer …`). Requests without it get `401`; session continuity (`X-Hermes-Session-Id`) requires it. | unset (auth disabled — set it in production) |
+| `API_SERVER_KEY` | Bearer key clients must send (`Authorization: Bearer …`). Requests without it get `401`; session continuity (`X-Slave-Session-Id`) requires it. | unset (auth disabled — set it in production) |
 | `API_SERVER_HOST` | Bind address. Keep `127.0.0.1` unless a reverse proxy fronts the server. | loopback default |
 | `API_SERVER_PORT` | Listen port. | `8080` |
 | `API_SERVER_BRAND_FILE` | Path to the brand JSON (persona). See §3. | unset (no default persona) |
 | `API_SERVER_MODEL_NAME` | Model name advertised on `/v1/models` and accepted from clients. | gateway default |
-| `HERMES_HOME` | State directory (session DB, memories). Give the service its own. | platform default |
+| `SLAVE_HOME` | State directory (session DB, memories). Give the service its own. | platform default |
 
 Equivalent per-platform `config.yaml` keys (`platforms.api_server`): `key`,
 `host`, `port`, `brand_file`, `model_name` — config wins over env.
@@ -74,9 +74,9 @@ curl -s http://127.0.0.1:8080/v1/chat/completions \
 ```
 
 - Non-stream → OpenAI `chat.completion` JSON.  `"stream": true` → SSE frames
-  ending with `data: [DONE]` (strict-OpenAI mode; no Hermes-specific frames).
-- Optional headers: `X-Hermes-Session-Id` continues a conversation server-side
-  (requires `API_SERVER_KEY`); `X-Hermes-Session-Key` scopes long-term memory.
+  ending with `data: [DONE]` (strict-OpenAI mode; no Slave-specific frames).
+- Optional headers: `X-Slave-Session-Id` continues a conversation server-side
+  (requires `API_SERVER_KEY`); `X-Slave-Session-Key` scopes long-term memory.
 - Wire contract is pinned by `tests/gateway/platforms/test_serve_openai_contract.py`
   and smoke-checked by `scripts/ci/serve_curl_smoke.sh`.
 
@@ -94,7 +94,7 @@ Environment=API_SERVER_BRAND_FILE=/etc/mybusiness/brand.json
 Environment=API_SERVER_HOST=127.0.0.1
 Environment=API_SERVER_PORT=8080
 WorkingDirectory=/opt/slave-agent
-ExecStart=/usr/bin/python3 -m hermes_cli.main serve --host 127.0.0.1 --port 8080 --no-open
+ExecStart=/usr/bin/python3 -m slave_cli.main serve --host 127.0.0.1 --port 8080 --no-open
 Restart=on-failure
 
 [Install]

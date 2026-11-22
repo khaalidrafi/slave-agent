@@ -1,7 +1,7 @@
-"""Acceptance harness: ``hermes serve`` beside a running gateway that owns the same profile.
+"""Acceptance harness: ``slave serve`` beside a running gateway that owns the same profile.
 
 Refs #145171 (EP-2, EP-3). After #106742 the gateway owns sessions for local surfaces, but
-``hermes serve`` still runs agents in its own process when the gateway's ledger holds no work for
+``slave serve`` still runs agents in its own process when the gateway's ledger holds no work for
 the session. Three gaps, one cell each:
 
 1. a prompt sent through serve's ``/api/ws`` is not admitted through the gateway's session
@@ -12,7 +12,7 @@ the session. Three gaps, one cell each:
 Each gap is a ``known_failure`` (reason ``serve-cutover:``): it XFAILs while main fails exactly that
 way and passes once the serve cutover lands; delete the wrappers then. The control cell proves the
 same observables pass for a turn the gateway's own ``/api/ws`` admits. Real processes: a
-``hermes gateway run`` and a ``hermes serve`` in one hermetic home, a loopback model that holds the
+``slave gateway run`` and a ``slave serve`` in one hermetic home, a loopback model that holds the
 turn open (so "mid-turn" is deterministic) and names the process that called it. Boot failures and
 timeouts fail loudly; they are never mistaken for a gap.
 """
@@ -49,7 +49,7 @@ pytestmark = [pytest.mark.platforms("linux"),  # caller attribution reads /proc/
 BOOT_S = 180.0
 TURN_S = 90.0
 REPLY = "serve-ownership-reply"
-REASON = "serve-cutover: hermes serve still runs turns in-process beside the gateway (#145171 EP-3)"
+REASON = "serve-cutover: slave serve still runs turns in-process beside the gateway (#145171 EP-3)"
 
 
 class _Model(FakeLLMServer):
@@ -197,35 +197,35 @@ def _settled(db: Path, sid: str, on_gateway: bool) -> bool:
 def scenario(tmp_path_factory: pytest.TempPathFactory):
     root, tag, model = tmp_path_factory.mktemp("serve-own"), new_tag(), _Model()
     model.start()
-    home, hermes_home = write_chaos_home(
+    home, slave_home = write_chaos_home(
         root, model.base_url, stale_timeout=600, request_timeout=600,
         extra="auxiliary:\n  title_generation:\n    enabled: false\n")
-    db, log = hermes_home / "state.db", root / "procs.log"
-    env = hermetic_env(home, hermes_home, tag)
+    db, log = slave_home / "state.db", root / "procs.log"
+    env = hermetic_env(home, slave_home, tag)
     for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "XDG_STATE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME",
                 "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
         env.pop(key, None)
     # Host rendezvous stays inside the tmp root: the developer's live gateway is never seen.
-    env.update(HERMES_GATEWAY_LOCK_DIR=str(root / "locks"), HERMES_GATEWAY_MAX_STARTS="0")
+    env.update(SLAVE_GATEWAY_LOCK_DIR=str(root / "locks"), SLAVE_GATEWAY_MAX_STARTS="0")
     out, sinks, facts = open(log, "wb"), [], {}
 
     def spawn(*argv: str, **extra: str) -> subprocess.Popen:
-        return subprocess.Popen([python_exe(), "-m", "hermes_cli.main", *argv], cwd=str(home),
+        return subprocess.Popen([python_exe(), "-m", "slave_cli.main", *argv], cwd=str(home),
                                 env={**env, **extra}, stdin=subprocess.DEVNULL, stdout=out,
                                 stderr=subprocess.STDOUT)
     try:
         gateway = model.procs["gateway"] = spawn("gateway", "run", "--quiet")
-        desc = _poll(lambda: _identify(hermes_home) or (gateway.poll() is not None and {"exited": True}),
+        desc = _poll(lambda: _identify(slave_home) or (gateway.poll() is not None and {"exited": True}),
                      BOOT_S, "gateway identify ready", log)
         assert "exited" not in desc, f"gateway exited rc={gateway.returncode}\n{log.read_text(errors='replace')}"
         served = {Path(p["home"]).resolve() for p in desc.get("served_profiles", [])}
-        assert hermes_home.resolve() in served, desc
+        assert slave_home.resolve() in served, desc
 
         # Control: a turn through the gateway's own /api/ws is admitted and runs in the gateway.
-        grant = _control(hermes_home, "session-ticket", {"profile_id": str(hermes_home.resolve()),
+        grant = _control(slave_home, "session-ticket", {"profile_id": str(slave_home.resolve()),
                                                          "instance_id": desc["instance_id"], "purpose": "interactive"})
         url = desc["api_origin"].replace("http:", "ws:") + "/api/ws"
-        with connect(url, subprotocols=["hermes-gateway-v1", "hermes-gateway-ticket." + grant["ticket"]],
+        with connect(url, subprotocols=["slave-gateway-v1", "slave-gateway-ticket." + grant["ticket"]],
                      open_timeout=60, max_size=None) as gws:
             sid = _rpc(gws, 1, "session.create", {"request_id": "control", "source": "cli"})["session_id"]
             _rpc(gws, 2, "prompt.submit", {"session_id": sid, "text": "control turn", "input_id": "control-0"})
@@ -237,7 +237,7 @@ def scenario(tmp_path_factory: pytest.TempPathFactory):
         # serve beside the owner: one prompt, held at the model, then SIGTERM to serve mid-turn.
         token = secrets.token_urlsafe(24)
         serve = model.procs["serve"] = spawn("serve", "--host", "127.0.0.1", "--port", "0",
-                                             HERMES_DASHBOARD_SESSION_TOKEN=token)
+                                             SLAVE_DASHBOARD_SESSION_TOKEN=token)
         port = int(_poll(lambda: (m := re.search(rb"backend listening on [\d.]+:(\d+)", log.read_bytes()))
                          and m.group(1) or (serve.poll() is not None and b"-1"), BOOT_S, "serve port", log))
         assert port > 0, f"serve exited rc={serve.returncode}\n{log.read_text(errors='replace')}"

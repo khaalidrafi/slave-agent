@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from tests.e2e.core.history._helpers import NO_BACKGROUND_REVIEW, OFFLINE_CONFIG
-from tests.fakes.fake_llm_provider import Error, FakeLLMServer, Text, write_hermes_home
+from tests.fakes.fake_llm_provider import Error, FakeLLMServer, Text, write_slave_home
 
 _CREDIT_LIMITED_402 = (
     "This request requires more credits, or fewer max_tokens. You requested up to 65536 tokens, "
@@ -27,9 +27,9 @@ _CREDIT_LIMITED_402 = (
 def _turn(script):
     from run_agent import AIAgent
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     with FakeLLMServer(script) as srv:
-        write_hermes_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW)
+        write_slave_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW)
         agent = AIAgent(provider="custom", base_url=srv.base_url, api_key="sk-fake", model="fake-model",
                         session_id="affordable-402", quiet_mode=True, platform="cli", skip_memory=True,
                         max_tokens=65536)

@@ -33,7 +33,7 @@ def _lexical_escape(root: Path, target: Path) -> str:
 
 @pytest.mark.parametrize("module,finder,root_attr,body", _KINDS, ids=["memory", "cron", "context"])
 def test_names_that_are_paths_are_not_found(tmp_path, monkeypatch, module, finder, root_attr, body):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     (tmp_path / "home" / "plugins").mkdir(parents=True)
     target = _outside_plugin(tmp_path, body)
     root = getattr(module, root_attr)
@@ -66,7 +66,7 @@ def test_escaped_dir_is_not_treated_as_bundled(tmp_path, monkeypatch, module, lo
     root = getattr(module, root_attr)
     escaped = root / _lexical_escape(root, target)
     host = _RecordingHost()
-    monkeypatch.setattr("hermes_cli.plugin_isolation.user_plugin_host", lambda: host)
+    monkeypatch.setattr("slave_cli.plugin_isolation.user_plugin_host", lambda: host)
 
     with pytest.raises(RuntimeError, match="routed to plugin host"):
         getattr(module, loader)(escaped)
@@ -77,7 +77,7 @@ def test_escaped_dir_is_not_treated_as_bundled(tmp_path, monkeypatch, module, lo
 
 @pytest.mark.platforms("posix")
 def test_user_dir_symlink_into_the_bundled_root_is_not_bundled(tmp_path):
-    """A ``$HERMES_HOME/plugins/<x>`` symlink into a bundled dir resolves under the bundled root, but
+    """A ``$SLAVE_HOME/plugins/<x>`` symlink into a bundled dir resolves under the bundled root, but
     is not bundled: it would load in-process past isolation, and the link can be swapped later."""
     from plugins import plugin_loader
     root = tmp_path / "bundled"

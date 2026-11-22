@@ -39,7 +39,7 @@ async def test_role_member_speech_passes_the_gateway_gate(
     members = {_JOINER: SimpleNamespace(id=_JOINER, roles=[SimpleNamespace(id=_ROLE)])}
     if speaker_roles is not None:
         members[speaker] = SimpleNamespace(id=speaker, roles=[SimpleNamespace(id=r) for r in speaker_roles])
-    guild = SimpleNamespace(id=_GUILD, name="Hermes Server", get_member=members.get)
+    guild = SimpleNamespace(id=_GUILD, name="slave-agent Server", get_member=members.get)
     adapter._client = SimpleNamespace(get_guild=lambda _id: guild, get_channel=lambda _id: None)
     adapter._voice_text_channels = {_GUILD: _TEXT}
     joined = SessionSource(platform=Platform.DISCORD, chat_id=str(_TEXT), chat_type="group",

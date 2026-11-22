@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Fake ACP agent executable for an ``external_process`` model provider (``agent.acp_client.ACPClient``).
 
-An ``external_process`` provider makes Hermes spawn an external agent process per model call and
+An ``external_process`` provider makes slave-agent spawn an external agent process per model call and
 speak the Agent Client Protocol to it: JSON-RPC 2.0, one JSON object per line over stdio
 (https://agentclientprotocol.com/protocol/overview). This module is that process. It
 
-* answers ``<cmd> --help`` with a usage text advertising ``--acp`` (Hermes probes it before spawning);
+* answers ``<cmd> --help`` with a usage text advertising ``--acp`` (slave-agent probes it before spawning);
 * validates every client request against the published ACP schema (the ``agent-client-protocol``
   package's pydantic models, ``acp.schema``) plus the spec rules the models do not encode
   (initialize-first, absolute ``cwd``, no custom root fields, known ``sessionId``) and REJECTS
@@ -19,7 +19,7 @@ speak the Agent Client Protocol to it: JSON-RPC 2.0, one JSON object per line ov
 
 Test-side API: :class:`AcpFake` (write the script, build the launcher, read the transcript),
 :func:`install_provider_plugin` (the ``fake-acp`` provider a real user plugin would register in a
-``HERMES_HOME``) and the action builders (:func:`thought`, :func:`message`, ...). Run as a script it
+``SLAVE_HOME``) and the action builders (:func:`thought`, :func:`message`, ...). Run as a script it
 is the agent itself: ``fake_acp_agent.py --acp --stdio --state <dir>``.
 """
 
@@ -124,16 +124,16 @@ def crash(exit_code: int = 1, stderr: str = "fatal: agent crashed") -> dict[str,
     return {"type": "crash", "code": exit_code, "stderr": stderr}
 
 
-def hermes_tool_call(call_id: str, name: str, args: dict[str, Any]) -> str:
-    """Text a model behind ACP emits to call a Hermes tool (ACP has no OpenAI tools channel)."""
+def slave_tool_call(call_id: str, name: str, args: dict[str, Any]) -> str:
+    """Text a model behind ACP emits to call a slave-agent tool (ACP has no OpenAI tools channel)."""
     body = {"id": call_id, "type": "function", "function": {"name": name, "arguments": json.dumps(args)}}
     return f"<tool_call>{json.dumps(body)}</tool_call>"
 
 
-def install_provider_plugin(hermes_home: Path) -> Path:
-    """Write the ``fake-acp`` model-provider plugin into ``hermes_home`` the way a user installs one
-    (``$HERMES_HOME/plugins/model-providers/<name>/``); returns the plugin dir."""
-    plugin_dir = Path(hermes_home) / "plugins" / "model-providers" / PROVIDER
+def install_provider_plugin(slave_home: Path) -> Path:
+    """Write the ``fake-acp`` model-provider plugin into ``slave_home`` the way a user installs one
+    (``$SLAVE_HOME/plugins/model-providers/<name>/``); returns the plugin dir."""
+    plugin_dir = Path(slave_home) / "plugins" / "model-providers" / PROVIDER
     plugin_dir.mkdir(parents=True, exist_ok=True)
     (plugin_dir / "__init__.py").write_text(_PLUGIN_INIT, encoding="utf-8")
     (plugin_dir / "plugin.yaml").write_text(_PLUGIN_MANIFEST, encoding="utf-8")
@@ -171,7 +171,7 @@ class AcpFake:
         return [r for r in self.records() if r["dir"] == "in" and (method is None or r["msg"].get("method") == method)]
 
     def main_prompts(self) -> list[dict[str, Any]]:
-        """Main-turn ``session/prompt`` records (those carrying Hermes' tool bridge)."""
+        """Main-turn ``session/prompt`` records (those carrying slave-agent’ tool bridge)."""
         return [r for r in self.inbound("session/prompt") if r.get("main")]
 
     def aux_prompts(self) -> list[dict[str, Any]]:
@@ -196,7 +196,7 @@ def prompt_text(record: dict[str, Any]) -> str:
 
 
 class Agent:
-    """One spawned agent process (one Hermes model call)."""
+    """One spawned agent process (one slave-agent model call)."""
 
     def __init__(self, state_dir: Path):
         from acp import schema  # validation/building uses the published ACP models

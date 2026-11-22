@@ -53,7 +53,7 @@ async def _stream(deltas):
 @pytest.mark.asyncio
 async def test_voice_only_reply_never_shows_partial_media_path():
     adapter = await _stream([
-        "MED", "IA:/home/u/.hermes/cache/audio/", "tts_20261014_143816", "_843235.ogg"])
+        "MED", "IA:/home/u/.slave/cache/audio/", "tts_20261014_143816", "_843235.ogg"])
     for text in _shown(adapter):
         assert "MEDIA" not in text and "/home/" not in text, text
 
@@ -61,7 +61,7 @@ async def test_voice_only_reply_never_shows_partial_media_path():
 @pytest.mark.asyncio
 async def test_partial_voice_directive_is_never_shown():
     adapter = await _stream(["Te mando el audio.\n", "[[audio_", "as_voice]]\n",
-                             "MEDIA:/home/u/.hermes/cache/audio/a", ".ogg"])
+                             "MEDIA:/home/u/.slave/cache/audio/a", ".ogg"])
     for text in _shown(adapter):
         assert "[[" not in text and "MEDIA" not in text, text
     assert any("Te mando el audio." in t for t in _shown(adapter))

@@ -12,11 +12,11 @@ pytestmark = pytest.mark.platforms("linux")
 
 # abstract (NUL-prefixed) AF_UNIX names are a Linux kernel feature
 def test_notify_supports_systemd_abstract_socket(monkeypatch):
-    name = "\0hermes-test-notify"
+    name = "\0slave-test-notify"
     receiver = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
     receiver.bind(name)
     receiver.settimeout(1.0)
-    monkeypatch.setenv("NOTIFY_SOCKET", "@hermes-test-notify")
+    monkeypatch.setenv("NOTIFY_SOCKET", "@slave-test-notify")
 
     try:
         from gateway.systemd_notify import notify

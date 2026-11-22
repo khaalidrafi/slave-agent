@@ -9,7 +9,7 @@ routing metadata (``?profile=`` and ``body.profile``, exactly what
 ``apps/desktop/src/api/sessions.ts::mutateSessionHttp`` sends) lands on that profile's
 authority, while another served profile holds a live interactive attachment.
 
-The Desktop's endpoint for a served secondary comes from ``hermes -p <name> gateway ensure``
+The Desktop's endpoint for a served secondary comes from ``slave -p <name> gateway ensure``
 and its ticket is minted through the endpoint's ``control_home`` (the multiplexer root),
 so this test uses that exact discovery + mint path rather than a hand-built socket call.
 """
@@ -35,7 +35,7 @@ from tests.gateway.test_normal_runtime_boot import control
 @contextmanager
 def multiplex_daemon(tmp_path, profiles=('warm', 'cold'), env=None):
     """One ``gateway.run`` serving default + *profiles*; yields (root, descriptor, env). *env* adds to the
-    gateway's environment (``HERMES_DASHBOARD_SESSION_TOKEN``: a host-scoped bearer for ``/api/ws``)."""
+    gateway's environment (``SLAVE_DASHBOARD_SESSION_TOKEN``: a host-scoped bearer for ``/api/ws``)."""
     extra_env = dict(env or {})
     home, user = tmp_path / 'state', tmp_path / 'user'
     home.mkdir(mode=0o700)
@@ -52,7 +52,7 @@ def multiplex_daemon(tmp_path, profiles=('warm', 'cold'), env=None):
     }))
     root = Path(__file__).resolve().parents[2]
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                PYTHONUNBUFFERED='1', **extra_env)
     with (tmp_path / 'gateway.log').open('w+') as log:
         process = subprocess.Popen([sys.executable, '-m', 'gateway.run'], cwd=root, env=env,
@@ -82,8 +82,8 @@ def multiplex_daemon(tmp_path, profiles=('warm', 'cold'), env=None):
 
 
 def desktop_ensure(env, root, profile):
-    """The exact child the Desktop spawns: ``hermes --profile <p> gateway ensure --json``."""
-    result = subprocess.run([sys.executable, '-m', 'hermes_cli.main', '--profile', profile,
+    """The exact child the Desktop spawns: ``slave --profile <p> gateway ensure --json``."""
+    result = subprocess.run([sys.executable, '-m', 'slave_cli.main', '--profile', profile,
                              'gateway', 'ensure', '--json', '--timeout', '30'],
                             cwd=root, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60, check=False)
     payload = json.loads(result.stdout)
@@ -92,18 +92,18 @@ def desktop_ensure(env, root, profile):
 
 
 def native_headers(endpoint):
-    from hermes_cli.gateway_client import _session_ticket
+    from slave_cli.gateway_client import _session_ticket
     ticket = _session_ticket(Path(endpoint['profile_id']), SimpleNamespace(**endpoint), purpose='native-http')
-    return {'X-Hermes-Gateway-Ticket': ticket}
+    return {'X-Slave-Gateway-Ticket': ticket}
 
 
 async def create_via_ws(endpoint, request_id, hold=None):
     """Create a GUI session on *endpoint* over the canonical WS; ``hold`` keeps the attachment
     open while awaiting it (the "other profile is active" arm)."""
-    from hermes_cli.gateway_client import _session_ticket
+    from slave_cli.gateway_client import _session_ticket
     ticket = _session_ticket(Path(endpoint['profile_id']), SimpleNamespace(**endpoint), purpose='interactive')
     async with connect(endpoint['api_origin'].replace('http:', 'ws:') + '/api/ws',
-                       subprotocols=['hermes-gateway-v1', 'hermes-gateway-ticket.' + ticket]) as ws:
+                       subprotocols=['slave-gateway-v1', 'slave-gateway-ticket.' + ticket]) as ws:
         await ws.send(json.dumps({'id': 1, 'method': 'session.create',
                                   'params': {'request_id': request_id, 'source': 'gui'}}))
         while True:

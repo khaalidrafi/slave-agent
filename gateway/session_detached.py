@@ -114,7 +114,7 @@ def chat_running_key(runner, route, entry) -> str:
 
 
 def session_env_source(runner, source):
-    """The source a turn's session variables (``HERMES_SESSION_PLATFORM``, ``_CHAT_ID``, ...) name.
+    """The source a turn's session variables (``SLAVE_SESSION_PLATFORM``, ``_CHAT_ID``, ...) name.
     A conversation its chat moved past binds the local view a Desktop session's turn binds
     (``local_source``): whatever it schedules for "here" reaches the apps, never the chat."""
     key = detached_route_of(source)
@@ -122,7 +122,7 @@ def session_env_source(runner, source):
         if getattr(source, 'shared_session', False) and source.chat_type != 'dm':
             # A shared chat's route has no user (Telegram observe commands keep the sender only for
             # slash access): kanban/cron/send_message rebuild routes from these vars. The sender
-            # still reaches tools as HERMES_SESSION_ACTOR_*, bound from the SessionContext.
+            # still reaches tools as SLAVE_SESSION_ACTOR_*, bound from the SessionContext.
             return dataclasses.replace(source, user_id=None, user_id_alt=None, user_name=None)
         return source
     from gateway.session_authorities import active_authority
@@ -133,12 +133,12 @@ def session_env_source(runner, source):
 def _route_authority(runner, store, route):
     """The authority owning *route*: its key names the profile, whatever scope the writer runs in."""
     from gateway.session_authorities import authority_for_home
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     registry = getattr(runner, 'session_authorities', None)
     if store._named_profile_for_key(route) is None:  # the launch profile's own key
         if registry is None:
             return getattr(runner, 'session_authority', None)
-        return next((a for a in registry.serving() if hermes_home_key(a.profile_id) == registry.launch_key), None)
+        return next((a for a in registry.serving() if slave_home_key(a.profile_id) == registry.launch_key), None)
     home = store._profile_home_for_key(route)
     return authority_for_home(runner, home) if home is not None else None
 

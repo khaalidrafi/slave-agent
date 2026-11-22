@@ -13,7 +13,7 @@ from gateway.bot_loop_guard import BotLoopGuard, load_settings
 def config_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
     def write(block: dict) -> None:
         # JSON is YAML; the CI test env ships no pyyaml for fixtures.

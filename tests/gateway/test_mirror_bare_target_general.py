@@ -1,6 +1,6 @@
 """A bare (thread-less) group target mirrors into the General room, not the newest room.
 
-Reported on a live install, 2026-10-17 (reproduced 2×): ``hermes send -t telegram:<group> ...``
+Reported on a live install, 2026-10-17 (reproduced 2×): ``slave send -t telegram:<group> ...``
 (a bare target = the chat's General room, thread 1) delivered fine, but its delivery-mirror
 landed in the NEWEST-STARTED live thread session of the chat — thread 95 — instead of the
 General session (thread 1). The General agent then never saw the outgoing ask in context, so
@@ -42,7 +42,7 @@ def _thread_session(db, session_id, thread_id, *, user_id="u1"):
 @pytest.fixture()
 def db(tmp_path, monkeypatch):
     """The store of the profile in scope: mirror opens ``profile_scope()``, so the tmp home is the active one."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     return storage_handle(tmp_path / "home")
 
 
@@ -113,7 +113,7 @@ def test_sessions_json_fallback_prefers_thread1(tmp_path, monkeypatch):
                   "origin": {"platform": "telegram", "chat_id": CHAT, "thread_id": "95"},
                   "updated_at": "2026-02-01T00:00:00"},
     }), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))  # an empty store: no row matches any probe
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))  # an empty store: no row matches any probe
 
     with patch.object(mirror_mod, "_SESSIONS_INDEX", index):
         assert _find_session_id("telegram", CHAT) == "sess-general"

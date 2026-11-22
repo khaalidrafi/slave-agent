@@ -1,4 +1,4 @@
-"""Tests for the bundled hermes-achievements dashboard plugin.
+"""Tests for the bundled slave-achievements dashboard plugin.
 
 These target the two behaviors that matter for official integration:
 
@@ -10,9 +10,9 @@ These target the two behaviors that matter for official integration:
   takes minutes.
 
 The upstream repo ships its own unittest suite under
-``plugins/hermes-achievements/tests/`` covering the achievement engine
+``plugins/slave-achievements/tests/`` covering the achievement engine
 internals (tier math, secret-state handling, catalog invariants). These
-tests live at the hermes-agent level and focus on the integration
+tests live at the slave-agent level and focus on the integration
 contract: the plugin scans ALL of your sessions, not the first 200.
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ import pytest
 PLUGIN_MODULE_PATH = (
     Path(__file__).resolve().parents[2]
     / "plugins"
-    / "hermes-achievements"
+    / "slave-achievements"
     / "dashboard"
     / "plugin_api.py"
 )
@@ -39,7 +39,7 @@ PLUGIN_MODULE_PATH = (
 
 @pytest.fixture
 def plugin_api(tmp_path, monkeypatch):
-    """Load plugin_api with isolated ~/.hermes so state/snapshot files don't collide.
+    """Load plugin_api with isolated ~/.slave so state/snapshot files don't collide.
 
     We load the module fresh per test because the plugin keeps module-level
     caches (``_SNAPSHOT_CACHE``, ``_SCAN_STATUS``, background thread handle).
@@ -304,7 +304,7 @@ def test_scan_sessions_never_opens_a_writable_session_db(plugin_api, tmp_path, m
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_messages, seed_session
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as seed:
         seed_session(seed, "s1", "cli")
         seed_messages(seed, "s1", {"role": "user", "content": "hello"})

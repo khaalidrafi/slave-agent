@@ -125,7 +125,7 @@ def test_session_store_and_runner_reopen_after_failed_construction(monkeypatch, 
         return handle
 
     monkeypatch.setattr(persistence_assembly, "open_persistence", fail_once_open)
-    monkeypatch.setenv("HERMES_HOME", str(db_path.parent))
+    monkeypatch.setenv("SLAVE_HOME", str(db_path.parent))
 
     store = object.__new__(SessionStore)
     store._db_pinned = _DB_UNPINNED
@@ -322,7 +322,7 @@ def test_recovered_db_rows_survive_fallback_structural_save(monkeypatch, tmp_pat
         return real_open(*args, **kwargs)
 
     monkeypatch.setattr(persistence_assembly, "open_persistence", fail_once_open)
-    monkeypatch.setenv("HERMES_HOME", str(db_path.parent))
+    monkeypatch.setenv("SLAVE_HOME", str(db_path.parent))
     store = SessionStore(
         sessions_dir,
         GatewayConfig(sessions_dir=sessions_dir, write_sessions_json=False),

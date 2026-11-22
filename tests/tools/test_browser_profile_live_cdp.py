@@ -1,6 +1,6 @@
 """CLI-9 (#134889): a live ``/browser connect`` belongs to ONE profile on a multiplexed gateway.
 
-The override map is keyed by ``hermes_home_key()``; browser sessions and CDP supervisors remember
+The override map is keyed by ``slave_home_key()``; browser sessions and CDP supervisors remember
 the profile that created them, so reaping one profile's browsers never closes another's.
 """
 import types
@@ -8,7 +8,7 @@ import types
 import pytest
 
 from gateway.run import _profile_runtime_scope
-from hermes_constants import hermes_home_key
+from slave_constants import slave_home_key
 from tools import browser_session as bs, browser_session_cdp as bs_cdp, browser_session_lifecycle as lifecycle
 from tools.browser_supervisor import SUPERVISOR_REGISTRY
 
@@ -63,12 +63,12 @@ def test_a_new_session_records_its_profile(profiles, monkeypatch):
     monkeypatch.setattr(bs_cdp, "ensure_cdp_supervisor", lambda key: None)
     with _profile_runtime_scope(a, hydrate_secrets=False):
         info = bs.get_session_info("task-a")
-    assert info["home_key"] == hermes_home_key(a)
+    assert info["home_key"] == slave_home_key(a)
 
 
 def test_reaping_one_profile_leaves_the_other_profiles_browser_and_supervisor(profiles, monkeypatch):
     a, b = profiles
-    key_a, key_b = hermes_home_key(a), hermes_home_key(b)
+    key_a, key_b = slave_home_key(a), slave_home_key(b)
     sessions = {"ta": {"home_key": key_a}, "ta::local": {"home_key": key_a}, "tb": {"home_key": key_b}}
     monkeypatch.setattr(bs, "_active_sessions", sessions)
     closed = []
@@ -125,9 +125,9 @@ cat "$latch"
                         lambda cmd, code, env, timeout: reloads.append(env.get("BH_RUNTIME_DIR"))
                         or real_run(cmd, code, env, timeout))
     with _profile_runtime_scope(a, hydrate_secrets=False):
-        lifecycle.cleanup_profile_browsers(hermes_home_key(a))
+        lifecycle.cleanup_profile_browsers(slave_home_key(a))
         bs_cdp.set_live_cdp_override("http://127.0.0.1:9311")
     assert len(reloads) == 1  # A's reap stops exactly A's daemon
-    assert [home for home in bu_cli._driven_daemons.values()] == [hermes_home_key(b)]
+    assert [home for home in bu_cli._driven_daemons.values()] == [slave_home_key(b)]
     assert drive(b) == "http://127.0.0.1:9302"  # B's daemon survived A's reap
     assert drive(a) == "http://127.0.0.1:9311"  # A respawned on its new endpoint

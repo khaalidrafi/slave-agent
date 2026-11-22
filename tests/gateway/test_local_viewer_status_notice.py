@@ -26,7 +26,7 @@ def test_local_viewer_receives_agent_status_and_notices(tmp_path, mode):
     home.mkdir()
     state.mkdir()
     env = {k: os.environ[k] for k in ('PATH', 'SYSTEMROOT', 'LANG', 'TZ') if k in os.environ}
-    env.update(HOME=str(home), USERPROFILE=str(home), HERMES_HOME=str(state), PYTHONPATH=str(repo))
+    env.update(HOME=str(home), USERPROFILE=str(home), SLAVE_HOME=str(state), PYTHONPATH=str(repo))
     result = subprocess.run(
         [sys.executable, str(Path(__file__).parent / 'fixtures' / 'local_status_notice_peer.py'), mode],
         cwd=tmp_path, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=100, check=False)

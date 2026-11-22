@@ -37,7 +37,7 @@ sys.stdin.read()
 
 
 def _seed(path: Path, *, rows: int = 120) -> Path:
-    from hermes_state import SessionDB
+    from slave_state import SessionDB
 
     path.parent.mkdir(parents=True, exist_ok=True)
     db = SessionDB(db_path=path)
@@ -56,7 +56,7 @@ def _store_seed(path: Path, *, rows: int = 120) -> Path:
     """One session of ``rows`` user messages written through the backend's store, its WAL checkpointed into the file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     scope = ProfileScope(profile_dir=path.parent, name="default")
-    backend = SQLiteBackend({scope.hermes_home_key: path})
+    backend = SQLiteBackend({scope.slave_home_key: path})
     try:
         store = backend.open(scope)
         seed_session(store, "s1", "cli")
@@ -343,12 +343,12 @@ def test_repair_schema_on_a_read_only_handle_refuses(store_pair):
 
 
 def test_integrity_check_claims_and_renews_the_startup_lease_as_the_legacy_check(store_pair, monkeypatch):
-    import hermes_startup_watchdog
+    import slave_startup_watchdog
     from persistence.sqlite.admin import _doctor
 
     calls: list[tuple[float, str]] = []
     monkeypatch.setattr(
-        hermes_startup_watchdog, "report_startup_progress",
+        slave_startup_watchdog, "report_startup_progress",
         lambda seconds, *, phase: calls.append((seconds, phase)),
     )
     monkeypatch.setattr(_doctor, "_INTEGRITY_CHECK_LEASE_RENEW_S", 0.0)

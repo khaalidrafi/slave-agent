@@ -26,7 +26,7 @@ from gateway.session import (
 from gateway.session_transcript import TranscriptReadError
 from gateway.turn_context import TurnContext
 from gateway.turn_lease import DEFAULT_LEASE_WAIT, TurnLeaseTimeoutError
-from hermes_constants import get_hermes_home_override
+from slave_constants import get_slave_home_override
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from utils import base_url_hostname
@@ -58,7 +58,7 @@ def _resolve_policy_agent_runtime(runner, policy, *, fallback=True, record_notic
     runtime, fallback_entry = route_runtime(policy, frozen, model, route_launch_key(authority, policy, frozen),
                                             fallback=fallback)
     if fallback_entry is not None:
-        from hermes_cli.fallback_config import pre_agent_fallback_notice
+        from slave_cli.fallback_config import pre_agent_fallback_notice
         from agent.primary_auth_fallback import RUNTIME_KEY, set_pending_primary_auth_failure
         set_pending_primary_auth_failure(runtime.get(RUNTIME_KEY))
         notice = pre_agent_fallback_notice(
@@ -101,11 +101,11 @@ def _managed_oauth_env_host(provider: str) -> str:
     """The profile's documented host override for a managed OAuth provider, read through the
     secret scope like the resolver reads it: the process env holds the launch profile's value."""
     from agent.secret_scope import get_secret_str
-    from hermes_cli.auth_xai import DEFAULT_XAI_OAUTH_BASE_URL, _xai_validate_inference_base_url
+    from slave_cli.auth_xai import DEFAULT_XAI_OAUTH_BASE_URL, _xai_validate_inference_base_url
 
     if provider == "openai-codex":
-        return get_secret_str("HERMES_CODEX_BASE_URL", "").strip()
-    raw = get_secret_str("HERMES_XAI_BASE_URL", "").strip() or get_secret_str("XAI_BASE_URL", "").strip()
+        return get_secret_str("SLAVE_CODEX_BASE_URL", "").strip()
+    raw = get_secret_str("SLAVE_XAI_BASE_URL", "").strip() or get_secret_str("XAI_BASE_URL", "").strip()
     return _xai_validate_inference_base_url(raw, fallback=DEFAULT_XAI_OAUTH_BASE_URL)
 
 
@@ -115,15 +115,15 @@ def _session_override_uses_managed_oauth(override: Optional[dict]) -> bool:
     A direct alias can retain the provider label but owns its endpoint/key. Never refresh a
     custom host's credential from the official provider's store (or the reverse).
     """
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from slave_cli.auth import PROVIDER_REGISTRY
 
     if not override or override.get("owns_credentials"):
         return False
     provider = str(override.get("provider") or "")
     if provider not in ("openai-codex", "xai-oauth"):
         return False
-    # The managed host is the registry default OR its documented override (HERMES_CODEX_BASE_URL /
-    # HERMES_XAI_BASE_URL): the auth store still owns the bearer for either.
+    # The managed host is the registry default OR its documented override (SLAVE_CODEX_BASE_URL /
+    # SLAVE_XAI_BASE_URL): the auth store still owns the bearer for either.
     managed_hosts = {PROVIDER_REGISTRY[provider].inference_base_url.rstrip("/"),
                      _managed_oauth_env_host(provider).rstrip("/")} - {""}
     return (override.get("base_url") or "").rstrip("/") in managed_hosts
@@ -280,7 +280,7 @@ class GatewayTurnPrepareMixin:
             logger.info("Runtime provider supplied explicit model override: %s -> %s", model, runtime_model)
             model = runtime_model
         if unavailable_override and not notice:
-            from hermes_cli.fallback_config import pre_agent_fallback_notice
+            from slave_cli.fallback_config import pre_agent_fallback_notice
             notice = pre_agent_fallback_notice(
                 unavailable_override["provider"], unavailable_override.get("model"), runtime_kwargs.get("provider"), model)
         if record_notice:
@@ -293,11 +293,11 @@ class GatewayTurnPrepareMixin:
         # A channel's own provider or the session's /model replaced the route resolution fell back to.
         set_pending_primary_auth_failure(failure_for_route(primary_auth_failure, resolved_route, runtime_kwargs))
 
-        # Provider resolved but no model.default (`hermes auth add` without `hermes model`): use the
+        # Provider resolved but no model.default (`slave auth add` without `slave model`): use the
         # provider's first catalog model.
         if not model and runtime_kwargs.get("provider"):
             with suppress(Exception):
-                from hermes_cli.models import get_default_model_for_provider
+                from slave_cli.models import get_default_model_for_provider
                 model = get_default_model_for_provider(runtime_kwargs["provider"])
                 if model:
                     logger.info(
@@ -314,7 +314,7 @@ class GatewayTurnPrepareMixin:
         ``/review``) passes the session's own instead of writing that shared slot."""
         from gateway.run import _deep_merge_request_overrides
         from agent.fast_mode import STATIC_TIERS
-        from hermes_cli.models import resolve_fast_mode_overrides
+        from slave_cli.models import resolve_fast_mode_overrides
         # Tests bind this method onto bare namespaces, so no class-level tables here.
         runtime = {
             k: runtime_kwargs.get(k) for k in (
@@ -360,7 +360,7 @@ class GatewayTurnPrepareMixin:
         model = getattr(agent, "model", None)
         if not model:
             return
-        from hermes_cli.runtime_provider_custom import session_provider_identity
+        from slave_cli.runtime_provider_custom import session_provider_identity
         from persistence.conversation.sessions import ReplaceSessionConfig
         runtime = {
             "provider": session_provider_identity(getattr(agent, "provider", None),
@@ -658,7 +658,7 @@ class GatewayTurnPrepareMixin:
         try:
             _lease_token = await _lease_registry.acquire(
                 session_entry.session_id, owner_key=_quick_key, generation=run_generation,
-                timeout=_float_env("HERMES_TURN_LEASE_TIMEOUT", DEFAULT_LEASE_WAIT),
+                timeout=_float_env("SLAVE_TURN_LEASE_TIMEOUT", DEFAULT_LEASE_WAIT),
             )
         except TurnLeaseTimeoutError:
             # The cleanup finally starts later; restore the tokens here or this exit leaks identity.
@@ -724,8 +724,8 @@ class GatewayTurnPrepareMixin:
                 if prof and prof != "default" and _lgc().get_home_channel(source.platform):
                     home_env = "set"
         if not home_env:
-            # Slack routes every command through the parent `/hermes`; bare `/sethome` would fail.
-            sethome_cmd = "/hermes sethome" if source.platform == Platform.SLACK else "/sethome"
+            # Slack routes every command through the parent `/slave`; bare `/sethome` would fail.
+            sethome_cmd = "/slave sethome" if source.platform == Platform.SLACK else "/sethome"
             await self._deliver_platform_notice(
                 source, t("gateway.notify.no_home_channel", platform=platform_name.title(), sethome_cmd=sethome_cmd),
             )
@@ -740,7 +740,7 @@ class GatewayTurnPrepareMixin:
         persist_user_message = None
         persist_user_timestamp = None
         try:
-            from hermes_time import get_timezone as _get_evt_tz
+            from slave_time import get_timezone as _get_evt_tz
             from gateway.message_timestamps import (
                 coerce_message_timestamp as _coerce_msg_ts,
                 render_user_content_with_timestamp as _render_msg_ts,
@@ -872,7 +872,7 @@ class GatewayTurnPrepareMixin:
         # by the run that registered them. The turn's own event carries it too: a busy follow-up's
         # reply is sent by ``dispatch_shared_busy``'s observer, which holds no session guard and
         # releases the turn's callbacks by this per-turn stamp (``turn_run_generation``).
-        event._hermes_run_generation = run_generation
+        event._slave_run_generation = run_generation
         self._bind_adapter_run_generation(self._delivery_adapter_for(source), session_key, run_generation)
         # Delivery IDs are only unique in their transport namespace. Keyless turns
         # need their own identity, even when another process writes to this session.

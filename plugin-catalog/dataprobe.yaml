@@ -14,7 +14,7 @@ description: >-
   parsed preview that handles quoted CSV and JSON correctly. Streamed, standard
   library only: no network, no credentials, no third-party dependencies, no
   self-update. Disclosure: reads the local data path you pass it (read-only) and
-  honours Hermes' core read denylist.
+  honours slave-agent’ core read denylist.
 maintainer: rodricksz4h5
 tier: community
 category: tools

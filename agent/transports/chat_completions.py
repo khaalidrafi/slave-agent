@@ -33,7 +33,7 @@ from agent.transports.types import NormalizedResponse, ToolCall, Usage
 # (_rename_client_web_search_for_xai): alias the wire declaration and map the alias back in
 # normalize_response. The alias value matches _CODEX_TOOL_SEARCH_ALIAS from the Codex-side fix for the same
 # reserved-name class (#83122) so the two transports stay consistent.
-_XAI_TOOL_SEARCH_ALIAS = "hermes_tool_search"
+_XAI_TOOL_SEARCH_ALIAS = "slave_tool_search"
 
 # Persistence-only / cross-transport message keys that strict OpenAI-compatible
 # providers reject with HTTP 400 ("Extra inputs are not permitted").
@@ -51,7 +51,7 @@ _HIGH_EFFORTS = {"high", "xhigh", "max", "ultra"}
 def _rename_tool_search_bridge_for_xai(tools: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, str]]:
     """Alias the client ``tool_search`` declaration for xAI; returns ``(tools, {alias: "tool_search"})``.
 
-    If a real tool already holds ``hermes_tool_search``, the bridge takes a ``_2``/``_3`` suffix.
+    If a real tool already holds ``slave_tool_search``, the bridge takes a ``_2``/``_3`` suffix.
     """
     from agent.transports.codex import _alias_reserved_tools
 
@@ -157,9 +157,9 @@ def is_router_timeout_shim(response: Any) -> bool:
 
 
 def _reasoning_config_for_model(model: str, reasoning_config: dict | None, base_url: str | None = None) -> dict | None:
-    """Clamp Hermes' extended effort set (``ultra``) to the OpenAI-compat wire vocabulary.
+    """Clamp slave-agent’ extended effort set (``ultra``) to the OpenAI-compat wire vocabulary.
 
-    Hermes' internal effort set extends the wire vocabulary with ``ultra`` (the /reasoning command documents
+    slave-agent’ internal effort set extends the wire vocabulary with ``ultra`` (the /reasoning command documents
     none..xhigh|max|ultra). OpenAI- compatible wires — OpenRouter chief among them — accept exactly
     max|xhigh|high|medium|low|minimal|none and reject the extension with HTTP 400 (#89503). Clamp against
     the declared wire vocabulary via the shared policy in ``agent.reasoning_effort``; provider profiles with
@@ -170,7 +170,7 @@ def _reasoning_config_for_model(model: str, reasoning_config: dict | None, base_
 
 
 def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> dict | None:
-    """Translate Hermes/OpenRouter-style reasoning config to Gemini thinkingConfig."""
+    """Translate Slave/OpenRouter-style reasoning config to Gemini thinkingConfig."""
     from agent.gemini_native_adapter import gemini_uses_thinking_level
 
     if not isinstance(reasoning_config, dict):
@@ -213,7 +213,7 @@ def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> 
     if effort not in {"minimal", "low", "medium", "high", "xhigh", "max", "ultra"}:
         effort = "medium"
     # Gemini 3 Pro is strict (low/high); every other thinking-level model (3.x Flash, Gemini 4 Argon)
-    # documents low/medium/high, and "minimal" is not universal (Argon 400s on it). Clamp Hermes' wider
+    # documents low/medium/high, and "minimal" is not universal (Argon 400s on it). Clamp Slave' wider
     # effort set to what each family accepts so we never forward an undocumented level verbatim.
     if gemini_uses_thinking_level(normalized_model):
         if "pro" in normalized_model:
@@ -764,7 +764,7 @@ class ChatCompletionsTransport(ProviderTransport):
         name = getattr(tc_function, "name", None)
         if tc_function is None or name is None:
             return None
-        # Reverse only aliases THIS request emitted; a real ``hermes_tool_search`` tool stays itself.
+        # Reverse only aliases THIS request emitted; a real ``slave_tool_search`` tool stays itself.
         alias_map = self._last_wire_aliases
         if alias_map is None:
             name = "tool_search" if name == _XAI_TOOL_SEARCH_ALIAS else name

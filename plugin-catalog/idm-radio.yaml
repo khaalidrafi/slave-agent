@@ -2,7 +2,7 @@ name: idm-radio
 repo: https://github.com/discodirector/idm-session-radio
 sha: 28049184e695661b98568334333bfe8493eb96fa
 title: IDM Session Radio
-description: 'Generative ambient in the Hermes Desktop status bar with the session''s work written into it: reads drip, edits blip, commands ring, a failed call sends the radio dial through static, and a finished task lands a drop and becomes a track you can save as WAV. Three pictures (tunnel, sky, mosaic) read from the score. Synthesized live, no samples, no network. Adds the idm_radio tool, the /idm command and two hooks that report tool outcomes to the Desktop.'
+description: 'Generative ambient in the slave-agent Desktop status bar with the session''s work written into it: reads drip, edits blip, commands ring, a failed call sends the radio dial through static, and a finished task lands a drop and becomes a track you can save as WAV. Three pictures (tunnel, sky, mosaic) read from the score. Synthesized live, no samples, no network. Adds the idm_radio tool, the /idm command and two hooks that report tool outcomes to the Desktop.'
 maintainer: discodirector
 tier: community
 category: desktop

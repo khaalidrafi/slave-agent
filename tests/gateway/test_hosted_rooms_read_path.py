@@ -11,7 +11,7 @@ def test_list_rooms_does_not_enter_a_write_transaction_or_prune(tmp_path, monkey
         placement="profile",
         room_id="room-1",
         name="Release room",
-        members=[{"profile": "default", "handle": "hermes"}],
+        members=[{"profile": "default", "handle": "slave"}],
         authority_gateway_id="gateway-a",
     )
 

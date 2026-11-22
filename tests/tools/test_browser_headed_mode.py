@@ -19,8 +19,8 @@ def _clean_headed_cache(monkeypatch, tmp_path):
     from pathlib import Path
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "tools"))
     bs_cloud.reset_caches()
     yield
     bs_cloud.reset_caches()
@@ -34,7 +34,7 @@ class TestIsHeadedMode:
 
     def test_config_true(self):
         cfg = {"browser": {"headed": True}}
-        with patch("hermes_cli.config_effective.load_user_config_effective", return_value=cfg):
+        with patch("slave_cli.config_effective.load_user_config_effective", return_value=cfg):
             assert bs_cloud.is_headed_mode() is True
 
 

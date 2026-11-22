@@ -15,7 +15,7 @@ from agent import onboarding_record
 from agent.inline_tool_executors import INLINE_TOOL_EXECUTORS, InlineToolContext
 from agent.onboarding import observe_tool_result
 from session_rules.onboarding_flow import Facts
-from hermes_cli.config import read_user_config_raw
+from slave_cli.config import read_user_config_raw
 from persistence.conversation.sessions import NewSession
 from tui_gateway import server, server_requests
 
@@ -26,10 +26,10 @@ FACTS = Facts(os="windows", arch="amd64", machine_kind="PC", nvidia_platform="di
 
 @pytest.fixture
 def chat(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     monkeypatch.setattr(server, "_db", None)
     db = server._get_db()
     db.sessions.create(NewSession(session_id=STORED, source="desktop"))

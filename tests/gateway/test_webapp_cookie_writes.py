@@ -17,12 +17,12 @@ import httpx
 from gateway.run_api import GatewayDashboardMount
 from gateway.webapp_listener import WebappMount
 
-WEBAPP = "http://hermes.lan:9120"
+WEBAPP = "http://slave.lan:9120"
 SKIN = {"config": {"display": {"skin": "mono"}}}
 OWN_PAGE = {"Origin": WEBAPP, "Sec-Fetch-Site": "same-origin"}
 FOREIGN_PAGES = (
     {"Origin": "https://evil.example", "Sec-Fetch-Site": "cross-site"},
-    {"Origin": "http://hermes.lan:8080", "Sec-Fetch-Site": "same-site"},
+    {"Origin": "http://slave.lan:8080", "Sec-Fetch-Site": "same-site"},
     {"Origin": "https://evil.example"},  # a browser without Fetch Metadata
     {"Origin": "null", "Sec-Fetch-Site": "cross-site"},
 )
@@ -51,11 +51,11 @@ async def _native_app_token(client: httpx.AsyncClient) -> str:
 
 
 def test_a_wildcard_webapp_takes_cookie_writes_only_from_its_own_page(tmp_path, monkeypatch):
-    from hermes_cli import web_server
-    from hermes_cli.config import read_raw_config
-    from hermes_cli.dashboard_auth import clear_providers, register_provider
-    from hermes_constants import get_hermes_home
-    from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+    from slave_cli import web_server
+    from slave_cli.config import read_raw_config
+    from slave_cli.dashboard_auth import clear_providers, register_provider
+    from slave_constants import get_slave_home
+    from tests.slave_cli.conftest_dashboard_auth import StubAuthProvider
 
     for key in ("bound_host", "bound_port", "auth_required", "trusted_public_hosts"):
         monkeypatch.setattr(web_server.app.state, key, getattr(web_server.app.state, key, None), raising=False)
@@ -63,7 +63,7 @@ def test_a_wildcard_webapp_takes_cookie_writes_only_from_its_own_page(tmp_path, 
     dist.mkdir()
     (dist / "index.html").write_text("<!doctype html><html><body>WEBAPP</body></html>", encoding="utf-8")
     state = types.SimpleNamespace(bound_host="0.0.0.0", bound_port=9120,
-                                  webapp=WebappMount(dist, get_hermes_home()))
+                                  webapp=WebappMount(dist, get_slave_home()))
     mount = GatewayDashboardMount(types.SimpleNamespace(session_authority=None), state)
     clear_providers()
     register_provider(StubAuthProvider())

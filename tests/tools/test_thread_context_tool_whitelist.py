@@ -1,7 +1,7 @@
 """A background fork's dispatch-side tool whitelist reaches parallel tool workers.
 
 The background review (and every fork built like it) restricts its tools with a thread-local
-``pre_tool_call`` whitelist (``hermes_cli.plugins.set_thread_tool_whitelist``). A batch of
+``pre_tool_call`` whitelist (``slave_cli.plugins.set_thread_tool_whitelist``). A batch of
 parallel-safe calls runs on pool workers started through ``propagate_context_to_thread``; when the
 whitelist stayed on the fork's own thread, every call of such a batch escaped it.
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 
-from hermes_cli.plugins import clear_thread_tool_whitelist, get_pre_tool_call_directive, set_thread_tool_whitelist
+from slave_cli.plugins import clear_thread_tool_whitelist, get_pre_tool_call_directive, set_thread_tool_whitelist
 from tools.thread_context import propagate_context_to_thread
 
 

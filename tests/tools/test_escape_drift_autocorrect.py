@@ -14,7 +14,7 @@ from tools.escape_drift_autocorrect import AmbiguousEscapeDriftError, maybe_corr
 
 @pytest.fixture
 def workdir(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     return tmp_path
 
 

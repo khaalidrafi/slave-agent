@@ -1,14 +1,14 @@
 name: piloterr
 title: Piloterr
-repo: https://github.com/piloterr/hermes-plugin-piloterr
+repo: https://github.com/piloterr/slave-plugin-piloterr
 sha: eabca8db8b72f3b761f71af2b3b8d06139593a7a
 version: "1.1.0"
-description: "Web scraping for Hermes through the Piloterr API. piloterr_fetch_page fetches any page with the crawler (plain HTTP), rendering (headless browser) or webunlocker (anti-bot) engine; 53 more tools return structured data from Google, Bing, Brave, DuckDuckGo, Yahoo, LinkedIn, Instagram, X, GitHub, Pinterest, Amazon, eBay, Walmart, AliExpress, Target, Best Buy, Crunchbase, Trustpilot, G2, Similarweb, Indeed, Glassdoor, Yelp, Expedia and Zillow. Also a backend for the built-in web_extract tool. Disclosure — sends each URL and the tool arguments to api.piloterr.com with your PILOTERR_API_KEY, and calls use Piloterr credits (1 to 3 per call, stated in each tool description). Reads the key only through Hermes's secret scope. Registers 54 tools and a web_extract backend, no hooks or middleware, writes no files, starts no processes, has no telemetry or self-updater, and uses only the Python standard library."
+description: "Web scraping for slave-agent through the Piloterr API. piloterr_fetch_page fetches any page with the crawler (plain HTTP), rendering (headless browser) or webunlocker (anti-bot) engine; 53 more tools return structured data from Google, Bing, Brave, DuckDuckGo, Yahoo, LinkedIn, Instagram, X, GitHub, Pinterest, Amazon, eBay, Walmart, AliExpress, Target, Best Buy, Crunchbase, Trustpilot, G2, Similarweb, Indeed, Glassdoor, Yelp, Expedia and Zillow. Also a backend for the built-in web_extract tool. Disclosure — sends each URL and the tool arguments to api.piloterr.com with your PILOTERR_API_KEY, and calls use Piloterr credits (1 to 3 per call, stated in each tool description). Reads the key only through slave-agent’s secret scope. Registers 54 tools and a web_extract backend, no hooks or middleware, writes no files, starts no processes, has no telemetry or self-updater, and uses only the Python standard library."
 maintainer: piloterr
 tier: community
 category: web
 requires_hermes: ">=0.21.6"
-docs_url: https://github.com/piloterr/hermes-plugin-piloterr#readme
+docs_url: https://github.com/piloterr/slave-plugin-piloterr#readme
 readme: true
 platforms: []
 capabilities:

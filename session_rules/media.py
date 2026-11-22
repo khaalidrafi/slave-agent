@@ -46,7 +46,7 @@ def admission_media_references(payload):
 
 # Every pointer form of a spill archive (host path, ``~``-relative, in-container mount) carries the
 # ``spillover/<name>`` segment, with either separator (Windows paths are backslashed, JSON-escaped inside
-# structured content); sandbox-fallback ``hermes-results/<name>`` pointers do not.
+# structured content); sandbox-fallback ``slave-results/<name>`` pointers do not.
 _SPILLOVER_NAME_RE = re.compile(r"spillover(?:/|\\+)([A-Za-z0-9_.-]+)")
 
 

@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 from tests.agent.test_start_order_gate import (
     _FakeAssistantMsg,
     _FakeToolCall,
-    _isolate_hermes,
+    _isolate_slave,
     _make_agent,
 )
 
@@ -34,7 +34,7 @@ def _trim_recorder(monkeypatch, agent):
         seen.append((reason, agent._executing_tools))
         return True
 
-    monkeypatch.setattr("hermes_cli.mem_trim.trim_memory", trim)
+    monkeypatch.setattr("slave_cli.mem_trim.trim_memory", trim)
     return seen
 
 

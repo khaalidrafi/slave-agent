@@ -218,9 +218,9 @@ class SessionTranscriptMixin:
                     "pending fallback failed for replaced state.db transcript on %s", session_id,
                     exc_info=True)
         try:
-            from hermes_constants import get_hermes_home
+            from slave_constants import get_slave_home
             from session_rescue import divert_session_transcript_jsonl
-            divert_session_transcript_jsonl(session_id, remaining, sessions_dir=get_hermes_home() / "sessions")
+            divert_session_transcript_jsonl(session_id, remaining, sessions_dir=get_slave_home() / "sessions")
         except Exception:
             logger.warning(
                 "JSONL divert failed for replaced state.db transcript on %s", session_id,

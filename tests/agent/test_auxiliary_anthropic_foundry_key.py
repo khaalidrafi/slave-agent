@@ -1,7 +1,7 @@
 """Auxiliary Anthropic client on an Azure Foundry endpoint must use a key bound to that endpoint,
 never the Claude Code OAuth token the ``anthropic`` pool (or the legacy resolver) holds (#154242).
 
-Real pool: the test's HERMES_HOME holds config.yaml and auth.json and a temporary
+Real pool: the test's SLAVE_HOME holds config.yaml and auth.json and a temporary
 CLAUDE_CONFIG_DIR holds the Claude Code login ``load_pool("anthropic")`` seeds; only the SDK client
 constructor is replaced, to record the (token, base_url) pair a request would carry.
 """
@@ -41,8 +41,8 @@ def built(tmp_path, monkeypatch):
 
 
 def _home(*, rows=(), **model):
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     (home / "config.yaml").write_text(json.dumps({"model": model} if model else {}))
     pool_rows = [{"id": f"row{i}", "label": f"row{i}", "auth_type": "api_key", "priority": i, "source": "manual", **row}
                  for i, row in enumerate(rows)]
@@ -86,9 +86,9 @@ def test_other_providers_inline_key_never_goes_to_an_explicit_foundry_url(built,
 
 
 def test_foundry_bound_pool_key_serves_foundry_even_behind_the_oauth_row(built):
-    """``hermes auth add anthropic --api-key <azure key>`` recorded for the Foundry URL; an OAuth row ranks first."""
+    """``slave auth add anthropic --api-key <azure key>`` recorded for the Foundry URL; an OAuth row ranks first."""
     _home(provider="anthropic", base_url=FOUNDRY_URL, rows=[
-        {"access_token": OAUTH_TOKEN, "auth_type": "oauth", "source": "manual:hermes_pkce"},
+        {"access_token": OAUTH_TOKEN, "auth_type": "oauth", "source": "manual:slave_pkce"},
         {"access_token": "KAZ-POOL", "base_url": FOUNDRY_URL}])
     aux._try_anthropic()
     assert built == {"token": "KAZ-POOL", "base_url": FOUNDRY_URL}

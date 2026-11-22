@@ -16,9 +16,9 @@ _KEY = "sk-ant-api03-" + "Zq7Wm2Xr9Lk4Pv8Ty3Nb6Hc1Jd5Fg0Se" * 2
 
 
 def test_exhausted_error_message_is_redacted_on_disk_even_with_redaction_disabled(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", False)
     (home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {"anthropic": [
         {"id": "k1", "label": "a", "auth_type": "api_key", "priority": 0, "source": "manual",
@@ -41,9 +41,9 @@ def test_string_error_body_reason_is_redacted_on_disk(tmp_path, monkeypatch):
     """A body whose ``error`` is a bare string makes the whole message the reason too."""
     from agent.agent_runtime_helpers import extract_api_error_context
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", False)
     (home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {"anthropic": [
         {"id": "k1", "label": "a", "auth_type": "api_key", "priority": 0, "source": "manual",
@@ -81,7 +81,7 @@ def test_mark_dead_refresh_grant_redacts_exception_text(monkeypatch):
     pool._current_id = None
     pool.provider = "anthropic"
     pool._entries = [PooledCredential(id="e1", provider="anthropic", auth_type="oauth", access_token="a",
-                                      refresh_token="r", label="e1", source="manual:hermes_pkce", priority=0)]
+                                      refresh_token="r", label="e1", source="manual:slave_pkce", priority=0)]
     monkeypatch.setattr(pool, "_persist", lambda *a, **k: None)
 
     pool._mark_dead_refresh_grant(pool._entries[0], RuntimeError(f"invalid_grant for key {_KEY}"))

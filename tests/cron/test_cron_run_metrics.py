@@ -1,18 +1,18 @@
-"""hermes.cron.run: one row per terminal execution and per dropped occurrence."""
+"""slave.cron.run: one row per terminal execution and per dropped occurrence."""
 
 from datetime import timedelta
 
 import pytest
 
 from cron import executions, jobs
-from hermes_cli.observability import relay_shared_metrics as rsm
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_gateway as smg
+from slave_cli.observability import relay_shared_metrics as rsm
+from slave_cli.observability import shared_metrics_contract as contract
+from slave_cli.observability import shared_metrics_gateway as smg
 
 
 @pytest.fixture
 def cron_rows(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     got = []
     monkeypatch.setattr(rsm, "enabled", lambda: True)
     monkeypatch.setattr(rsm, "record_process_mark", lambda mark, data: got.append((mark, dict(data))))
@@ -54,7 +54,7 @@ def test_an_occurrence_dropped_after_downtime_is_one_missed_row(tmp_path, cron_r
     with jobs.use_cron_store(tmp_path / "cron"):
         jobs.create_job(prompt="secret prompt", schedule="every 1h", model="fixture", deliver="local")
         stored = jobs.load_jobs()
-        stored[0]["next_run_at"] = (jobs._hermes_now() - timedelta(hours=4)).isoformat()
+        stored[0]["next_run_at"] = (jobs._slave_now() - timedelta(hours=4)).isoformat()
         jobs.save_jobs(stored)
         assert jobs.get_due_jobs() == []
         assert jobs.get_due_jobs() == []
@@ -65,11 +65,11 @@ def test_a_stopped_run_row_validates_against_the_package_schema(tmp_path):
     import json
     from pathlib import Path
 
-    from hermes_cli.observability.shared_metrics import SharedMetricsStore
+    from slave_cli.observability.shared_metrics import SharedMetricsStore
 
     jsonschema = pytest.importorskip("jsonschema")
-    schema = Path(__file__).resolve().parents[2] / "hermes_cli/observability/schemas/hermes.shared_metrics.v4.schema.json"
-    resource = {"architecture": "x86_64", "hermes_version": "test", "install_method": "git", "os_family": "linux"}
+    schema = Path(__file__).resolve().parents[2] / "slave_cli/observability/schemas/slave.shared_metrics.v4.schema.json"
+    resource = {"architecture": "x86_64", "slave_version": "test", "install_method": "git", "os_family": "linux"}
     store = SharedMetricsStore(tmp_path / "metrics.sqlite3", tmp_path / "outbox")
     store.record_counter(
         contract.CRON_RUN_METRIC, smg.cron_run_fields(outcome="cancelled", delivery_kind="local", seconds=3), resource)

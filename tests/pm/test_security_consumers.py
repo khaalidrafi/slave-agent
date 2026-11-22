@@ -22,9 +22,9 @@ from tests.pm._range_server import dl_server as dl_server  # noqa: PLC0414 -- th
 @pytest.fixture
 def consumer_store(tmp_path, monkeypatch, dl_server):
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "store"))
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "store"))
+    monkeypatch.setenv("SLAVE_DISABLE_LAZY_INSTALLS", "1")
     monkeypatch.setattr(paths, "lockfile_path", lambda: tmp_path / "lock.json")
     # Only the already-prepared interpreter is supplied: the worker, downloader,
     # extractor, probes, publication and read-only selector are all real.

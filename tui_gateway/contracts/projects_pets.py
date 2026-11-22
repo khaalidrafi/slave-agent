@@ -21,7 +21,7 @@ from .registry import method
 
 
 class ProjectFolder(Result):
-    """``hermes_cli/projects_db.py::ProjectFolder.to_dict``."""
+    """``slave_cli/projects_db.py::ProjectFolder.to_dict``."""
 
     path: str
     label: str | None = None
@@ -30,7 +30,7 @@ class ProjectFolder(Result):
 
 
 class ProjectInfo(Result):
-    """``hermes_cli/projects_db.py::Project.to_dict`` — one stored project with its folders."""
+    """``slave_cli/projects_db.py::Project.to_dict`` — one stored project with its folders."""
 
     id: str
     slug: str

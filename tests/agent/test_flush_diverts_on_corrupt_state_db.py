@@ -50,7 +50,7 @@ def _flush_agent(db, session_id, persistence):
 def test_flush_diverts_batch_to_jsonl_when_handle_is_quarantined(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = storage_handle(tmp_path)
     try:
         seed_session(db, "live", "cli")

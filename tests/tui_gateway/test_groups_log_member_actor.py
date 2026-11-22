@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 import tui_gateway.server as srv
 from gateway import hosted_rooms
@@ -13,10 +13,10 @@ from tui_gateway import methods_groups
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    path = tmp_path / ".hermes"
+    path = tmp_path / ".slave"
     (path / "profiles" / "ops").mkdir(parents=True)
     (path / "profiles" / "ops" / "config.yaml").write_text("{}\n")
-    monkeypatch.setenv("HERMES_HOME", str(path))
+    monkeypatch.setenv("SLAVE_HOME", str(path))
     methods_groups.stop_hosted_room_service(timeout=1.0)
     methods_groups.start_hosted_room_service()
     yield path
@@ -26,12 +26,12 @@ def home(tmp_path, monkeypatch):
 def test_log_with_a_stamped_member_actor_satisfies_its_contract(home):
     room = srv.handle_request({"id": 1, "method": "groups.create", "params": {
         "room_id": "room-1", "name": "Room",
-        "members": [{"member_id": "default", "profile": "default", "handle": "hermes"},
+        "members": [{"member_id": "default", "profile": "default", "handle": "slave"},
                     {"member_id": "ops", "profile": "ops", "handle": "ops", "display_name": "Ops"}]}})
     actor = {"kind": "member", "id": "ops", "profile": "ops", "display_name": "Ops",
              "connection_id": "peer-1"}
     hosted_rooms.append_event(
-        storage_handle(get_hermes_home()), placement="shared", room_id="room-1", event_id="reply-1", kind="message.member",
+        storage_handle(get_slave_home()), placement="shared", room_id="room-1", event_id="reply-1", kind="message.member",
         actor=actor, payload={"text": "Done", "thread_id": "thread-1"},
         authority_gateway_id=room["result"]["room"]["authority_gateway_id"], authority_epoch=1)
 

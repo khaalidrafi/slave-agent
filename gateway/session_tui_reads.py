@@ -1,7 +1,7 @@
 """Main's TUI text for the session reads its sidecar answered itself: /status, /context.
 
 On main the TUI's ``slash.exec`` never reached the messaging gateway's handlers: ``/status`` was
-``session.status`` (``Hermes TUI Status``), ``/context`` was ``_format_live_context_output`` (the
+``session.status`` (``slave-agent TUI Status``), ``/context`` was ``_format_live_context_output`` (the
 conversation counts, then the desktop gauge's category table). A TUI session on the shared owner
 gets the same lines here, read from the owner's live agent and stored row; every other surface keeps
 the gateway's own handlers (``gateway/session_commands.py``). ``/cron``, the classic CLI's handler
@@ -52,7 +52,7 @@ def _model_history(store, tip) -> list:
 
 def _status(authority, ref, live, policy, agent, arg) -> str:
     """``tui_gateway/methods_session.py`` ``session.status`` on main, for the owner's session."""
-    from hermes_cli.status_report import build_status_fields, status_lines
+    from slave_cli.status_report import build_status_fields, status_lines
     from tui_gateway import server
     stored = _stored_id(authority, ref)
     row = {}
@@ -67,13 +67,13 @@ def _status(authority, ref, live, policy, agent, arg) -> str:
         agent_running=running, home=authority.profile_id)
     if fields['provider'] == 'custom':  # the adapter's billing class: show the entry the session runs on
         from gateway.run import _profile_runtime_scope
-        from hermes_cli.runtime_provider_custom import session_provider_identity
+        from slave_cli.runtime_provider_custom import session_provider_identity
         with _profile_runtime_scope(Path(authority.profile_id)):
             fields['provider'] = session_provider_identity('custom', getattr(agent, 'requested_provider', None),
                 getattr(agent, 'base_url', None) or policy.base_url, fields['model'])
     project = server._project_info_for_cwd(policy.cwd)
     return '\n'.join([
-        'Hermes TUI Status', '', *status_lines(fields, 'session_id', 'path'),
+        'slave-agent TUI Status', '', *status_lines(fields, 'session_id', 'path'),
         *([f"Project: {project['name']}"] if project else []),
         *status_lines(fields, 'title', 'model', 'created', 'last_activity', 'tokens', 'agent_running')])
 

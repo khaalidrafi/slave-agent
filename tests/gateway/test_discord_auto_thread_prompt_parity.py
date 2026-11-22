@@ -2,7 +2,7 @@
 
 The first turn's source pointed at the new thread but took its topic from the parent text channel,
 while the thread's next message read the thread's own topic (none outside forums). ``Channel Topic``
-is part of the pinned session-context prompt, so turn 2 re-rendered it. Hermes's title rename
+is part of the pinned session-context prompt, so turn 2 re-rendered it. slave-agent’s title rename
 between the turns is included, so both inputs that change on turn 2 are covered.
 """
 from __future__ import annotations
@@ -45,7 +45,7 @@ async def test_auto_thread_first_turn_pins_the_threads_topic(monkeypatch: pytest
     monkeypatch.setattr(discord_platform.discord, "Thread", _Thread, raising=False)
     monkeypatch.delenv("DISCORD_REQUIRE_MENTION", raising=False)
     monkeypatch.setenv("DISCORD_AUTO_THREAD", "true")
-    guild = SimpleNamespace(id=1, name="Hermes Server")
+    guild = SimpleNamespace(id=1, name="slave-agent Server")
     parent = SimpleNamespace(id=700, name="ops", topic="Incident triage", guild=guild)
     thread = _Thread(parent)
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="fake"))

@@ -2,7 +2,7 @@
 stays pinned after it leaves that repository, a late record write never recreates a removed profile, and boot
 recovery names the continuable children on the ledger row that reports them (independent completions on or off).
 
-Real SQLite, real git, real sweep, real dispatch and boot recovery against a temp HERMES_HOME; only the model is
+Real SQLite, real git, real sweep, real dispatch and boot recovery against a temp SLAVE_HOME; only the model is
 scripted.
 """
 
@@ -67,7 +67,7 @@ def _backdate(*paths):
 
 
 def test_a_running_continuation_pins_the_tree_it_moved_to_not_only_where_it_last_stopped(tmp_path):
-    from hermes_cli.worktree_sweep import run_sweep, sweep_settings
+    from slave_cli.worktree_sweep import run_sweep, sweep_settings
     from tools import delegate_tool_resumable as r
     parent = _parent()
     repo = _repo(tmp_path / "repo")
@@ -114,9 +114,9 @@ def test_a_tree_the_child_made_stays_pinned_after_it_leaves_that_repository(tmp_
 
 
 def test_a_late_record_write_never_recreates_a_removed_profile_and_stays_owner_only(tmp_path):
-    from hermes_constants import get_hermes_home, profile_tombstone_path
+    from slave_constants import get_slave_home, profile_tombstone_path
     from tools import delegate_tool_resumable as r
-    removed = get_hermes_home() / "profiles" / "removed"
+    removed = get_slave_home() / "profiles" / "removed"
     tomb = profile_tombstone_path(removed)
     tomb.parent.mkdir(parents=True, exist_ok=True)
     tomb.write_text("deleted")
@@ -124,7 +124,7 @@ def test_a_late_record_write_never_recreates_a_removed_profile_and_stays_owner_o
     r._write(removed / "state.db", lambda conn: conn.execute("SELECT 1").fetchone())
     assert not removed.exists()
 
-    live = get_hermes_home() / "state.db"
+    live = get_slave_home() / "state.db"
     r._write(live, lambda conn: conn.execute("SELECT 1").fetchone())
     if os.name != "nt":
         assert stat.S_IMODE(live.stat().st_mode) == 0o600
@@ -136,10 +136,10 @@ def test_boot_recovery_names_the_continuable_children_on_the_row_that_reports_th
     """A crash leaves the children's records running; a gateway restart (SIGTERM) lets each child record its
     resumable stop while the owner exits before the unit's row turns terminal. Either way the recovered notice
     names every child the parent can continue."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tools import async_delegation as ad
     from tools.delegate_tool import delegate_task
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"delegation": {"independent_completions": independent}}))
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"delegation": {"independent_completions": independent}}))
     parent, model = _parent(), _ScriptedModel()
     with patch("run_agent.AIAgent", side_effect=model):
         out = json.loads(delegate_task(tasks=[{"goal": "write the first parser"}, {"goal": "write the second parser"}],

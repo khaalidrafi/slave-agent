@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { CANONICAL_REASONING_EFFORTS, TUI_SESSION_MODEL_FLAG } from '@hermes/shared/slash-input'
+import { CANONICAL_REASONING_EFFORTS, TUI_SESSION_MODEL_FLAG } from '@slave-agent/shared/slash-input'
 
 import { introMsg, toTranscriptMessages } from '../../domain/messages.js'
 import { t } from '../../i18n/runtime.js'

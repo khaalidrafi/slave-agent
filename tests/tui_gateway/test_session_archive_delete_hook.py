@@ -25,7 +25,7 @@ def db(tmp_path, monkeypatch):
 @pytest.fixture
 def hooks(monkeypatch):
     calls = []
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", lambda name, **kw: calls.append((name, kw)) or [])
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", lambda name, **kw: calls.append((name, kw)) or [])
     return calls
 
 

@@ -35,7 +35,7 @@ def _run(tmp_path, mode, platform="this platform"):
     (dist / "index.html").write_text("<!doctype html><html><body>WEBAPP_BUNDLE</body></html>", encoding="utf-8")
     port = _free_port()
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                PYTHONUNBUFFERED="1")
     result = subprocess.run(
         [sys.executable, str(root / "tests/gateway/fixtures/webapp_listener_peer.py"), mode, str(port), str(dist),

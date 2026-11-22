@@ -1,7 +1,7 @@
 """Legacy ``session.events.since`` replays a reconnect that includes ``replay_epoch``.
 
 Desktop in URL, Cloud or SSH mode (no ``native_dial``) speaks the legacy
-``/api/ws`` contract of a standalone ``hermes serve``. A session with no epoch
+``/api/ws`` contract of a standalone ``slave serve``. A session with no epoch
 of its own used to send the process epoch from ``gateway.ready``. The legacy
 params model refused that key, so the replay never ran and a pending approval
 or clarify request was not delivered again. The process epoch is compared with

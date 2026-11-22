@@ -18,12 +18,12 @@ from tests.gateway.test_status_model_truth import _runner_with_old_usage
 async def _multiplexed_secondary_profile(tmp_path, monkeypatch):
     from gateway import run
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     secondary = home / "profiles" / "secondary"
     secondary.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
-    monkeypatch.setattr(run, "_hermes_home", home)
+    monkeypatch.setattr(run, "_slave_home", home)
     (home / "config.yaml").write_text(json.dumps({"model": {"default": "launch-model", "provider": "openrouter"}}))
     (secondary / "config.yaml").write_text(json.dumps({"model": {"default": "secondary-model",
                                                                  "provider": "openrouter"}}))
@@ -70,8 +70,8 @@ async def _frozen_local_launch_policy(tmp_path, monkeypatch):
     from gateway.session_local import create_local_session
     from persistence.conversation.usage import BillingRoute, TokenCounts, UsageDelta
     from persistence_assembly import open_persistence, profile_scope
-    monkeypatch.setattr(run, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setattr(run, "_slave_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(json.dumps({
         "model": {"provider": "custom", "default": "session-model", "base_url": "http://127.0.0.1:9/v1",
                   "api_key": "loopback-only"},

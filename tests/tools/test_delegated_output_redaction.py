@@ -28,7 +28,7 @@ PEM = (
 
 @pytest.fixture(autouse=True)
 def isolated(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     ad._reset_for_tests()
     yield
@@ -46,11 +46,11 @@ class _Parent(_StubParent):
 def test_child_result_events_memory_hooks_and_spill_use_redacted_output(
     text, tmp_path, monkeypatch
 ):
-    import hermes_cli.plugins
+    import slave_cli.plugins
     from agent.redact import redact_for_egress
 
     hooks = Mock()
-    monkeypatch.setattr(hermes_cli.plugins, "invoke_hook", hooks)
+    monkeypatch.setattr(slave_cli.plugins, "invoke_hook", hooks)
     monkeypatch.setattr("tools.delegate_tool_config._load_config", lambda: {"max_summary_chars": 2000})
     events = []
     summary = text + "\n" + "ordinary explanation\n" * 180
@@ -191,11 +191,11 @@ def test_parent_copy_honours_opt_out_while_persisted_copies_stay_forced(
 ):
     """security.redact_secrets=false: the parent model reads the child's text as-is;
     spill file, memory provider, lifecycle hook and the durable row are still masked."""
-    import hermes_cli.plugins
+    import slave_cli.plugins
 
     monkeypatch.setattr("agent.redact._redact_enabled", lambda: False)
     hooks = Mock()
-    monkeypatch.setattr(hermes_cli.plugins, "invoke_hook", hooks)
+    monkeypatch.setattr(slave_cli.plugins, "invoke_hook", hooks)
     monkeypatch.setattr("tools.delegate_tool_config._load_config", lambda: {"max_summary_chars": 2000})
     summary = SECRET + "\n" + "ordinary explanation\n" * 180
     parent = _Parent()

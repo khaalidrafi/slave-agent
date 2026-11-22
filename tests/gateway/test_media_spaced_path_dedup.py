@@ -13,20 +13,20 @@ from gateway.platforms.base import BasePlatformAdapter
 
 def _allow(monkeypatch, root):
     monkeypatch.setattr("gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS", (str(root),))
-    monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+    monkeypatch.delenv("SLAVE_MEDIA_DELIVERY_STRICT", raising=False)
 
 
 def test_spaced_path_through_a_symlink_is_one_attachment(tmp_path, monkeypatch):
     real = tmp_path / "real"
-    (real / "Hermes Agent").mkdir(parents=True)
-    (real / "Hermes Agent" / "notes.md").write_text("hi", encoding="utf-8")
+    (real / "slave-agent").mkdir(parents=True)
+    (real / "slave-agent" / "notes.md").write_text("hi", encoding="utf-8")
     link = tmp_path / "link"
     link.symlink_to(real)
     _allow(monkeypatch, tmp_path)
 
-    media, cleaned = BasePlatformAdapter.extract_media(f"Done.\nMEDIA:{link}/Hermes Agent/notes.md\n")
+    media, cleaned = BasePlatformAdapter.extract_media(f"Done.\nMEDIA:{link}/slave-agent/notes.md\n")
 
-    assert media == [(f"{link}/Hermes Agent/notes.md", False)]
+    assert media == [(f"{link}/slave-agent/notes.md", False)]
     assert cleaned == "Done."
 
 

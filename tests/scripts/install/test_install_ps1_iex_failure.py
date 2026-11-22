@@ -12,7 +12,7 @@ import pytest
 
 pytestmark = pytest.mark.platforms("windows")
 INSTALLER = Path(__file__).resolve().parents[3] / "scripts" / "install.ps1"
-REFUSAL = "exists and is not a Hermes git checkout"
+REFUSAL = "exists and is not a slave-agent git checkout"
 
 
 @pytest.fixture
@@ -20,9 +20,9 @@ def _failing_install_env(tmp_path, pinned_git_store):
     """An occupied non-checkout makes the repository stage Fail before any
     network or git call; a ready pinned Git satisfies prerequisites."""
     home = tmp_path / "home"
-    (home / "hermes-agent").mkdir(parents=True)
-    (home / "hermes-agent" / "user-file").write_text("preserve me", encoding="utf-8")
-    return dict(os.environ, HERMES_HOME=str(home), HERMES_RUNTIME_DIR=str(pinned_git_store))
+    (home / "slave-agent").mkdir(parents=True)
+    (home / "slave-agent" / "user-file").write_text("preserve me", encoding="utf-8")
+    return dict(os.environ, SLAVE_HOME=str(home), SLAVE_RUNTIME_DIR=str(pinned_git_store))
 
 
 def _powershell():
@@ -38,7 +38,7 @@ def test_failed_iex_install_reports_and_returns_to_the_callers_session(tmp_path,
                             env=_failing_install_env, capture_output=True, text=True, timeout=60, check=False)
     assert REFUSAL in result.stdout
     assert "session alive: 1" in result.stdout, result.stdout + result.stderr
-    assert (tmp_path / "home" / "hermes-agent" / "user-file").read_text(encoding="utf-8") == "preserve me"
+    assert (tmp_path / "home" / "slave-agent" / "user-file").read_text(encoding="utf-8") == "preserve me"
 
 
 def test_failed_file_install_still_exits_nonzero(_failing_install_env):

@@ -41,10 +41,10 @@ _inflight: set[tuple[str, str, str, str]] = set()
 
 
 def _key(provider: str, identity_id: Optional[str] = None, base_url: Optional[str] = None) -> tuple[str, str, str, str]:
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
 
     return (
-        hermes_home_key(),
+        slave_home_key(),
         str(provider or "").strip().lower(),
         str(identity_id or "").strip(),
         str(base_url or "").strip().rstrip("/"),
@@ -175,7 +175,7 @@ def refresh_account_usage_async(providers: Iterable[str]) -> list[threading.Thre
             continue
         thread = threading.Thread(
             target=copy_context().run, args=(_refresh_legacy, provider, key),
-            name="hermes-account-usage-refresh", daemon=True)
+            name="slave-account-usage-refresh", daemon=True)
         thread.start()
         started.append(thread)
     return started
@@ -211,7 +211,7 @@ def refresh_account_usage_entries_async(requests: Iterable[dict]) -> list[thread
         return []
     thread = threading.Thread(
         target=copy_context().run, args=(_refresh_entries, list(due)),
-        name="hermes-account-usage-refresh", daemon=True)
+        name="slave-account-usage-refresh", daemon=True)
     thread.start()
     return [thread]
 

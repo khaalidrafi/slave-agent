@@ -11,12 +11,12 @@ from tests.fixtures.storage_read import session_row
 
 @pytest.fixture(autouse=True)
 def _home(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
 
 
 @pytest.mark.asyncio
 async def test_the_control_card_of_a_compressed_messaging_session_reads_its_current_segment(tmp_path):
-    from hermes_cli.goals import GoalState
+    from slave_cli.goals import GoalState
     from gateway.session_ancillary import control_snapshot
     _compressed_lane(tmp_path)
     cold = await _cold(tmp_path)

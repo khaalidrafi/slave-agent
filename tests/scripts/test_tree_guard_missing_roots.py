@@ -1,7 +1,7 @@
 """A tree guard fails when one of its scan roots is gone, instead of passing with nothing checked.
 
 Each guard below walks a fixed list of top-level directories. When a directory moves (into
-``src/hermes_agent/`` or a sibling package) a guard that skips missing roots keeps reporting
+``src/slave_agent/`` or a sibling package) a guard that skips missing roots keeps reporting
 success while it checks none of the moved files.
 """
 from __future__ import annotations
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

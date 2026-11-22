@@ -17,8 +17,8 @@ def test_exit_state_keeps_runtime_reserved_until_final_cleanup(tmp_path, monkeyp
 
     home = tmp_path / 'runtime'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setenv('SLAVE_HOME', str(home))
+    monkeypatch.setattr(run, '_slave_home', home)
     states = []
     runner = SimpleNamespace(
         _restart_requested=False, _exit_reason=None, _restart_command_source=None,

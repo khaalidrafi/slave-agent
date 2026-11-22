@@ -6,12 +6,12 @@ user docs `website/docs/user-guide/features/cron.md`, `kanban.md`.
 ## Cron
 
 `cron/jobs.py` (job store) + `cron/scheduler.py` (tick loop; `scheduler_*.py` siblings). Agents
-schedule via the `cronjob` tool; users via `hermes cron list|add|edit|pause|resume|run|remove` or
+schedule via the `cronjob` tool; users via `slave cron list|add|edit|pause|resume|run|remove` or
 `/cron`. Schedules: duration (`"30m"`, `"2h"`, `"1d"`), "every" phrase (`"every 2h"`, `"every monday
 9am"`), 5-field cron (`"0 9 * * *"`), ISO one-shot (`"2026-06-01T09:00:00Z"`). Per-job fields:
 `skills`, `model`/`provider` overrides, `script` (pre-run data-collection script whose stdout is
 injected into the prompt; `no_agent=True` makes the script the whole job; always a FILE under
-`HERMES_HOME/scripts/`, never a command line — `script='echo hi'` is refused at creation), `context_from` (chain job
+`SLAVE_HOME/scripts/`, never a command line — `script='echo hi'` is refused at creation), `context_from` (chain job
 A's last output into job B's prompt), `workdir` (run with that directory's `AGENTS.md`/`CLAUDE.md`
 loaded), `timezone` (pin the cron expression's wall clock to an IANA zone; absent = the profile's
 zone), `grace_minutes` (override the catch-up window; `0` = never catch up, cron only),
@@ -19,7 +19,7 @@ multi-platform delivery.
 
 Hardening invariants — each guards a real failure; don't weaken without answering for it:
 - **Inactivity watchdog** on cron agent sessions (`_cron_inactivity_seconds()`): default 600s idle,
-  `HERMES_CRON_TIMEOUT` overrides, `0` = unlimited. It is idle time, not wall-clock — a stalled
+  `SLAVE_CRON_TIMEOUT` overrides, `0` = unlimited. It is idle time, not wall-clock — a stalled
   session is hard-interrupted so it cannot monopolise the scheduler, while a long-but-active job
   is never cut off. Attached scripts (pre-run or `no_agent`) are bounded separately by the script
   timeout (`_DEFAULT_SCRIPT_TIMEOUT`, 3600s).
@@ -41,13 +41,13 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   executions ledger's `scheduled_instant` blocks a second fire, `cron.catch_up_missed: false`
   skips past-grace misses with a logged reason. Never drop a slot silently (#107485).
 - Per-home tick lock `<home>/cron/.tick.lock` prevents duplicate ticks across processes for
-  that profile's store; never a `~/.hermes/...` literal.
-- **Headless ticks refuse, never spawn.** `hermes cron tick` (system crontab / external scheduler)
+  that profile's store; never a `~/.slave/...` literal.
+- **Headless ticks refuse, never spawn.** `slave cron tick` (system crontab / external scheduler)
   calls `tick(headless=True)`; `cron/scheduler_gateway_gate.py` skips agent jobs when discovery
   says no gateway owns the home (`last_fire_error` stamped, one warning per tick, due instant
   untouched) instead of letting `run_canonical_job → connect_gateway → ensure_gateway_runtime`
   spawn an unmanaged daemon. Same policy as approvals (headless/cron = refuse). The in-process
-  ticker and `hermes cron run` are not headless.
+  ticker and `slave cron run` are not headless.
 - **The ticker binds each served profile's scope for the whole tick, including pre-loop code.**
   `scheduler_provider.py::_start_multiplex` is ONE ticker iterating `profiles_to_serve()`
   sequentially under `_profile_cron_scope(home)` (home + secret scope + terminal scope) — never N
@@ -78,13 +78,13 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   pool worker's `finally` sits OUTSIDE `ctx.run` and resolves the LAUNCH home. Pass the
   registering home (`release_running_job(job_id, home=...)`), or every secondary profile's claim
   leaks — the job skips a fire window until the force-release backstop sweeps it, and the drain
-  sees phantom work. Never rebuild a home from a key half (`Path(key[0])`): `hermes_home_key`
+  sees phantom work. Never rebuild a home from a key half (`Path(key[0])`): `slave_home_key`
   normcases, so use `_inflight_home_path`.
 - **Ticked-home state is reclaimed when a home leaves the set.** `register_ticked_homes` is
   republished every cycle and reaps the departed homes' parallel pools; pools used to live until
   `atexit`, so each home ever ticked kept a ThreadPoolExecutor and its worker threads forever.
 - **The host gateway stands down for a profile that runs its OWN gateway.** `run.py::
-  _cron_profile_gate` (the same gate `hermes_cli/web_server.py` passes) keeps the launch process
+  _cron_profile_gate` (the same gate `slave_cli/web_server.py` passes) keeps the launch process
   and a per-profile gateway off one store: the tick lock stops a simultaneous double-run but not
   the race, and when the launch process wins, delivery goes through `SharedRouteAdapters`/
   fail-closed instead of that profile's live adapters. The gate compares the liveness PID against
@@ -92,14 +92,14 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   in `served_profiles`, so a bare liveness answer would stand cron down host-wide.
 - **The restart-safe external worker boots itself.** `_launch_external_cron_worker` pins the
   checkout — and, on a PM install, the committed generation's `site-packages` — on the child's
-  `PYTHONPATH` and marks it `_HERMES_CRON_WORKER_BOOT`; the child's package entry
+  `PYTHONPATH` and marks it `_SLAVE_CRON_WORKER_BOOT`; the child's package entry
   (`cron/__init__.py` → `cron/worker_bootstrap.py`, ahead of the `cron.jobs` import — `-m
   cron.scheduler` runs the package first) then runs PM's `activate_dependencies`, which
   leases the committed generation for the worker's lifetime, runs its `.pth` files and
   activates it before the first third-party import. A failed activation is fatal: the worker
   exits before its ownership ack (a reported dispatch failure) rather than run on an unleased
-  generation the collector may delete. The gateway never re-runs the boot — `hermes_bootstrap`
-  already did at its own launch (#122222). The worker's `__main__` imports `hermes_bootstrap`
+  generation the collector may delete. The gateway never re-runs the boot — `slave_bootstrap`
+  already did at its own launch (#122222). The worker's `__main__` imports `slave_bootstrap`
   (`finish_worker_boot`) and runs `run_agent`'s interrupted-pull recovery before it reads the
   payload, and only then drops the marker: a source-update relaunch (`-I`, no `PYTHONPATH`) or a
   post-restore re-exec must replay the whole worker, never land after the ack with the payload
@@ -109,18 +109,18 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   reply-facing conversation: origin, origin-less home fallback, user-written bare-platform home,
   or opted-in explicit targets. `all` expansions do not gain home mirror eligibility. Mirrored
   briefs are labelled user turns appended at a turn boundary, preserving role alternation.
-- The cron ticker runs in the desktop-spawned backend when `HERMES_DESKTOP=1` — that env var means
+- The cron ticker runs in the desktop-spawned backend when `SLAVE_DESKTOP=1` — that env var means
   "spawned by the app", not "a GUI is watching" (root: capability is a property of the session).
 - Background `delegate_task` is process-local; work that must survive restarts is a cron job or a
   `terminal(background=True, notify_on_complete=True)` process.
 
 ## Kanban (multi-agent work queue)
 
-Durable SQLite-backed board letting multiple profiles/workers collaborate. Users: `hermes kanban
+Durable SQLite-backed board letting multiple profiles/workers collaborate. Users: `slave kanban
 <verb>`; dispatcher-spawned workers use a dedicated `kanban_*` toolset so their schema footprint is
 zero outside a kanban task (footprint ladder rung 3).
 
-- **CLI:** `hermes_cli/kanban.py` facade + 14 `kanban_*.py` siblings (`boards`, `db`, `db_connect`,
+- **CLI:** `slave_cli/kanban.py` facade + 14 `kanban_*.py` siblings (`boards`, `db`, `db_connect`,
   `db_dispatch`, `db_notify`, `db_graph` (task initialization and decomposition), `workspace`, ...). Verbs: `init, create, list (ls), show, assign, link,
   unlink, comment, attach, attachments, attach-rm, complete, request-review, request-changes,
   reopen-review, block, unblock, archive, tail`, plus `watch, stats, runs, log, assignees, heartbeat,
@@ -129,17 +129,17 @@ zero outside a kanban task (footprint ladder rung 3).
   kanban_request_changes, kanban_block, kanban_schedule, kanban_heartbeat, kanban_comment,
   kanban_create, kanban_link,
   kanban_attach, kanban_attach_url, kanban_attachments`; platforms whose saved selection enables
-  `kanban` (`hermes tools enable kanban --platform <p>`; default-off, in `CONFIGURABLE_TOOLSETS`) get
+  `kanban` (`slave tools enable kanban --platform <p>`; default-off, in `CONFIGURABLE_TOOLSETS`) get
   the full set plus `kanban_list`/`kanban_unblock` for board routing. The check_fn reads the schema
   build's own selection (`tools/kanban_toolset_context.py`), never the legacy top-level `toolsets`
   key alone.
 - **Dispatcher:** long-lived loop (default 60s) that reclaims stale claims, promotes ready tasks,
   atomically claims, and spawns assigned profiles. Runs **inside the gateway** by default
-  (`kanban.dispatch_in_gateway: true`). Standalone: `plugins/kanban/systemd/hermes-kanban-dispatcher.service`.
+  (`kanban.dispatch_in_gateway: true`). Standalone: `plugins/kanban/systemd/slave-kanban-dispatcher.service`.
 - **Plugin assets:** `plugins/kanban/dashboard/` (web UI) + systemd unit. `kanban_db.connect` is its
   own connection helper — do not alias it to `projects_db.connect` (a path-proximity generator did).
 
-Isolation: **board** is the hard boundary — workers get `HERMES_KANBAN_BOARD` pinned in their env and
+Isolation: **board** is the hard boundary — workers get `SLAVE_KANBAN_BOARD` pinned in their env and
 cannot see other boards; **tenant** is a soft namespace within a board (workspace-path + memory-key
 isolation, one fleet serving several businesses). After `kanban.failure_limit` consecutive
 non-success attempts on a task (default 2) the dispatcher auto-blocks it to stop spin loops; a
@@ -151,25 +151,25 @@ substring (root). Worker liveness is `(worker_pid, worker_started_at)` — the s
 (`gateway.status.get_process_start_time`) recorded at claim time — never bare PID existence, or a
 recycled PID gets killed on reclaim.
 
-- **Notifications leave through the task's owning profile.** `hermes_cli/kanban_db_notify.py`
+- **Notifications leave through the task's owning profile.** `slave_cli/kanban_db_notify.py`
   subscriptions carry the profile; `gateway/kanban_watchers_notifier.py` delivers via THAT
   profile's adapter under its scope (`_notify_profile_filter`), never the multiplexer's launch
   adapter; a fail-closed skip logs once at WARNING with the remedy, never a bare `continue`.
-  Dispatched workers get `HERMES_KANBAN_BOARD` and the assignee's `HERMES_HOME` pinned in a
+  Dispatched workers get `SLAVE_KANBAN_BOARD` and the assignee's `SLAVE_HOME` pinned in a
   scrubbed child env (`build_subprocess_env` + `strip_launch_profile_env`); they never inherit the
   default profile's `.env`.
 - **Prompt injection sites gate on ownership, not tool access.** Tool access (`kanban_show` visible
-  via a profile's toolset) and an inherited `HERMES_KANBAN_TASK` (delegate children, cron runs beside
+  via a profile's toolset) and an inherited `SLAVE_KANBAN_TASK` (delegate children, cron runs beside
   a worker) are not ownership. The kanban guidance (`agent_init`, `system_prompt` fallback) and the
   stop nudge resolve the task via `agent/delegation_context.py::owned_kanban_task()`; other readers
   pair their env read with `is_dispatcher_owned_worker_context()`.
 - **Descendant fence is a path, not a flag.** A delegated child's Kanban marker
   (`agent/delegation_context.py::DELEGATED_CHILD_ENV_MARKER`) carries the fenced board ROOT;
-  `kanban_path_is_fenced(path)` denies mutations only on the dispatcher-pinned `HERMES_KANBAN_DB`
-  or under that root, so a child working against a scratch `HERMES_HOME` keeps a writable board.
+  `kanban_path_is_fenced(path)` denies mutations only on the dispatcher-pinned `SLAVE_KANBAN_DB`
+  or under that root, so a child working against a scratch `SLAVE_HOME` keeps a writable board.
 
 ## Tests
 
-`tests/cron/`, `tests/hermes_cli/test_kanban*.py`, `tests/tools/test_kanban*.py`. Schedule parsing
+`tests/cron/`, `tests/slave_cli/test_kanban*.py`, `tests/tools/test_kanban*.py`. Schedule parsing
 and catch-up windows are pure functions — test them as data. Never assert on the verb list or
 toolset size (root: no change-detectors). Time-based tests use loose bounds (≥ 2s) and event sync.

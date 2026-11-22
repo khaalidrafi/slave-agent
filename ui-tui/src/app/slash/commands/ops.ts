@@ -12,7 +12,7 @@ import type {
   SpawnTreeListResponse,
   SpawnTreeLoadResponse,
   ToolsConfigureResponse
-} from '@hermes/shared/gateway-types'
+} from '@slave-agent/shared/gateway-types'
 
 import { t } from '../../../i18n/runtime.js'
 import { appendTranscriptMessage } from '../../../lib/messages.js'
@@ -167,7 +167,7 @@ export const opsCommands: SlashCommand[] = [
   },
 
   {
-    help: 're-read ~/.hermes/.env into the running gateway (CLI parity)',
+    help: 're-read ~/.slave/.env into the running gateway (CLI parity)',
     name: 'reload',
     run: (_arg, ctx) => {
       // The shared gateway serves `/reload` for one session this client controls.
@@ -776,7 +776,7 @@ export const opsCommands: SlashCommand[] = [
     run: (arg, ctx, cmd) => {
       // No argument → open the interactive Plugins Hub overlay. Any
       // subcommand (enable/disable/list/install/…) falls through to the
-      // text slash worker so it stays at parity with `hermes plugins`.
+      // text slash worker so it stays at parity with `slave plugins`.
       if (!arg.trim()) {
         return patchOverlayState({ pluginsHub: true })
       }

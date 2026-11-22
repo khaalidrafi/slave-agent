@@ -6,7 +6,7 @@ import sys
 import pytest
 
 from agent.redact import RedactingFormatter
-from hermes_cli.logs import _TS_RE, _extract_level, _parse_line_timestamp
+from slave_cli.logs import _TS_RE, _extract_level, _parse_line_timestamp
 
 _FMT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 _BREAKS = ("\n", "\r", "\x00", "\x1b", "\x85", "\u2028", "\u2029")

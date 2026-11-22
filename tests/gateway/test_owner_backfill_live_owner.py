@@ -31,7 +31,7 @@ def test_owner_backfill_runs_on_the_live_owner(tmp_path):
     (work / 'config.yaml').write_text(json.dumps(model))
     root = Path(__file__).resolve().parents[2]
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                PYTHONUNBUFFERED='1')
     with (tmp_path / 'gateway.log').open('w+') as log:
         process = subprocess.Popen([sys.executable, '-m', 'gateway.run'], cwd=root, env=env,
@@ -51,7 +51,7 @@ def test_owner_backfill_runs_on_the_live_owner(tmp_path):
 
             def headers(profile_home):
                 # The Desktop mints each profile's own native grant (the profile its body names).
-                return {'X-Hermes-Gateway-Ticket': control(home, 'session-ticket', {
+                return {'X-Slave-Gateway-Ticket': control(home, 'session-ticket', {
                     'profile_id': str(profile_home.resolve()), 'instance_id': descriptor['instance_id'],
                     'purpose': 'native-http'})['ticket']}
             with httpx.Client(base_url=descriptor['api_origin'], trust_env=False, timeout=30) as client:

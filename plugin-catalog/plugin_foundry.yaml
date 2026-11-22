@@ -1,9 +1,9 @@
 name: plugin_foundry
 title: Plugin Foundry
-repo: https://github.com/dolepee/hermes-plugin-foundry
+repo: https://github.com/dolepee/slave-plugin-foundry
 sha: 9345a56954d219f923a05712a7a68e44df5099a2
 description: >-
-  Turn a narrow plugin request into a native Hermes plugin: manifest, entry
+  Turn a narrow plugin request into a native slave-agent plugin: manifest, entry
   point, tool, SQLite state, tests, static scan and catalog draft. Two
   archetypes only: a SQLite folder watcher and a JSON API poller, each with one
   tool. The folder-watcher parser accepts one explicit supported file type or
@@ -25,10 +25,10 @@ tier: community
 category: automation
 requires_hermes: ">=0.23.0"
 version: "0.1.5"
-docs_url: https://github.com/dolepee/hermes-plugin-foundry/blob/9345a56954d219f923a05712a7a68e44df5099a2/README.md
+docs_url: https://github.com/dolepee/slave-plugin-foundry/blob/9345a56954d219f923a05712a7a68e44df5099a2/README.md
 platforms: []
 known_issues:
-  - "Declared runtime floor is Hermes >=0.23.0. The public plugin API at 0.21.5 was audited, but runtime and approval acceptance is only recorded on v0.23."
+  - "Declared runtime floor is slave-agent >=0.23.0. The public plugin API at 0.21.5 was audited, but runtime and approval acceptance is only recorded on v0.23."
   - "Supports only the two documented archetypes: a SQLite folder watcher and a JSON API poller."
   - "The watcher parser intentionally rejects ambiguous or unsupported file-type prose rather than guessing. Use one explicit type, for example CSV files; arbitrary sentence wording is not supported."
   - "Generated code is not installed, published or catalogued automatically. A human must review and install it."

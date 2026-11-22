@@ -10,7 +10,7 @@ import pytest
 from fastapi import HTTPException
 
 from agent.context_references import _expand_path_reference, parse_context_references
-from hermes_cli.web_routers.files import fs_download, fs_read_text
+from slave_cli.web_routers.files import fs_download, fs_read_text
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_holder import raw_holder
 from tests.fixtures.storage_read import transcript_rows

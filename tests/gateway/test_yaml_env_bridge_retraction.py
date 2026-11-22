@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from hermes_yaml import YAMLError
+from slave_yaml import YAMLError
 
 from gateway.config_loader import load_yaml_layer
 from gateway.platforms._shared import bridged_env_digest, bridged_env_marker
@@ -14,7 +14,7 @@ _NAMES = ("TELEGRAM_REACTIONS", "TELEGRAM_ALLOWED_USERS", "TELEGRAM_REQUIRE_MENT
 
 @pytest.fixture(autouse=True)
 def clean_bridge(monkeypatch):
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
 
     monkeypatch.setattr(env_loader, "_LOADED_DOTENV_KEYS", set())
     monkeypatch.setattr(env_loader, "_MANAGED_DOTENV_KEYS", set())
@@ -51,14 +51,14 @@ def test_removed_yaml_keys_retract_only_their_own_previous_values(tmp_path, repl
 
 @pytest.mark.parametrize("owner", ["shell", "dotenv", "managed"])
 def test_removed_key_preserves_operator_owned_value(tmp_path, monkeypatch, owner):
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
 
     _load(tmp_path, "telegram:\n  reactions: false\n")
     if owner == "shell":
         monkeypatch.setenv("TELEGRAM_REACTIONS", "true")
     elif owner == "dotenv":
         (tmp_path / ".env").write_text("TELEGRAM_REACTIONS=false\n", encoding="utf-8")
-        env_loader.load_hermes_dotenv(hermes_home=tmp_path, load_external_secrets=False)
+        env_loader.load_slave_dotenv(slave_home=tmp_path, load_external_secrets=False)
         assert "TELEGRAM_REACTIONS" in env_loader.launch_dotenv_keys()
     else:
         monkeypatch.setattr(env_loader, "_MANAGED_DOTENV_KEYS", {"TELEGRAM_REACTIONS"})
@@ -78,7 +78,7 @@ def test_malformed_yaml_never_retracts_last_successful_value(tmp_path):
 def test_failed_load_does_not_treat_unseen_keys_as_deleted(tmp_path, monkeypatch, failure):
     from gateway import config_loader
     from gateway.platform_registry import platform_registry
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
     _load(tmp_path, "telegram:\n  reactions: false\n")
 

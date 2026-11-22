@@ -35,10 +35,10 @@ def held(tmp_path):
     """``run(script, plugin_body=None, server_cls=FakeLLMServer, **agent_kwargs)
     -> (result, shown, displayed history, server, db)`` for one held turn."""
     from gateway.session_controls import display_projection
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from persistence_assembly import open_persistence, profile_scope
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     opened = []
 
     def run(script, plugin_body=None, server_cls=FakeLLMServer, **kwargs):

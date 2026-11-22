@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import sqlite_safe_read
+from slave_cli import sqlite_safe_read
 from persistence.sqlite._state.errors import StateDbReplacedError
 from persistence.sqlite import _registry as registry
 from persistence.sqlite._holder import StoreHolder
@@ -35,7 +35,7 @@ def _clean_registry():
 
 @pytest.fixture
 def home():
-    return Path(os.environ["HERMES_HOME"])
+    return Path(os.environ["SLAVE_HOME"])
 
 
 def _census(live, retired, refcounts):

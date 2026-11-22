@@ -27,8 +27,8 @@ from gateway.media_repair import repair_explicit_computer_use_media_paths
 from gateway.platforms.base import BasePlatformAdapter
 from gateway.platforms.base_exec_approval import ea_default_reason_text
 from gateway.turn_context import TurnContext
-from hermes_cli.config import cfg_get
-from hermes_cli.plugins_dispatch import stream_held
+from slave_cli.config import cfg_get
+from slave_cli.plugins_dispatch import stream_held
 from utils import is_truthy_value
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
@@ -77,7 +77,7 @@ def _clarify_expired_notice() -> str:
 
 
 # run_conversation result keys the gateway projection carries verbatim so a finite viewer's
-# `-z --usage-file` ledger (hermes_cli/oneshot._USAGE_KEYS) reads what the in-process path did.
+# `-z --usage-file` ledger (slave_cli/oneshot._USAGE_KEYS) reads what the in-process path did.
 _LEDGER_PASSTHROUGH_KEYS = (
     "estimated_cost_usd", "cost_status", "cost_source", "cache_read_tokens", "cache_write_tokens",
     "reasoning_tokens", "total_tokens", "provider", "turn_exit_reason", "service_tier",
@@ -174,8 +174,8 @@ def _settle_api_runtime_lock(agent, result, captured):
 def _resolution_failure_reply(exc: Exception, platform: Platform) -> tuple[str, str, bool]:
     """``(chat text, failure_reason, retryable)`` for a model/credential resolution failure before the turn."""
     from agent.error_classifier import FailoverReason
-    from hermes_cli.auth import AuthError, is_rate_limited_auth_error
-    from hermes_cli.runtime_provider_custom import LocalRuntimeUnavailableError
+    from slave_cli.auth import AuthError, is_rate_limited_auth_error
+    from slave_cli.runtime_provider_custom import LocalRuntimeUnavailableError
     from persistence.core.errors import AuthorityRefusal
     auth_permanent = FailoverReason.auth_permanent.value
     if isinstance(exc, LocalRuntimeUnavailableError):
@@ -1354,7 +1354,7 @@ class TurnRunner(GatewayTurnProgressMixin, GatewaySessionAgentMixin):
 
         The turn message lives on the shared TurnContext (``ctx.message``) so ``_run_agent_inner`` sees
         every rebind. session_key propagates via contextvars (_set_session_env / set_current_session_key)
-        — never os.environ["HERMES_SESSION_KEY"], which would misroute approvals across sessions.
+        — never os.environ["SLAVE_SESSION_KEY"], which would misroute approvals across sessions.
         """
         from gateway.run import (
             _current_max_iterations, _normalize_empty_agent_response, _reload_runtime_env_preserving_config_authority,
@@ -1365,13 +1365,13 @@ class TurnRunner(GatewayTurnProgressMixin, GatewaySessionAgentMixin):
         # Platform.LOCAL ("local") maps to the "cli" hint key the agent understands.
         # session_key is propagated via contextvars in _set_session_env() (_SESSION_KEY) and via
         # set_current_session_key() (_approval_session_key) below — both concurrency-safe and inherited by
-        # tool worker threads. We deliberately do NOT write os.environ["HERMES_SESSION_KEY"] here:
+        # tool worker threads. We deliberately do NOT write os.environ["SLAVE_SESSION_KEY"] here:
         # os.environ is process-global, so concurrent gateway sessions (e.g. two Discord threads) would
         # clobber each other's value, and a tool thread whose contextvar is unset would fall back to
         # os.environ and read the wrong session key — misrouting command-approval prompts to the wrong
         # thread (#24100). The non-gateway surfaces don't depend on this write: CLI and cron bind the
         # session via contextvars (set_current_session_key / session context), and only the TUI slash-worker
-        # *subprocess* exports HERMES_SESSION_KEY (from its own --session-key argv, a separate process) — so
+        # *subprocess* exports SLAVE_SESSION_KEY (from its own --session-key argv, a separate process) — so
         # removing this in-process gateway write does not affect any of them.
         from gateway.session_policy import policy_for_source
         policy = policy_for_source(runner, ctx.source)
@@ -1517,7 +1517,7 @@ class TurnRunner(GatewayTurnProgressMixin, GatewaySessionAgentMixin):
             # Most failed results name no provider; the error card's sign-in / update-key action needs it.
             "provider": getattr(agent, "provider", None) if agent else None,
             "context_length": (getattr(comp, "context_length", 0) or 0) if has_comp else 0,
-            # The rest of the `-z --usage-file` ledger (hermes_cli/oneshot._USAGE_KEYS): a finite
+            # The rest of the `-z --usage-file` ledger (slave_cli/oneshot._USAGE_KEYS): a finite
             # viewer reads the committed result over `prompt.receipt`, so the projection must keep
             # what the in-process one-shot took straight from `run_conversation`.
             **{key: result.get(key) for key in _LEDGER_PASSTHROUGH_KEYS if key in result},

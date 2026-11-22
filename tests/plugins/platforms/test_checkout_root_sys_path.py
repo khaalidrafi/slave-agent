@@ -4,7 +4,7 @@ These modules used to run ``sys.path.insert(0, <checkout root>)`` at import, so 
 packages (``evals``, ``utils``, ``tests``, ...) shadowed same-named installed packages for every later
 import in the process. ``sys.path`` is process-global, so each import runs in a fresh interpreter.
 
-``gateway.run`` is not listed: it imports ``hermes_bootstrap``, whose ``harden_import_path`` relocates
+``gateway.run`` is not listed: it imports ``slave_bootstrap``, whose ``harden_import_path`` relocates
 the root to the front on purpose (entry-point hardening against a cwd ``utils/`` package).
 """
 
@@ -46,7 +46,7 @@ def test_import_keeps_installed_package_ahead_of_checkout(module, tmp_path):
         import evals
         assert getattr(evals, "MARKER", None) == "installed", evals.__file__
     """)
-    env = dict(os.environ, HERMES_HOME=str(tmp_path / "home"))
+    env = dict(os.environ, SLAVE_HOME=str(tmp_path / "home"))
     env.pop("PYTHONPATH", None)
     result = subprocess.run(
         [sys.executable, "-c", script], check=False, capture_output=True, text=True, cwd=str(tmp_path), env=env,
@@ -69,7 +69,7 @@ def test_standalone_file_load_still_resolves_repo_siblings(module, tmp_path):
         spec.loader.exec_module(mod)
         assert sys.path[-1] == repo, sys.path[-3:]
     """)
-    env = dict(os.environ, HERMES_HOME=str(tmp_path / "home"))
+    env = dict(os.environ, SLAVE_HOME=str(tmp_path / "home"))
     env.pop("PYTHONPATH", None)
     result = subprocess.run(
         [sys.executable, "-c", script], check=False, capture_output=True, text=True, cwd=str(tmp_path), env=env,

@@ -9,7 +9,7 @@ import time
 
 import pm.environments
 import pytest
-from hermes_cli.worktree_ops import _prune_stale_worktrees
+from slave_cli.worktree_ops import _prune_stale_worktrees
 from pm.filesystem import lock_fd
 from pm.install_states import collect_orphan_install_states, orphan_install_states
 
@@ -27,7 +27,7 @@ def test_startup_prune_reclaims_only_provably_deleted_checkouts(tmp_path, monkey
     repo = tmp_path / "repo"
     (repo / ".worktrees").mkdir(parents=True)
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
-    live_root = tmp_path / "home" / "hermes-agent"
+    live_root = tmp_path / "home" / "slave-agent"
     live_root.mkdir(parents=True)
     live = _state(installs, "aaaa", live_root)
     gone_scratch = _state(installs, "bbbb", tmp_path / "home" / "cache" / "scratch" / "clone")
@@ -37,8 +37,8 @@ def test_startup_prune_reclaims_only_provably_deleted_checkouts(tmp_path, monkey
     (unknown / "environments").mkdir(parents=True)
     # A data root shared across a mount boundary records checkouts this process cannot see:
     # a host install from inside a container, a container install from the host.
-    host_install = _state(installs, "eeee", tmp_path / "other-host-home" / ".hermes" / "hermes-agent")
-    container_install = _state(installs, "ffff", tmp_path / "opt-hermes")
+    host_install = _state(installs, "eeee", tmp_path / "other-host-home" / ".slave" / "slave-agent")
+    container_install = _state(installs, "ffff", tmp_path / "opt-slave")
 
     assert orphan_install_states(installs) == [gone_scratch, gone_worktree]
     monkeypatch.setattr(pm.environments, "installs_root", lambda: installs)
@@ -136,16 +136,16 @@ def _age(state, days):
 def test_retention_comes_from_the_store_owner_not_the_active_profile(tmp_path, root_days, profile_days, reclaimed):
     """Every profile of a root shares ``<root>/installs``: the root's setting decides for all of
     them, whichever profile runs the collection."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     named = root / "profiles" / "work"
     named.mkdir(parents=True)
     for home, days in ((root, root_days), (named, profile_days)):
         if days is not None:
             (home / "config.yaml").write_text(
                 f"worktrees:\n  install_state_retention_days: {days}\n", encoding="utf-8")
-    token = set_hermes_home_override(named)
+    token = set_slave_home_override(named)
     try:
         installs = pm.environments.installs_root()
         assert installs == root / "installs"
@@ -153,13 +153,13 @@ def test_retention_comes_from_the_store_owner_not_the_active_profile(tmp_path, r
         _age(state, 30)
         assert (collect_orphan_install_states(installs) == [state]) is reclaimed
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert state.exists() is not reclaimed
 
 
 def test_symlinked_installs_reads_retention_from_the_home_not_the_link_target(tmp_path):
     """``installs/`` moved to another disk via a symlink: the opt-out in the home's config still
-    applies, and the link target's parent is not turned into a Hermes home."""
+    applies, and the link target's parent is not turned into a slave-agent home."""
     root = tmp_path / "home"
     root.mkdir()
     (root / "config.yaml").write_text("worktrees:\n  install_state_retention_days: 0\n", encoding="utf-8")
@@ -176,7 +176,7 @@ def test_state_used_while_another_orphan_is_removed_is_kept(tmp_path, monkeypatc
     """Candidates are listed before any removal starts; a state launched (lease taken and
     released) while an earlier, large orphan is still being removed is back in use."""
     import pm.install_states
-    from hermes_cli.runtime_state import lease_directory
+    from slave_cli.runtime_state import lease_directory
 
     installs = tmp_path / "home" / "installs"
     deleted = _state(installs, "aaaa", tmp_path / "home" / "cache" / "scratch" / "gone")

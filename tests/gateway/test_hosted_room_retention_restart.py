@@ -47,5 +47,5 @@ store=HostedRoomAttachmentStore(handle,clock=lambda:float(sys.argv[3]))
 data=store.read(room_id='room',attachment_id=sys.argv[2],recipient_member_id='member').data
 print(json.dumps({'data':data.decode(),'events':len(hosted_rooms.read_events(handle,placement='profile',room_id='room')['events']),'pruned':store._repository._prune('profile',float(sys.argv[3]))}))
 '''
-    result = subprocess.run([sys.executable, '-c', script, str(db), item['attachment_id'], str(100 + UNCOMMITTED_TTL_SECONDS + 1)], env={**os.environ, 'HERMES_HOME':str(tmp_path)}, stdin=subprocess.DEVNULL, capture_output=True, text=True, check=True)
+    result = subprocess.run([sys.executable, '-c', script, str(db), item['attachment_id'], str(100 + UNCOMMITTED_TTL_SECONDS + 1)], env={**os.environ, 'SLAVE_HOME':str(tmp_path)}, stdin=subprocess.DEVNULL, capture_output=True, text=True, check=True)
     assert json.loads(result.stdout) == {'data':'accepted bytes', 'events':1, 'pruned':0}

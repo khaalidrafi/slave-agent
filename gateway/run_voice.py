@@ -50,12 +50,12 @@ def _is_legacy_voice_key(key: str) -> bool:
 def _owner_voice_config(owner_profile: Optional[str]) -> dict:
     """The ``voice`` block of the adapter OWNER's config. Secondary startup and reconnect sync after
     leaving ``_profile_runtime_scope``, so an ambient read would copy the launch profile's settings."""
-    from hermes_cli.config import load_config  # lazy: no gateway -> hermes_cli module dep
+    from slave_cli.config import load_config  # lazy: no gateway -> slave_cli module dep
 
     if not isinstance(owner_profile, str):  # primary adapter (None): the launch profile IS the owner
         return load_config().get("voice") or {}
     from gateway.run import _profile_runtime_scope
-    from hermes_cli.profiles import get_profile_dir
+    from slave_cli.profiles import get_profile_dir
 
     with _profile_runtime_scope(get_profile_dir(owner_profile), hydrate_secrets=False):
         return load_config().get("voice") or {}
@@ -338,7 +338,7 @@ class GatewayVoiceMixin:
             user_name = user_name or GatewayVoiceMixin._cached_user_display_name(client, user_id)
             source.user_id, source.user_name = str(user_id), user_name or str(user_id)
             # The bound source is the `/voice join` message's; its id is not this turn's trigger
-            # (run.py exports it as HERMES_SESSION_MESSAGE_ID for reply anchoring).
+            # (run.py exports it as SLAVE_SESSION_MESSAGE_ID for reply anchoring).
             source.message_id = None
         else:
             # A programmatic join binds no source: build the one a typed message in that channel carries

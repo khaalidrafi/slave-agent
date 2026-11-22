@@ -27,7 +27,7 @@ def test_scope_identity_is_the_canonical_key_of_the_home_folder(tmp_path):
     link = tmp_path / "linked-home"
     link.symlink_to(home, target_is_directory=True)
     # CONTRACT: the key is the normalized resolved profile_dir; two folders resolving to one home are one scope.
-    assert ProfileScope(profile_dir=home, name="coder").hermes_home_key == os.path.normcase(str(home.resolve()))
+    assert ProfileScope(profile_dir=home, name="coder").slave_home_key == os.path.normcase(str(home.resolve()))
     assert ProfileScope(profile_dir=link, name="coder") == ProfileScope(profile_dir=home, name="coder")
     assert len({ProfileScope(profile_dir=link, name="a"), ProfileScope(profile_dir=home, name="b")}) == 1
 
@@ -50,11 +50,11 @@ def test_a_scope_keeps_the_folder_it_resolved_when_its_symlink_is_repointed(tmp_
     link.symlink_to(home_b, target_is_directory=True)
     # CONTRACT: a scope names the folder it resolved when built; repointing a symlink on its path moves neither its directory nor its key.
     assert scope.profile_dir == home_a.resolve()
-    assert scope.hermes_home_key == os.path.normcase(str(home_a.resolve()))
+    assert scope.slave_home_key == os.path.normcase(str(home_a.resolve()))
     # CONTRACT: a scope built through the link after the repoint names the new target.
     rebuilt = ProfileScope(profile_dir=link, name="active")
     assert rebuilt.profile_dir == home_b.resolve()
-    assert rebuilt.hermes_home_key == os.path.normcase(str(home_b.resolve()))
+    assert rebuilt.slave_home_key == os.path.normcase(str(home_b.resolve()))
     assert rebuilt != scope
 
 

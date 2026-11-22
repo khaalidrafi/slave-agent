@@ -32,7 +32,7 @@ const ROUTES = [
 ];
 
 test('bridge.js serves /auth-proof openly and puts every other route behind the session bearer', async () => {
-  const dir = mkdtempSync(path.join(tmpdir(), 'hermes-bridge-auth-'));
+  const dir = mkdtempSync(path.join(tmpdir(), 'slave-bridge-auth-'));
   const bridge = new URL('./bridge.js', import.meta.url);
   const baileys = import.meta.resolve('@whiskeysockets/baileys');
   const stub = path.join(dir, 'socket.mjs');
@@ -79,8 +79,8 @@ test('bridge.js serves /auth-proof openly and puts every other route behind the 
     child = spawn(process.execPath, ['--no-warnings', '--experimental-loader', pathToFileURL(loader).href,
       fileURLToPath(bridge), '--session', path.join(dir, 'session'), '--port', String(port)], {
       windowsHide: true,
-      env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, TEMP: dir, TMP: dir, HERMES_HOME: dir,
-        HERMES_WHATSAPP_BRIDGE_TOKEN: token },
+      env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, TEMP: dir, TMP: dir, SLAVE_HOME: dir,
+        SLAVE_WHATSAPP_BRIDGE_TOKEN: token },
     });
     let output = '';
     child.stdout.setEncoding('utf8').on('data', chunk => { output += chunk; });
@@ -92,7 +92,7 @@ test('bridge.js serves /auth-proof openly and puts every other route behind the 
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const challenge = { 'x-hermes-bridge-challenge': 'nonce-1' };
+    const challenge = { 'x-slave-bridge-challenge': 'nonce-1' };
     let proof;
     for (let attempt = 0; attempt < 100 && !proof; attempt++) {
       assert.equal(child.exitCode, null, output);

@@ -9,7 +9,7 @@ import pytest
 
 from cron import executions, jobs, scheduler, scheduler_authority
 from cron.scheduler_bookkeeping import finish_interrupted_run
-from hermes_cli import gateway_client
+from slave_cli import gateway_client
 
 
 def _ownership_lost(job, fire, journal):

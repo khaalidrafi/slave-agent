@@ -89,13 +89,13 @@ def _transition(db, session_id: str, event: Event, *, persistence=None) -> Step 
 
 
 def _close_install_flag() -> None:
-    from hermes_cli import config as config_mod
-    from hermes_cli.onboarding_run import set_run
-    from hermes_constants import get_default_hermes_root
+    from slave_cli import config as config_mod
+    from slave_cli.onboarding_run import set_run
+    from slave_constants import get_default_slave_root
 
     from agent.onboarding import PROFILE_BUILD_FLAG
 
-    section = config_mod.read_user_config_raw(get_default_hermes_root() / "config.yaml").get("onboarding")
+    section = config_mod.read_user_config_raw(get_default_slave_root() / "config.yaml").get("onboarding")
     section = section if isinstance(section, dict) else {}
     seen = section.get("seen") if isinstance(section.get("seen"), dict) else {}
     if section.get("run") is not False or not seen.get(PROFILE_BUILD_FLAG):
@@ -106,7 +106,7 @@ def start(db, session_id: str, facts: Facts, *, persistence=None) -> dict:
     """Write a fresh run record (the row must exist) and mark the install as mid-onboarding, so a
     crash or a quit before the end runs onboarding again on the next launch (which starts over:
     ``onboarding.start`` with ``fresh_launch``)."""
-    from hermes_cli.onboarding_run import set_run
+    from slave_cli.onboarding_run import set_run
 
     from agent.agent_init_session import writer_interface
 
@@ -154,7 +154,7 @@ def delete_chat(db, session_id: str, delete: Callable[[], bool], *, persistence=
     compression copy and tell windows once. Only the compression tip holds the live run, so deleting an
     older copy ends nothing. The install flag closes before the delete when no other run is open: a
     failed flag write keeps the chat for a retry, and a refused delete sets the flag again."""
-    from hermes_cli.onboarding_run import set_run
+    from slave_cli.onboarding_run import set_run
 
     from agent.agent_init_session import writer_interface
 

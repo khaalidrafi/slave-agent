@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import gateway.run as gateway_run
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import run_agent
 from gateway.config import Platform
 from gateway.platforms.event import MessageEvent

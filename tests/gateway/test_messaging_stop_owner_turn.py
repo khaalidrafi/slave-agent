@@ -98,7 +98,7 @@ async def test_idle_stop_and_new_cancel_the_queued_followup(monkeypatch, command
     from gateway.session_contract import SessionRef
     from gateway.session_ingress import admit_message
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     runner, adapter, _sent = _owner(monkeypatch)
     # The gap between turns: the slot is released and the drain has not claimed B yet.
@@ -108,7 +108,7 @@ async def test_idle_stop_and_new_cancel_the_queued_followup(monkeypatch, command
     runner._wire_adapter_handlers(adapter)
     source = adapter.build_source(chat_id='42', chat_type='dm', user_id='42')
     follow_up = MessageEvent(text='B', source=source, message_id='B')
-    with native_callback(runner, follow_up, get_hermes_home()):
+    with native_callback(runner, follow_up, get_slave_home()):
         waiter = asyncio.create_task(admit_message(authority, follow_up))
         await _until(lambda: authority.waiters)
     key = runner.session_store._generate_session_key(source)
@@ -116,7 +116,7 @@ async def test_idle_stop_and_new_cancel_the_queued_followup(monkeypatch, command
     assert not runner._is_session_running(key)
 
     stop = MessageEvent(text=command, source=source)
-    with native_callback(runner, stop, get_hermes_home()):
+    with native_callback(runner, stop, get_slave_home()):
         assert await runner._handle_message(stop) is not None
     assert await asyncio.wait_for(waiter, 5) is None, 'the cancelled follow-up must get no reply'
     rows = authority.persistence.admissions.list(session_id=owner, pending_only=False)

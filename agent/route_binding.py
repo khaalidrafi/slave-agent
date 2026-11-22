@@ -23,20 +23,20 @@ class RouteEntryClient(NamedTuple):
     model: str
     api_mode_explicit: bool
     api_mode: str
-    pool_choice: Any = None  # hermes_cli.runtime_provider.PoolChoice: the pool entry whose key the client carries
+    pool_choice: Any = None  # slave_cli.runtime_provider.PoolChoice: the pool entry whose key the client carries
 
 
 def resolve_route_entry_client(entry: dict[str, Any], provider: str, model: str, *,
                                raw_codex: bool = True) -> RouteEntryClient:
-    """The client :func:`bind_route_entry` binds for ``entry``, shared with ``hermes fallback check
+    """The client :func:`bind_route_entry` binds for ``entry``, shared with ``slave fallback check
     --live`` so a readiness probe talks to exactly what the swap would. ``raw_codex=False`` returns
     the chat-completions adapter for Codex/Responses providers. A registry API-key provider's key
     comes from its credential pool the way a direct pick takes it; the pool is not touched until the
     caller commits ``pool_choice``."""
     from agent.auxiliary_client import resolve_provider_client
     from agent.chat_completion_helpers import _fallback_api_mode_hint
-    from hermes_cli.fallback_config import resolve_entry_api_key
-    from hermes_cli.runtime_provider import PoolChoice
+    from slave_cli.fallback_config import resolve_entry_api_key
+    from slave_cli.runtime_provider import PoolChoice
     # Pass the entry's base_url/api_key so custom endpoints (Ollama Cloud) resolve instead
     # of falling through to OpenRouter defaults.
     base_url_hint = (entry.get("base_url") or "").strip() or None
@@ -53,7 +53,7 @@ def resolve_route_entry_client(entry: dict[str, Any], provider: str, model: str,
         api_mode=api_mode, pool_choice=choice)
     if client is not None and provider != "moa":
         try:
-            from hermes_cli.model_normalize import normalize_model_for_provider
+            from slave_cli.model_normalize import normalize_model_for_provider
             model = normalize_model_for_provider(model, provider)
         except Exception as norm_err:  # health: allow BLE001 -- a bad catalog entry keeps the raw id
             logger.warning("Could not normalize fallback model %r for provider %r: %s", model, provider, norm_err)
@@ -83,7 +83,7 @@ def bind_route_entry(agent: Any, entry: dict[str, Any], provider: str, model: st
         base_url, api_mode = "moa://local", "chat_completions"
     else:
         base_url = str(client.base_url)
-        from hermes_cli.providers import is_actual_route
+        from slave_cli.providers import is_actual_route
         if is_actual_route(provider, base_url):
             api_mode = "chat_completions"
         elif not api_mode_explicit and api_mode == "chat_completions":

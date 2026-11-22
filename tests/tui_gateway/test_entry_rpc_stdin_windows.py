@@ -55,7 +55,7 @@ def _next_line(lines: queue.Queue, prefix: str, transcript: list[str], timeout: 
 
 
 def test_child_without_stdin_sees_nul_while_the_rpc_pipe_stays_open(tmp_path: Path) -> None:
-    env = {**os.environ, "PYTHONPATH": str(REPO_ROOT), "HERMES_HOME": str(tmp_path / "home")}
+    env = {**os.environ, "PYTHONPATH": str(REPO_ROOT), "SLAVE_HOME": str(tmp_path / "home")}
     # Importing the gateway points sys.stdout at stderr (stdout is its RPC channel): merge them.
     proc = subprocess.Popen([sys.executable, "-c", _GATEWAY], cwd=tmp_path, env=env, text=True,
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

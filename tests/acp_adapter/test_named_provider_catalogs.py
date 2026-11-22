@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pytest
 
 from acp_adapter.model_catalog import _named_custom_provider_catalogs, build_model_state
-from acp_adapter.server import HermesACPAgent
+from acp_adapter.server import SlaveACPAgent
 from acp_adapter.session import SessionManager
 from acp.schema import SessionModelState
 
@@ -25,7 +25,7 @@ MANTLE_URL = "https://bedrock-mantle.us-east-1.api.aws/openai/v1"
 @pytest.mark.parametrize("provider", ["openai-codex", "chatgpt", "chatgpt-codex"])
 def test_codex_session_model_is_not_an_undiscovered_choice(listed, provider):
     inventory = {"providers": [{"slug": "openai-codex", "models": listed}]}
-    with patch("hermes_cli.inventory.build_models_payload", return_value=inventory), patch(
+    with patch("slave_cli.inventory.build_models_payload", return_value=inventory), patch(
         "acp_adapter.model_catalog._named_custom_provider_catalogs", return_value=[]
     ):
         picker = build_model_state("gpt-6.2-sol", provider, "")
@@ -41,7 +41,7 @@ def test_custom_codex_key_keeps_its_current_model():
         {"slug": "openai-codex", "models": ["proxy-model"], "is_user_defined": True,
          "api_url": "https://proxy.example/v1"},
     ]}
-    with patch("hermes_cli.inventory.build_models_payload", return_value=inventory), patch(
+    with patch("slave_cli.inventory.build_models_payload", return_value=inventory), patch(
         "acp_adapter.model_catalog._named_custom_provider_catalogs",
         return_value=[("custom:openai-codex", "Proxy", [("proxy-model", "")])],
     ):
@@ -55,7 +55,7 @@ def test_custom_codex_key_keeps_its_current_model():
 def test_gateway_catalog_failure_keeps_codex_current_id_without_offering_it():
     from acp_adapter.gateway_session_meta import model_state
 
-    with patch("hermes_cli.inventory.build_models_payload", side_effect=RuntimeError("inventory unavailable")):
+    with patch("slave_cli.inventory.build_models_payload", side_effect=RuntimeError("inventory unavailable")):
         picker = model_state({"model": "gpt-6.2-sol", "provider": "chatgpt"})
 
     assert picker is not None
@@ -86,8 +86,8 @@ class TestNamedCustomProviderCatalogs:
                 }
             }
         )
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.model_switch_providers._fetch_picker_live_models",
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.model_switch_providers._fetch_picker_live_models",
             return_value=["model-a", "model-b"],
         ):
             catalogs = _named_custom_provider_catalogs()
@@ -111,8 +111,8 @@ class TestNamedCustomProviderCatalogs:
                 }
             }
         )
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.model_switch_providers._fetch_picker_live_models", return_value=None
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.model_switch_providers._fetch_picker_live_models", return_value=None
         ):
             assert _named_custom_provider_catalogs() == []
 
@@ -127,8 +127,8 @@ class TestNamedCustomProviderCatalogs:
                 }
             }
         )
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.model_switch_providers._fetch_picker_live_models", return_value=None
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.model_switch_providers._fetch_picker_live_models", return_value=None
         ):
             assert _named_custom_provider_catalogs() == []
 
@@ -144,8 +144,8 @@ class TestNamedCustomProviderCatalogs:
                 }
             ]
         )
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.model_switch_providers._fetch_picker_live_models", return_value=None
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.model_switch_providers._fetch_picker_live_models", return_value=None
         ):
             catalogs = _named_custom_provider_catalogs()
 
@@ -161,11 +161,11 @@ class TestNamedCustomProviderCatalogs:
                 }
             }
         )
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.models_local.should_use_ollama_native_catalog",
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.models_local.should_use_ollama_native_catalog",
             return_value=True,
         ), patch(
-            "hermes_cli.model_switch_providers._fetch_picker_live_models",
+            "slave_cli.model_switch_providers._fetch_picker_live_models",
             return_value=["qwen3:1.7b"],
         ):
             catalogs = _named_custom_provider_catalogs()
@@ -180,11 +180,11 @@ class TestNamedCustomProviderCatalogs:
                 }
             ]
         )
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.models_local.should_use_ollama_native_catalog",
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.models_local.should_use_ollama_native_catalog",
             return_value=True,
         ), patch(
-            "hermes_cli.model_switch_providers._fetch_picker_live_models",
+            "slave_cli.model_switch_providers._fetch_picker_live_models",
             return_value=["qwen3:1.7b"],
         ) as fetch:
             catalogs = _named_custom_provider_catalogs()
@@ -202,13 +202,13 @@ class TestNamedCustomProviderCatalogs:
                 }
             }
         )
-        from hermes_cli.model_switch_providers import _NativePickerModelList
+        from slave_cli.model_switch_providers import _NativePickerModelList
 
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.models_local.should_use_ollama_native_catalog",
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.models_local.should_use_ollama_native_catalog",
             return_value=True,
         ), patch(
-            "hermes_cli.model_switch_providers._fetch_picker_live_models",
+            "slave_cli.model_switch_providers._fetch_picker_live_models",
             return_value=_NativePickerModelList(),
         ):
             assert _named_custom_provider_catalogs() == [
@@ -224,7 +224,7 @@ class TestModelStateIncludesNamedProviders:
                 model="saved:model", provider="ollama"
             )
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = SlaveACPAgent(session_manager=manager)
 
         with patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
@@ -246,7 +246,7 @@ class TestModelStateIncludesNamedProviders:
                 model="gpt-5.4", provider="openai-codex"
             )
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = SlaveACPAgent(session_manager=manager)
 
         with patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
@@ -275,12 +275,12 @@ class TestModelStateIncludesNamedProviders:
     @pytest.mark.asyncio
     async def test_configured_provider_inventory_row_uses_custom_choice_id(self):
         """A ``providers:`` row must not expose its raw config key to ACP."""
-        from hermes_cli.models import parse_model_input
+        from slave_cli.models import parse_model_input
 
         manager = SessionManager(
             agent_factory=lambda: SimpleNamespace(model="model-a", provider="relay")
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = SlaveACPAgent(session_manager=manager)
         cfg = {
             "providers": {
                 "relay": {
@@ -293,8 +293,8 @@ class TestModelStateIncludesNamedProviders:
             "providers": [{"slug": "relay", "name": "Relay", "is_user_defined": True, "models": ["model-a"]}]
         }
 
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.inventory.build_models_payload", return_value=inventory
+        with patch("slave_cli.config.load_config", return_value=cfg), patch(
+            "slave_cli.inventory.build_models_payload", return_value=inventory
         ), patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
             return_value=[("custom:relay", "Relay", [("model-a", "")])],
@@ -309,7 +309,7 @@ class TestModelStateIncludesNamedProviders:
 
     def test_selector_choice_id_round_trips_through_parse_model_input(self):
         """The encoded choice id must resolve back to the named provider."""
-        from hermes_cli.models import parse_model_input
+        from slave_cli.models import parse_model_input
 
         choice_id = "custom:bedrock-mantle:openai.gpt-5.5"
         cfg = {
@@ -320,14 +320,14 @@ class TestModelStateIncludesNamedProviders:
                 }
             }
         }
-        with patch("hermes_cli.config.load_config", return_value=cfg):
+        with patch("slave_cli.config.load_config", return_value=cfg):
             provider, model = parse_model_input(choice_id, "bedrock")
         assert provider == "custom:bedrock-mantle"
         assert model == "openai.gpt-5.5"
 
     def test_selector_choice_id_round_trips_colon_bearing_custom_identity(self):
         """Configured provider and model IDs may both contain colons."""
-        from hermes_cli.models import parse_model_input
+        from slave_cli.models import parse_model_input
 
         cfg = {
             "providers": {
@@ -337,7 +337,7 @@ class TestModelStateIncludesNamedProviders:
                 }
             }
         }
-        with patch("hermes_cli.config.load_config", return_value=cfg):
+        with patch("slave_cli.config.load_config", return_value=cfg):
             provider, model = parse_model_input(
                 "custom:local-127.0.0.1:11434:qwen3:1.7b", "custom"
             )
@@ -353,14 +353,14 @@ class TestModelStateIncludesNamedProviders:
             agent_factory=lambda: SimpleNamespace(
                 model="model-c", provider="openrouter", base_url="https://openrouter.ai/api/v1")
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = SlaveACPAgent(session_manager=manager)
         inventory = {"providers": [
             {"slug": "openrouter", "name": "OpenRouter", "is_user_defined": False, "models": ["model-c"]},
             {"slug": "custom:openrouter", "name": "openrouter", "is_user_defined": True,
              "api_url": "https://or.example/api/v1", "models": ["model-a"]},
         ]}
 
-        with patch("hermes_cli.inventory.build_models_payload", return_value=inventory), patch(
+        with patch("slave_cli.inventory.build_models_payload", return_value=inventory), patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
             return_value=[("custom:openrouter", "openrouter", [("model-a", "")])],
         ):

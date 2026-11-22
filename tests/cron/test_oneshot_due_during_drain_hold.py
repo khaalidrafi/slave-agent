@@ -1,6 +1,6 @@
 """A one-shot that comes due while a gateway drain holds cron dispatch fires once afterwards.
 
-A restart or ``hermes update`` drain waits on in-flight turns with the ticker's dispatch held
+A restart or ``slave update`` drain waits on in-flight turns with the ticker's dispatch held
 (``can_dispatch`` false). The one-shot grace (120s) must count from the end of that hold, not
 from the due time: an update that waited three minutes on a Kanban turn retired the reminder
 the user scheduled for that minute as ``missed`` without ever running it. A hold whose gateway
@@ -38,7 +38,7 @@ def _oneshot(jid, run_at):
 
 
 def _scan_at(monkeypatch, when):
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: when)
+    monkeypatch.setattr("cron.jobs._slave_now", lambda: when)
     return [d["id"] for d in get_due_jobs()]
 
 

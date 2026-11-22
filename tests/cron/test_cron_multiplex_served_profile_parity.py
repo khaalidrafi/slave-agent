@@ -3,7 +3,7 @@
 A profile served by the default multiplexer runs its ticks inside the default profile's process:
 ``os.environ`` holds the DEFAULT profile's ``.env`` and the served profile's values exist only
 in its secret scope / home override. Every knob cron reads from ``.env`` and every child env it
-builds must resolve exactly as it would under a standalone ``hermes -p <name> gateway run``.
+builds must resolve exactly as it would under a standalone ``slave -p <name> gateway run``.
 """
 
 from pathlib import Path
@@ -13,36 +13,36 @@ import pytest
 from agent.secret_scope import (
     build_profile_secret_scope, reset_secret_scope, set_multiplex_active, set_secret_scope,
 )
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 
 @pytest.fixture
 def two_homes(tmp_path, monkeypatch):
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     alpha = root / "profiles" / "alpha"
     for home in (root, alpha):
         (home / "cron").mkdir(parents=True)
     (root / ".env").write_text(
-        "HERMES_CRON_TIMEOUT=111\nHERMES_MODEL=default-model\nTERMINAL_ENV=docker\n"
-        "TERMINAL_DOCKER_IMAGE=default-only-image\nHERMES_LANGUAGE=en\n")
-    (alpha / ".env").write_text("HERMES_CRON_TIMEOUT=222\nHERMES_LANGUAGE=zh\n")
+        "SLAVE_CRON_TIMEOUT=111\nSLAVE_MODEL=default-model\nTERMINAL_ENV=docker\n"
+        "TERMINAL_DOCKER_IMAGE=default-only-image\nSLAVE_LANGUAGE=en\n")
+    (alpha / ".env").write_text("SLAVE_CRON_TIMEOUT=222\nSLAVE_LANGUAGE=zh\n")
     # The launch (default) profile's .env is what the multiplexer process loaded into os.environ.
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    for key, val in (("HERMES_CRON_TIMEOUT", "111"), ("HERMES_MODEL", "default-model"),
+    monkeypatch.setenv("SLAVE_HOME", str(root))
+    for key, val in (("SLAVE_CRON_TIMEOUT", "111"), ("SLAVE_MODEL", "default-model"),
                      ("TERMINAL_ENV", "docker"), ("TERMINAL_DOCKER_IMAGE", "default-only-image"),
-                     ("HERMES_LANGUAGE", "en")):
+                     ("SLAVE_LANGUAGE", "en")):
         monkeypatch.setenv(key, val)
     set_multiplex_active(True)
-    home_token = set_hermes_home_override(str(alpha))
+    home_token = set_slave_home_override(str(alpha))
     try:
         yield root, alpha
     finally:
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
         set_multiplex_active(False)
 
 
 def test_cron_env_settings_resolve_from_the_served_profile(two_homes):
-    """``HERMES_CRON_TIMEOUT`` / ``HERMES_MODEL`` are alpha's (or absent) both with the fire-time
+    """``SLAVE_CRON_TIMEOUT`` / ``SLAVE_MODEL`` are alpha's (or absent) both with the fire-time
     secret scope installed and on the bare tick thread — never the default profile's environ."""
     import cron.scheduler as sched
     from cron.jobs import _oneshot_run_claim_ttl_seconds
@@ -55,7 +55,7 @@ def test_cron_env_settings_resolve_from_the_served_profile(two_homes):
         captured.update(kw)
         return {}
 
-    import hermes_cli.runtime_provider as rp
+    import slave_cli.runtime_provider as rp
     original = rp.resolve_runtime_provider
     rp.resolve_runtime_provider = fake_resolve
     try:
@@ -67,7 +67,7 @@ def test_cron_env_settings_resolve_from_the_served_profile(two_homes):
         try:
             assert sched._cron_inactivity_seconds() == 222.0
             _preflight_check_provider_key({"id": "j"}, {"cron": {}})
-            assert captured["target_model"] == ""  # alpha has no HERMES_MODEL; default's must not leak
+            assert captured["target_model"] == ""  # alpha has no SLAVE_MODEL; default's must not leak
             with pytest.raises(RuntimeError, match="no model configured"):
                 sched._load_cron_job_config({"id": "j", "name": "j", "prompt": "x"}, "j", "j")
         finally:
@@ -88,20 +88,20 @@ def test_child_env_for_served_profile_drops_launch_profile_settings(two_homes):
         env = strip_launch_profile_env(build_subprocess_env(scrub_secrets=True, inherit_profile_home=True))
     finally:
         reset_secret_scope(token)
-    for key in ("HERMES_MODEL", "TERMINAL_ENV", "TERMINAL_DOCKER_IMAGE", "HERMES_LANGUAGE", "HERMES_CRON_TIMEOUT"):
+    for key in ("SLAVE_MODEL", "TERMINAL_ENV", "TERMINAL_DOCKER_IMAGE", "SLAVE_LANGUAGE", "SLAVE_CRON_TIMEOUT"):
         assert key not in env, key
-    assert env["HERMES_HOME"] == str(alpha)
+    assert env["SLAVE_HOME"] == str(alpha)
     assert "PATH" in env
 
     # No-op when the scope IS the launch profile (standalone / default profile's own children).
-    reset_hermes_home_override(set_hermes_home_override(None))
-    home_token = set_hermes_home_override(str(root))
+    reset_slave_home_override(set_slave_home_override(None))
+    home_token = set_slave_home_override(str(root))
     try:
         env = strip_launch_profile_env(build_subprocess_env(scrub_secrets=True, inherit_profile_home=True))
     finally:
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
     assert env["TERMINAL_ENV"] == "docker"
-    assert env["HERMES_MODEL"] == "default-model"
+    assert env["SLAVE_MODEL"] == "default-model"
 
 
 def test_interpolated_satellite_cron_timeout_matches_tick_and_job_scope(two_homes):
@@ -116,35 +116,35 @@ def test_interpolated_satellite_cron_timeout_matches_tick_and_job_scope(two_home
     _root, satellite = two_homes
     (satellite / ".env").write_text(
         "PROFILE_TIMEOUT_SECONDS=1800\n"
-        "HERMES_CRON_TIMEOUT=${PROFILE_TIMEOUT_SECONDS}\n",
+        "SLAVE_CRON_TIMEOUT=${PROFILE_TIMEOUT_SECONDS}\n",
         encoding="utf-8",
     )
 
-    assert cron_env_setting("HERMES_CRON_TIMEOUT") == "1800"
+    assert cron_env_setting("SLAVE_CRON_TIMEOUT") == "1800"
     assert sched._cron_inactivity_seconds() == 1800.0
 
     token = set_secret_scope(build_profile_secret_scope(satellite))
     try:
-        assert cron_env_setting("HERMES_CRON_TIMEOUT") == "1800"
+        assert cron_env_setting("SLAVE_CRON_TIMEOUT") == "1800"
         assert sched._cron_inactivity_seconds() == 1800.0
     finally:
         reset_secret_scope(token)
 
 
 def test_child_env_keeps_launch_managed_dir(two_homes, monkeypatch):
-    """``HERMES_MANAGED_DIR`` is deployment bootstrap, not launch-profile residue: a served
+    """``SLAVE_MANAGED_DIR`` is deployment bootstrap, not launch-profile residue: a served
     profile's children keep the launch value even when the launch ``.env`` names the key
     (pre-fix the leftover file entry would strip it and silently drop managed scope, #135200)."""
     from tools.environments.local import build_subprocess_env, strip_launch_profile_env
 
     root, alpha = two_homes
     (root / ".env").write_text(
-        (root / ".env").read_text() + "HERMES_MANAGED_DIR=/user/controlled\n")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", "/launch/admin-dir")
+        (root / ".env").read_text() + "SLAVE_MANAGED_DIR=/user/controlled\n")
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", "/launch/admin-dir")
 
     token = set_secret_scope(build_profile_secret_scope(alpha))
     try:
         env = strip_launch_profile_env(build_subprocess_env(scrub_secrets=True, inherit_profile_home=True))
     finally:
         reset_secret_scope(token)
-    assert env.get("HERMES_MANAGED_DIR") == "/launch/admin-dir"
+    assert env.get("SLAVE_MANAGED_DIR") == "/launch/admin-dir"

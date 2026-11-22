@@ -1,4 +1,4 @@
-"""A secret source's bootstrap credential (the vault machine token Hermes itself reads
+"""A secret source's bootstrap credential (the vault machine token slave-agent itself reads
 to fetch every other secret) must never reach a spawned child. Provider keys are Tier 2
 and already stripped; the vault token outranks them and was not on any list, so a
 ``terminal("env")`` or any LSP / browser / TTS child inherited it. Each source hands the
@@ -26,8 +26,8 @@ def _seed(monkeypatch):
 @pytest.mark.parametrize("builder", [
     pytest.param(lambda: local._make_run_env({}), id="terminal"),
     pytest.param(lambda: local.build_subprocess_env(scrub_secrets=True), id="background"),
-    pytest.param(lambda: local.hermes_subprocess_env(), id="helper"),
-    pytest.param(lambda: local.hermes_subprocess_env(inherit_credentials=True), id="inherit_credentials"),
+    pytest.param(lambda: local.slave_subprocess_env(), id="helper"),
+    pytest.param(lambda: local.slave_subprocess_env(inherit_credentials=True), id="inherit_credentials"),
 ])
 @pytest.mark.usefixtures("child_env")
 def test_vault_bootstrap_tokens_never_reach_spawned_children(monkeypatch, builder):
@@ -52,7 +52,7 @@ def test_sources_still_hand_the_token_to_their_own_cli(monkeypatch):
 
 @pytest.mark.usefixtures("child_env")
 def test_launch_home_credentialed_children_keep_the_token(monkeypatch, tmp_path):
-    """A gateway Hermes starts for its own home and a ``key_cmd`` helper (``op read``) authenticate
+    """A gateway slave-agent starts for its own home and a ``key_cmd`` helper (``op read``) authenticate
     to the vault themselves, so they keep the token, also when the process env (systemd, Docker -e)
     holds it. A routed profile's child never gets the launch home's token."""
     import shlex
@@ -60,12 +60,12 @@ def test_launch_home_credentialed_children_keep_the_token(monkeypatch, tmp_path)
 
     from agent.command_token_source import _mint
     from agent.secret_scope import reset_secret_scope, set_secret_scope
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     _seed(monkeypatch)
-    other = tmp_path / "hermes" / "profiles" / "other"
+    other = tmp_path / "slave" / "profiles" / "other"
     other.mkdir(parents=True)
-    own = local.served_profile_child_env(target_home=str(get_hermes_home()), inherit_credentials=True)
+    own = local.served_profile_child_env(target_home=str(get_slave_home()), inherit_credentials=True)
     routed = local.served_profile_child_env(target_home=str(other), inherit_credentials=True)
     token = set_secret_scope({}, profile_home=str(other))  # a served profile's scope, no target
     try:

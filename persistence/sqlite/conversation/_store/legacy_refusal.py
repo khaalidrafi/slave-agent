@@ -25,7 +25,7 @@ from persistence.conversation.messages import (
 )
 from persistence.sqlite._schema_ddl import _ephemeral_child_sql, _sql_json_extract
 
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 LEGACY_REFUSAL_REPAIR_DONE = "legacy_refusal_repair"
 _SCAN_CURSOR = "legacy_refusal_repair_session_cursor"

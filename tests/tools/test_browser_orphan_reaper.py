@@ -1,4 +1,4 @@
-"""Tests for the browser orphan reaper: Chromium launched by a Hermes process that exited without
+"""Tests for the browser orphan reaper: Chromium launched by a slave-agent process that exited without
 cleaning up is found through the launcher's per-profile records and stopped, but only after its
 identity is proven (``tools.browser_launcher.reap_orphaned_browsers``, driven by
 ``browser_session_lifecycle.reap_orphaned_browser_sessions``)."""
@@ -26,8 +26,8 @@ _LIVE_OTHER_OWNER = 88888
 @pytest.fixture
 def records(monkeypatch):
     """The test profile's launch records dir; nothing is ever signalled (``_terminate`` only records)."""
-    from hermes_constants import get_hermes_home
-    home = Path(get_hermes_home())
+    from slave_constants import get_slave_home
+    home = Path(get_slave_home())
     path = home / "cache" / "browser" / "chromium-records"
     path.mkdir(mode=0o700, parents=True)
     monkeypatch.setattr(launcher, "_records_dir", lambda *_home: path)  # this profile's dir, from any caller
@@ -64,7 +64,7 @@ class TestReapOrphanedBrowserSessions:
         copy_dir = tmp_path / "browser-profile" / "chrome"
         copy_dir.mkdir(parents=True)
         rec = _record(records, pid=4242, udd=str(copy_dir), ephemeral=False)
-        monkeypatch.setattr(launcher, "_pid_alive", _alive(4242))  # browser alive, owning hermes gone
+        monkeypatch.setattr(launcher, "_pid_alive", _alive(4242))  # browser alive, owning slave gone
         monkeypatch.setattr(launcher, "_start_time", lambda pid: 777)
         monkeypatch.setattr(launcher, "_cmdline_names_dir", lambda pid, udd: True)
         monkeypatch.setattr("tools.browser_lightpanda.reap_orphaned_lightpanda", lambda: 0)
@@ -104,7 +104,7 @@ class TestReapOrphanedBrowserSessions:
 
 
 class TestOwnerPidCrossProcess:
-    """Owner-based cross-process safe reaping: concurrent Hermes processes never reap each other's
+    """Owner-based cross-process safe reaping: concurrent slave-agent processes never reap each other's
     browsers, so orphans from crashed processes are reaped without touching live ones."""
 
     def test_alive_owner_is_not_reaped_even_when_untracked(self, records, tmp_path, monkeypatch):
@@ -149,25 +149,25 @@ class TestReaperIdentityGuard:
             return launcher._cmdline_names_dir(12345, udd)
 
     def test_real_browser_bound_via_cmdline_is_reapable(self):
-        udd = "/home/u/.hermes/cache/browser/chromium/abc"
+        udd = "/home/u/.slave/cache/browser/chromium/abc"
         assert self._run(["chrome", "--remote-debugging-port=0", f"--user-data-dir={udd}"], udd) is True
 
     def test_recycled_pid_browser_not_bound_to_our_dir_is_refused(self):
         """A Chromium for a DIFFERENT profile dir must not be reaped (PID reuse / an unrelated browser)."""
-        udd = "/home/u/.hermes/cache/browser/chromium/abc"
-        assert self._run(["chrome", "--user-data-dir=/home/u/.hermes/cache/browser/chromium/OTHER"], udd) is False
+        udd = "/home/u/.slave/cache/browser/chromium/abc"
+        assert self._run(["chrome", "--user-data-dir=/home/u/.slave/cache/browser/chromium/OTHER"], udd) is False
 
     def test_recycled_pid_carrying_only_the_dir_as_a_bare_token_is_refused(self):
         """The dir anywhere in argv is not a binding (#116884): a recycled PID whose argv merely mentions
         it (a grep, a shell) must not pass; only the exact ``--user-data-dir=<dir>`` token binds."""
-        udd = "/home/u/.hermes/cache/browser/chromium/abc"
+        udd = "/home/u/.slave/cache/browser/chromium/abc"
         assert self._run(["grep", udd, "/var/log/syslog"], udd) is False
         assert self._run(["grep", "abc", "/var/log/syslog"], udd) is False
         # Control: the normalized full path as the flag token still binds.
         assert self._run(["chrome", f"--user-data-dir={udd}/"], udd) is True
 
     def test_unreadable_identity_fails_closed(self):
-        udd = "/home/u/.hermes/cache/browser/chromium/abc"
+        udd = "/home/u/.slave/cache/browser/chromium/abc"
         assert self._run([], udd, no_such=True) is False
         assert self._run([], udd, access_denied=True) is False
 
@@ -231,9 +231,9 @@ def test_browser_attached_after_its_owner_crashed_is_never_reaped_while_in_use(r
     monkeypatch.setattr(launcher, "_start_time", lambda pid: 777)
     monkeypatch.setattr(launcher, "_cmdline_names_dir", lambda pid, udd: True)
     monkeypatch.setattr(launcher, "running_instance", lambda d: (41234, "/devtools/browser/abc", 4242) if d == udd else None)
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     crashed = launcher.LaunchedBrowser(key=f"profile:{udd}", pid=4242, start_time=777, cdp_url="", http_url="",
-                                       user_data_dir=udd, owned=True, ephemeral=False, home_key=hermes_home_key())
+                                       user_data_dir=udd, owned=True, ephemeral=False, home_key=slave_home_key())
     record = launcher._record_path(crashed)  # where the crashed owner left it
     record.write_text(json.dumps({"owner_pid": _DEAD_OWNER, "owner_start_time": None, "pid": 4242, "start_time": 777,
                                   "user_data_dir": udd, "home_key": crashed.home_key, "ephemeral": False,
@@ -251,7 +251,7 @@ def test_browser_attached_after_its_owner_crashed_is_never_reaped_while_in_use(r
 class TestPrivatePerProfileRecords:
     """Launcher state lives in a private per-profile dir: a records dir that is not a real directory of this
     user closed to other writers is never read, and the reaper deletes nothing outside the profile's
-    ephemeral root (``<HERMES_HOME>/cache/browser/chromium/``)."""
+    ephemeral root (``<SLAVE_HOME>/cache/browser/chromium/``)."""
 
     @staticmethod
     def _orphan(records, monkeypatch, pid=12345):
@@ -304,8 +304,8 @@ class TestPrivatePerProfileRecords:
 def test_records_of_every_served_profile_are_reaped(tmp_path, monkeypatch):
     """One process serves many profiles; the janitor/atexit reap runs outside any profile scope. Each served
     home's records are read by path: the launch profile's and a live session's owning profile's."""
-    from hermes_constants import get_hermes_home
-    home_a, home_b = Path(get_hermes_home()), tmp_path / "profile-b"
+    from slave_constants import get_slave_home
+    home_a, home_b = Path(get_slave_home()), tmp_path / "profile-b"
     monkeypatch.setattr(launcher, "_browsers", {})
     monkeypatch.setattr(launcher, "_served_homes", set(), raising=False)
     terminated = []
@@ -331,7 +331,7 @@ class TestPeriodicOrphanReap:
     """The reaper must run repeatedly, not only at cleanup-thread startup.
 
     A startup-only reap can never recover from a leak that appears *after*
-    boot — which is exactly what happens in a hermes process that stays up
+    boot — which is exactly what happens in a slave process that stays up
     for days.
     """
 

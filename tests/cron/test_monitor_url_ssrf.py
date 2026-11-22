@@ -68,7 +68,7 @@ def public_host(monkeypatch, local_server):
     """Make PUBLIC_HOST a public-address host whose connections land on the local server."""
     from tools import url_safety
 
-    monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
+    monkeypatch.delenv("SLAVE_ALLOW_PRIVATE_URLS", raising=False)
     url_safety._reset_allow_private_cache()
     real_getaddrinfo = url_safety._getaddrinfo
     real_create_connection = socket.create_connection

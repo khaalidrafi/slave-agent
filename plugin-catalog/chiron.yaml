@@ -1,5 +1,5 @@
 name: chiron
-repo: https://github.com/percyhendrux123-prog/hermes-chiron
+repo: https://github.com/percyhendrux123-prog/slave-chiron
 sha: "d6ccea67b10e7d4ee4cf69fa78896409e5f9645e"
 version: "0.2.0"
 title: Chiron
@@ -8,8 +8,8 @@ maintainer: percyhendrux123-prog
 tier: community
 category: general
 requires_hermes: ">=0.22.5"
-docs_url: https://github.com/percyhendrux123-prog/hermes-chiron/blob/d6ccea67b10e7d4ee4cf69fa78896409e5f9645e/README.md
-image: https://raw.githubusercontent.com/percyhendrux123-prog/hermes-chiron/d18ea7187ffd63e7f5229a853bb092f23354f5c5/docs/media/banner.png
+docs_url: https://github.com/percyhendrux123-prog/slave-chiron/blob/d6ccea67b10e7d4ee4cf69fa78896409e5f9645e/README.md
+image: https://raw.githubusercontent.com/percyhendrux123-prog/slave-chiron/d18ea7187ffd63e7f5229a853bb092f23354f5c5/docs/media/banner.png
 readme: true
 platforms: [linux, macos]
 capabilities:
@@ -19,5 +19,5 @@ capabilities:
   requires_env: []
 known_issues:
   - "Level reading is keyword-based (English only). It can misread a level; /chiron level <topic> <level> pins the right one."
-  - "The floor is guidance to the model, not a tool gate. It changes how the agent asks; it does not block tool calls. Pair it with Hermes approvals for hard stops."
+  - "The floor is guidance to the model, not a tool gate. It changes how the agent asks; it does not block tool calls. Pair it with slave-agent approvals for hard stops."
   - "Evals are a small number of runs on one model (see EVALS.md); with Chiron on, pro answers ran about 12% longer than plugin-off, mostly the confirm-before-acting lines."

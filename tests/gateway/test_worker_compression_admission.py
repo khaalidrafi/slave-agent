@@ -95,7 +95,7 @@ def test_automatic_worker_rotation_retains_retry_identity_and_fifo(tmp_path, end
                                                  'output': 1000}}
         for name in ('original', 'summary')}}}))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     def rows(sql, args=()):

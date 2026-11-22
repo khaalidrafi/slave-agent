@@ -71,7 +71,7 @@ def test_model_receipt_changes_next_wire_and_branch_keeps_independent_history(tm
         name: {'id': name, 'name': name, 'limit': {'context': 100000, 'output': 4000}}
         for name in ('original', 'switched')}}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
 
     async def run(desc):
@@ -92,7 +92,7 @@ def test_model_receipt_changes_next_wire_and_branch_keeps_independent_history(tm
             before = await turn(sid, 'ORIGINAL_HISTORY')
             params = dict(session_id=sid, request_id='switch', operation='model', payload={'model': 'switched'},
                 expected_revision=before['revision'], expected_generation=before['execution_generation'])
-            from hermes_cli.gateway_chat_view import GatewayChatView
+            from slave_cli.gateway_chat_view import GatewayChatView
             from acp_adapter.gateway_server import GatewayACPAgent
             class Client:
                 async def rpc(self, method, _timeout=None, **kwargs):  # the client budget is never on the wire
@@ -185,7 +185,7 @@ def test_desktop_pick_resolves_a_provider_added_after_the_session_and_freezes_on
         name: {'id': name, 'name': name, 'limit': {'context': 100000, 'output': 4000}}
         for name in ('original', 'switched')}}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=origin_url, PYTHONUNBUFFERED='1',
                FOREIGN_KEY='sk-foreign-never')
 
@@ -263,7 +263,7 @@ async def test_input_queued_while_a_model_receipt_commits_still_runs(tmp_path, m
     from gateway.session_contract import Submission
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {})
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model='switched', target_provider='custom', base_url='http://127.0.0.1:9/v1'))
@@ -323,7 +323,7 @@ async def test_provider_change_drops_the_launch_key_and_keeps_config_secrets(tmp
     from types import SimpleNamespace
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import bind_launch_key, build_policy, restore_policy
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model='b', target_provider='anthropic', provider_changed=True,
         base_url='https://api.anthropic.com'))
@@ -351,7 +351,7 @@ async def test_model_pick_reads_current_provider_config_when_legacy_policy_lacks
     from gateway.run_turn_prepare import _resolve_policy_agent_runtime
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import build_policy, restore_policy
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
 
     (tmp_path / 'config.yaml').write_text(
         'providers:\n'
@@ -400,7 +400,7 @@ async def test_model_pick_freezes_legacy_custom_provider_for_the_next_runtime(tm
     from gateway.run_turn_prepare import _resolve_policy_agent_runtime
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import build_policy, restore_policy
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
 
     (tmp_path / 'config.yaml').write_text(
         'custom_providers:\n'
@@ -445,7 +445,7 @@ async def test_picked_legacy_custom_provider_survives_a_profile_reorder_on_cold_
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import build_policy, restore_policy
     from persistence.core.errors import AuthorityRefusal
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
 
     other = '  - name: other\n    base_url: https://other.example.invalid/v1\n    api_key: sk-other\n'
     picked = '  - name: {name}\n    base_url: https://inkstone.example.invalid/v1\n    api_key: sk-inkstone\n'
@@ -494,7 +494,7 @@ async def test_probe_rename_keep_url_key(tmp_path, monkeypatch):
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import build_policy, restore_policy
     from persistence.core.errors import AuthorityRefusal
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
 
     other = '  - name: other\n    base_url: https://other.example.invalid/v1\n    api_key: sk-other\n'
     picked = '  - name: {name}\n    base_url: https://inkstone.example.invalid/v1\n    api_key: sk-inkstone\n'
@@ -536,7 +536,7 @@ async def test_model_pick_resolves_the_profiles_current_entry_over_a_frozen_one(
     from gateway.run_turn_prepare import _resolve_policy_agent_runtime
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import build_policy, restore_policy
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
 
     (tmp_path / 'config.yaml').write_text(
         'providers:\n'
@@ -588,7 +588,7 @@ async def test_committed_model_selection_is_the_next_resolved_runtime(tmp_path, 
     from gateway.run_turn_prepare import _resolve_policy_agent_runtime
     from gateway.session_mutation_model import prepare_model
     from gateway.session_policy import bind_launch_key, build_policy, restore_policy
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     old_url, new_url = 'http://127.0.0.1:9/v1', 'http://127.0.0.2:9/v1'
     with open_persistence(profile_scope(home=tmp_path)) as handle:
         authority = SimpleNamespace(instance_id='i', epoch=1, profile_id='p', persistence=handle)
@@ -634,7 +634,7 @@ async def test_guarded_model_target_commits_only_with_its_confirmation_token(tmp
     from gateway.session_authority import SessionAuthority
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
-    from hermes_cli import model_cost_guard, model_switch
+    from slave_cli import model_cost_guard, model_switch
     monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {})
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model=k['raw_input'], target_provider='custom', base_url='http://127.0.0.1:9/v1'))
@@ -701,7 +701,7 @@ async def test_large_context_guard_reads_the_persisted_anchor_with_no_resident_a
     from gateway.session_authority import SessionAuthority
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
-    from hermes_cli import model_selection_guards, model_switch
+    from slave_cli import model_selection_guards, model_switch
     monkeypatch.setattr(run, '_load_gateway_config', lambda *a: {})
     monkeypatch.setattr(model_selection_guards, '_context_cache_threshold', lambda: 1000)
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(

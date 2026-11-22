@@ -42,7 +42,7 @@ class _TurnWait:
 
 # The bound turn's wait, or None for a turn that supersedes at once.
 _TURN_WAITS_FOR_BACKGROUND_WORK: contextvars.ContextVar[Optional[_TurnWait]] = contextvars.ContextVar(
-    "hermes_turn_waits_for_background_work", default=None)
+    "slave_turn_waits_for_background_work", default=None)
 
 
 def _never() -> bool:
@@ -271,7 +271,7 @@ def _background_review_task_config(task_cfg: Optional[dict[str, Any]] = None) ->
     if task_cfg is not None:
         return task_cfg if isinstance(task_cfg, dict) else {}
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
         return _task_block(load_config_readonly())
     except Exception:
         return {}
@@ -313,7 +313,7 @@ def load_background_review_settings() -> tuple[bool, dict[str, Any]]:
     if safe_worker_enabled() or finite_turn_required() is True:
         return False, {}
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
         from utils import is_truthy_value
         task = _task_block(load_config_readonly())
         return is_truthy_value(task.get("enabled"), default=True), task
@@ -351,7 +351,7 @@ def _resolve_review_runtime(agent: Any, task_cfg: Optional[dict[str, Any]] = Non
     ):
         return parent
     try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from slave_cli.runtime_provider import resolve_runtime_provider
         rp = resolve_runtime_provider(
             requested=task_provider, target_model=task_model,
             explicit_api_key=task_api_key, explicit_base_url=task_base_url,
@@ -388,11 +388,11 @@ def _warn_review_routing_fallback(agent: Any, task_provider: str, task_model: st
 
 def _parent_can_emit_tool_calls(agent: Any) -> bool:
     """Whether a fork inheriting ``agent``'s runtime could act at all: an agent-as-provider client
-    shim declaring ``SUPPORTS_HERMES_TOOL_CALLS = False`` (instance or class) is skipped — the fork
+    shim declaring ``SUPPORTS_SLAVE_TOOL_CALLS = False`` (instance or class) is skipped — the fork
     would be a guaranteed no-op that still pays a full spawn. Silence means capable."""
     client = getattr(agent, "client", None)
     for candidate in (client, type(client) if client is not None else None):
-        supported = getattr(candidate, "SUPPORTS_HERMES_TOOL_CALLS", None)
+        supported = getattr(candidate, "SUPPORTS_SLAVE_TOOL_CALLS", None)
         if candidate is not None and supported is not None:
             return bool(supported)
     return True
@@ -556,7 +556,7 @@ _SKILL_REVIEW_PROMPT = (
     "new learning, PATCH that one first (re-load it with skill_view during this review — see "
     "Read-before-write below). It is the skill that was in play, so it's the right one to extend — "
     "whoever wrote it: hand-written, installed, bundled, and pinned skills are all yours to "
-    "improve. The one exception is a skill the user LOCKED (`hermes curator lock`): skill_manage "
+    "improve. The one exception is a skill the user LOCKED (`slave curator lock`): skill_manage "
     "refuses it — do not retry and do not recreate it under another name; put the suggested "
     "change in your summary instead.\n"
     "  2. UPDATE AN EXISTING UMBRELLA (via skills_list + skill_view). If no loaded skill fits but "
@@ -838,7 +838,7 @@ def build_memory_write_metadata(
         "execution_context": execution_context or getattr(agent, "_memory_write_context", "foreground"),
         "session_id": agent.session_id or "",
         "parent_session_id": agent._parent_session_id or "",
-        "platform": agent.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+        "platform": agent.platform or os.environ.get("SLAVE_SESSION_SOURCE", "cli"),
         "tool_name": "memory",
         "task_id": task_id or None,
         "tool_call_id": tool_call_id or None,
@@ -1010,7 +1010,7 @@ def _routed_reasoning_config(task_cfg: Optional[dict[str, Any]]) -> Optional[dic
     effort = _background_review_task_config(task_cfg).get("reasoning_effort")
     if effort is None or effort == "":
         return None
-    from hermes_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
+    from slave_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
     parsed = parse_reasoning_effort(effort)
     if parsed is None:
         logger.warning(
@@ -1112,7 +1112,7 @@ def build_cache_parity_fork(
     # hooks) stays byte-identical.
     # Inherit the parent's cached system prompt verbatim so the review fork's outbound HTTP request hits the
     # same Anthropic/OpenRouter prefix cache the parent warmed. Without this, the fork rebuilds the system
-    # prompt from scratch (fresh _hermes_now() timestamp, fresh session_id, narrower toolset → different
+    # prompt from scratch (fresh _slave_now() timestamp, fresh session_id, narrower toolset → different
     # skills_prompt) and the byte-exact prefix-cache key misses. See issue #25322 and PR #17276 for the full
     # analysis + measured impact (~26% end-to-end cost reduction on Sonnet 4.5). When routed to a different
     # model the parent's cached prompt is for the wrong model/cache key and would miss anyway, so let the
@@ -1289,7 +1289,7 @@ def _run_review_fork(
         agent, task_cfg, max_iterations=_REVIEW_MAX_ITERATIONS)
     st.review_agent._review_attended = explicit
     _track_review_fork(agent, st.review_agent, register=True)
-    from hermes_cli.plugins import set_thread_tool_whitelist, clear_thread_tool_whitelist
+    from slave_cli.plugins import set_thread_tool_whitelist, clear_thread_tool_whitelist
     review_whitelist, configured_extra_tools = _review_tool_whitelist(st.review_agent, task_cfg, review_memory)
     extra_list = ", ".join(sorted(configured_extra_tools))
     deny_extra = f" Configured extra tools also allowed: {extra_list}." if configured_extra_tools else ""
@@ -1363,12 +1363,12 @@ def _run_review_in_thread(
         finish_background_review_run(agent, review_run)
         return
     _set_thread_approval_callback(_bg_review_auto_deny)
-    # A client that can't carry Hermes tool calls back would spawn a fork that cannot write
+    # A client that can't carry Slave tool calls back would spawn a fork that cannot write
     # anything. Checked BEFORE the thread-scoped silence so the warning is not swallowed; cheap
     # check first so the normal path never resolves the runtime twice.
     if not _parent_can_emit_tool_calls(agent) and not _resolve_review_runtime(agent, task_cfg).get("routed"):
         logger.warning(
-            "Background review skipped: provider %r cannot emit Hermes tool calls, "
+            "Background review skipped: provider %r cannot emit slave-agent tool calls, "
             "so the review fork could not write memories or skills. Set "
             "auxiliary.background_review.{provider,model} to route the review to a normal model.",
             getattr(agent, "provider", "?"),

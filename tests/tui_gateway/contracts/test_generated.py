@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 
 REPO = Path(__file__).resolve().parents[3]
 GEN = REPO / "scripts" / "gen_gateway_contracts.py"
@@ -74,8 +74,8 @@ def emitted_event_names() -> set[str]:
 
     for src in _tool_module_candidates(REPO / current_path("tools")):
         names.update(_DESKTOP_UI_EMIT.findall(_read(src)))
-    names.update(_SETUP_READY.findall(_read(REPO / current_path("hermes_cli/free_tier_bootstrap.py"))))
-    names.update(_FREE_TIER_CHALLENGE.findall(_read(REPO / current_path("hermes_cli/anon_challenge.py"))))
+    names.update(_SETUP_READY.findall(_read(REPO / current_path("slave_cli/free_tier_bootstrap.py"))))
+    names.update(_FREE_TIER_CHALLENGE.findall(_read(REPO / current_path("slave_cli/anon_challenge.py"))))
     names.update(_LOCAL_VIEWER_PUBLISH.findall(_read(REPO / current_path("gateway/local_viewer_events.py"))))
     return names
 

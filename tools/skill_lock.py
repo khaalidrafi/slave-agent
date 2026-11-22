@@ -1,10 +1,10 @@
 """User skill locks, enforced on every agent write path.
 
-``hermes curator lock <skill>`` (or the Desktop lock switch) records ``locked: true`` beside
+``slave curator lock <skill>`` (or the Desktop lock switch) records ``locked: true`` beside
 ``pinned`` in the profile's ``skills/.usage.json``. While a skill is locked the agent cannot change
 it: ``skill_manage`` refuses every mutating action, ``write_file``/``patch`` refuse any path inside
 the skill's directory, and ``terminal`` refuses commands that write there. The lock record itself
-is protected the same way, and the agent cannot run ``hermes curator unlock``. The user's own edits
+is protected the same way, and the agent cannot run ``slave curator unlock``. The user's own edits
 (Desktop editor, their own editor, the CLI) are not gated.
 
 The terminal check reads the command's write targets (redirections, tee, cp/mv/rm/sed -i and
@@ -110,7 +110,7 @@ def skill_refusal(name: str) -> str:
     return (f"Skill '{name}' is locked by the user, so the agent cannot change it: skill_manage, "
             f"write_file, patch and terminal all refuse. Don't retry or work around it (no copying it "
             f"under another name); tell the user what you would change. They can unlock it with "
-            f"`hermes curator unlock {name}` or the lock switch in Desktop.")
+            f"`slave curator unlock {name}` or the lock switch in Desktop.")
 
 
 RECORD_REFUSAL = ("skills/.usage.json holds the user's skill locks, so the agent cannot change it "
@@ -120,7 +120,7 @@ UNREADABLE_RECORD_REFUSAL = (
     "agent cannot tell which skills are locked and refuses to change any of them. Don't retry or work "
     "around it (no copying a skill under another name); tell the user their lock record is damaged — "
     "repairing or deleting that file restores the guards.")
-UNLOCK_REFUSAL = ("Only the user can unlock a skill. Ask them to run `hermes curator unlock <skill>` "
+UNLOCK_REFUSAL = ("Only the user can unlock a skill. Ask them to run `slave curator unlock <skill>` "
                   "themselves or use the lock switch in Desktop.")
 
 
@@ -166,8 +166,8 @@ _VAR = re.compile(r"\$\{(\w+)\}|\$(\w+)")
 
 
 def _shell_env(assigned: dict[str, str] | None = None) -> dict[str, str]:
-    from hermes_constants import get_hermes_home
-    return {**os.environ, "HOME": os.path.expanduser("~"), "HERMES_HOME": str(get_hermes_home()),
+    from slave_constants import get_slave_home
+    return {**os.environ, "HOME": os.path.expanduser("~"), "SLAVE_HOME": str(get_slave_home()),
             **(assigned or {})}
 
 
@@ -288,7 +288,7 @@ class _Scope:
 
 
 def _check_unlock(verb: str, args: list[str], scope: _Scope) -> str | None:
-    if verb == "hermes" or (verb.startswith("python") and "hermes_cli.main" in args):
+    if verb == "slave" or (verb.startswith("python") and "slave_cli.main" in args):
         if "curator" in args and "unlock" in args[args.index("curator"):]:
             return UNLOCK_REFUSAL
     return None
@@ -407,13 +407,13 @@ def _argv_refusal(argv: list[str], cwd: str, locked, record, depth: int,
 def _code_refusal(code: str, locked, record, cwd: str = "") -> str | None:
     """Inline interpreter code that looks like it writes AND names a locked skill (or the record),
     or runs with its working directory inside one (relative paths)."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     if not _WRITEISH_CODE.search(code):
         return None
     if cwd and (reason := _hit(cwd, locked, record)):
         return reason
-    home, hermes_home = os.path.expanduser("~"), str(get_hermes_home())
-    text = code.replace("$HERMES_HOME", hermes_home).replace("~", home)
+    home, slave_home = os.path.expanduser("~"), str(get_slave_home())
+    text = code.replace("$SLAVE_HOME", slave_home).replace("~", home)
     skills_root = os.path.realpath(_skill_usage()._skills_dir())
     if ".usage.json" in text:
         return RECORD_REFUSAL
@@ -458,7 +458,7 @@ def _command_refusal(command: str, cwd: str, locked, record, depth: int = 0) -> 
 
 def command_refusal(command: str, cwd: str) -> str | None:
     """terminal guard: refusal text when *command* writes into a locked skill, the lock record, or
-    runs ``hermes curator unlock``. None when nothing is locked. An unreadable lock record is unknown
+    runs ``slave curator unlock``. None when nothing is locked. An unreadable lock record is unknown
     ground: a command that would write into any skill in the profile is refused, and the text says why."""
     locked, unreadable = _guard_state()
     if unreadable:

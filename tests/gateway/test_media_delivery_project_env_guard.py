@@ -5,7 +5,7 @@ native media when the same path is read-blocked by ``agent/file_safety``.
 that "a credential the agent is forbidden to ... read must also never be
 auto-attached to a chat reply". ``agent/file_safety.get_read_block_error``
 read-blocks ``.env`` / ``.envrc`` anywhere on disk by basename, but the media
-denylist only enumerates ``<hermes-root>/.env``, so a user's *project* ``.env``
+denylist only enumerates ``<slave-root>/.env``, so a user's *project* ``.env``
 (e.g. ``/home/user/app/.env``) was deliverable via a prompt-injected ``MEDIA:``
 tag in default (non-strict) single-user mode -> credential exfiltration.
 

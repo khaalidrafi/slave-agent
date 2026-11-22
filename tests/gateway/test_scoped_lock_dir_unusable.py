@@ -58,7 +58,7 @@ def locked_out_dir(tmp_path, monkeypatch):
     lock_dir = tmp_path / "gateway-locks"
     lock_dir.mkdir()
     lock_dir.chmod(stat.S_IRUSR | stat.S_IXUSR)  # r-x: lists, cannot create the token lock
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(lock_dir))
+    monkeypatch.setenv("SLAVE_GATEWAY_LOCK_DIR", str(lock_dir))
     scoped_locks.reset_unusable_lock_dir_reports()
     yield lock_dir
     lock_dir.chmod(stat.S_IRWXU)
@@ -96,7 +96,7 @@ def test_lock_dir_repair_is_picked_up_without_restart(locked_out_dir):
 def test_unreadable_stale_token_lock_is_named_not_reported_as_a_holderless_conflict(tmp_path, monkeypatch):
     lock_dir = tmp_path / "gateway-locks"
     lock_dir.mkdir()
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(lock_dir))
+    monkeypatch.setenv("SLAVE_GATEWAY_LOCK_DIR", str(lock_dir))
     stale = status._get_scope_lock_path("telegram-bot-token", "tok")
     stale.write_text('{"pid": 1}', encoding="utf-8")
     stale.chmod(0)

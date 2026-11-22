@@ -13,7 +13,7 @@ def _flow(flow_id: str = "flow-retry", server_name: str = "asana"):
     return DashboardOAuthFlow(
         flow_id=flow_id,
         server_name=server_name,
-        hermes_home="/tmp/hermes-test",
+        slave_home="/tmp/hermes-test",
         redirect_uri=f"https://agent.example/mcp/oauth/callback/{flow_id}",
     )
 
@@ -24,7 +24,7 @@ def test_dashboard_flow_exposes_authorization_url_and_accepts_callback():
     flow = DashboardOAuthFlow(
         flow_id="flow-1",
         server_name="reports",
-        hermes_home="/tmp/hermes-test",
+        slave_home="/tmp/hermes-test",
         redirect_uri="https://agent.example/mcp/oauth/callback/flow-1",
     )
 
@@ -49,7 +49,7 @@ def test_dashboard_flow_preserves_rfc9207_iss():
     flow = DashboardOAuthFlow(
         flow_id="flow-iss",
         server_name="cloudflare",
-        hermes_home="/tmp/hermes-test",
+        slave_home="/tmp/hermes-test",
         redirect_uri="https://agent.example/mcp/oauth/callback/flow-iss",
     )
     asyncio.run(flow.publish_authorization_url("https://idp.example/authorize?state=s1"))
@@ -64,7 +64,7 @@ def test_dashboard_flow_accepts_only_one_concurrent_callback():
     flow = DashboardOAuthFlow(
         flow_id="flow-race",
         server_name="reports",
-        hermes_home="/tmp/hermes-test",
+        slave_home="/tmp/hermes-test",
         redirect_uri="https://agent.example/mcp/oauth/callback/flow-race",
     )
     asyncio.run(flow.publish_authorization_url("https://idp.example/authorize?state=state"))
@@ -96,7 +96,7 @@ def test_mcp_oauth_helpers_use_dashboard_flow_without_loopback_port():
     pytest.importorskip("mcp.shared.auth", reason="MCP SDK not installed")
     from tools.mcp_dashboard_oauth import DashboardOAuthFlow, dashboard_oauth_flow
     from tools.mcp_oauth import (
-        HermesTokenStorage,
+        SlaveTokenStorage,
         _build_client_metadata,
         _configure_callback_port,
         _make_callback_waiter,
@@ -106,12 +106,12 @@ def test_mcp_oauth_helpers_use_dashboard_flow_without_loopback_port():
     flow = DashboardOAuthFlow(
         flow_id="flow-4",
         server_name="reports",
-        hermes_home="/tmp/hermes-test",
+        slave_home="/tmp/hermes-test",
         redirect_uri="https://agent.example/mcp/oauth/callback/flow-4",
     )
     cfg = {}
     with dashboard_oauth_flow(flow):
-        assert _configure_callback_port(cfg, HermesTokenStorage("reports")) == 0
+        assert _configure_callback_port(cfg, SlaveTokenStorage("reports")) == 0
         metadata = _build_client_metadata(cfg)
         assert str(metadata.redirect_uris[0]) == flow.redirect_uri
 
@@ -164,10 +164,10 @@ def test_empty_exception_text_stays_diagnosable():
 
 
 def test_failed_reauth_rollback_preserves_newer_oauth_state(tmp_path, monkeypatch):
-    from tools.mcp_oauth import HermesTokenStorage
+    from tools.mcp_oauth import SlaveTokenStorage
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    storage = HermesTokenStorage("reports")
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    storage = SlaveTokenStorage("reports")
     storage._tokens_path().parent.mkdir(parents=True)
     storage._tokens_path().write_text("OLD", encoding="utf-8")
     backup = storage.snapshot()
@@ -189,7 +189,7 @@ def test_preregistered_pinned_redirect_port_keeps_loopback_listener_under_dashbo
 
     from tools.mcp_dashboard_oauth import DashboardOAuthFlow, dashboard_oauth_flow
     from tools.mcp_oauth import (
-        HermesTokenStorage,
+        SlaveTokenStorage,
         _build_client_metadata,
         _configure_callback_port,
         _make_callback_waiter,
@@ -197,15 +197,15 @@ def test_preregistered_pinned_redirect_port_keeps_loopback_listener_under_dashbo
         force_interactive_oauth,
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    flow = DashboardOAuthFlow(flow_id="flow-5", server_name="asana", hermes_home=str(tmp_path),
+    flow = DashboardOAuthFlow(flow_id="flow-5", server_name="asana", slave_home=str(tmp_path),
                               redirect_uri="https://agent.example/mcp/oauth/callback/flow-5")
     cfg = {"client_id": "pre-registered", "client_secret": "s", "redirect_host": "localhost", "redirect_port": port}
     with dashboard_oauth_flow(flow), force_interactive_oauth():
-        assert _configure_callback_port(cfg, HermesTokenStorage("asana")) == port
+        assert _configure_callback_port(cfg, SlaveTokenStorage("asana")) == port
         assert str(_build_client_metadata(cfg).redirect_uris[0]) == f"http://localhost:{port}/callback"
         asyncio.run(_make_redirect_handler(port)("https://idp.example/authorize?state=state-5"))
         assert flow.authorization_url == "https://idp.example/authorize?state=state-5"  # dashboard shows the URL
@@ -233,7 +233,7 @@ def test_server_task_does_not_park_on_an_ended_dashboard_flow(
     With the flow re-minted, the ladder fails (if at all) only for the ordinary reason — nobody
     completed the consent screen — and the handle is live and completable again.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
     from tools import mcp_tool
     from tools.mcp_dashboard_oauth import dashboard_oauth_flow

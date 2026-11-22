@@ -50,7 +50,7 @@ def _warn_once(kind: str, value: Any, detail: str) -> None:
     _warned.add(key)
     logger.warning(
         "Job %s %r is invalid (%s); falling back to the profile setting. Fix or clear it with "
-        "`hermes cron edit`.", kind, value, detail)
+        "`slave cron edit`.", kind, value, detail)
 
 
 def normalize_timezone(value: Any) -> Optional[str]:

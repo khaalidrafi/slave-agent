@@ -56,13 +56,13 @@ def test_invalidation_evicts_in_process_probe_caches_when_the_lock_is_unavailabl
     dropped even when that lock cannot be taken, or the next resolution reuses it for its TTL."""
     import contextlib
 
-    import hermes_cli.auth as auth_module
-    from hermes_constants import hermes_home_key
+    import slave_cli.auth as auth_module
+    from slave_constants import slave_home_key
 
     base_url = "https://a.example/v1"
     mm._LOCAL_CTX_PROBE_CACHE[("model-a", base_url)] = (200_000, 0.0)
     mm._LOCAL_CTX_PROBE_CACHE[("ollama_show", "model-a", base_url)] = (200_000, 0.0)
-    mm._BEDROCK_PROBE_FAILURE_CACHE[(hermes_home_key(), base_url, "model-a", "us-east-1")] = 0.0
+    mm._BEDROCK_PROBE_FAILURE_CACHE[(slave_home_key(), base_url, "model-a", "us-east-1")] = 0.0
 
     @contextlib.contextmanager
     def wedged_lock(*_args, **_kwargs):

@@ -25,7 +25,7 @@ from tests.waiting import async_wait_until
 def test_registered_worker_process_cannot_receive_async_completions(monkeypatch):
     from agent import runtime_session_store
     from gateway.session_context import async_delivery_supported
-    monkeypatch.delenv('HERMES_KANBAN_TASK', raising=False)
+    monkeypatch.delenv('SLAVE_KANBAN_TASK', raising=False)
     assert async_delivery_supported() is True
     monkeypatch.setattr(runtime_session_store, '_worker_process', True)
     assert async_delivery_supported() is False
@@ -79,7 +79,7 @@ def test_managed_turn_runs_detachable_work_inline_and_leaves_no_orphan(tmp_path)
         'model': {'provider': 'custom', 'default': 'm', 'base_url': url},
         'auxiliary': {'title_generation': {'enabled': False}}, 'platform_toolsets': {'cli': ['cronjob']}}))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
     created = subprocess.run([sys.executable, '-c', 'import json; from cron.jobs import create_job; '
                               'print(json.dumps(create_job("CRON_CHILD_GOAL", "every 1h", name="inline", deliver="local")["id"]))'],

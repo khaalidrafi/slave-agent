@@ -1,4 +1,4 @@
-"""Regression tests for the SQLite profile identity repository's ``rekey_profile`` on `hermes profile rename`.
+"""Regression tests for the SQLite profile identity repository's ``rekey_profile`` on `slave profile rename`.
 
 When a profile is renamed, the directory move carries the row data, but the profile name is also
 baked into session keys (``agent:<name>:*``), ``sessions.profile_name``, ``gateway_heartbeats.profile``,

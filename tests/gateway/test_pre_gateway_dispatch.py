@@ -76,7 +76,7 @@ async def test_internal_events_bypass_hook(monkeypatch):
     async def _capture(event, source, _quick_key, _run_generation):
         return "ok"
 
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", _fake_hook)
+    monkeypatch.setattr("slave_cli.plugins.invoke_hook", _fake_hook)
 
     runner, _adapter = _make_runner(Platform.WHATSAPP)
     runner._handle_message_with_agent = _capture
@@ -110,7 +110,7 @@ async def test_hook_fires_without_session_store_attribute(monkeypatch):
         return []
 
     # The inbound path awaits the hook, so the seam is the async entry point.
-    monkeypatch.setattr("hermes_cli.plugins.ainvoke_hook", _fake_hook)
+    monkeypatch.setattr("slave_cli.plugins.ainvoke_hook", _fake_hook)
 
     runner, adapter = _make_runner(Platform.WHATSAPP)
     del runner.session_store
@@ -143,7 +143,7 @@ async def test_async_hook_callback_is_awaited_on_the_gateway_loop(monkeypatch):
         await gate.wait()
         return [{"action": "skip", "reason": "gated"}]
 
-    monkeypatch.setattr("hermes_cli.plugins.ainvoke_hook", _hook)
+    monkeypatch.setattr("slave_cli.plugins.ainvoke_hook", _hook)
 
     async def _release():
         await asyncio.sleep(0)
@@ -167,13 +167,13 @@ async def test_rewritten_message_keeps_its_callback_provenance_and_is_admitted(m
     from gateway.run import GatewayRunner
     from gateway.session_authority import SessionAuthority, initialize_session_authority
     from gateway.session_ingress_context import capture_provenance, native_callback, register_transport_home
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from plugins.platforms.discord.adapter import DiscordAdapter
 
     async def rewrite(name, **_kwargs):
         return [{"action": "rewrite", "text": "rewritten"}] if name == "pre_gateway_dispatch" else []
 
-    monkeypatch.setattr("hermes_cli.lifecycle.ainvoke_hook", rewrite)
+    monkeypatch.setattr("slave_cli.lifecycle.ainvoke_hook", rewrite)
     monkeypatch.setattr(SessionAuthority, "_schedule", lambda self, ref: None)
     monkeypatch.setenv("DISCORD_ALLOWED_USERS", "42")
     runner = GatewayRunner(GatewayConfig())
@@ -183,12 +183,12 @@ async def test_rewritten_message_keeps_its_callback_provenance_and_is_admitted(m
     runner._wire_adapter_handlers(adapter)
     # The multiplexed admission check that refused the reporter (thanks @unsupportedpastels).
     runner.config.multiplex_profiles = True
-    runner.config._runtime_profile_homes = [("default", get_hermes_home())]
-    register_transport_home(runner, None, get_hermes_home())
+    runner.config._runtime_profile_homes = [("default", get_slave_home())]
+    register_transport_home(runner, None, get_slave_home())
     source = adapter.build_source(chat_id="42", chat_type="dm", user_id="42")
     human = MessageEvent(text="original", source=source, message_id="h")
 
-    with native_callback(runner, human, get_hermes_home()):
+    with native_callback(runner, human, get_slave_home()):
         expected = capture_provenance(runner, human)
         event = await runner._hm_pre_gateway_dispatch_hook(human, source)
         receipt = await authority.admit_native(event)
@@ -220,7 +220,7 @@ async def test_hook_fires_once_at_messaging_ingress_and_never_when_an_admission_
         return "admitted"
 
     admitted = []
-    monkeypatch.setattr("hermes_cli.lifecycle.ainvoke_hook", hook)
+    monkeypatch.setattr("slave_cli.lifecycle.ainvoke_hook", hook)
     monkeypatch.setattr(authorities, "active_authority", lambda _runner: SimpleNamespace(route_epoch=lambda _route: 0))
     monkeypatch.setattr(ingress, "admit_message", admit)
     runner, adapter = _make_runner(Platform.WHATSAPP)
@@ -258,7 +258,7 @@ async def test_webhook_delivery_fires_the_hook_once_at_ingress_before_commit():
     from aiohttp.test_utils import TestClient, TestServer
 
     from gateway.platforms.webhook import WebhookAdapter
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
     from tests.gateway.fixtures.webhook_route_authority import mount_authority
     from tests.waiting import async_wait_until
 
@@ -310,7 +310,7 @@ async def test_webhook_delivery_fires_the_hook_once_at_ingress_before_commit():
 
 
 def _rewriting_hook(fired):
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
 
     def hook(event, **_kwargs):
         fired.append(event.message_id)
@@ -356,7 +356,7 @@ async def test_a_resend_whose_raw_payload_changed_conflicts_even_when_its_prompt
     import json
 
     from aiohttp.test_utils import TestClient, TestServer
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
 
     fired = []
 
@@ -631,7 +631,7 @@ async def test_an_identical_webhook_delivery_waits_for_the_running_hook_and_gets
     from aiohttp.test_utils import TestClient, TestServer
 
     import gateway.platforms.webhook_ingress as ingress
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
     from tests.waiting import async_wait_until
 
     fired, release, entered = [], asyncio.Event(), []
@@ -695,7 +695,7 @@ async def test_a_relay_media_delivery_no_admission_owns_retains_no_bytes(
     from gateway.run import GatewayRunner
     from gateway.session_authority import initialize_session_authority
     from gateway.session_ingress_media import _media_root
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
     from tests.gateway.test_native_media_redelivery import _Media
     from tests.waiting import async_wait_until
 

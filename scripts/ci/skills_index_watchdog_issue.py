@@ -38,7 +38,7 @@ WATCHDOGS = {
 **Status:** `{status}`
 **Detail:** {detail}
 
-The Hermes Marketplace and the CLI depend on `/docs/api/skills-index.json`.
+The slave-agent Marketplace and the CLI depend on `/docs/api/skills-index.json`.
 The unified index is rebuilt by `.github/workflows/skills-index.yml` (cron 6/18 UTC)
 and `.github/workflows/deploy-site.yml` (on every push affecting website/skills).
 If this issue keeps reopening, check the latest runs:
@@ -51,15 +51,15 @@ This issue was opened by `.github/workflows/skills-index-freshness.yml`. Close i
     "plugin-catalog-cors": Watchdog(
         title_prefix="[plugin-catalog-cors-watchdog]",
         title="Desktop cannot read the plugin catalog ({status})",
-        body="""Hermes Desktop cannot read the plugin catalog.
+        body="""slave-agent Desktop cannot read the plugin catalog.
 
 **Status:** `{status}`
 **Detail:** {detail}
 
-Desktop's `hermes://plugin/install?catalog=` links fetch `/docs/api/plugins.json` cross-origin.
+Desktop's `slave://plugin/install?catalog=` links fetch `/docs/api/plugins.json` cross-origin.
 A browser rejects that fetch when any response in the redirect chain, including the docs host's
 redirect to GitHub Pages, lacks `Access-Control-Allow-Origin`. Every catalog install link then
-shows "Could not load the Hermes plugin catalog". Background: #136483.
+shows "Could not load the slave-agent plugin catalog". Background: #136483.
 
 This issue was opened by `.github/workflows/skills-index-freshness.yml` (job `check-catalog-cors`). Close it once the header is back; the next probe will reopen it if it's still broken.""",
     ),

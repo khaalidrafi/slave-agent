@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import run_agent
 from gateway.config import Platform, StreamingConfig
 from gateway.platforms.base import SendResult
@@ -91,7 +91,7 @@ async def test_streamed_reply_then_marker_shows_the_reply_once(monkeypatch, tmp_
             return [expected]
         return []
 
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", output_hook)
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", output_hook)
     (tmp_path / "config.yaml").write_text(yaml.safe_dump({
         "display": {"interim_assistant_messages": False, "tool_progress": "off"},
     }))

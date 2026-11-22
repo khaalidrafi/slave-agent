@@ -55,7 +55,7 @@ def test_non_retryable_reasons_stop(reason):
 
 # ── delivery surfaces never run their own retry loop ─────────────────────────
 #
-# Retired: the relay handler and local runner used to re-run a `hermes -p ...`
+# Retired: the relay handler and local runner used to re-run a `slave -p ...`
 # CLI turn on transient failure. Execution now belongs to the profile
 # authority's canonical admission; retry policy applies inside that turn.
 # These surfaces must only forward/refuse with a typed reason, never spawn.
@@ -63,10 +63,10 @@ def test_non_retryable_reasons_stop(reason):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    h = tmp_path / ".hermes"
+    h = tmp_path / ".slave"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("SLAVE_HOME", str(h))
     return h
 
 
@@ -79,13 +79,13 @@ def _deliver(params):
 def test_relay_deliver_refuses_with_typed_reason_and_never_spawns(home, monkeypatch):
     calls = []
     # The server module's import-time update prefetch runs `git ...`; only a
-    # `hermes` CLI spawn would be a delivery attempt.
+    # `slave` CLI spawn would be a delivery attempt.
     monkeypatch.setattr("subprocess.run", lambda argv, **k: calls.append(list(argv)))
     out = _deliver({"id": "a" * 32, "profile": "ops", "message": "ping"})
     assert "error" in out
     assert out["error"]["data"]["reason"] == "runtime_unavailable"
     assert "authority" in out["error"]["message"]
-    spawned = [argv for argv in calls if argv and argv[0].rsplit("/", 1)[-1] in ("hermes", "hermes.exe")]
+    spawned = [argv for argv in calls if argv and argv[0].rsplit("/", 1)[-1] in ("slave", "slave.exe")]
     assert spawned == [], "no CLI turn may be started by the relay bridge"
 
 
@@ -96,7 +96,7 @@ def test_run_delivery_never_retries_a_local_turn(monkeypatch, tmp_path, capsys):
     dm.write_text("hello")
     monkeypatch.setattr(bot_mode_dm.subprocess, "run",
                         lambda argv, **k: pytest.fail("local runner must not execute inference"))
-    rc = bot_mode_dm._run_delivery(["hermes", "-p", "ops", "chat"], str(dm), stdin_file=False)
+    rc = bot_mode_dm._run_delivery(["slave", "-p", "ops", "chat"], str(dm), stdin_file=False)
     assert rc == 1
     assert json.loads(capsys.readouterr().out)["reason"] == "runtime_unavailable"
     assert dm.read_text() == "hello", "payload is retained for the sender's evidence"
@@ -140,7 +140,7 @@ def test_delivery_main_reports_every_failure_as_typed_json(tmp_path, monkeypatch
 
     monkeypatch.setattr(bot_mode_dm, "_run_delivery", _raise)
 
-    rc = bot_mode_dm._delivery_main(["--run-delivery", "query-file", str(dm), "hermes", "-p", "ops", "chat"])
+    rc = bot_mode_dm._delivery_main(["--run-delivery", "query-file", str(dm), "slave", "-p", "ops", "chat"])
 
     assert rc == 1
     payload = json.loads(capsys.readouterr().out.strip())

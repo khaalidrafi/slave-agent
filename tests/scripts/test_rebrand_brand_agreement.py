@@ -8,7 +8,7 @@ Each test here is one pair that must stay equal — a snapshot of a name would j
 annoy whoever renames us next, so nothing here asserts a spelling on its own.
 
 These are relationship tests, per the project's testing rules: if the generator
-starts emitting a different answer for ``HERMES_HOME`` than ``brand.HOME_ENV``
+starts emitting a different answer for ``SLAVE_HOME`` than ``brand.HOME_ENV``
 claims, the branded tree would read one variable and the docs another, and users
 would lose their state directory. That is worth a red test.
 """
@@ -38,43 +38,43 @@ def _load_brand():
 
 def test_home_env_is_the_name_the_identity_tier_emits():
     """The gap this closes: ``brand.HOME_ENV`` carried the product's two words,
-    while the identity tier's mechanical ``HERMES_``-prefix swap drops the second
+    while the identity tier's mechanical ``SLAVE_``-prefix swap drops the second
     one — so the file meant to be the source of truth was wrong about its own
     product, and every state variable in the branded tree would disagree with the
     docs that name it."""
     mod, brand = _load_rebrand(), _load_brand()
-    rewritten, hits = mod.rewrite_identity("HERMES_HOME")
+    rewritten, hits = mod.rewrite_identity("SLAVE_HOME")
     assert hits == 1
     assert rewritten == brand.HOME_ENV
 
 
 def test_the_env_prefix_brand_advertises_matches_the_generators_prefix():
     """Not just HOME: a renamed variable is looked up by string elsewhere, so the
-    whole ``HERMES_*`` family has to land on the prefix ``brand`` claims."""
+    whole ``SLAVE_*`` family has to land on the prefix ``brand`` claims."""
     mod, brand = _load_rebrand(), _load_brand()
     prefix = brand.HOME_ENV.split("_")[0]          # "SLAVE"
-    for upstream in ("HERMES_HOME", "HERMES_RUNTIME_DIR", "HERMES_API_KEY"):
+    for upstream in ("SLAVE_HOME", "SLAVE_RUNTIME_DIR", "SLAVE_API_KEY"):
         out, hits = mod.rewrite_identity(upstream)
         assert hits == 1, upstream
         assert out.startswith(prefix + "_"), (upstream, out)
     # And the prose tier must not touch variables at all — that is the identity
     # tier's job; a tier that eats both would rewrite a name twice.
-    assert mod.rewrite("export HERMES_HOME=$HERMES_HOME")[1] == 0
+    assert mod.rewrite("export SLAVE_HOME=$SLAVE_HOME")[1] == 0
 
 
 def test_every_brand_name_is_what_the_generator_produces_for_its_upstream_token():
     """Each vocabulary slot against the token it is the answer for."""
     mod, brand = _load_rebrand(), _load_brand()
 
-    assert mod.rewrite("Hermes Agent")[0] == brand.PRODUCT
-    assert mod.rewrite("run hermes setup")[0].split()[1] == brand.CLI
-    assert mod.rewrite_identity("hermes-agent")[0] == brand.SLUG
-    assert mod.rewrite_identity("hermes_agent")[0] == brand.MODULE
+    assert mod.rewrite("slave-agent")[0] == brand.PRODUCT
+    assert mod.rewrite("run slave setup")[0].split()[1] == brand.CLI
+    assert mod.rewrite_identity("slave-agent")[0] == brand.SLUG
+    assert mod.rewrite_identity("slave_agent")[0] == brand.MODULE
 
 
 def test_names_we_do_not_own_survive_both_tiers():
     """The KEEPS: the upstream repo (the update/install target), the upstream docs
-    host, contributor email addresses, and Meta's Hermes JS parser. Rewriting any
+    host, contributor email addresses, and Meta's slave-agent JS parser. Rewriting any
     of them would break an updater, lose MIT attribution, or point at a package
     that does not exist."""
     mod = _load_rebrand()
@@ -90,13 +90,13 @@ def test_the_brand_tier_rewrites_prose_without_eating_identifiers():
     a token touching ``.``/``_``/``/``/``$``/``@`` is code, not branding, and must
     be left for the identity tier."""
     mod, brand = _load_rebrand(), _load_brand()
-    untouched = ["hermes_cli/main.py", "~/.hermes/config.yaml", "$HERMES_HOME",
-                 "HERMES_HOME=1", "import hermes_constants", "hermes-agent.nousresearch.com"]
+    untouched = ["slave_cli/main.py", "~/.slave/config.yaml", "$SLAVE_HOME",
+                 "SLAVE_HOME=1", "import slave_constants", "hermes-agent.nousresearch.com"]
     for sample in untouched:
         assert mod.rewrite(sample)[1] == 0, sample
     # Sentence-initial prose still becomes the product name — spelled from ``brand``,
     # because a test that types the answer is the drift ``rebrand --lint`` exists to catch.
-    assert mod.rewrite("Hermes remembers your context")[0].startswith(brand.PRODUCT + " ")
+    assert mod.rewrite("slave-agent remembers your context")[0].startswith(brand.PRODUCT + " ")
 
 
 def test_the_generator_opens_every_format_that_ships_a_word_to_a_user():
@@ -130,23 +130,23 @@ def test_third_party_shapes_survive_the_identity_tier():
         assert keep in out, (keep, out)
     # Our own tokens still swap in the same pass, so a KEEP can never widen
     # into a general amnesty.
-    out, hits = mod.rewrite_identity("hermes-agent and hermes_cli")
+    out, hits = mod.rewrite_identity("slave-agent and slave_cli")
     assert hits == 2
-    assert "slave" in out and "hermes" not in out
+    assert "slave" in out and "slave" not in out
 
 
 def test_deployment_names_arrive_by_env_and_fail_lint(monkeypatch):
     """The scrub law, executable: a deployment name handed in through
     BRAND_DENY_NAMES is found case-insensitively anywhere in the tracked tree,
     and the list itself reads the environment — a deny list checked into the
-    tree would carry the very names it bans. ``hermes-agent`` stands in for a
+    tree would carry the very names it bans. ``slave-agent`` stands in for a
     deployment name: the dev tree legitimately carries that word everywhere, so
     the lane must find it there."""
     mod = _load_rebrand()
     assert mod.deny_names_from_env() == []          # unset: idle, never a crash
     monkeypatch.setenv(mod.DENY_ENV, "acme-corp, acme-assistant ")
     assert mod.deny_names_from_env() == ["acme-corp", "acme-assistant"]
-    monkeypatch.setenv(mod.DENY_ENV, "hermes-agent")
+    monkeypatch.setenv(mod.DENY_ENV, "slave-agent")
     assert mod.denied_names(mod.deny_names_from_env()), \
         "the deny lane must find a word the tracked tree carries"
     # Built at runtime so THIS file never carries the literal: the lane scans

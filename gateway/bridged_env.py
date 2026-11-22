@@ -1,7 +1,7 @@
 """Ownership markers of the YAML -> env bridge (``gateway.platforms._shared.yaml_env_setter``).
 
 Stdlib only: the subprocess env builders (``tools.environments.local``) read these on the
-post-update restart path, which must import nothing heavy (``hermes_cli.update_cmd_commit``), and
+post-update restart path, which must import nothing heavy (``slave_cli.update_cmd_commit``), and
 ``launch_secret_scope`` follows them from a remote config backend's cold token fetch, where importing
 ``gateway.platforms`` would read config.
 """
@@ -13,7 +13,7 @@ import os
 import threading
 from typing import Optional
 
-BRIDGED_ENV_MARKER_PREFIX = "HERMES_BRIDGED_"
+BRIDGED_ENV_MARKER_PREFIX = "SLAVE_BRIDGED_"
 # Held for a whole bridging load (``gateway.platforms._shared.yaml_env_refresh``): its writes publish all-or-nothing.
 YAML_ENV_LOCK = threading.RLock()
 

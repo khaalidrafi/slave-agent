@@ -1,6 +1,6 @@
 name: soldgraph
 title: Soldgraph
-repo: https://github.com/soldgraph/soldgraph-hermes
+repo: https://github.com/soldgraph/soldgraph-slave
 sha: 8b65c678a0bc477aae251755a2c5e1baae15833a
 maintainer: soldgraph
 tier: community

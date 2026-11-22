@@ -18,7 +18,7 @@ async def _owner(tmp_path, monkeypatch):
     from gateway.session_authority import initialize_session_authority
     from persistence_assembly import open_persistence, profile_scope
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     runner = GatewayRunner(GatewayConfig(sessions_dir=tmp_path / "sessions"))
     db = open_persistence(profile_scope(home=tmp_path))
     authority = await initialize_session_authority(runner, profile_id="default", instance_id="owner", persistence=db)

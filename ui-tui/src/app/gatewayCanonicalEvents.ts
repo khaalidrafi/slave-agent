@@ -1,7 +1,7 @@
 import type {
   AnyGatewayEvent,
   SessionInfo
-} from '@hermes/shared/gateway-types'
+} from '@slave-agent/shared/gateway-types'
 
 import { patchOverlayState } from './overlayStore.js'
 import { patchUiState } from './uiStore.js'

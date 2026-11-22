@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 from tools.registry import _module_registers_tools, _tool_module_candidates
 
 

@@ -68,7 +68,7 @@ def _serve_file(monkeypatch, content: str = CONFIG) -> None:
 
     def execute(self, command, **kwargs):
         result = original(self, command, **kwargs)
-        found = re.search(r"echo (__HERMES_RF_[0-9a-f]+__)", command)
+        found = re.search(r"echo (__SLAVE_RF_[0-9a-f]+__)", command)
         if not found:
             return result
         mark, data = found.group(1) + "\n", content.encode()
@@ -106,23 +106,23 @@ def test_a_hosted_config_yaml_read_never_resolves_its_path_on_this_host(provider
     assert not touched, f"a hosted read resolved {in_sandbox} on this host: {touched}"
 
 
-def test_a_hosted_read_under_a_hermes_directory_is_still_a_secret_file(provider, monkeypatch):
+def test_a_hosted_read_under_a_slave_directory_is_still_a_secret_file(provider, monkeypatch):
     _serve_file(monkeypatch)
     with c._bind(A):
-        secret = c.call_tool("read_file", {"path": "/workspace/.hermes/config.yaml"}, task_id="t")
-        nested = c.call_tool("read_file", {"path": "/workspace/app/../.hermes/config.yaml"}, task_id="t")
+        secret = c.call_tool("read_file", {"path": "/workspace/.slave/config.yaml"}, task_id="t")
+        nested = c.call_tool("read_file", {"path": "/workspace/app/../.slave/config.yaml"}, task_id="t")
     for result in (secret, nested):
         assert "api_key:" in result["content"] and SECRET not in result["content"], result
 
 
-def test_a_local_config_yaml_under_the_hermes_home_is_still_recognized():
-    from agent.redact import _is_under_hermes_home
-    from hermes_constants import get_hermes_home
+def test_a_local_config_yaml_under_the_slave_home_is_still_recognized():
+    from agent.redact import _is_under_slave_home
+    from slave_constants import get_slave_home
     from tools.file_tools import read_file_tool
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(CONFIG, encoding="utf-8")
-    assert _is_under_hermes_home(str(home / "config.yaml"))
-    assert not _is_under_hermes_home(str(home.parent / "elsewhere" / "config.yaml"))
+    assert _is_under_slave_home(str(home / "config.yaml"))
+    assert not _is_under_slave_home(str(home.parent / "elsewhere" / "config.yaml"))
     result = json.loads(read_file_tool(str(home / "config.yaml"), task_id="t-local-config"))
     assert SECRET not in json.dumps(result), result

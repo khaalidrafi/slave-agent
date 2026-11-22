@@ -85,9 +85,9 @@ class TestAppendToTranscriptSkipDb:
         """With skip_db=True and a real DB, message does NOT appear in SQLite."""
         from gateway.config import GatewayConfig
         from gateway.session import SessionStore
-        from hermes_constants import get_hermes_home
+        from slave_constants import get_slave_home
 
-        db = storage_handle(get_hermes_home())
+        db = storage_handle(get_slave_home())
 
         config = GatewayConfig()
         with patch("gateway.session.SessionStore._ensure_loaded"):

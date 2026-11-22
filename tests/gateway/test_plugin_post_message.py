@@ -11,7 +11,7 @@ from gateway.platforms.base import BasePlatformAdapter, PlatformConfig, SendResu
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource, SessionStore
 from gateway.session_context import scoped_session_key
-from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
+from slave_cli.plugins import PluginContext, PluginManager, PluginManifest
 
 
 class _Adapter(BasePlatformAdapter):

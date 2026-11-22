@@ -1,8 +1,8 @@
-"""Tests for `hermes photon setup`'s access auto-configuration.
+"""Tests for `slave photon setup`'s access auto-configuration.
 
 `_autoconfigure_access` allowlists the operator and points the cron home
-channel at their DM, writing to the per-test ~/.hermes/.env (the hermetic
-HERMES_HOME fixture isolates this). It must fill only unset keys so a re-run
+channel at their DM, writing to the per-test ~/.slave/.env (the hermetic
+SLAVE_HOME fixture isolates this). It must fill only unset keys so a re-run
 never clobbers a hand-tuned allowlist.
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ import argparse
 
 import pytest
 
-from hermes_cli.config import get_env_value
+from slave_cli.config import get_env_value
 from plugins.platforms.photon.adapter import _env_enablement
 from plugins.platforms.photon import cli
 
@@ -204,7 +204,7 @@ def test_opt_in_wait_always_names_a_line_to_text(
     if dedicated_line:
         assert waited == [dedicated_line]
     else:
-        assert waited == [] and "skipping the opt-in wait" in out and "hermes photon status" in out
+        assert waited == [] and "skipping the opt-in wait" in out and "slave photon status" in out
 
 
 def test_setup_without_phone_does_not_report_complete(

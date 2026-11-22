@@ -43,9 +43,9 @@ def register(ctx):
         from agent.runtime_cwd import resolve_agent_cwd
         from gateway.session_context import get_session_env
         return "WHERE=" + json.dumps({"cwd": str(resolve_agent_cwd()), "getcwd": os.getcwd(),
-                                      "source": get_session_env("HERMES_SESSION_SOURCE"),
-                                      "platform": get_session_env("HERMES_SESSION_PLATFORM"),
-                                      "key": get_session_env("HERMES_SESSION_KEY")})
+                                      "source": get_session_env("SLAVE_SESSION_SOURCE"),
+                                      "platform": get_session_env("SLAVE_SESSION_PLATFORM"),
+                                      "key": get_session_env("SLAVE_SESSION_KEY")})
     ctx.register_command("probe-cwd", where, description="Where the handler runs")
 
     def sid(arg):  # the session a background job started from the handler records as its parent
@@ -53,8 +53,8 @@ def register(ctx):
         from tools.process_registry import process_registry
         started = json.loads(ctx.dispatch_tool("terminal", {"command": "true", "background": True}))
         job = process_registry.get(started.get("session_id") or "")
-        return "SID=" + json.dumps({"id": get_session_env("HERMES_SESSION_ID"),
-                                    "key": get_session_env("HERMES_SESSION_KEY"),
+        return "SID=" + json.dumps({"id": get_session_env("SLAVE_SESSION_ID"),
+                                    "key": get_session_env("SLAVE_SESSION_KEY"),
                                     "parent": getattr(job, "parent_session_id", None), "started": started})
     ctx.register_command("probe-sid", sid, description="The calling session")
     ctx.register_command("probe-args", lambda arg: "ARGS=" + json.dumps(arg), description="Echo the argument")
@@ -92,7 +92,7 @@ def _plugin_home(tmp_path, source):
         'plugins': {'enabled': ['probe-cmd'], 'entries': {'probe-cmd': {'mcp_allowlist': ['probe-mcp']}}},
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1',
                PYTHONDONTWRITEBYTECODE='1')
     try:
@@ -107,7 +107,7 @@ def _no_local_plugins(monkeypatch):
     def no_local_plugin(*_a, **_k):
         pytest.fail('the CLI process loaded or ran plugin code')
     for name in ('get_plugin_command_handler', 'discover_plugins', 'get_plugin_commands'):
-        monkeypatch.setattr(f'hermes_cli.plugins.{name}', no_local_plugin)
+        monkeypatch.setattr(f'slave_cli.plugins.{name}', no_local_plugin)
 
 
 class _Wire:
@@ -134,7 +134,7 @@ class _Wire:
         return self.listeners
 
     def call(self, method, **params):
-        from hermes_cli.gateway_client import GatewayRPCError
+        from slave_cli.gateway_client import GatewayRPCError
         self.calls.append(method)
         reply = self._run(rpc(self.ws, method, **params))
         if 'error' in reply:  # an owner refusal, as gateway_client raises it
@@ -156,7 +156,7 @@ class _Wire:
 @pytest.mark.platforms("linux")
 def test_cli_plugin_command_runs_in_the_gateway_and_reaches_its_mcp_registry(tmp_path, monkeypatch, capsys):
     import cli as cli_mod
-    from cli import HermesCLI
+    from cli import SlaveCLI
     _no_local_plugins(monkeypatch)
     monkeypatch.setattr(cli_mod, '_ensure_skill_commands', dict)
     monkeypatch.setattr(cli_mod, 'get_skill_bundles', dict)
@@ -168,8 +168,8 @@ def test_cli_plugin_command_runs_in_the_gateway_and_reaches_its_mcp_registry(tmp
             try:
                 sid = wire.call('session.create', request_id='plugin-cli', source='cli', toolsets=[],
                                 cwd=str(work))['session_id']
-                monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: wire)
-                c = HermesCLI.__new__(HermesCLI)
+                monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: wire)
+                c = SlaveCLI.__new__(SlaveCLI)
                 c.config, c.session_id = {}, sid
                 capsys.readouterr()
                 assert c._process_unregistered_slash('/probe-mcp-status Deep Check',
@@ -210,8 +210,8 @@ def test_cli_plugin_command_runs_in_the_gateway_and_reaches_its_mcp_registry(tmp
 def _dial_running(home):
     """The production dial pinned to an owner already running (``connect_gateway(endpoint)``), so a
     redial while none is up fails instead of starting one the test does not own."""
-    from hermes_cli.gateway_client import GatewayClientError, connect_gateway
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
+    from slave_cli.gateway_client import GatewayClientError, connect_gateway
+    from slave_cli.gateway_runtime import discover_gateway_endpoint
 
     @asynccontextmanager
     async def dial():
@@ -230,16 +230,16 @@ def test_a_redial_to_a_restarted_gateway_and_slash_new_reread_the_plugin_command
     gateway answers it is a named refusal (no same-named skill stands in), on B it is no plugin
     command. /new through the gateway session store re-reads B's catalog for the new session."""
     import cli as cli_mod
-    from cli import HermesCLI
-    from hermes_cli.gateway_connection import GatewayConnection
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from cli import SlaveCLI
+    from slave_cli.gateway_connection import GatewayConnection
+    from slave_cli.gateway_session_store import GatewaySessionStore
     _no_local_plugins(monkeypatch)
     skills, ran_skill = {'/alpha': {'name': 'alpha'}}, []
     monkeypatch.setattr(cli_mod, '_ensure_skill_commands', lambda: dict(skills))
     monkeypatch.setattr(cli_mod, 'get_skill_bundles', dict)
-    monkeypatch.setattr(HermesCLI, '_run_skill_slash_command', lambda self, *a: ran_skill.append(a[0]))
+    monkeypatch.setattr(SlaveCLI, '_run_skill_slash_command', lambda self, *a: ran_skill.append(a[0]))
     with _plugin_home(tmp_path, _LIFE.replace('NAME', 'alpha')) as (root, home, env):
-        monkeypatch.setenv('HERMES_HOME', str(home))
+        monkeypatch.setenv('SLAVE_HOME', str(home))
         conn = GatewayConnection(connect=_dial_running(home))
         sent, real, real_until = [], conn.call_tagged, conn.call_until
 
@@ -252,7 +252,7 @@ def test_a_redial_to_a_restarted_gateway_and_slash_new_reread_the_plugin_command
             return real_until(method, wake, **params)
         monkeypatch.setattr(conn, 'call_tagged', spy)
         monkeypatch.setattr(conn, 'call_until', spy_until)
-        c = HermesCLI()
+        c = SlaveCLI()
         c.agent, c._session_db, c._gateway_session_open = None, GatewaySessionStore(conn), False
 
         def typed(text):
@@ -313,18 +313,18 @@ _TWIN = 'ctx.register_command("pptwin", lambda arg: "PLUGIN_TWIN", description="
 @pytest.mark.parametrize("unload", ["disable", "stop_registering"])
 def test_a_command_a_plugin_reload_removed_is_dispatched_again(tmp_path, monkeypatch, capsys, unload):
     """The open CLI cached the session's catalog; then the running gateway reloads its plugins (what
-    ``hermes plugins disable`` asks for) without the command, in the same session and gateway life.
+    ``slave plugins disable`` asks for) without the command, in the same session and gateway life.
     The cached name gets ``unsupported_command`` from ``slash.exec`` once: the CLI re-reads the catalog
     and dispatches the name again, so a same-named skill runs, and a name nothing else matches gets
     the "no longer has this plugin command" line, never the raw code, on that try or a later one."""
     import cli as cli_mod
-    from cli import HermesCLI
+    from cli import SlaveCLI
     from gateway.control_socket import reload_gateway_plugins
     _no_local_plugins(monkeypatch)
     ran_skill = []
     monkeypatch.setattr(cli_mod, '_ensure_skill_commands', dict)  # the skill is the gateway's, below
     monkeypatch.setattr(cli_mod, 'get_skill_bundles', dict)
-    monkeypatch.setattr(HermesCLI, '_run_skill_slash_command', lambda self, *a: ran_skill.append(a[0]))
+    monkeypatch.setattr(SlaveCLI, '_run_skill_slash_command', lambda self, *a: ran_skill.append(a[0]))
     work = tmp_path / 'work'
     work.mkdir()
     with _plugin_home(tmp_path, _RELOADED.replace('TWIN', _TWIN)) as (root, home, env):
@@ -335,8 +335,8 @@ def test_a_command_a_plugin_reload_removed_is_dispatched_again(tmp_path, monkeyp
             try:
                 sid = wire.call('session.create', request_id='plugin-reload', source='cli', toolsets=[],
                                 cwd=str(work))['session_id']
-                monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: wire)
-                c = HermesCLI.__new__(HermesCLI)
+                monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: wire)
+                c = SlaveCLI.__new__(SlaveCLI)
                 c.config, c.session_id = {}, sid
 
                 def typed(text):
@@ -389,12 +389,12 @@ def test_a_plugin_whose_register_fails_leaves_its_name_to_a_same_named_skill(tmp
     name goes on to the same-named skill. Main's CLI did the same: its own load dropped the
     command, ``_get_plugin_cmd_handler_names()`` missed it, and the skill branch ran."""
     import cli as cli_mod
-    from cli import HermesCLI
+    from cli import SlaveCLI
     _no_local_plugins(monkeypatch)
     ran_skill = []
     monkeypatch.setattr(cli_mod, '_ensure_skill_commands', dict)  # the skill is the gateway's, below
     monkeypatch.setattr(cli_mod, 'get_skill_bundles', dict)
-    monkeypatch.setattr(HermesCLI, '_run_skill_slash_command', lambda self, *a: ran_skill.append(a[0]))
+    monkeypatch.setattr(SlaveCLI, '_run_skill_slash_command', lambda self, *a: ran_skill.append(a[0]))
     work = tmp_path / 'work'
     work.mkdir()
     with _plugin_home(tmp_path, _BROKEN) as (root, home, env):
@@ -406,8 +406,8 @@ def test_a_plugin_whose_register_fails_leaves_its_name_to_a_same_named_skill(tmp
                 sid = wire.call('session.create', request_id='plugin-broken', source='cli', toolsets=[],
                                 cwd=str(work))['session_id']
                 catalog = wire.call('commands.catalog', session_id=sid)
-                monkeypatch.setattr('hermes_cli.gateway_side.connection_for', lambda _cli: wire)
-                c = HermesCLI.__new__(HermesCLI)
+                monkeypatch.setattr('slave_cli.gateway_side.connection_for', lambda _cli: wire)
+                c = SlaveCLI.__new__(SlaveCLI)
                 c.config, c.session_id = {}, sid
                 capsys.readouterr()
                 del wire.calls[:]
@@ -461,10 +461,10 @@ def test_a_plugin_command_outliving_the_rpc_limit_prints_its_reply_and_ctrl_c_st
     import cli as cli_mod
     from types import SimpleNamespace
     from prompt_toolkit.buffer import Buffer
-    from cli import HermesCLI
-    from hermes_cli import gateway_plugin_commands
-    from hermes_cli.gateway_connection import GatewayConnection
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from cli import SlaveCLI
+    from slave_cli import gateway_plugin_commands
+    from slave_cli.gateway_connection import GatewayConnection
+    from slave_cli.gateway_session_store import GatewaySessionStore
     _no_local_plugins(monkeypatch)
     monkeypatch.setattr(cli_mod, '_ensure_skill_commands', dict)
     monkeypatch.setattr(cli_mod, 'get_skill_bundles', dict)
@@ -473,15 +473,15 @@ def test_a_plugin_command_outliving_the_rpc_limit_prints_its_reply_and_ctrl_c_st
     marks.mkdir()
     source = _SLOW.replace('GATE', repr(str(gate))).replace('MARKS', repr(str(marks)))
     with _plugin_home(tmp_path, source) as (root, home, env):
-        monkeypatch.setenv('HERMES_HOME', str(home))
+        monkeypatch.setenv('SLAVE_HOME', str(home))
         conn = GatewayConnection(connect=_dial_running(home))
-        c = HermesCLI()
+        c = SlaveCLI()
         c.agent, c._session_db, c._gateway_session_open = None, GatewaySessionStore(conn), False
         try:
             with daemon(root, home, env, barrier=True, fixture='plugin_mcp_daemon.py') as (proc, _desc):
                 c._ensure_gateway_session()
                 assert 'ppslow' in (gateway_plugin_commands.names(c) or {})  # cached: no catalog read below
-                monkeypatch.setattr('hermes_cli.gateway_connection.DEFAULT_RPC_TIMEOUT', 0)
+                monkeypatch.setattr('slave_cli.gateway_connection.DEFAULT_RPC_TIMEOUT', 0)
                 capsys.readouterr()
                 waiting = _typed_in_thread(c, '/ppslow long')
                 wait_until(lambda: (marks / 'started-long').exists(), timeout=30, what='the handler to start')

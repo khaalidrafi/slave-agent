@@ -123,7 +123,7 @@ def _adapter(monkeypatch, client, max_bytes):
     from plugins.platforms.matrix.adapter import MatrixAdapter
 
     adapter = MatrixAdapter(PlatformConfig(enabled=True, token="syt_secret", extra={
-        "homeserver": "https://hs.example.org", "user_id": "@hermes:example.org", "require_mention": False}))
+        "homeserver": "https://hs.example.org", "user_id": "@slave:example.org", "require_mention": False}))
     adapter._startup_ts = time.time() - 10
     adapter._client = client
     adapter.handle_message = AsyncMock()

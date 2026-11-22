@@ -87,20 +87,20 @@ def test_plain_leading_foreign_handle_still_skips():
 
 
 def test_own_handle_in_leading_run_wins():
-    """``@OtherBot @hermes_bot compare`` addresses us too — process."""
+    """``@OtherBot @slave_bot compare`` addresses us too — process."""
     adapter = _adapter()
-    text = "@OtherBot @hermes_bot compare"
-    message = _group_message(text, entities=_mention_entities(text, ["@OtherBot", "@hermes_bot"]))
+    text = "@OtherBot @slave_bot compare"
+    message = _group_message(text, entities=_mention_entities(text, ["@OtherBot", "@slave_bot"]))
 
     assert adapter._explicit_bot_mentions_exclude_self(message) is False
 
 
 def test_own_handle_later_in_message_still_wins():
     """Our own handle anywhere wins, as today: a foreign leading run plus a later own mention
-    is a collective address (``@OtherBot hey @hermes_bot``), not a foreign-only one."""
+    is a collective address (``@OtherBot hey @slave_bot``), not a foreign-only one."""
     adapter = _adapter()
-    text = "@OtherBot hey @hermes_bot whatsup"
-    message = _group_message(text, entities=_mention_entities(text, ["@OtherBot", "@hermes_bot"]))
+    text = "@OtherBot hey @slave_bot whatsup"
+    message = _group_message(text, entities=_mention_entities(text, ["@OtherBot", "@slave_bot"]))
 
     assert adapter._explicit_bot_mentions_exclude_self(message) is False
 
@@ -162,12 +162,12 @@ def test_passing_mention_reaches_the_trigger_gate():
 
 
 @pytest.mark.parametrize("text", [
-    "/model@OtherBot gpt-5 @hermes_bot",
-    "/model@jarvis gpt-5 @hermes_bot",
-    "@hermes_bot /queue@OtherBot ask @hermes_bot",
-    "@hermes_bot- /model@jarvis gpt-5",
-    "/model@" + "a" * 32 + " gpt-5 @hermes_bot",
-    "/set-home@OtherBot @hermes_bot",
+    "/model@OtherBot gpt-5 @slave_bot",
+    "/model@jarvis gpt-5 @slave_bot",
+    "@slave_bot /queue@OtherBot ask @slave_bot",
+    "@slave_bot- /model@jarvis gpt-5",
+    "/model@" + "a" * 32 + " gpt-5 @slave_bot",
+    "/set-home@OtherBot @slave_bot",
 ])
 @pytest.mark.parametrize("with_entities", [True, False])
 def test_foreign_command_target_wins_over_our_mention(text, with_entities, caplog):
@@ -185,18 +185,18 @@ def test_foreign_command_target_wins_over_our_mention(text, with_entities, caplo
 
 @pytest.mark.parametrize("text", [
     "/model@OtherBot! gpt-5",
-    "@hermes_bot /model@OtherBot! gpt-5",
-    "/help@OtherBot! @hermes_bot",
-    "@hermes_bot /help@OtherBot! @hermes_bot",
-    "@hermes_bot /help@OtherBot.",
+    "@slave_bot /model@OtherBot! gpt-5",
+    "/help@OtherBot! @slave_bot",
+    "@slave_bot /help@OtherBot! @slave_bot",
+    "@slave_bot /help@OtherBot.",
 ])
 def test_foreign_command_entity_ends_before_punctuation(text, caplog):
     test_foreign_command_target_wins_over_our_mention(text, True, caplog)
 
 
 @pytest.mark.parametrize("text", [
-    "/model@OtherBot gpt-5 @hermes_bot",
-    "@hermes_bot /model@OtherBot gpt-5",
+    "/model@OtherBot gpt-5 @slave_bot",
+    "@slave_bot /model@OtherBot gpt-5",
 ])
 def test_code_span_command_target_addresses_no_one(text):
     entities = _telegram_entities(text)

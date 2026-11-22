@@ -1,4 +1,4 @@
-"""The importer owns cold control in its receipt transaction. Hermes is single-user: the dashboard
+"""The importer owns cold control in its receipt transaction. slave-agent is single-user: the dashboard
 login is the machine owner, so it continues the owner's import (an exact retry), never a stranger."""
 import httpx
 import pytest

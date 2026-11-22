@@ -7,14 +7,14 @@ from tools.approval import detect_dangerous_command
 # does not stop a live job on its own, but it is what makes an unload survive
 # a reboot, so it belongs to the same family.
 GATEWAY_LIFECYCLE_LAUNCHCTL = (
-    "launchctl kickstart -k gui/501/ai.hermes.gateway",
-    "launchctl unload ~/Library/LaunchAgents/ai.hermes.gateway.plist",
-    "launchctl load ~/Library/LaunchAgents/ai.hermes.gateway.plist",
-    "launchctl stop ai.hermes.gateway",
-    "launchctl restart ai.hermes.gateway",
-    "launchctl bootout gui/501/ai.hermes.gateway",
-    "launchctl remove ai.hermes.gateway",
-    "launchctl disable gui/501/ai.hermes.gateway",
+    "launchctl kickstart -k gui/501/ai.slave.gateway",
+    "launchctl unload ~/Library/LaunchAgents/ai.slave.gateway.plist",
+    "launchctl load ~/Library/LaunchAgents/ai.slave.gateway.plist",
+    "launchctl stop ai.slave.gateway",
+    "launchctl restart ai.slave.gateway",
+    "launchctl bootout gui/501/ai.slave.gateway",
+    "launchctl remove ai.slave.gateway",
+    "launchctl disable gui/501/ai.slave.gateway",
 )
 
 
@@ -23,7 +23,7 @@ class TestLifecycleGuardLaunchctlParity:
     layer already treats as gateway lifecycle.
 
     These two layers are not interchangeable. In ``tools/terminal_tool.py``
-    under ``_HERMES_GATEWAY == "1"``, the ``cron.lifecycle_guard`` block is
+    under ``_SLAVE_GATEWAY == "1"``, the ``cron.lifecycle_guard`` block is
     documented as applying unconditionally ("force=True cannot help here"),
     while ``detect_dangerous_command`` below it is explicitly skipped when
     ``force=True``. A verb covered only by the approval layer is therefore
@@ -61,12 +61,12 @@ class TestLifecycleGuardLaunchctlParity:
 
     def test_unrelated_labels_are_not_blocked(self):
         """The label anchor must still scope this to the gateway — unrelated
-        services, including other Hermes ones, stay runnable."""
+        services, including other slave-agent ones, stay runnable."""
         from cron.lifecycle_guard import contains_gateway_lifecycle_command
 
         for cmd in (
             "launchctl bootout gui/501/com.example.unrelated",
-            "launchctl remove ai.hermes.update-checker",
+            "launchctl remove ai.slave.update-checker",
             "launchctl disable gui/501/com.apple.WindowServer",
             "launchctl print system/com.apple.WindowServer",
         ):

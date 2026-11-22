@@ -262,7 +262,7 @@ async def test_expect_edits_metadata_keeps_preview_on_legacy_path():
 
     assert result.success is True
     # Streaming preview sends will be edited later, so they must not be born as
-    # rich messages until Hermes wires rich_message edits directly.
+    # rich messages until Slave wires rich_message edits directly.
     bot = adapter._bot
     assert bot is not None
     bot.do_api_request.assert_not_called()
@@ -905,7 +905,7 @@ def _reply_message_with_rich_blocks(
 @pytest.mark.asyncio
 async def test_rich_reply_records_and_recovers_text(monkeypatch, tmp_path):
     """A reply to a rich-sent message resolves the original text via the index."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     from gateway.platforms.event import MessageType
     from gateway import rich_sent_store
 
@@ -1002,7 +1002,7 @@ def test_rich_message_text_keeps_tables_details_math_links_and_custom_emoji():
         {"type": "details", "summary": "Specs", "blocks": [{"type": "paragraph", "text": "1TB"}]},
         {"type": "mathematical_expression", "expression": "E=mc^2"},
         {"type": "paragraph", "text": [
-            "ad ", {"type": "url", "text": "here", "url": "https://example.com/?u=@hermes_bot"}, " ",
+            "ad ", {"type": "url", "text": "here", "url": "https://example.com/?u=@slave_bot"}, " ",
             {"type": "url", "text": "https://example.com/a", "url": "https://example.com/a"}, " ",
             {"type": "mathematical_expression", "expression": "x^2"}, " ",
             {"type": "custom_emoji", "custom_emoji_id": "5", "alternative_text": "\U0001F44D"}]},
@@ -1011,8 +1011,8 @@ def test_rich_message_text_keeps_tables_details_math_links_and_custom_emoji():
 
     assert rich_message_text(msg) == (
         "Model | Price\nHD103UJ | 20 EUR\nSpecs\n1TB\nE=mc^2\n"
-        "ad here (https://example.com/?u=@hermes_bot) https://example.com/a x^2 \U0001F44D")
-    assert "@hermes_bot" not in rich_message_text(msg, skip_code=True)
+        "ad here (https://example.com/?u=@slave_bot) https://example.com/a x^2 \U0001F44D")
+    assert "@slave_bot" not in rich_message_text(msg, skip_code=True)
     malformed = [{"type": "list", "items": 5}, {"type": "table", "cells": 5}, {"type": "paragraph", "text": "ok"}]
     assert rich_message_text(SimpleNamespace(api_kwargs={"rich_message": {"blocks": malformed}})) == "ok"
 

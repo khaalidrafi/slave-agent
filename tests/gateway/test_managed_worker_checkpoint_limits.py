@@ -64,7 +64,7 @@ def test_managed_worker_trims_checkpoints_to_the_configured_max_snapshots(tmp_pa
         'auxiliary': {'title_generation': {'enabled': False}}, 'platform_toolsets': {'cli': ['file']},
         'checkpoints': {'enabled': True, 'max_snapshots': 1}}))
     env = {**child_env(), **{k: os.environ[k] for k in ('TIRITH_ENABLED',) if k in os.environ}}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     def status(request_id):
@@ -93,7 +93,7 @@ def test_managed_worker_trims_checkpoints_to_the_configured_max_snapshots(tmp_pa
         peer.server_close()
     assert workers == 2 and (project / 'turn1.txt').exists() and (project / 'turn2.txt').exists()
     store = home / 'checkpoints' / 'store'
-    refs = subprocess.run(['git', '--git-dir', str(store), 'for-each-ref', '--format=%(refname)', 'refs/hermes'],
+    refs = subprocess.run(['git', '--git-dir', str(store), 'for-each-ref', '--format=%(refname)', 'refs/slave'],
                           capture_output=True, text=True, check=True).stdout.split()
     assert len(refs) == 1, refs
     log = subprocess.run(['git', '--git-dir', str(store), 'log', '--format=%s', refs[0]],

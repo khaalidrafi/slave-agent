@@ -10,7 +10,7 @@ environments opt in to isolation by calling
 every other task_id collapses back to ``"default"``.
 
 If you change the collapse logic, update both the helper and these
-tests -- see `hermes-agent-dev` skill, "Why do subagents get their own
+tests -- see `slave-agent-dev` skill, "Why do subagents get their own
 containers?" section, and the Container lifecycle paragraph under
 Docker Backend in ``website/docs/user-guide/configuration.md``.
 """
@@ -74,9 +74,9 @@ def test_env_type_override_keeps_own_id():
 
 
 def test_distinct_session_keys_get_distinct_slots(monkeypatch):
-    monkeypatch.setenv("HERMES_SESSION_KEY", "sess-A")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", "sess-A")
     a = terminal_tool._resolve_container_task_id(None)
-    monkeypatch.setenv("HERMES_SESSION_KEY", "sess-B")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", "sess-B")
     b = terminal_tool._resolve_container_task_id(None)
     assert a == "session:sess-A"
     assert b == "session:sess-B"
@@ -86,7 +86,7 @@ def test_distinct_session_keys_get_distinct_slots(monkeypatch):
 def test_subagent_collapses_onto_parent_session(monkeypatch):
     # Subagents inherit the parent's session key, so they share the parent's
     # container (the #16177 intent) rather than a global "default".
-    monkeypatch.setenv("HERMES_SESSION_KEY", "sess-A")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", "sess-A")
     assert (
         terminal_tool._resolve_container_task_id("subagent-3-cafef00d")
         == "session:sess-A"
@@ -94,7 +94,7 @@ def test_subagent_collapses_onto_parent_session(monkeypatch):
 
 
 def test_rl_override_wins_over_session_key(monkeypatch):
-    monkeypatch.setenv("HERMES_SESSION_KEY", "sess-A")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", "sess-A")
     terminal_tool.register_task_env_overrides("tb2-z", {"docker_image": "z:1"})
     try:
         assert terminal_tool._resolve_container_task_id("tb2-z") == "tb2-z"
@@ -104,27 +104,27 @@ def test_rl_override_wins_over_session_key(monkeypatch):
 
 def test_no_session_key_still_defaults(monkeypatch):
     # CLI mode: no session key -> unchanged "default" behaviour.
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
     assert terminal_tool._resolve_container_task_id(None) == "default"
 
 
 # --- Production gateway path: session key bound via ContextVars ---------------
 #
-# The tests above set HERMES_SESSION_KEY through os.environ, which only
+# The tests above set SLAVE_SESSION_KEY through os.environ, which only
 # exercises the os.getenv() *fallback* branch of the scoping logic. Real
 # gateway turns never write this process-global env var — they bind the
 # identity through gateway.session_context.set_session_vars(), which stores it
 # in a ContextVar, and _resolve_container_task_id reads it back via
 # get_session_env(). These companion tests cover that production path with
-# HERMES_SESSION_KEY absent from os.environ.
+# SLAVE_SESSION_KEY absent from os.environ.
 
 
 def test_session_key_from_contextvar_without_environ(monkeypatch):
-    # Prove the fix works on the gateway path: HERMES_SESSION_KEY is NOT in
+    # Prove the fix works on the gateway path: SLAVE_SESSION_KEY is NOT in
     # os.environ; the key lives only in the ContextVar bound by the gateway.
     from gateway.session_context import clear_session_vars, set_session_vars
 
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
     tokens = set_session_vars(session_key="sess-ctx")
     try:
         assert (
@@ -146,7 +146,7 @@ def test_contextvar_session_key_wins_over_environ(monkeypatch):
     # slot must follow the ContextVar-bound session, not the process global.
     from gateway.session_context import clear_session_vars, set_session_vars
 
-    monkeypatch.setenv("HERMES_SESSION_KEY", "sess-ENV")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", "sess-ENV")
     tokens = set_session_vars(session_key="sess-CTX")
     try:
         assert (
@@ -159,7 +159,7 @@ def test_contextvar_session_key_wins_over_environ(monkeypatch):
 # --- Persistent Docker is PROFILE-scoped, not session-scoped ------------------
 #
 # Product contract: TERMINAL_ENV=docker + container_persistent:true means ONE
-# long-lived container per Hermes profile, shared by every session of that
+# long-lived container per Slave profile, shared by every session of that
 # profile (CLI, gateway chats, WebUI). The a270c4ade session-key fallback must
 # NOT fragment persistent Docker into per-session containers; it exists for
 # backends where cross-session reuse is dangerous (SSH).
@@ -272,7 +272,7 @@ def test_shared_key_applies_to_cli_no_session(monkeypatch):
     # sessions, or the opt-in splits the container it exists to unify.
     _persistent_docker(monkeypatch)
     monkeypatch.setenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", "team/workspace")
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
     assert terminal_tool._resolve_container_task_id(None) == "shared:team/workspace"
 
 
@@ -303,14 +303,14 @@ def test_shared_key_ignored_outside_persistent_docker(monkeypatch):
 
 
 def _use_home(monkeypatch, tmp_path, name):
-    """Run as a real home: ``"default"`` = the Hermes root, ``None`` = a home outside the root (which
+    """Run as a real home: ``"default"`` = the slave-agent root, ``None`` = a home outside the root (which
     is then its own root), anything else = ``<root>/profiles/<name>``."""
-    import hermes_constants
+    import slave_constants
 
-    root = hermes_constants._get_platform_default_hermes_home()  # conftest's per-test native root, any OS
+    root = slave_constants._get_platform_default_slave_home()  # conftest's per-test native root, any OS
     home = root if name == "default" else tmp_path / "elsewhere" if name is None else root / "profiles" / name
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
 
 def test_sessionless_default_profile_stays_default(monkeypatch, tmp_path):
@@ -318,8 +318,8 @@ def test_sessionless_default_profile_stays_default(monkeypatch, tmp_path):
     from gateway.session_context import reset_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_PROFILE", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "default")
     assert terminal_tool._resolve_container_task_id(None) == "default"
@@ -331,8 +331,8 @@ def test_sessionless_named_profile_reuses_profile_container(monkeypatch, tmp_pat
     from gateway.session_context import reset_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "tenant-a")
@@ -345,7 +345,7 @@ def test_explicit_session_profile_wins_over_process_home(monkeypatch, tmp_path):
     from gateway.session_context import clear_session_vars, set_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
     _use_home(monkeypatch, tmp_path, "tenant-a")
     tokens = set_session_vars(session_key="agent:main:desktop:1", profile="work")
     try:
@@ -364,18 +364,18 @@ def test_sessionless_named_profile_ignored_when_not_persistent_docker(monkeypatc
     from gateway.session_context import reset_session_vars
 
     monkeypatch.setenv("TERMINAL_ENV", "local")
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "tenant-a")
     assert terminal_tool._resolve_container_task_id(None) == "default"
 
 
 def test_sessionless_home_outside_the_root_stays_default(monkeypatch, tmp_path):
-    """A home outside the Hermes root is its own root: it keys "default", never profile:custom."""
+    """A home outside the slave-agent root is its own root: it keys "default", never profile:custom."""
     from gateway.session_context import reset_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, None)
     assert terminal_tool._resolve_container_task_id(None) == "default"
@@ -387,8 +387,8 @@ def test_named_launch_profile_chats_desktop_and_workers_share_one_container(monk
     from gateway.session_context import clear_session_vars, reset_session_vars, set_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "tenant-a")
@@ -449,8 +449,8 @@ def test_a_profile_literally_named_custom_keys_its_own_container(monkeypatch, tm
     from gateway.session_context import clear_session_vars, reset_session_vars, set_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "custom")
@@ -465,21 +465,21 @@ def test_a_profile_literally_named_custom_keys_its_own_container(monkeypatch, tm
 
 @pytest.mark.parametrize("home_parts", [("profiles", "work", "nested"), ("profiles", ".hidden"), ("loose",)])
 def test_a_home_the_tui_stamps_custom_keys_one_container_for_every_path(monkeypatch, tmp_path, home_parts):
-    """Inside the Hermes root but not a ``profiles/<name>`` home, the TUI stamps Desktop sessions
+    """Inside the slave-agent root but not a ``profiles/<name>`` home, the TUI stamps Desktop sessions
     ``custom``; that home's chats and session-less work key the same container, and it is the file
     panel's first candidate (the one a Save may write to), plain and mounted."""
     from gateway.platforms.docker_media_paths import _docker_sandbox_dir_candidates
     from gateway.session_context import clear_session_vars, reset_session_vars, set_session_vars
     from tools.environments.path_utils import sanitize_task_id_for_path
 
-    import hermes_constants
+    import slave_constants
 
-    home = hermes_constants._get_platform_default_hermes_home().joinpath(*home_parts)
+    home = slave_constants._get_platform_default_slave_home().joinpath(*home_parts)
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_KEY", raising=False)
+    monkeypatch.delenv("SLAVE_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     monkeypatch.setenv("TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE", "true")
     from tui_gateway.server import _current_profile_name
@@ -513,13 +513,13 @@ def test_home_profile_name_is_cached_per_home_never_across_homes(monkeypatch, tm
 
 
 def test_an_unresolvable_home_keeps_the_shared_default_key(monkeypatch):
-    import hermes_constants
+    import slave_constants
     from gateway.platforms.docker_media_paths import _docker_sandbox_dir_candidates
     from tools.terminal_tool_config import home_profile_name
 
     def _boom():
         raise RuntimeError("no home")
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", _boom)
+    monkeypatch.setattr(slave_constants, "get_slave_home", _boom)
     assert home_profile_name() == "default"
     assert _docker_sandbox_dir_candidates()[0] == "default"

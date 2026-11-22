@@ -8,7 +8,7 @@ import pytest
 
 from persistence.core.errors import AuthorityRefusal
 
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 from persistence.sqlite.authority._admission_store import recover_session_inputs
 from persistence.sqlite.authority._runtime_ends import begin_runtime_epoch
 from persistence.sqlite.conversation._store.messages import get_messages

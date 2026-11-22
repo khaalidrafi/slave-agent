@@ -34,7 +34,7 @@ async def test_real_mattermost_posts_run_a_turn_through_native_admission(tmp_pat
     runner = GatewayRunner(GatewayConfig(sessions_dir=tmp_path / 'sessions'))
     adapter = MattermostAdapter(PlatformConfig(enabled=True, token='test-token',
                                                extra={'url': 'https://mm.example.com'}))
-    adapter._bot_user_id, adapter._bot_username = 'bot_user_id', 'hermes-bot'
+    adapter._bot_user_id, adapter._bot_username = 'bot_user_id', 'slave-bot'
     adapter.gateway_runner, runner.adapters = runner, {Platform.MATTERMOST: adapter}
     authority = await initialize_session_authority(runner, profile_id='default', instance_id='mm')
     runner._wire_adapter_handlers(adapter)

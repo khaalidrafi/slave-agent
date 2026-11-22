@@ -33,7 +33,7 @@ from gateway.session_transcript import TranscriptReadError
 from gateway.turn_context import TurnContext
 from gateway.warning_notifications import diagnostic_wake_muted
 from gateway.turn_lease import DEFAULT_LEASE_WAIT, TurnLeaseTimeoutError
-from hermes_constants import get_hermes_home_override
+from slave_constants import get_slave_home_override
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from utils import base_url_hostname
@@ -485,7 +485,7 @@ class GatewayTurnPersistenceMixin:
 
     def _hmwa_defer_exhaustion_reset(self, session_entry, session_key, source):
         """True when the reset was handed to the authority drain. A LOCAL session (the Bot Chat a
-        ``hermes peer dm`` lands in) resets its target in the store, which refuses while an admission
+        ``slave peer dm`` lands in) resets its target in the store, which refuses while an admission
         on it is started (``session_busy``): this turn's own. The drain runs the reset right after it
         settles this admission, before it claims any successor (the Bot Chat's retry included)."""
         from gateway.session_ingress import executing_admission
@@ -833,7 +833,7 @@ class GatewayTurnPersistenceMixin:
 
         return response
 
-    # Chat-side next steps keyed by HTTP status; Hermes commands only (/login is the gateway's own
+    # Chat-side next steps keyed by HTTP status; Slave commands only (/login is the gateway's own
     # sign-in, `{relogin}` the profile-aware host equivalent, filled from the turn's agent provider).
     # Values are catalog keys (``gateway.errors.hint_*``); 401 carries a ``{relogin}`` placeholder.
     _STATUS_HINTS = {

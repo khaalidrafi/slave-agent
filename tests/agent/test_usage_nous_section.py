@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from agent.account_usage_nous import NOUS_OTHER_ROUTE_HEADING, nous_usage_lines
-from tests.hermes_cli.test_nous_account import _account_payload, _jwt
+from tests.slave_cli.test_nous_account import _account_payload, _jwt
 
 _PAYLOAD = _account_payload(allowed=True, subscription=None, subscription_credits=0, purchased_credits=7.75)
 
@@ -23,7 +23,7 @@ _PAYLOAD = _account_payload(allowed=True, subscription=None, subscription_credit
 def portal(monkeypatch):
     """A signed-in profile whose portal answers ``_PAYLOAD``; records each account fetch's token and any refresh."""
     seen = {"tokens": [], "refreshed": 0}
-    state = {"access_token": _jwt({"sub": "u", "exp": int(time.time()) + 900}), "client_id": "hermes-cli",
+    state = {"access_token": _jwt({"sub": "u", "exp": int(time.time()) + 900}), "client_id": "slave-cli",
              "portal_base_url": "https://portal.example.test",
              "expires_at": (datetime.now(UTC) + timedelta(minutes=15)).isoformat()}
 
@@ -34,10 +34,10 @@ def portal(monkeypatch):
     def fetch(token, base=None):
         seen["tokens"].append(token)
         return _PAYLOAD
-    monkeypatch.setattr("hermes_cli.auth.get_provider_auth_state", lambda provider: state if seen.get("signed_in", True) else {})
-    monkeypatch.setattr("hermes_cli.auth.resolve_nous_access_token", refresh)
-    monkeypatch.setattr("hermes_cli.nous_account._fetch_nous_account_info", fetch)
-    monkeypatch.delenv("HERMES_DEV_CREDITS_FIXTURE", raising=False)
+    monkeypatch.setattr("slave_cli.auth.get_provider_auth_state", lambda provider: state if seen.get("signed_in", True) else {})
+    monkeypatch.setattr("slave_cli.auth.resolve_nous_access_token", refresh)
+    monkeypatch.setattr("slave_cli.nous_account._fetch_nous_account_info", fetch)
+    monkeypatch.delenv("SLAVE_DEV_CREDITS_FIXTURE", raising=False)
     return seen, state
 
 

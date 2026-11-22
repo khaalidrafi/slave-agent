@@ -93,9 +93,9 @@ def test_wrapped_verb_is_blocked_end_to_end_under_yolo(command, monkeypatch):
     from tools.approval import check_all_command_guards, disable_session_yolo
     from tools.approval_context import reset_current_session_key, set_current_session_key
 
-    for name in ("HERMES_INTERACTIVE", "HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION", "HERMES_EXEC_ASK"):
+    for name in ("SLAVE_INTERACTIVE", "SLAVE_GATEWAY_SESSION", "SLAVE_CRON_SESSION", "SLAVE_EXEC_ASK"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("HERMES_YOLO_MODE", "1")
+    monkeypatch.setenv("SLAVE_YOLO_MODE", "1")
     token = set_current_session_key("hardline_carrier_test")
     try:
         result = check_all_command_guards(command, "local")

@@ -27,7 +27,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Callable, Iterator, Optional, TypeVar, cast
 
-from hermes_constants import mkdir_under_hermes_home
+from slave_constants import mkdir_under_slave_home
 from persistence.sqlite._state.common import escape_like as _escape_like, stat_db_file_identity as _stat_db_file_identity
 from persistence.sqlite._state.holders import read_only_db_uri
 from persistence.sqlite._state.health import (
@@ -69,7 +69,7 @@ from ._schema import (
 )
 
 # Pre-split logger identity so log filtering/capture is unchanged.
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 T = TypeVar("T")
 
@@ -87,13 +87,13 @@ _READ_ONLY_IOERR_RETRY_ATTEMPTS, _READ_ONLY_IOERR_RETRY_BACKOFF_S = 3, 0.05
 # SQLite busy handler budget for reads. Under DELETE (rollback-journal) mode a reader needs a SHARED
 # lock, which every commit from another process blocks across its journal+db fsyncs; the writer
 # connection's 1 s timeout exists for writes (they retry at application level) and starved readers
-# into "database is locked" (dashboard 503s, `hermes sessions list` crashes) under a busy gateway.
+# into "database is locked" (dashboard 503s, `slave sessions list` crashes) under a busy gateway.
 _READ_BUSY_TIMEOUT_S = 5.0
 
 
 # Live-DB guard knobs live HERE (not in ``_state.guard``): the hermetic conftest monkeypatches
 # ``_STATE_DB_GUARD_BYPASS`` (``@pytest.mark.live_system_guard_bypass`` escape hatch)
-# and ``_EXTRA_DENY_ROOTS`` (the pre-sandbox root, so custom-HERMES_HOME deployments are covered).
+# and ``_EXTRA_DENY_ROOTS`` (the pre-sandbox root, so custom-SLAVE_HOME deployments are covered).
 _STATE_DB_GUARD_BYPASS = False
 _STATE_DB_GUARD_EXTRA_DENY_ROOTS: tuple[Path, ...] = ()
 
@@ -103,7 +103,7 @@ def _ensure_test_isolation(db_path: Path) -> None:
     (env OR ancestry) resolves a production DB.
 
     Env alone is not enough: a child spawned with a rebuilt environment loses ``PYTEST_*`` and
-    ``HERMES_HOME`` together, which is precisely the state in which it writes to production (#82770).
+    ``SLAVE_HOME`` together, which is precisely the state in which it writes to production (#82770).
     """
     if _STATE_DB_GUARD_BYPASS or os.environ.get(_STATE_DB_GUARD_BYPASS_ENV) or not _in_test_context():
         return
@@ -121,10 +121,10 @@ def _ensure_test_isolation(db_path: Path) -> None:
         if _is_production_state_db(resolved, root):
             raise RuntimeError(
                 "live-system guard: test attempted to open production "
-                f"state.db at {resolved} (under real Hermes root {root}). "
-                "Tests must run against a temporary HERMES_HOME — pass an "
+                f"state.db at {resolved} (under real slave-agent root {root}). "
+                "Tests must run against a temporary SLAVE_HOME — pass an "
                 "explicit tmp db_path or let the hermetic conftest redirect "
-                "HERMES_HOME. If this test genuinely needs the live database, mark it with "
+                "SLAVE_HOME. If this test genuinely needs the live database, mark it with "
                 "@pytest.mark.live_system_guard_bypass — or, for a spawned "
                 f"child process, export {_STATE_DB_GUARD_BYPASS_ENV}=1 in "
                 "its environment."
@@ -144,7 +144,7 @@ def _secure_state_db_files(db_path: Path, *, create_main: bool = False) -> None:
     connection to the same database. A lock-losing close in one process lets a
     sibling's connection take the shared-memory DMS exclusively at its own
     close, checkpoint, and unlink the sidecars while long-lived holders
-    (gateway, desktop ``hermes serve``) keep using the deleted inodes.
+    (gateway, desktop ``slave serve``) keep using the deleted inodes.
     Symlinked state paths fail closed with ``ELOOP`` before the caller's
     ``sqlite3.connect()`` can follow them (#109857), except a ``state.db``
     link the operator made to a store of their own (#145075).
@@ -234,7 +234,7 @@ class StoreHolder:
     """SQLite-backed store for one ``state.db``: many reader threads, one writer (WAL)."""
 
     # ── Write-contention tuning ──
-    # SQLite's deterministic busy handler convoys under many hermes processes: keep its
+    # SQLite's deterministic busy handler convoys under many slave processes: keep its
     # timeout short (1s) and retry with random jitter. Patience is TIME-based (a sibling
     # legitimately holds the lock for seconds: checkpoint at close, VACUUM, recovery, FTS
     # optimize); attempt-counted budgets destroyed turns on a healthy store. Transcript
@@ -402,7 +402,7 @@ class StoreHolder:
         malformed sqlite_master), generation stamp."""
         # Never materialize a deleted/archived named profile's home: a multiplexer or Desktop backend
         # still holding the profile's route would otherwise re-scaffold it on the next turn (#94590).
-        mkdir_under_hermes_home(self.db_path.parent)
+        mkdir_under_slave_home(self.db_path.parent)
         try:
             # Serialize zero-byte check, quarantine, connect and schema commit so concurrent
             # openers don't race the absent-path -> schema-commit window.
@@ -441,7 +441,7 @@ class StoreHolder:
             if not repair_state_db_schema(self.db_path).get("repaired"):
                 raise
             self._connect_and_init_with_lock_patience()
-        # FTS optimization is OPT-IN (`hermes db optimize`); no background worker races session lifecycle.
+        # FTS optimization is OPT-IN (`slave db optimize`); no background worker races session lifecycle.
         self._ensure_db_file_generation()
         if self._wal_active:
             # OFD copies of the two POSIX locks that keep a sibling's close from unlinking this WAL
@@ -477,7 +477,7 @@ class StoreHolder:
                 # needs). Closes in milliseconds: retry a bounded number of times before
                 # classifying the store as failed (#100436; see _READ_ONLY_IOERR_RETRY_ATTEMPTS).
                 # A lock is NOT retried here: the connection already waited its read wait,
-                # and a retry would multiply that wait on blocking callers (TUI, `hermes status`).
+                # and a retry would multiply that wait on blocking callers (TUI, `slave status`).
                 transient = _DISK_IO_ERROR_MARKER in str(ioerr).lower()
                 if attempt >= _READ_ONLY_IOERR_RETRY_ATTEMPTS or not transient:
                     raise
@@ -505,10 +505,10 @@ class StoreHolder:
         qpath = quarantine_invalid_state_db(self.db_path, already_locked=already_locked)
         where = f"moved aside to {qpath}" if qpath else "left in place (it could not be moved aside)"
         msg = (
-            f"state.db was empty or damaged ({zsize} bytes) and has been {where}; Hermes started with a "
+            f"state.db was empty or damaged ({zsize} bytes) and has been {where}; slave-agent started with a "
             "fresh, empty session database. To bring old sessions back, run "
-            f"`hermes sessions recover --source {qpath or self.db_path} --inspect-only`, or restore a "
-            "snapshot with `/snapshot list` then `/snapshot restore <id>` (terminal `hermes` chat only)."
+            f"`slave sessions recover --source {qpath or self.db_path} --inspect-only`, or restore a "
+            "snapshot with `/snapshot list` then `/snapshot restore <id>` (terminal `slave` chat only)."
         )
         logger.error(msg)
         set_last_init_error(msg)
@@ -895,7 +895,7 @@ class StoreHolder:
                         # a holder's argv (a worktree named fix-corrupt-db) would flip the bucket.
                         log_write_lock_holders(self.db_path, patience_s)
                         raise sqlite3.OperationalError(
-                            f"database is locked (another Hermes process held the "
+                            f"database is locked (another slave-agent process held the "
                             f"state.db write lock for over {patience_s:.0f}s — "
                             "likely a long maintenance operation such as VACUUM, "
                             "a large WAL checkpoint, or an older pre-update "
@@ -1160,7 +1160,7 @@ class StoreHolder:
             "state.db %s reported structural corruption outside the FTS "
             "indexes (%s); quarantining this handle: no further writes, no "
             "automatic reopen, no explicit WAL checkpoint at close. Stop the "
-            "gateway and run `hermes sessions recover --source %s --inspect-only`.", self.db_path, exc,
+            "gateway and run `slave sessions recover --source %s --inspect-only`.", self.db_path, exc,
             self.db_path,
         )
         err = self._corrupt_error()
@@ -1364,7 +1364,7 @@ class StoreHolder:
                     logger.warning(
                         "Skipping the close-time WAL checkpoint for %s: this "
                         "handle observed %s. Take a snapshot of state.db, -wal and -shm "
-                        "before restarting, then run `hermes sessions recover --source %s --inspect-only`.",
+                        "before restarting, then run `slave sessions recover --source %s --inspect-only`.",
                         self.db_path, quarantine_reason, self.db_path,
                     )
                 elif not self.read_only and not generation_lost:  # PASSIVE, not TRUNCATE (see docstring)

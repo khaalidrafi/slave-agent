@@ -108,7 +108,7 @@ async def probe(peer, target):
     from gateway.run_api import start_gateway_api, stop_gateway_api
     from gateway.session import SessionSource
     from gateway.session_authority import admission_row, initialize_session_authority
-    from hermes_cli import web_server
+    from slave_cli import web_server
     from run_agent import AIAgent
 
     class NativeAdapter(BasePlatformAdapter):
@@ -252,7 +252,7 @@ async def probe(peer, target):
         await c.rpc('session.resume')
         tail = await c.rpc('session.events.since', replay_epoch=snapshot['replay_epoch'], last_sequence=cursor)
         assert tail['events'] == [events[-1]], 'detach/reconnect replay lost terminal tail'
-        Path(os.environ['HERMES_HOME'], 'receipt.json').write_text(json.dumps({
+        Path(os.environ['SLAVE_HOME'], 'receipt.json').write_text(json.dumps({
             'real_terminal_effect': True, 'authenticated_observers': 2, 'same_stamps': True,
             'stale_callback_inert': True, 'reconnect_replay': True, 'model_calls': len(peer.requests),
             'os_buffer_blocked_bytes': blocked_bytes, 'kernel_send_queued_bytes': kernel_queued,
@@ -267,7 +267,7 @@ async def probe(peer, target):
 
 
 def main():
-    target = Path(os.environ['HERMES_HOME'], 'owned-effect.txt')
+    target = Path(os.environ['SLAVE_HOME'], 'owned-effect.txt')
     peer = ThreadingHTTPServer(('127.0.0.1', 0), ModelPeer)
     peer.requests = []
     peer.blocked = os.environ.get('STREAM_PROBE_MODE') == 'blocked'
@@ -283,7 +283,7 @@ def main():
     url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url,
                       TELEGRAM_ALLOWED_USERS='fixture-user', TERMINAL_ENV='local')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local-stream\n  provider: custom\n  base_url: {url}\n'
         'streaming:\n  enabled: true\nauxiliary:\n  title_generation:\n    enabled: false\n')
     try:

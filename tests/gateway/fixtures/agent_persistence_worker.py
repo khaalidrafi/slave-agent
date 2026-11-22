@@ -6,7 +6,7 @@ import sys
 
 import psutil
 
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 from agent.runtime_session_store import RuntimeSessionStore, WorkerRPC
 
 

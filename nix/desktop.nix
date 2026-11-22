@@ -1,9 +1,9 @@
-# nix/desktop.nix — Hermes Desktop (Electron) app build + wrapper
+# nix/desktop.nix — slave-agent Desktop (Electron) app build + wrapper
 #
-# `hermesAgent` is the fully-built `.#default` package — it ships the
-# `hermes` binary with the venv, runtime PATH, bundled skills/plugins, etc.
+# `slaveAgent` is the fully-built `.#default` package — it ships the
+# `slave` binary with the venv, runtime PATH, bundled skills/plugins, etc.
 # already wired up.  We point the desktop at it via the existing
-# `HERMES_DESKTOP_HERMES` override env var, so the desktop's resolver
+# `SLAVE_DESKTOP_SLAVE` override env var, so the desktop's resolver
 # uses our fully wrapped binary before the mutable managed install.
 # No reimplementation of the agent resolution in this wrapper.
 {
@@ -11,16 +11,16 @@
   lib,
   stdenv,
   makeWrapper,
-  hermesNpmLib,
+  slaveNpmLib,
   electron,
-  hermesAgent,
+  slaveAgent,
   installStampFile,
   generatedIcons,
   python3,
   # Environment to bake into the launcher. A GUI launcher reads none of the
   # shell profile, so a variable that an interactive shell exports does not
   # reach an app that the desktop menu starts. The Home Manager module passes
-  # HERMES_HOME and HERMES_MANAGED here, which gives the app the same state
+  # SLAVE_HOME and SLAVE_MANAGED here, which gives the app the same state
   # directory as the services.
   extraEnv ? { },
   # Shell lines to run before the app starts. A secret belongs here and never
@@ -32,9 +32,9 @@
 }:
 let
   wrapperEnv = {
-    # set HERMES_DESKTOP_HERMES to the absolute path of the nix-built `hermes`
-    # binary so the deployment override selects our fully wrapped hermes install.
-    HERMES_DESKTOP_HERMES = lib.getExe hermesAgent;
+    # set SLAVE_DESKTOP_SLAVE to the absolute path of the nix-built `slave`
+    # binary so the deployment override selects our fully wrapped slave install.
+    SLAVE_DESKTOP_SLAVE = lib.getExe slaveAgent;
     ELECTRON_IS_DEV = "0";
   }
   # extraEnv overrides the defaults
@@ -44,7 +44,7 @@ let
     "--add-flags"
     "--enable-features=WaylandWindowDecorations"
     "--add-flags"
-    "${placeholder "out"}/share/hermes-desktop"
+    "${placeholder "out"}/share/slave-desktop"
   ]
   ++ lib.concatLists (
     lib.mapAttrsToList (name: value: [
@@ -67,7 +67,7 @@ let
     else if stdenv.hostPlatform.isLinux then
       "linux"
     else
-      throw "hermes-desktop: unsupported host platform for node-pty staging";
+      throw "slave-desktop: unsupported host platform for node-pty staging";
 
   targetArch =
     if stdenv.hostPlatform.isAarch64 then
@@ -75,10 +75,10 @@ let
     else if stdenv.hostPlatform.isx86_64 then
       "x64"
     else
-      throw "hermes-desktop: unsupported host arch for node-pty staging";
+      throw "slave-desktop: unsupported host arch for node-pty staging";
 
   # Build the renderer (dist/ + electron/ + package.json).
-  renderer = hermesNpmLib.buildPnpmPackage {
+  renderer = slaveNpmLib.buildPnpmPackage {
     dirs = [
       "apps/desktop"
       "apps/shared"
@@ -90,7 +90,7 @@ let
       "scripts/msix-shared.mjs"
       "scripts/release-content-types.json"
     ];
-    pname = "hermes-desktop-renderer";
+    pname = "slave-desktop-renderer";
 
     # node-gyp's build interpreter.
     nativeBuildInputs = [ python3 ];
@@ -110,7 +110,7 @@ let
       # (node-gyp's --disturl path can't run in the sandbox), and is already
       # the --nodedir layout. Same pattern as signal-desktop / github-desktop /
       # session-desktop / rstudio in nixpkgs.
-      ${lib.getExe hermesNpmLib.node-gyp} rebuild \
+      ${lib.getExe slaveNpmLib.node-gyp} rebuild \
         --directory=apps/desktop/node_modules/node-pty \
         --build-from-source \
         --runtime=electron \
@@ -169,7 +169,7 @@ in
 
 # Electron wrapper: nixpkgs' electron binary pointed at the renderer dir.
 stdenv.mkDerivation {
-  pname = "hermes-desktop";
+  pname = "slave-desktop";
   inherit (renderer) version;
 
   dontUnpack = true;
@@ -183,27 +183,27 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/share/hermes-desktop $out/bin
-    cp -r ${renderer}/* $out/share/hermes-desktop/
+    mkdir -p $out/share/slave-desktop $out/bin
+    cp -r ${renderer}/* $out/share/slave-desktop/
 
     # Standard nixpkgs pattern for electron-builder apps: patch process.resourcesPath
     # to point to the app's directory. In Nix, unpackaged electron defaults this
     # to the electron distribution's resources path, breaking extraResources lookups.
-    substituteInPlace $out/share/hermes-desktop/dist/electron-main.mjs \
-      --replace-fail "process.resourcesPath" "'$out/share/hermes-desktop'"
+    substituteInPlace $out/share/slave-desktop/dist/electron-main.mjs \
+      --replace-fail "process.resourcesPath" "'$out/share/slave-desktop'"
 
     # Wrap the nixpkgs electron binary to launch our app.
-    makeWrapper ${lib.getExe electron} $out/bin/hermes-desktop \
+    makeWrapper ${lib.getExe electron} $out/bin/slave-desktop \
       ${lib.escapeShellArgs wrapperArgs}
 
     # XDG launcher entry
     mkdir -p $out/share/applications $out/share/icons/hicolor/1024x1024/apps
     install -m 0644 ${generatedIcons}/apps/desktop/assets/icon.png \
-      $out/share/icons/hicolor/1024x1024/apps/hermes.png
+      $out/share/icons/hicolor/1024x1024/apps/slave.png
     export PYTHONPATH=$(mktemp -d)
-    cp ${../hermes_cli/linux_desktop_entry.py} "$PYTHONPATH/linux_desktop_entry.py"
-    export DESKTOP_EXEC="$out/bin/hermes-desktop"
-    export DESKTOP_ICON="$out/share/icons/hicolor/1024x1024/apps/hermes.png"
+    cp ${../slave_cli/linux_desktop_entry.py} "$PYTHONPATH/linux_desktop_entry.py"
+    export DESKTOP_EXEC="$out/bin/slave-desktop"
+    export DESKTOP_ICON="$out/share/icons/hicolor/1024x1024/apps/slave.png"
     entry_name=$(python3 -c 'from linux_desktop_entry import DESKTOP_ENTRY_NAME; print(DESKTOP_ENTRY_NAME)')
     python3 -c 'import os; from linux_desktop_entry import render_desktop_entry; print(render_desktop_entry(os.environ["DESKTOP_EXEC"], os.environ["DESKTOP_ICON"]))' > "$out/share/applications/$entry_name"
     runHook postInstall
@@ -214,10 +214,10 @@ stdenv.mkDerivation {
   };
 
   meta = with lib; {
-    description = "Native Electron desktop shell for Hermes Agent";
+    description = "Native Electron desktop shell for slave-agent";
     homepage = "https://github.com/NousResearch/hermes-agent";
     license = licenses.mit;
     platforms = platforms.unix;
-    mainProgram = "hermes-desktop";
+    mainProgram = "slave-desktop";
   };
 }

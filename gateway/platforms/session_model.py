@@ -91,11 +91,11 @@ class _SessionModelSettingsMixin:
         or rehydrates a session, or changes its settings. Custom endpoint live probes are
         disabled because they can persist discovered models into config; cached/curated
         catalogs remain available. Catalog infrastructure may maintain its own caches.
-        Only slug, name, models, total_models and is_current leave core. On older Hermes,
+        Only slug, name, models, total_models and is_current leave core. On older slave-agent,
         feature-detect this method with getattr (see the platform adapter guide).
         """
-        from hermes_cli.config import get_compatible_custom_providers
-        from hermes_cli.model_switch_providers import list_picker_providers
+        from slave_cli.config import get_compatible_custom_providers
+        from slave_cli.model_switch_providers import list_picker_providers
 
         with self._session_model_settings_context(source) as resolved:
             if resolved is None:
@@ -123,7 +123,7 @@ class _SessionModelSettingsMixin:
         if runner is None:
             yield None
             return
-        from gateway.run import _hermes_home, _load_gateway_config, _profile_runtime_scope
+        from gateway.run import _slave_home, _load_gateway_config, _profile_runtime_scope
         from gateway.session_identity import identity_of
 
         source = copy(source)
@@ -131,7 +131,7 @@ class _SessionModelSettingsMixin:
         if getattr(source, "profile_route_rejected", False):
             yield None
             return
-        home = _hermes_home
+        home = _slave_home
         scoped = identity_of(source) is not None or getattr(runner.config, "multiplex_profiles", False)
         if scoped:
             home = runner._resolve_profile_home_for_source(source)

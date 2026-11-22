@@ -21,7 +21,7 @@ async def test_keyboard_interrupt_in_end_session_does_not_skip_close(tmp_path, m
 
     home = tmp_path / "owner"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("HOME", str(tmp_path))
     (home / "config.yaml").write_text("model:\n  default: test/model\n  provider: custom\n")
     store = storage_handle(home)
@@ -51,7 +51,7 @@ async def test_keyboard_interrupt_in_end_session_does_not_skip_close(tmp_path, m
         raise RuntimeError("boom")
 
     try:
-        with patch("hermes_cli.runtime_provider.resolve_runtime_provider", return_value=runtime), \
+        with patch("slave_cli.runtime_provider.resolve_runtime_provider", return_value=runtime), \
              patch("run_agent.AIAgent") as agent_class, \
              patch.object(type(authority.persistence.sessions), "end", side_effect=KeyboardInterrupt) as end_session, \
              patch.object(Persistence, "close", autospec=True, side_effect=close_recording) as close:

@@ -21,9 +21,9 @@ _ITEM_KEYS = frozenset({"kind", "id"})
 SEARCH_LIMIT = 10
 
 NOT_HERE = (
-    "manage_catalog is available only in the Hermes desktop app, where the approval card can be drawn. "
-    "Tell the user to install from a terminal instead: `hermes plugins install <id>` for a plugin, "
-    "`hermes skills install <id>` for a skill."
+    "manage_catalog is available only in the slave-agent desktop app, where the approval card can be drawn. "
+    "Tell the user to install from a terminal instead: `slave plugins install <id>` for a plugin, "
+    "`slave skills install <id>` for a skill."
 )
 
 NOTE = (
@@ -36,7 +36,7 @@ NOTE = (
 MANAGE_CATALOG_SCHEMA = {
     "name": "manage_catalog",
     "description": (
-        "Find and install Hermes catalog plugins and hub skills for the user. 'search' lists matches "
+        "Find and install slave-agent catalog plugins and hub skills for the user. 'search' lists matches "
         "(id, kind, display, tier, platforms, installed) and changes nothing. 'install' shows the user "
         "one approval card with a row per item and blocks until every row is installed, skipped or "
         "failed, or the card is closed; the host installs each approved row into this chat's profile at "
@@ -148,19 +148,19 @@ def install(items: list[dict[str, str]], *, session_id: Optional[str], tool_call
 def search(query: str, kind: Optional[str], *, installer: Any = None) -> dict[str, Any]:
     """Runs on the tool call's thread, in this chat's profile scope, so ``installed`` is this
     chat's profile's."""
-    from hermes_constants import get_hermes_home, profile_name_for_home
+    from slave_constants import get_slave_home, profile_name_for_home
 
     rows: list[dict[str, Any]] = []
     if kind in (None, "plugin"):
         rows += _plugin_rows(query)
     if kind in (None, "skill") and query.strip():
         rows += _skill_rows(query)
-    return {"results": rows, "installed_in": profile_name_for_home(get_hermes_home())}
+    return {"results": rows, "installed_in": profile_name_for_home(get_slave_home())}
 
 
 def _plugin_rows(query: str) -> list[dict[str, Any]]:
-    from hermes_cli.plugin_catalog import filter_entries, load_catalog_live
-    from hermes_cli.plugins_cmd import PluginOperationError, _read_install_metadata
+    from slave_cli.plugin_catalog import filter_entries, load_catalog_live
+    from slave_cli.plugins_cmd import PluginOperationError, _read_install_metadata
     from tools.connectors.catalog import _display
 
     try:

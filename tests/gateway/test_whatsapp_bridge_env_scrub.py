@@ -1,4 +1,4 @@
-"""The Node bridge (networked, third-party npm deps) never inherits Hermes' credentials (#38079)."""
+"""The Node bridge (networked, third-party npm deps) never inherits slave-agent’ credentials (#38079)."""
 
 import pytest
 
@@ -34,5 +34,5 @@ def test_bridge_env_drops_operator_credentials_keeps_bridge_config(operator_env)
     assert env["WHATSAPP_ALLOWED_USERS"] == "15550001111"
     assert env["WHATSAPP_MODE"] == "bot"
     assert env["WHATSAPP_REPLY_PREFIX"] == "Bot: "
-    assert env["HERMES_IMAGE_CACHE_DIR"] and env["HERMES_DOCUMENT_CACHE_DIR"] and env["HERMES_AUDIO_CACHE_DIR"]
+    assert env["SLAVE_IMAGE_CACHE_DIR"] and env["SLAVE_DOCUMENT_CACHE_DIR"] and env["SLAVE_AUDIO_CACHE_DIR"]
     assert env.get("PATH")

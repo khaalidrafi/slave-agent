@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.sqlite.conversation._store.messages import (
     append_messages_batch,
     archive_and_compact,

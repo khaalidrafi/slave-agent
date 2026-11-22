@@ -5,7 +5,7 @@ import re
 
 import pytest
 
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 from agent.runtime_session_store import RuntimeSessionStore
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_read import transcript_rows

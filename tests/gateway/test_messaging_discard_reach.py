@@ -1,6 +1,6 @@
 """Messaging ``/discard`` reaches every lost turn it promises to (review #141357, GW-10).
 
-Slack has no native ``/discard`` (its slash cap), so the pause notice must name ``/hermes discard``;
+Slack has no native ``/discard`` (its slash cap), so the pause notice must name ``/slave discard``;
 a conversation brought back by ``/resume`` after a restart is not in the owner's live map, and
 ``/discard`` must still find its lost turn. Real runner dispatch and SQLite; transport stubbed."""
 import asyncio
@@ -15,10 +15,10 @@ def test_slack_pause_notice_names_the_registered_umbrella_command():
     from gateway.session import SessionSource
     from gateway.session_contract import SessionRef
     from gateway.session_ingress import pause_notice
-    from hermes_cli.commands_platforms import slack_native_slashes, slack_subcommand_map
+    from slave_cli.commands_platforms import slack_native_slashes, slack_subcommand_map
     assert 'discard' not in [row[0].lstrip('/') for row in slack_native_slashes()]
     assert slack_subcommand_map().get('discard')
-    for platform, expected in ((Platform.SLACK, '/hermes discard'), (Platform.TELEGRAM, 'Send /discard')):
+    for platform, expected in ((Platform.SLACK, '/slave discard'), (Platform.TELEGRAM, 'Send /discard')):
         live = SimpleNamespace(source=SessionSource(platform=platform, chat_id='D42'), pause_notified=False)
         notice = pause_notice(SimpleNamespace(sessions={'s': live}), SessionRef('p', 's'), 'unknown_execution')
         assert expected in notice, notice
@@ -36,12 +36,12 @@ async def test_discard_after_resume_into_a_cold_conversation_resolves_its_lost_t
     from gateway.run_runtime import recover_profile_native_sessions
     from gateway.session_authority import initialize_session_authority
     from gateway.session_ingress_context import native_callback, register_transport_home
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.gateway.test_command_bypass_active_session import _StubAdapter
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setenv('TELEGRAM_ALLOWED_USERS', '42')
-    monkeypatch.setattr('gateway.run._hermes_home', tmp_path)
+    monkeypatch.setattr('gateway.run._slave_home', tmp_path)
     runner = GatewayRunner(GatewayConfig(multiplex_profiles=False, sessions_dir=tmp_path / 'sessions'))
     adapter = _StubAdapter(PlatformConfig(enabled=True, token='fixture', typing_indicator=False), Platform.TELEGRAM)
     sent = []
@@ -61,7 +61,7 @@ async def test_discard_after_resume_into_a_cold_conversation_resolves_its_lost_t
     seed_messages(first.persistence, previous, {'role': 'user', 'content': 'older conversation'})
     runner.session_store.get_or_create_session(source, force_new=True)
     head = MessageEvent(text='lost human input', source=source, message_id='head')
-    with native_callback(runner, head, get_hermes_home()):
+    with native_callback(runner, head, get_slave_home()):
         receipt = await first.admit_native(head)
     sid = receipt.ref.session_id
     claimed = first.persistence.admissions.claim(epoch=first.epoch, session_id=sid)

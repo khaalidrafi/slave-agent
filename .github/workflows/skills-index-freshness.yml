@@ -7,7 +7,7 @@ name: Skills Index Freshness Check
 #
 # Triggered every 4 hours so we catch a stuck cron within one tick.
 #
-# The check-catalog-cors job watches the same host from Hermes Desktop's side:
+# The check-catalog-cors job watches the same host from slave-agent Desktop's side:
 # it fetches /docs/api/plugins.json with a browser's Origin header and files
 # its own issue when a browser would block the fetch.
 
@@ -79,7 +79,7 @@ jobs:
         run: python3 scripts/ci/skills_index_watchdog_issue.py skills-index
 
   check-catalog-cors:
-    # Desktop's hermes://plugin/install?catalog= links fetch /docs/api/plugins.json
+    # Desktop's slave://plugin/install?catalog= links fetch /docs/api/plugins.json
     # cross-origin. A browser rejects that fetch when any response in the redirect
     # chain lacks Access-Control-Allow-Origin (#136483). The probe above uses
     # curl -L, which never checks CORS, so it stays green while Desktop is blocked.

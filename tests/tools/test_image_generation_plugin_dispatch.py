@@ -21,7 +21,7 @@ class TestPluginDispatch:
         """Declared controls reach generate(); an undeclared one the model sent anyway is dropped, so a
         plugin whose generate() lacks **kwargs never sees it."""
         from agent.image_gen_provider import ImageGenProvider
-        from hermes_cli import plugins as plugins_module
+        from slave_cli import plugins as plugins_module
         from tools import image_generation_tool
 
         seen = {}
@@ -42,7 +42,7 @@ class TestPluginDispatch:
             def list_models(self):
                 return []
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         image_gen_registry.register_provider(_Recorder())
         monkeypatch.setattr(image_generation_tool, "_read_configured_image_provider", lambda: "recorder")
         monkeypatch.setattr(plugins_module, "_ensure_plugins_discovered", lambda **kwargs: None)
@@ -77,7 +77,7 @@ class TestPluginDispatch:
                 return json.dumps({"success": True, "image": "/tmp/fal.png", "modality": "text", "upscaled": False})
             return json.dumps({"success": False, "image": None, "error": "FAL down", "error_type": "api_error"})
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         monkeypatch.setattr(ig, "_dispatch_to_plugin_provider", lambda *a, **k: None)
         monkeypatch.setattr(ig, "_maybe_route_managed_model", lambda *a, **k: json.dumps(krea_error))
         monkeypatch.setattr(ig, "image_generate_tool", fake_fal)
@@ -111,7 +111,7 @@ class TestPluginDispatch:
             fal_calls.append(kwargs)
             return json.dumps({"success": True, "image": "/tmp/fal.png", "modality": "text", "upscaled": True})
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         monkeypatch.setattr(ig, "_dispatch_to_plugin_provider", lambda *a, **k: None)
         monkeypatch.setattr(ig, "_maybe_route_managed_model", lambda *a, **k: json.dumps(krea_error))
         monkeypatch.setattr(ig, "image_generate_tool", fake_fal)

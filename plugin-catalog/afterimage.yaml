@@ -1,20 +1,20 @@
 name: afterimage
-repo: https://github.com/LucianaiB2004/hermes-afterimage
+repo: https://github.com/LucianaiB2004/slave-afterimage
 sha: 46c58bd45d95104bff69037738c485c159943ab8
-description: "Teach a desktop computer_use click-flow once, rehearse it with a click-through HUD that checks live pixels, then replay matching steps at zero model calls. Disclosure — sends computer_use screenshots to the vision model through Hermes (requests the `qwen3-vl-plus` model override, else the session model); saves recorded clicks, typed text and screenshots in plaintext under the plugin data dir; runs a local X11 overlay sidecar over a Unix socket in the system temp directory and replays recorded clicks and keystrokes through computer_use (Hermes computer_use approvals apply)."
+description: "Teach a desktop computer_use click-flow once, rehearse it with a click-through HUD that checks live pixels, then replay matching steps at zero model calls. Disclosure — sends computer_use screenshots to the vision model through slave-agent (requests the `qwen3-vl-plus` model override, else the session model); saves recorded clicks, typed text and screenshots in plaintext under the plugin data dir; runs a local X11 overlay sidecar over a Unix socket in the system temp directory and replays recorded clicks and keystrokes through computer_use (slave-agent computer_use approvals apply)."
 maintainer: LucianaiB2004
 tier: community
 category: automation
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/LucianaiB2004/hermes-afterimage/blob/46c58bd45d95104bff69037738c485c159943ab8/README.md
+docs_url: https://github.com/LucianaiB2004/slave-afterimage/blob/46c58bd45d95104bff69037738c485c159943ab8/README.md
 version: "0.1.0"
 title: Afterimage
 platforms: [linux]
 screenshots:
-  - https://raw.githubusercontent.com/LucianaiB2004/hermes-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/rehearse-step2-delete.png
-  - https://raw.githubusercontent.com/LucianaiB2004/hermes-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/rehearse-step3-confirm.png
-  - https://raw.githubusercontent.com/LucianaiB2004/hermes-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/replay-pass.png
-  - https://raw.githubusercontent.com/LucianaiB2004/hermes-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/after-replay.png
+  - https://raw.githubusercontent.com/LucianaiB2004/slave-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/rehearse-step2-delete.png
+  - https://raw.githubusercontent.com/LucianaiB2004/slave-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/rehearse-step3-confirm.png
+  - https://raw.githubusercontent.com/LucianaiB2004/slave-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/replay-pass.png
+  - https://raw.githubusercontent.com/LucianaiB2004/slave-afterimage/46c58bd45d95104bff69037738c485c159943ab8/docs/images/after-replay.png
 known_issues:
   - "Linux/X11 only; needs a compositor (e.g. picom) for the translucent HUD."
   - "Replay uses fixed window-relative positions; it stops on a pixel mismatch. Step repair is experimental."

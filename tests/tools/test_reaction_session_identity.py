@@ -29,7 +29,7 @@ def test_reaction_uses_durable_session_with_routing_key(tmp_path, monkeypatch, r
         seed_messages(db, "chat-b", {"role": "user", "content": "Other conversation"})
         foreign = db.messages.latest_row_id("chat-b", role="user")
     emitted = []
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr(reactions.desktop_ui, "emit", lambda *args: emitted.append(args))
     tokens = set_session_vars(session_key=routing_key, session_id="chat-a")
     try:
@@ -61,7 +61,7 @@ def test_reaction_keeps_legacy_key_fallback_and_empty_session(tmp_path, monkeypa
         seed_session(db, "legacy", "local")
         seed_messages(db, "legacy", {"role": "user", "content": "Legacy message"})
         row = db.messages.latest_row_id("legacy", role="user")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     emitted = []
     monkeypatch.setattr(reactions.desktop_ui, "emit", lambda *args: emitted.append(args))
     tokens = set_session_vars(session_key="legacy", session_id="missing")

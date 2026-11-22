@@ -1,5 +1,5 @@
 name: axiom
-repo: https://github.com/arjunbagga-xyz/hermes-axiom
+repo: https://github.com/arjunbagga-xyz/slave-axiom
 sha: 2e53a66d67ea90d70c5307859be006702a85abdc
 title: Axiom
 description: Neuro-symbolic SymPy conservation-law compiler that verifies mathematical,
@@ -8,4 +8,4 @@ maintainer: arjunbagga-xyz
 tier: community
 category: tools
 version: 0.1.0
-docs_url: https://github.com/arjunbagga-xyz/hermes-axiom#readme
+docs_url: https://github.com/arjunbagga-xyz/slave-axiom#readme

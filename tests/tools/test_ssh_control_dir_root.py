@@ -71,7 +71,7 @@ def test_squatted_name_is_refused_and_backend_still_gets_a_private_dir(
         real_uid = os.getuid()  # windows-footgun: ok — posix-only test
         monkeypatch.setattr(os, "getuid", lambda: real_uid + 1)
     # Every name the backend could pick in the shared root, current and pre-per-user.
-    squatted = [shared_root / "hermes-ssh", shared_root / f"hermes-ssh-{os.getuid()}"]  # windows-footgun: ok
+    squatted = [shared_root / "slave-ssh", shared_root / f"slave-ssh-{os.getuid()}"]  # windows-footgun: ok
     for path in squatted:
         if planted == "symlink":
             path.symlink_to(victim, target_is_directory=True)
@@ -93,7 +93,7 @@ def test_squatted_name_is_refused_and_backend_still_gets_a_private_dir(
 @pytest.mark.platforms("posix")
 def test_fallback_dir_outlives_cleanup_and_goes_with_its_env(shared_root, monkeypatch):
     monkeypatch.setattr(ssh_mod.logger, "disabled", True)  # a captured record's exc traceback pins the env
-    for name in ("hermes-ssh", f"hermes-ssh-{os.getuid()}"):  # windows-footgun: ok — posix-only test
+    for name in ("slave-ssh", f"slave-ssh-{os.getuid()}"):  # windows-footgun: ok — posix-only test
         (shared_root / name).write_text("x", encoding="utf-8")  # squat both names: forces mkdtemp
     fallback = ssh_mod.SSHEnvironment(host="h", user="u", probe_only=True)
     fallback_dir = fallback.control_dir
@@ -101,7 +101,7 @@ def test_fallback_dir_outlives_cleanup_and_goes_with_its_env(shared_root, monkey
     assert fallback_dir.is_dir()  # cleanup_stops_processes=False: a poller's next call reconnects through it
     del fallback
     gc.collect()
-    (shared_root / f"hermes-ssh-{os.getuid()}").unlink()  # windows-footgun: ok
+    (shared_root / f"slave-ssh-{os.getuid()}").unlink()  # windows-footgun: ok
     shared = ssh_mod.SSHEnvironment(host="h", user="u", probe_only=True)
     shared_dir = shared.control_dir
     shared.cleanup()
@@ -117,7 +117,7 @@ def test_last_cleanup_of_a_cyclic_env_still_has_its_fallback_dir(shared_root, mo
     """A synced env sits in a cycle (FileSyncManager holds its bound methods), so the cyclic GC
     frees it, and its final cleanup() syncs back through the ControlPath: the dir must outlive it."""
     monkeypatch.setattr(ssh_mod.logger, "disabled", True)  # a captured record's exc traceback pins the env
-    for name in ("hermes-ssh", f"hermes-ssh-{os.getuid()}"):  # windows-footgun: ok — posix-only test
+    for name in ("slave-ssh", f"slave-ssh-{os.getuid()}"):  # windows-footgun: ok — posix-only test
         (shared_root / name).write_text("x", encoding="utf-8")  # squat both names: forces mkdtemp
     env = ssh_mod.SSHEnvironment(host="h", user="u", probe_only=True)
     fallback_dir, seen = env.control_dir, []
@@ -139,7 +139,7 @@ def test_last_cleanup_of_a_cyclic_env_still_has_its_fallback_dir(shared_root, mo
 
 @pytest.mark.platforms("posix")
 def test_failed_connection_does_not_leave_a_fallback_dir_behind(shared_root, monkeypatch):
-    for name in ("hermes-ssh", f"hermes-ssh-{os.getuid()}"):  # windows-footgun: ok — posix-only test
+    for name in ("slave-ssh", f"slave-ssh-{os.getuid()}"):  # windows-footgun: ok — posix-only test
         (shared_root / name).write_text("x", encoding="utf-8")  # squat both names: forces mkdtemp
     def refuse(self):
         raise ssh_mod.EnvironmentConnectionError("unreachable")
@@ -149,12 +149,12 @@ def test_failed_connection_does_not_leave_a_fallback_dir_behind(shared_root, mon
         ssh_mod.SSHEnvironment(host="h", user="u")
 
     assert sorted(p.name for p in shared_root.iterdir()) == sorted(
-        ("hermes-ssh", f"hermes-ssh-{os.getuid()}"))  # windows-footgun: ok
+        ("slave-ssh", f"slave-ssh-{os.getuid()}"))  # windows-footgun: ok
 
 
 @pytest.mark.platforms("posix")
 def test_own_dir_left_open_by_an_older_version_is_tightened(shared_root, make_env):
-    ours = shared_root / f"hermes-ssh-{os.getuid()}"  # windows-footgun: ok — posix-only test
+    ours = shared_root / f"slave-ssh-{os.getuid()}"  # windows-footgun: ok — posix-only test
     ours.mkdir()
     ours.chmod(0o777)
 
@@ -170,7 +170,7 @@ def test_private_xdg_runtime_dir_is_preferred_over_the_shared_root(shared_root, 
 
     control_dir = make_env().control_dir
 
-    assert control_dir == xdg / "hermes-ssh"
+    assert control_dir == xdg / "slave-ssh"
     assert _mode(control_dir) == 0o700
     assert not any(shared_root.iterdir())
 
@@ -188,8 +188,8 @@ def test_shared_xdg_runtime_dir_is_not_trusted(shared_root, tmp_path, monkeypatc
 
     control_dir = make_env().control_dir
 
-    assert not (xdg / "hermes-ssh").exists()
-    assert control_dir == shared_root / f"hermes-ssh-{os.getuid()}"  # windows-footgun: ok — posix-only test
+    assert not (xdg / "slave-ssh").exists()
+    assert control_dir == shared_root / f"slave-ssh-{os.getuid()}"  # windows-footgun: ok — posix-only test
 
 
 @pytest.mark.platforms("posix")
@@ -210,12 +210,12 @@ def test_trailing_component_does_not_trust_symlinked_xdg_runtime_dir(monkeypatch
         monkeypatch.setattr(ssh_mod, "_SHORT_TMP_ROOT", str(root))
         monkeypatch.setattr(ssh_mod, "_ensure_ssh_available", lambda: None)
         monkeypatch.setattr(ssh_mod.SSHEnvironment, "_establish_connection", lambda self: None)
-        assert len(os.fsencode(link / "hermes-ssh")) <= ssh_mod._CONTROL_DIR_MAX_BYTES
+        assert len(os.fsencode(link / "slave-ssh")) <= ssh_mod._CONTROL_DIR_MAX_BYTES
 
         env = ssh_mod.SSHEnvironment(host="h", user="u", probe_only=True)
         try:
-            assert env.control_dir == root / f"hermes-ssh-{os.getuid()}"  # windows-footgun: ok — posix-only test
-            assert not (private / "hermes-ssh").exists()
+            assert env.control_dir == root / f"slave-ssh-{os.getuid()}"  # windows-footgun: ok — posix-only test
+            assert not (private / "slave-ssh").exists()
         finally:
             env.cleanup()
 
@@ -223,7 +223,7 @@ def test_trailing_component_does_not_trust_symlinked_xdg_runtime_dir(monkeypatch
 @pytest.mark.platforms("posix")
 def test_xdg_runtime_dir_owned_by_another_user_is_not_trusted(shared_root, tmp_path, monkeypatch, make_env):
     """``sudo -E`` keeps the invoking user's ``$XDG_RUNTIME_DIR``: 0700, but its owner is not us and can
-    swap a ``hermes-ssh`` leaf we create there."""
+    swap a ``slave-ssh`` leaf we create there."""
     xdg = tmp_path / "run-user"
     xdg.mkdir(mode=0o700)
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(xdg))
@@ -232,5 +232,5 @@ def test_xdg_runtime_dir_owned_by_another_user_is_not_trusted(shared_root, tmp_p
 
     control_dir = make_env().control_dir
 
-    assert not (xdg / "hermes-ssh").exists()
+    assert not (xdg / "slave-ssh").exists()
     assert control_dir.parent == shared_root

@@ -3,7 +3,7 @@
 The catalog degrades per loader, so a plugin discovery failure still answers successfully, with no
 plugin commands. ``plugin_discovery_error`` tells a client that list is unknown rather than empty;
 the classic CLI then refuses dispatch instead of letting a same-named skill or bundle run
-(tests/hermes_cli/test_gateway_plugin_commands.py).
+(tests/slave_cli/test_gateway_plugin_commands.py).
 """
 from importlib import import_module
 from types import SimpleNamespace
@@ -12,7 +12,7 @@ from tui_gateway.command_discovery import command_catalog
 
 
 def _catalog(get_plugin_commands):
-    stubs = {"hermes_cli.plugins": SimpleNamespace(get_plugin_commands=get_plugin_commands),
+    stubs = {"slave_cli.plugins": SimpleNamespace(get_plugin_commands=get_plugin_commands),
              "agent.skill_commands": SimpleNamespace(get_interactive_skill_commands=dict)}
     return command_catalog(load_cfg=dict, module_loader=lambda name: stubs.get(name) or import_module(name))
 

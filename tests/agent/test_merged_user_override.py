@@ -114,7 +114,7 @@ def test_a_folded_rows_flush_removes_its_stored_stamp_and_keeps_a_reaction(tmp_p
     def append_batch(rows):  # the batch append, stamping each dict with the state the write gave its row
         stamp_live(rows, db.messages.append_batch("s1", [NewMessage.from_live(r) for r in rows]))
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     db = open_persistence(profile_scope(home=tmp_path))
     seed_session(db, "s1", "test")
     row = {"role": "user", "content": _STORED_IMAGE_TURN, "display_metadata": {TYPED_ASK: "first ask"}}

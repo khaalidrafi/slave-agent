@@ -11,7 +11,7 @@ from tests.gateway.test_native_http_auth import daemon, ticket, headers
 
 async def create(home, descriptor):
     async with connect(descriptor['api_origin'].replace('http:', 'ws:') + '/api/ws',
-        subprotocols=['hermes-gateway-v1', 'hermes-gateway-ticket.' + ticket(home, descriptor, 'interactive')]) as ws:
+        subprotocols=['slave-gateway-v1', 'slave-gateway-ticket.' + ticket(home, descriptor, 'interactive')]) as ws:
         await ws.send(json.dumps({'id': 1, 'method': 'session.create', 'params': {
             'request_id': 'retirement', 'source': 'gui'}}))
         while True:

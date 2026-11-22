@@ -19,7 +19,7 @@ from gateway.platforms.api_server import (
     APIServerAdapter,
     _is_compressed_summary_message,
 )
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence.conversation.messages import NewMessage, ReplaceMode
 from persistence_assembly import open_persistence, profile_scope
 from tests.fixtures.storage_read import transcript_rows
@@ -61,7 +61,7 @@ def session_db(tmp_path, api_store):
 @pytest.fixture
 def adapter(session_db):
     adapter = APIServerAdapter(PlatformConfig(enabled=True))
-    adapter._home_stores[str(get_hermes_home())] = session_db
+    adapter._home_stores[str(get_slave_home())] = session_db
     yield adapter
     adapter._close_cached_session_dbs()
 
@@ -201,7 +201,7 @@ class TestMessagesEndpointProjection:
     @pytest.mark.asyncio
     async def test_suppressed_delegation_row_keeps_evidence_but_not_presentation(self, adapter, session_db, tmp_path, monkeypatch):
         from gateway.wake import persist_delegation_delivery
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text("display: {suppress_warning_notifications: true}")
         sid = seed_session(session_db, "diagnostic-projection", "api_server")
         event = {"delegation_id": "early-failure", "task_failure_notice": True,
@@ -252,7 +252,7 @@ class TestMessagesEndpointProjection:
 
     @pytest.mark.asyncio
     async def test_messages_endpoint_honours_include_compacted(self, adapter, session_db, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         sid = seed_session(session_db, "compacted-history", "api_server")
         for i in range(1, 4):
             seed_messages(session_db, sid, {"role": "user", "content": f"question {i}"},
@@ -279,7 +279,7 @@ class TestMessagesEndpointProjection:
 
     @pytest.mark.asyncio
     async def test_include_compacted_keeps_compression_ancestors(self, adapter, session_db, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         seed_session(session_db, "rotated-parent", "api_server")
         seed_messages(session_db, "rotated-parent", {"role": "user", "content": "parent ask"},
                       {"role": "assistant", "content": "parent answer"})

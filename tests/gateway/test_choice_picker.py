@@ -13,7 +13,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 import gateway.run as gateway_run
 from gateway.config import Platform
@@ -73,7 +73,7 @@ def _make_runner(adapter=None):
 class TestReasoningChoicePicker:
     @pytest.mark.asyncio
     async def test_bare_reasoning_sends_picker_when_adapter_supports_it(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+        monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
         adapter = _PickerAdapter()
         runner = _make_runner(adapter)
 
@@ -84,7 +84,7 @@ class TestReasoningChoicePicker:
         call = adapter.calls[0]
         values = [c["value"] for c in call["choices"]]
         # Full canonical ladder + none + subcommands, in order
-        from hermes_constants import VALID_REASONING_EFFORTS
+        from slave_constants import VALID_REASONING_EFFORTS
         assert values[0] == "none"
         assert values[1:1 + len(VALID_REASONING_EFFORTS)] == list(VALID_REASONING_EFFORTS)
         assert values[-3:] == ["reset", "show", "hide"]
@@ -94,7 +94,7 @@ class TestReasoningChoicePicker:
     async def test_picker_selection_applies_same_as_typed(self, tmp_path, monkeypatch):
         """The picker's on_choice_selected must produce the identical state
         change as typing the argument (single application path)."""
-        monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+        monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
         adapter = _PickerAdapter()
         runner = _make_runner(adapter)
         event = _make_event("/reasoning")
@@ -115,7 +115,7 @@ class TestReasoningChoicePicker:
         self, tmp_path, monkeypatch, command
     ):
         """A flag-only global invocation opens the picker and persists its choice."""
-        monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+        monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
         adapter = _PickerAdapter()
         runner = _make_runner(adapter)
         event = _make_event(command)
@@ -149,7 +149,7 @@ class TestReasoningChoicePicker:
         default_home.mkdir(parents=True)
         named_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(default_home))
+        monkeypatch.setenv("SLAVE_HOME", str(default_home))
         default_cfg = {"marker": "default"}
         named_cfg = {"marker": "named"}
         (default_home / "config.yaml").write_text(
@@ -163,7 +163,7 @@ class TestReasoningChoicePicker:
         runner = _make_runner(adapter)
         runner.config = types.SimpleNamespace(multiplex_profiles=True)
         runner._resolve_profile_home_for_source = lambda source: named_home
-        monkeypatch.setattr(gateway_run, "_hermes_home", default_home)
+        monkeypatch.setattr(gateway_run, "_slave_home", default_home)
         event = _make_event(command)
         event.source.profile = "named"
         session_key = runner._session_key_for_source(event.source)
@@ -192,14 +192,14 @@ class TestReasoningChoicePicker:
 
 class TestFastChoicePicker:
     def _patch_fast_support(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+        monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
         monkeypatch.setattr(gateway_run, "_load_gateway_config", dict)
         monkeypatch.setattr(gateway_run, "_resolve_gateway_model", lambda cfg=None: "gpt-5.6")
         # ``/fast`` now resolves the effective session model through
         # ``_resolve_session_agent_runtime``; with no session override that path
         # calls runtime provider resolution, so stub it (no real credentials in CI).
         monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", dict)
-        import hermes_cli.models as models_mod
+        import slave_cli.models as models_mod
         monkeypatch.setattr(models_mod, "model_supports_fast_mode", lambda m: True)
 
     @pytest.mark.asyncio

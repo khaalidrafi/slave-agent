@@ -14,7 +14,7 @@ import pytest
 from gateway.config import GatewayConfig, Platform
 from gateway.run_turn import _unexpected_silence_reply
 from gateway.session_identity import RoutingIdentity
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.gateway.test_gateway_silence_tokens import _runner
 from gateway.session import SessionSource
 from tests.gateway.test_platform_allow_silence import (
@@ -29,7 +29,7 @@ def _per_platform(platform, value=True, **display):
 
 
 def _profile(raw):
-    _write(get_hermes_home(), raw)
+    _write(get_slave_home(), raw)
 
 
 def _source(platform):
@@ -93,7 +93,7 @@ async def test_suppression_does_not_change_unhealthy_or_empty_results(monkeypatc
     from gateway.run import _normalize_empty_agent_response
 
     async def presented(raw, home):
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("SLAVE_HOME", str(home))
         _write(home, raw)
         runner = _runner(monkeypatch, tmp_path)
         result = _result(**changes)

@@ -1,7 +1,7 @@
 """Network drop mid-turn on the gateway's session WebSocket: the turn finishes, the client comes back.
 
 Refs #145171 (EP-2). Contract: closing a client removes a viewer; it never stops accepted work.
-A real ``hermes gateway run`` in a hermetic home, a loopback model that holds each turn open until
+A real ``slave gateway run`` in a hermetic home, a loopback model that holds each turn open until
 the test releases it (so "mid-turn" is deterministic), and a client on the gateway's ticketed
 ``/api/ws`` that loses its connection with no WebSocket close frame (a FIN, then an RST).
 ``sessions.orphan_end_grace_s`` is 1 s, so the owner's "last viewer vanished" close fires while the
@@ -95,7 +95,7 @@ class _Viewer:
         grant = _control(home, "session-ticket", {"profile_id": str(home.resolve()),
                                                   "instance_id": desc["instance_id"], "purpose": "interactive"})
         url = desc["api_origin"].replace("http:", "ws:") + "/api/ws"
-        self._ws = connect(url, subprotocols=["hermes-gateway-v1", "hermes-gateway-ticket." + grant["ticket"]],
+        self._ws = connect(url, subprotocols=["slave-gateway-v1", "slave-gateway-ticket." + grant["ticket"]],
                            open_timeout=60, max_size=None, ping_interval=None, close_timeout=2)
         self.frames: list[dict] = []
         self._cond = threading.Condition()
@@ -239,27 +239,27 @@ def _follow_up(viewer: _Viewer, db: Path, sid: str, phase: str, log: Path) -> di
 def scenario(tmp_path_factory: pytest.TempPathFactory):
     root, tag, model = tmp_path_factory.mktemp("netdrop"), new_tag(), _Model()
     model.start()
-    home, hermes_home = write_chaos_home(
+    home, slave_home = write_chaos_home(
         root, model.base_url, stale_timeout=600, request_timeout=600,
         extra=("auxiliary:\n  title_generation:\n    enabled: false\n"
                "sessions:\n  orphan_end_grace_s: 1\n"))
-    db, log = hermes_home / "state.db", root / "gateway.log"
-    env = hermetic_env(home, hermes_home, tag)
+    db, log = slave_home / "state.db", root / "gateway.log"
+    env = hermetic_env(home, slave_home, tag)
     for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "XDG_STATE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME",
                 "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
         env.pop(key, None)
     # Host rendezvous stays inside the tmp root: the developer's live gateway is never seen.
-    env.update(HERMES_GATEWAY_LOCK_DIR=str(root / "locks"), HERMES_GATEWAY_MAX_STARTS="0")
+    env.update(SLAVE_GATEWAY_LOCK_DIR=str(root / "locks"), SLAVE_GATEWAY_MAX_STARTS="0")
     out, viewers, facts = open(log, "wb"), [], {}
-    gateway = subprocess.Popen([python_exe(), "-m", "hermes_cli.main", "gateway", "run", "--quiet"],
+    gateway = subprocess.Popen([python_exe(), "-m", "slave_cli.main", "gateway", "run", "--quiet"],
                                cwd=str(home), env=env, stdin=subprocess.DEVNULL, stdout=out,
                                stderr=subprocess.STDOUT)
 
     def viewer() -> _Viewer:
-        viewers.append(_Viewer(hermes_home, desc))
+        viewers.append(_Viewer(slave_home, desc))
         return viewers[-1]
     try:
-        desc = _poll(lambda: _identify(hermes_home) or (gateway.poll() is not None and {"exited": True}),
+        desc = _poll(lambda: _identify(slave_home) or (gateway.poll() is not None and {"exited": True}),
                      BOOT_S, "gateway identify ready", log)
         assert "exited" not in desc, f"gateway exited rc={gateway.returncode}\n{log.read_text(errors='replace')}"
 

@@ -1,19 +1,19 @@
 name: memoria
 repo: https://github.com/matrixorigin/memoria
 sha: 3a5c5065b2820d56dd3d8ac8bb259a9424b1476e
-subdir: plugins/hermes
+subdir: plugins/slave
 description: >-
   Memoria Cloud memory provider with scoped recall, explicit memory tools and opt-in background capture.
   Disclosure — sends recall queries and explicit memory operations to api.thememoria.ai by default
   (or a configured self-hosted origin). When enabled, auto capture uploads completed user/assistant text
   for fact extraction, excluding tool results and media. A local SQLite outbox stores pending text;
-  credentials are resolved through the active Hermes profile's MEMORIA_API_KEY secret.
+  credentials are resolved through the active slave-agent profile's MEMORIA_API_KEY secret.
 maintainer: matrixorigin
 tier: community
 category: memory
 requires_hermes: ">=0.21.5"
 version: "0.1.1"
-docs_url: https://github.com/matrixorigin/memoria/blob/3a5c5065b2820d56dd3d8ac8bb259a9424b1476e/plugins/hermes/README.md
+docs_url: https://github.com/matrixorigin/memoria/blob/3a5c5065b2820d56dd3d8ac8bb259a9424b1476e/plugins/slave/README.md
 readme: true
 platforms: [linux, macos]
 known_issues:

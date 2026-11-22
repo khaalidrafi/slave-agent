@@ -4,7 +4,7 @@ Enabled exactly when ``browser.use_real_profile`` is on — the same consent tha
 user's real Chrome/Brave profile (cookies AND ``Login Data``) for the agent's browser and that
 PR #150283 used to carry the real-profile cookies into the Desktop in-app browser. This backend
 carries the saved PASSWORDS in the same way: the entries appear in the in-app Browser bar's
-key-button picker alongside the Hermes vault / Bitwarden / 1Password sources and fill password-blind
+key-button picker alongside the slave-agent vault / Bitwarden / 1Password sources and fill password-blind
 on click.
 
 There is no decryption code here, and no new consent key. The reads go over CDP against the
@@ -13,7 +13,7 @@ already-running real-profile browser (``tools.browser_real_profile_logins``):
 - ``list_items`` → origin + username only, read from the plaintext columns of the profile's snapshot
   ``Login Data`` (never the encrypted password).
 - ``resolve_password`` → the browser autofills the saved password on the credential's own origin and
-  Hermes reads it back over CDP at fill time (the browser decrypts its OWN store). The value is
+  slave-agent reads it back over CDP at fill time (the browser decrypts its OWN store). The value is
   resolved server-side only, never listed, never logged; the fill tool registers it with the
   redaction boundary like every other vault fill.
 
@@ -47,7 +47,7 @@ class BrowserProfileLoginBackend(LoginBackend):
     # ── detection / snapshot location ─────────────────────────────────────────────────────────────
 
     def _browser_name(self) -> Optional[str]:
-        from hermes_cli.browser_connect import detect_default_chromium
+        from slave_cli.browser_connect import detect_default_chromium
         return detect_default_chromium()
 
     def _browser_label(self) -> str:
@@ -59,7 +59,7 @@ class BrowserProfileLoginBackend(LoginBackend):
         browser = self._browser_name()
         if not browser:
             return None
-        from hermes_cli.browser_connect import real_profile_copy_dir
+        from slave_cli.browser_connect import real_profile_copy_dir
         return real_profile_copy_dir(browser)
 
     def _ensure_snapshot(self) -> Optional[str]:
@@ -125,7 +125,7 @@ class BrowserProfileLoginBackend(LoginBackend):
         if not browser:
             return True
         try:
-            from hermes_cli.browser_connect import (
+            from slave_cli.browser_connect import (
                 _SNAPSHOT_DONE_MARKER, _resolve_source_profile, _snapshot_source,
                 real_profile_data_dir)
             snap_source = _snapshot_source(os.path.join(copy_dir, _SNAPSHOT_DONE_MARKER))
@@ -220,5 +220,5 @@ class BrowserProfileLoginBackend(LoginBackend):
             raise RuntimeError(
                 "The browser did not autofill a saved password for this login. It may have been "
                 "removed, need a chooser (several accounts on this site), redirect off its origin, or "
-                "be unavailable in this session. Save it to the Hermes vault, or sign in in the browser.")
+                "be unavailable in this session. Save it to the slave-agent vault, or sign in in the browser.")
         return password

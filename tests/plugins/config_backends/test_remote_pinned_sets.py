@@ -18,7 +18,7 @@ from .stub_plane import StubPlane, remote_env
 def plane(tmp_path, monkeypatch):
     home = Path(tmp_path) / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     with StubPlane() as p:
         for k, v in remote_env(p).items():
             monkeypatch.setenv(k, v)
@@ -32,8 +32,8 @@ def plane(tmp_path, monkeypatch):
 
 
 def test_set_equal_to_inherited_value_is_stored_and_survives_an_upper_change(plane):
-    from hermes_cli.config import set_config_value
-    from hermes_cli.config_backend import read_config_doc
+    from slave_cli.config import set_config_value
+    from slave_cli.config_backend import read_config_doc
 
     plane.upper = {"display": {"skin": "ares"}}
 

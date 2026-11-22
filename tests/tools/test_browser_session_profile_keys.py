@@ -1,5 +1,5 @@
 """Served-profile isolation of local browsers: one process serving profile A, then B, then A again must hand
-each profile its OWN Chromium (profile dir under that profile's HERMES_HOME), and A's browser again on the
+each profile its OWN Chromium (profile dir under that profile's SLAVE_HOME), and A's browser again on the
 return trip, never B's (#110032). Runs the real session layer + launcher against a fake Chromium binary."""
 
 from __future__ import annotations
@@ -48,14 +48,14 @@ def two_profiles(tmp_path, monkeypatch):
 
 
 def _session_in(home: Path) -> dict:
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     from tools.browser_session import get_session_info
     from tools.browser_use_cli import _backend_cache_key
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         return get_session_info(_backend_cache_key("same-task"))
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _pid(session: dict) -> int:
@@ -78,13 +78,13 @@ def test_profile_a_then_b_then_a_each_get_their_own_browser(two_profiles):
 
 
 def test_cleaning_up_one_profile_leaves_the_other_profiles_browser_running(two_profiles):
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     from tools.browser_launcher import get_browser
     from tools.browser_session_lifecycle import cleanup_profile_browsers
     a = _session_in(two_profiles["a"])
     b = _session_in(two_profiles["b"])
 
-    cleanup_profile_browsers(hermes_home_key(two_profiles["b"]))
+    cleanup_profile_browsers(slave_home_key(two_profiles["b"]))
 
     assert get_browser(b["launcher_key"]) is None
     assert get_browser(a["launcher_key"]) is not None

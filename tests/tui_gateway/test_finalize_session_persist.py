@@ -124,7 +124,7 @@ class TestFinalizeSessionPersistE2E:
         (messages live only in agent._session_messages / session['history'],
         never written to the DB) must be flushed to state.db when the WS
         disconnect tears the session down."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         from persistence_assembly import open_persistence, profile_scope
         from tests.fixtures.storage_read import conversation
         from tests.fixtures.storage_seed import seed_session
@@ -159,7 +159,7 @@ class TestFinalizeSessionPersistE2E:
     def test_resumed_session_not_reflushed_as_duplicates(self, tmp_path, monkeypatch):
         """A resumed session torn down before any new turn (its transcript is
         already durable in the DB) must NOT re-append duplicate rows."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         from persistence_assembly import open_persistence, profile_scope
         from tests.fixtures.storage_read import conversation
         from tests.fixtures.storage_seed import seed_messages, seed_session
@@ -189,7 +189,7 @@ class TestFinalizeSessionPersistE2E:
 class TestOnSessionEndHook:
     """Verify on_session_end plugin hook fires on finalize."""
 
-    @patch("hermes_cli.plugins.invoke_hook")
+    @patch("slave_cli.plugins.invoke_hook")
     def test_hook_fired_with_interrupted_true(self, mock_invoke_hook):
         """on_session_end is called with interrupted=True when finalizing."""
         from tui_gateway.server import _finalize_session

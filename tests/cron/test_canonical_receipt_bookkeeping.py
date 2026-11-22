@@ -5,7 +5,7 @@ import json
 import pytest
 
 from cron import jobs, executions, scheduler_authority
-from hermes_cli import gateway_client
+from slave_cli import gateway_client
 
 
 def peer(monkeypatch, call):

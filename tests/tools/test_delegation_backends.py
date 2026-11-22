@@ -1,19 +1,19 @@
 """delegation.backend: pluggable delegation providers decide each delegate_task task's route.
 
-Real discovery through PluginManager against a temp HERMES_HOME, real delegate_task, real credential
+Real discovery through PluginManager against a temp SLAVE_HOME, real delegate_task, real credential
 resolution; only child construction/run are stubbed where a test reads what they were handed.
 """
 
 import json
 import types
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from pathlib import Path
 
-from hermes_cli import plugins as plugins_mod
-from hermes_cli.plugins import PluginManager
+from slave_cli import plugins as plugins_mod
+from slave_cli.plugins import PluginManager
 
 REPO_PLUGINS = Path(__file__).resolve().parents[2] / "plugins"
 
@@ -56,7 +56,7 @@ OPTIONS = [
 
 
 def _home(tmp_path, monkeypatch, delegation: dict, plugins=("probe-options",), disabled=()):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     plugin_dir = home / "plugins" / "probe-options"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "probe-options", "version": "1.0"}), encoding="utf-8")
@@ -69,7 +69,7 @@ def _home(tmp_path, monkeypatch, delegation: dict, plugins=("probe-options",), d
     bundled.mkdir()
     (bundled / "delegation").symlink_to(REPO_PLUGINS / "delegation", target_is_directory=True)
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: bundled)
     manager = PluginManager()
     manager.discover_and_load()
@@ -183,7 +183,7 @@ def test_a_missing_backend_fails_closed_and_default_keeps_todays_route(tmp_path,
     assert len(set(definitions)) == 1 and '"option"' not in definitions[0]
     assert [(b["model"], b["override_base_url"]) for b in recorded] == [("pinned-model", "http://127.0.0.1:9/v1")] * 2
     error = outcomes[2]["error"]
-    assert "'not-installed' is not installed" in error and "hermes config set delegation.backend default" in error
+    assert "'not-installed' is not installed" in error and "slave config set delegation.backend default" in error
 
 
 def test_a_backend_route_without_its_own_chain_inherits_delegation_fallback_providers(tmp_path, monkeypatch):
@@ -274,7 +274,7 @@ def test_a_global_backend_switch_is_refused_on_a_managed_install(tmp_path, monke
         from agent.delegation_backends import set_global_backend
 
         before = (home / "config.yaml").read_bytes()
-        monkeypatch.setenv("HERMES_MANAGED", "nixos")
+        monkeypatch.setenv("SLAVE_MANAGED", "nixos")
         with pytest.raises(PermissionError, match="managed by nixos"):
             set_global_backend("default")
         assert (home / "config.yaml").read_bytes() == before
@@ -343,7 +343,7 @@ def test_route_task_always_sees_the_core_task_position(tmp_path, monkeypatch):
 def test_backend_key_reads_through_the_real_loader(tmp_path, monkeypatch):
     """``delegation.backend`` defaults to ``default`` and a configured value reaches the registry."""
     from agent.delegation_registry import configured_backend
-    from hermes_cli.config import load_config
+    from slave_cli.config import load_config
     from tools.delegate_tool_config import _load_config
 
     _, manager = _home(tmp_path / "unset", monkeypatch, {}, plugins=())
@@ -379,7 +379,7 @@ def test_default_strategy_is_the_bundled_plugin_through_the_same_seam(tmp_path, 
         assert manager._plugins["delegation/default"].enabled
         provider = get_active_provider({})
         assert provider.name == "default"
-        assert type(provider).__module__.startswith("hermes_plugins.delegation__default")
+        assert type(provider).__module__.startswith("slave_plugins.delegation__default")
         delegate_task(tasks=[{"goal": "one plain delegated task"}], parent_agent=_parent())
         assert recorded[-1]["model"] == "pinned-model"
     finally:
@@ -403,10 +403,10 @@ def test_runtime_with_zero_plugins_loaded_still_delegates_on_the_bundled_default
 
     monkeypatch.setattr(delegation_registry, "_first_use", {})
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir(parents=True)
     (home / "config.yaml").write_text(yaml.safe_dump({"delegation": {"model": "pinned-model"}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     pinned = PluginManager()
     pinned._discovered = True  # zero plugins, discovery never runs
     monkeypatch.setattr(plugins_mod, "_plugin_manager", pinned)
@@ -432,11 +432,11 @@ def test_first_use_default_never_outlives_a_later_disable(tmp_path, monkeypatch,
     from tools.delegate_tool import delegate_task
 
     monkeypatch.setattr(delegation_registry, "_first_use", {})
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir(parents=True)
     config = home / "config.yaml"
     config.write_text(yaml.safe_dump({"delegation": {"model": "pinned-model"}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     pinned = PluginManager()
     pinned._discovered = True  # zero plugins, discovery never runs
     monkeypatch.setattr(plugins_mod, "_plugin_manager", pinned)

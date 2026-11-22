@@ -228,7 +228,7 @@ def render(offenders: list[Offender], limit: int) -> list[str]:
         "  - images that must ship: compress them (oxipng -o max / pngquant / jpegoptim / webp)",
         "  - test data or archives: generate them in the test's tmp dir instead of committing them",
         f"  - a file that must ship at this size: add its exact path to {ALLOWLIST}",
-        "    (needs a hermes-agent-core review; keep that list short)",
+        "    (needs a slave-agent-core review; keep that list short)",
         "Reproduce locally: python scripts/ci/check_blob_size.py",
     ]
     return lines

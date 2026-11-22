@@ -1,4 +1,4 @@
-import { canonicalRequest, canonicalResult } from '@hermes/shared/gateway-canonical'
+import { canonicalRequest, canonicalResult } from '@slave-agent/shared/gateway-canonical'
 import { expect, it } from 'vitest'
 
 import { lastTurnRewind } from '../app/slash/canonicalSessionCommands.js'

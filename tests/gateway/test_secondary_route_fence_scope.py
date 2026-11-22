@@ -75,7 +75,7 @@ async def _delete(served, ref):
 async def _prune(served, ref):
     from gateway.session_prune import _apply
     served.alpha_db.sessions.end(ref.session_id, 'test')
-    await _apply(served.alpha, {'older_than_days': None}, None)  # the owner-run `hermes sessions prune`
+    await _apply(served.alpha, {'older_than_days': None}, None)  # the owner-run `slave sessions prune`
 
 
 def _entry(key, sid):
@@ -155,7 +155,7 @@ async def test_a_secondary_retirement_leaves_the_id_free_in_the_launch_profile(t
         assert _conflict(served.launch_db, sid) is None
         status, text = await _create(served, sid)
         assert status == 201, text
-        bind_api_session(served.launch, sid)  # the X-Hermes-Session-Id chat's bind
+        bind_api_session(served.launch, sid)  # the X-Slave-Session-Id chat's bind
         fence = retired_route_key('alpha:' + sid)  # alpha's (profile, id) fence in the shared index
         assert served.launch_db.state_meta.get(fence) is not None
         # The secondary itself still refuses its own retired id within the horizon.

@@ -3,7 +3,7 @@
 ``write_file`` asked the backend shell three questions per write (pre-write probe, atomic write,
 sha256 verification): three ``bash`` spawns, ~100 ms on a warm host before any real work.  On the
 local POSIX backend the file is on this host, so ``ShellFileOperations`` answers them here instead,
-under the same gate as the native read path (``_native_read_enabled``; ``HERMES_NATIVE_FILE_READ=0``
+under the same gate as the native read path (``_native_read_enabled``; ``SLAVE_NATIVE_FILE_READ=0``
 turns both off).  Semantics mirror the shell scripts they replace; anything they cannot answer
 (a FIFO, a device, an unexpected error) returns None and the caller takes the shell path.
 """
@@ -69,7 +69,7 @@ def atomic_write(path: str, data: bytes) -> Optional[str]:
             mode: Optional[int] = stat.S_IMODE(os.stat(target).st_mode)
         except FileNotFoundError:
             mode = None
-        tmp = os.path.join(parent, f".hermes-tmp.{secrets.token_hex(6)}")
+        tmp = os.path.join(parent, f".slave-tmp.{secrets.token_hex(6)}")
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0),
                      0o666 if mode is None else 0o600)
     except OSError as e:

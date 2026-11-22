@@ -1,4 +1,4 @@
-// A tab opened before `hermes update` rebuilt the SPA still references the old
+// A tab opened before `slave update` rebuilt the SPA still references the old
 // hashed chunks; the rebuild deleted them, so the first lazy page it opens 404s
 // and React unmounts the whole app (blank page). A reload picks up the new
 // index.html, which is served no-store.
@@ -10,7 +10,7 @@
 // chunk that is really broken) keeps the error visible instead of looping,
 // while a later build can still recover.
 
-const RELOADED_FROM_KEY = "hermes.chunkLoadReloadedFrom";
+const RELOADED_FROM_KEY = "slave.chunkLoadReloadedFrom";
 
 const CHUNK_LOAD_ERROR = new RegExp(
   "^(Unable to preload CSS for |Failed to fetch dynamically imported module|" +

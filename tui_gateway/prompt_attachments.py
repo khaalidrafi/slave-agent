@@ -109,7 +109,7 @@ def _allowed_image_extensions() -> frozenset[str]:
 
 def _session_home_dir(session: dict, name: str) -> Path:
     """``<session home>/<name>``, anchored on the session's stored ``profile_home``: attach
-    RPCs run BEFORE ``prompt.submit`` installs the profile HERMES_HOME override, while
+    RPCs run BEFORE ``prompt.submit`` installs the profile SLAVE_HOME override, while
     the sandbox mounts and the vision host-read allowlist resolve the *session profile's*
     dirs at run time — writing anywhere else means the agent can never see the file.
 
@@ -119,8 +119,8 @@ def _session_home_dir(session: dict, name: str) -> Path:
     profile_home = session.get("profile_home")
     if name == "attachments" and _profile_attachments_storage(profile_home) == "workspace":
         if workspace := _session_attachments_workspace(session):
-            return workspace / ".hermes" / "attachments"
-    return (Path(profile_home) if profile_home else _hermes_home) / name
+            return workspace / ".slave" / "attachments"
+    return (Path(profile_home) if profile_home else _slave_home) / name
 
 
 def _profile_attachments_storage(profile_home) -> str:
@@ -134,12 +134,12 @@ def _profile_attachments_storage(profile_home) -> str:
     profile-home store, which the sandbox mounts and the vision allowlist always cover, so the
     attachment still reaches the agent (by an absolute instead of a workspace-relative ref)."""
     import contextlib as _contextlib
-    from hermes_cli.config_backend import ConfigBackendUnavailable
-    home = Path(profile_home) if profile_home else _hermes_home
+    from slave_cli.config_backend import ConfigBackendUnavailable
+    home = Path(profile_home) if profile_home else _slave_home
     try:
         with _contextlib.suppress(Exception):
-            from hermes_cli.config_backend import config_exists
-            from hermes_cli.config_effective import load_user_config_effective
+            from slave_cli.config_backend import config_exists
+            from slave_cli.config_effective import load_user_config_effective
             cfg_path = home / "config.yaml"
             if config_exists(cfg_path):
                 attachments_cfg = load_user_config_effective(cfg_path).get("attachments")
@@ -246,11 +246,11 @@ def _stage_browser_file_attachment(session: dict, staged_upload: object, name: s
     Source and destination may be different profiles on the same installation (an owner-routed
     tile can receive a foreground browser pick); the caller decides which source homes this
     connection may reach. The receipt is resolved back to exactly the staged layout under its
-    source home, which must still be a live profile (``hermes_cli/staged_uploads.py``). From there
+    source home, which must still be a live profile (``slave_cli/staged_uploads.py``). From there
     the copy is the native Desktop's out-of-workspace file attach, capped at the browser limit.
     """
-    from hermes_constants import WEBAPP_ATTACHMENT_MAX_BYTES
-    from hermes_cli.staged_uploads import parse_staged_upload, resolve_staged_upload
+    from slave_constants import WEBAPP_ATTACHMENT_MAX_BYTES
+    from slave_cli.staged_uploads import parse_staged_upload, resolve_staged_upload
 
     raw_home, raw_path = parse_staged_upload(staged_upload)
     source = resolve_staged_upload(Path(raw_home), raw_path)
@@ -267,12 +267,12 @@ def _referenced_in_place(session: dict, path: Path, workspace: Path, *, staged: 
     if staged or not path.is_relative_to(workspace):
         return False
     try:
-        from hermes_cli.staged_uploads import is_staged_upload
+        from slave_cli.staged_uploads import is_staged_upload
     except ImportError:
         # An install without the web stack (fastapi) has no upload route that could stage one.
         return True
     profile_home = session.get("profile_home")
-    return not is_staged_upload(Path(profile_home) if profile_home else _hermes_home, path)
+    return not is_staged_upload(Path(profile_home) if profile_home else _slave_home, path)
 
 
 def _stage_session_file_attachment(

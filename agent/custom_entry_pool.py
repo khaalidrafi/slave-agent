@@ -31,7 +31,7 @@ def entry_declares_credential(entry: Any) -> bool:
 
 
 def row_owned_by_entry(row: Any, entry: Any) -> bool:
-    """Ownership by provenance: ``hermes auth add`` (manual) rows, and rows seeded from the entry's
+    """Ownership by provenance: ``slave auth add`` (manual) rows, and rows seeded from the entry's
     own ``key_env``. Rows the built-in seeded from its registry env vars or auth files are foreign."""
     from agent.credential_pool import _is_manual_source
     source = str(getattr(row, "source", "") or "").strip()
@@ -84,20 +84,20 @@ def _warn_withheld_builtin_key(pool_key: str, entry: dict[str, Any], rows: list[
     same-named built-in's keys are bound to another host: before #130410 the entry sent them, so the
     change must not surface only as the endpoint's 401. Keyed by home so one process serving several
     profiles warns each of them. Names the variables and the remedy, never a secret."""
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     from utils import base_url_hostname, same_base_url_origin
     builtin = builtin_pool_address(pool_key)
     if builtin is None or entry_declares_credential(entry) or not rows or not target:
         return
     name = str(entry.get("name") or pool_key)
-    seen = (hermes_home_key(), pool_key, name)
+    seen = (slave_home_key(), pool_key, name)
     with _WARNED_LOCK:
         if seen in _WARNED_WITHHELD:
             return
         _WARNED_WITHHELD.add(seen)
     env_vars = sorted({src[4:] for src in (str(getattr(r, "source", "") or "") for r in rows) if src.startswith("env:")})
     remedy = (f"set `key_env: {env_vars[0]}` on providers.{name}" if env_vars else
-              f"add the endpoint's key with `hermes auth add {pool_key}` while providers.{name} is configured")
+              f"add the endpoint's key with `slave auth add {pool_key}` while providers.{name} is configured")
     where = (f"the built-in {pool_key} provider's own host, but its stored credentials were recorded for another host"
              if builtin and same_base_url_origin(builtin, target)
              else f"a host other than the built-in {pool_key} provider's own")
@@ -132,9 +132,9 @@ def builtin_pool_address(pool_key: Optional[str]) -> Optional[str]:
     if not key or key.startswith(CUSTOM_POOL_PREFIX):
         return None
     if key == "openrouter":
-        from hermes_constants import OPENROUTER_BASE_URL
+        from slave_constants import OPENROUTER_BASE_URL
         return OPENROUTER_BASE_URL
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from slave_cli.auth import PROVIDER_REGISTRY
     pconfig = PROVIDER_REGISTRY.get(key)
     return str(pconfig.inference_base_url or "") if pconfig else None
 
@@ -146,7 +146,7 @@ def recorded_address(row: Any, pool_key: Optional[str]) -> str:
 
 
 def bind_unrecorded_rows(pool: Any, base_url: str) -> list[Any]:
-    """Record ``base_url`` on the pool's manual rows that recorded no address (``hermes auth add``
+    """Record ``base_url`` on the pool's manual rows that recorded no address (``slave auth add``
     and dashboard rows written before writers recorded one): the key was entered while the entry
     pointed there. Persisted once when the active store owns the rows, so a later edit of the
     entry's address leaves them behind. Only a pool the entry owns alone is bound: a built-in's
@@ -204,7 +204,7 @@ def custom_entry_for_identity(provider: Optional[str], config: Optional[dict] = 
         config = _load_config_safe() or {}
     if name.startswith(CUSTOM_POOL_PREFIX):
         return named_custom_entry(name, config)
-    from hermes_cli.runtime_provider_custom import named_custom_provider_config_path
+    from slave_cli.runtime_provider_custom import named_custom_provider_config_path
     path = named_custom_provider_config_path(name, config)
     if path is None or path[0] != "providers":
         return None if path is None else named_custom_entry(name, config)

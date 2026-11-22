@@ -1,4 +1,4 @@
-"""POSIX: terminal commands and background jobs die with the Hermes process that started them.
+"""POSIX: terminal commands and background jobs die with the slave-agent process that started them.
 
 The owners are real host processes using the real ``ProcessRegistry.spawn_local`` and
 ``LocalEnvironment.execute``. One owner is SIGKILLed, so no Python cleanup of ours runs; the other is the
@@ -70,9 +70,9 @@ def _read(path):
 def _run_owners(tmp_path, roles):
     script = tmp_path / "disposable owner.py"
     script.write_text(_OWNER, encoding="utf-8")
-    env = dict(os.environ, HOME=str(tmp_path), HERMES_HOME=str(tmp_path / "home"),
+    env = dict(os.environ, HOME=str(tmp_path), SLAVE_HOME=str(tmp_path / "home"),
                PYTHONPATH=str(Path(__file__).resolve().parents[2]))
-    env.pop("_HERMES_GATEWAY", None)
+    env.pop("_SLAVE_GATEWAY", None)
     log = (tmp_path / "owners.log").open("w", encoding="utf-8")
     owners = {role: subprocess.Popen([sys.executable, str(script), str(tmp_path), role], env=env,
                                      stdin=subprocess.DEVNULL, stdout=log, stderr=log)
@@ -139,9 +139,9 @@ def _record_calls(monkeypatch):
     for mod in (registry_mod, local_mod):
         monkeypatch.setattr(mod, "own_process_groups", lambda pgids: calls.append(("own", list(pgids))))
         monkeypatch.setattr(mod, "release_process_groups", lambda pgids: calls.append(("release", list(pgids))))
-    monkeypatch.setattr("hermes_cli.process_identity.own_process_groups",
+    monkeypatch.setattr("slave_cli.process_identity.own_process_groups",
                         lambda pgids: calls.append(("own", list(pgids))))
-    monkeypatch.setattr("hermes_cli.process_identity.register_child", lambda pid, purpose: None)
+    monkeypatch.setattr("slave_cli.process_identity.register_child", lambda pid, purpose: None)
     return calls
 
 
@@ -214,11 +214,11 @@ def test_a_failed_handoff_leaves_the_foreground_owner_its_group(monkeypatch, tmp
         raise RuntimeError("can't start new thread")
 
     monkeypatch.setattr(registry, "_track_started", no_reader)
-    proc = types.SimpleNamespace(pid=4242, _hermes_owned_pgid=4242, poll=lambda: None)
+    proc = types.SimpleNamespace(pid=4242, _slave_owned_pgid=4242, poll=lambda: None)
     with pytest.raises(RuntimeError):
         registry.adopt_local(proc, command="sleep 60", cwd=str(tmp_path))
 
-    assert proc._hermes_owned_pgid == 4242, "the foreground wait lost its group"
+    assert proc._slave_owned_pgid == 4242, "the foreground wait lost its group"
     covered = not calls or calls[-1] == ("own", [4242])
     assert covered, f"the group is left uncovered: {calls}"
     assert not registry._running, "a session with no reader stayed registered"

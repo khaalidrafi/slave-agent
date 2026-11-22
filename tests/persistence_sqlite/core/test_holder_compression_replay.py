@@ -21,7 +21,7 @@ BUSY = {
 @pytest.fixture
 def holder():
     registry.close_all()
-    store = StoreHolder(Path(os.environ["HERMES_HOME"]) / "state.db")
+    store = StoreHolder(Path(os.environ["SLAVE_HOME"]) / "state.db")
     yield store
     store.close()
     registry.close_all()

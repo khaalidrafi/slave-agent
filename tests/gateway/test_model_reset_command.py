@@ -27,7 +27,7 @@ async def test_reset_clears_a_persisted_override_after_restart(tmp_path, monkeyp
     home.mkdir()
     # JSON is valid YAML; CI ships no pyyaml for test fixtures.
     (home / "config.yaml").write_text(json.dumps({"model": {"default": "cfg-model", "provider": "cfg-prov"}}))
-    monkeypatch.setattr(gateway_run, "_hermes_home", home)
+    monkeypatch.setattr(gateway_run, "_slave_home", home)
 
     source = SessionSource(platform=Platform.TELEGRAM, chat_id="c1", user_id="u1", chat_type="dm")
     key = build_session_key(source)
@@ -65,14 +65,14 @@ async def test_owner_reset_returns_a_local_session_to_the_configured_default_rea
     """The TUI, Desktop and the attached CLI send ``session.mutate model {model: 'reset'}`` to the owner."""
     from gateway.run_turn_prepare import GatewayTurnPrepareMixin
     from gateway.session_policy import policy_for_source
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.gateway.test_follow_profile_followups import _profile
     from tests.gateway.test_session_follow_profile_config import _owner
     import gateway.run as gateway_run
 
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(gateway_run, "_hermes_home", home)
+    monkeypatch.setattr(gateway_run, "_slave_home", home)
     _profile(home, "cfg-a", 1, "k")
     store, runner, authority, owner = _owner(home)
     runner._peek_session_state = lambda key: None

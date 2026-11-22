@@ -1,7 +1,7 @@
 import { PassThrough } from 'node:stream'
 
-import { renderSync } from '@hermes/ink'
-import type { LoopSnapshot } from '@hermes/shared/gateway-events'
+import { renderSync } from '@slave-agent/ink'
+import type { LoopSnapshot } from '@slave-agent/shared/gateway-events'
 import React from 'react'
 import stripAnsi from 'strip-ansi'
 import { expect, it, vi } from 'vitest'

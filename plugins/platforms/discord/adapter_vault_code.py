@@ -16,7 +16,7 @@ from gateway.platforms.base import SendResult
 # Discord caps a modal title and a modal label at 45 characters.
 _MODAL_TEXT_LIMIT = 45
 _HINT_LIMIT = 300
-_INPUT_ID = "hermes_vault_code_value"
+_INPUT_ID = "slave_vault_code_value"
 
 
 class _DropVaultCodeFrames(logging.Filter):
@@ -35,7 +35,7 @@ for _name in ("discord.gateway",):
 
 
 def build_vault_code_view(discord, base):
-    """Return the ``VaultCodeView`` class on ``base`` (the adapter's shared ``_HermesView``)."""
+    """Return the ``VaultCodeView`` class on ``base`` (the adapter's shared ``_SlaveView``)."""
     from plugins.platforms.discord.adapter import _t_discord
 
     class VaultCodeView(base):

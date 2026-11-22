@@ -204,7 +204,7 @@ def test_the_orphan_sweep_counts_a_parked_delegation_as_live_until_the_park_lets
     """The park is out of the ledger sweep's sight: without the held-copy mark, a live delegation parked past a
     claim lease reads as lost, so the sweep warns and queues a duplicate every lease. While parked it is never
     re-offered; once the park lets go of it (TTL) the sweep re-offers the still-pending row."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     from tests.waiting import wait_until
     from tools import async_delegation as ad
     from tools.process_registry_awaiting import release, take_ready
@@ -214,7 +214,7 @@ def test_the_orphan_sweep_counts_a_parked_delegation_as_live_until_the_park_lets
     registry = _registry()
     monkeypatch.setattr("tools.process_registry.process_registry", registry)
     ad._reset_for_tests()
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         handle = ad.dispatch_async_delegation(
             goal="mine", context=None, toolsets=None, role="leaf", model="m", session_key=OWNER_KEY,
@@ -237,7 +237,7 @@ def test_the_orphan_sweep_counts_a_parked_delegation_as_live_until_the_park_lets
         assert ad.sweep_orphaned_completions(sweep_q, now=lease + ad._CLAIM_LEASE_S) == 1
         assert [evt["delegation_id"] for evt in _drain(sweep_q)] == [handle["delegation_id"]]
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
         ad._reset_for_tests()
 
 

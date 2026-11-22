@@ -1,4 +1,4 @@
-import type { LoopSnapshot, SessionControlSnapshot } from '@hermes/shared/gateway-events'
+import type { LoopSnapshot, SessionControlSnapshot } from '@slave-agent/shared/gateway-events'
 import { useStore } from '@nanostores/react'
 import { atom } from 'nanostores'
 import { useEffect, useState } from 'react'

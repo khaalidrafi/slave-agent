@@ -38,7 +38,7 @@ async def test_agentless_context_reports_unknown_after_a_model_switch(tui_owner,
 
     from agent.prompt_cache_clock import CacheEvent, event_to_json
     from gateway.session_tui_reads import _stored_id
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     owner = tui_owner
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=True, new_model='switched', target_provider='custom', base_url='http://127.0.0.1:9/v1'))

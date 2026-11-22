@@ -17,13 +17,13 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.backup import verify_sqlite_integrity
-from hermes_cli.backup_sqlite import _safe_copy_db, preflight_state_db
+from slave_cli.backup import verify_sqlite_integrity
+from slave_cli.backup_sqlite import _safe_copy_db, preflight_state_db
 from persistence import PermanentStoreError, ProfileScope
 from persistence.sqlite import SQLiteBackend
 from persistence.sqlite.admin import SQLiteStoreAdmin
 from tests.fixtures.storage_seed import seed_messages, seed_session
-from tests.hermes_cli.test_session_recovery import _corrupt_middle_table_leaf, _make_page_spanning_source
+from tests.slave_cli.test_session_recovery import _corrupt_middle_table_leaf, _make_page_spanning_source
 from tests.persistence_sqlite.admin._main_reference import (
     _count_session_rows, _has_ledger_rows, _pre_runtime_snapshot, _safe_restore_db,
 )
@@ -35,7 +35,7 @@ def _store_seed(path: Path, *, sessions: int = 2, epochs: int = 0) -> Path:
     """Sessions with three messages each and ``epochs`` runtime epochs, written through the backend's store."""
     path.parent.mkdir(parents=True, exist_ok=True)
     scope = ProfileScope(profile_dir=path.parent, name="default")
-    backend = SQLiteBackend({scope.hermes_home_key: path})
+    backend = SQLiteBackend({scope.slave_home_key: path})
     try:
         store = backend.open(scope)
         for number in range(sessions):
@@ -403,7 +403,7 @@ def test_restore_from_refuses_an_unreadable_destination_epoch(tmp_path, caplog):
     assert results == {"legacy": False, "admin": False}
     assert logs["admin"] == logs["legacy"]
     assert logs["admin"] == [
-        "Cannot read the canonical runtime epoch at <dst>; refusing in-place restore. Use `hermes sessions recover "
+        "Cannot read the canonical runtime epoch at <dst>; refusing in-place restore. Use `slave sessions recover "
         "--source <snapshot> --output <separate-path>` to salvage transcripts into a separate output."
     ]
 
@@ -514,7 +514,7 @@ def test_has_runtime_ledger_rows_matches(tmp_path, build, expected):
 
 
 def _snapshot(home: Path, name: str, build) -> Path:
-    from hermes_cli.backup import _quick_snapshot_root
+    from slave_cli.backup import _quick_snapshot_root
 
     path = _quick_snapshot_root(home) / name / "state.db"
     path.parent.mkdir(parents=True)

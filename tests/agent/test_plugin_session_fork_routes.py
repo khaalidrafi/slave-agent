@@ -179,7 +179,7 @@ def test_unfenced_the_same_calls_reach_the_route_the_predicate_names(probe, path
 
 def test_the_route_predicate_names_where_the_dispatcher_sends_each_name(probe):
     """Each kind the predicate reports is where dispatch actually goes, and the allowlist drops it."""
-    from hermes_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
+    from slave_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
     from model_tools import handle_function_call
 
     agent = _wire(SimpleNamespace(_gateway_session_key=""), probe.seen)

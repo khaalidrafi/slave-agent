@@ -1,4 +1,4 @@
-"""Skill usage telemetry + provenance for the Curator: a sidecar ``~/.hermes/skills/.usage.json`` keyed by
+"""Skill usage telemetry + provenance for the Curator: a sidecar ``~/.slave/skills/.usage.json`` keyed by
 skill name (never frontmatter — keeps telemetry out of user-authored SKILL.md and off bundled/hub skills).
 Counter bumps are best-effort (DEBUG-logged failures never break the tool call); writes are atomic under a
 cross-process lock. Curator management is an explicit ``created_by: agent`` marker written by skill_manage —
@@ -16,7 +16,7 @@ from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from agent.skill_utils import is_excluded_skill_path, is_external_skill_path
 from utils import atomic_write_text
 
@@ -45,7 +45,7 @@ def is_protected_builtin(skill_name: str) -> bool:
 
 
 def _skills_dir() -> Path:
-    return get_hermes_home() / "skills"
+    return get_slave_home() / "skills"
 
 
 def _usage_file() -> Path:
@@ -186,7 +186,7 @@ def _read_hub_installed_names() -> set[str]:
 def _prune_builtins_enabled() -> bool:
     """``curator.prune_builtins`` (default False); lazy config import keeps this module importable during update/sync."""
     try:
-        from hermes_cli.config import load_config
+        from slave_cli.config import load_config
         cur = load_config().get("curator")
         return bool(cur.get("prune_builtins", False)) if isinstance(cur, dict) else False
     except Exception as e:  # pragma: no cover — best-effort config read
@@ -465,7 +465,7 @@ def telemetry_provenance(skill_name: str, record: Optional[dict[str, Any]] = Non
         return "installed"
     if ":" in skill_name:
         with suppress(Exception):
-            from hermes_cli.plugins import get_plugin_manager
+            from slave_cli.plugins import get_plugin_manager
             if get_plugin_manager().find_plugin_skill(skill_name) is not None:
                 return "installed"
     if label := {"installed": "installed", "agent": "agent_created"}.get(
@@ -481,7 +481,7 @@ def _emit_skill_lifecycle(skill_name: str, action: str, *, record: Optional[dict
     """Best-effort lifecycle hook after an authoritative state change; facts absent from *record* go as None."""
     facts = record or {}
     try:
-        from hermes_cli.lifecycle import has_hook, invoke_hook
+        from slave_cli.lifecycle import has_hook, invoke_hook
         if has_hook("on_skill_lifecycle"):
             invoke_hook("on_skill_lifecycle", action=action, skill_name=skill_name,
                         provenance=telemetry_provenance(skill_name, record), task_id=task_id or "",
@@ -587,7 +587,7 @@ def set_pinned(skill_name: str, pinned: bool) -> bool:
 
 
 def set_locked(skill_name: str, locked: bool) -> bool:
-    """User declaration (``hermes curator lock``) that the autonomous passes — background review and
+    """User declaration (``slave curator lock``) that the autonomous passes — background review and
     curator — must not change this skill's content. NOT curation-gated: hand-written, bundled and
     hub skills can all be locked; archival eligibility is the separate ``pinned`` axis. True when
     the write landed."""
@@ -780,7 +780,7 @@ def usage_report() -> list[dict[str, Any]]:
     rows = [_report_row(n, data.get(n), provenance=provenance(n), _persisted=n in data) for n in names]
     # Plugin skills live in the plugin's own directory and are counted under their qualified name
     # ("meshy:meshy-3d"), so a walk of the skills directory never sees them.
-    from hermes_cli.plugins import discover_plugins, get_plugin_manager
+    from slave_cli.plugins import discover_plugins, get_plugin_manager
     discover_plugins()
     rows += [_report_row(n, data.get(n), provenance="plugin", _persisted=n in data)
              for n in (meta["name"] for meta in get_plugin_manager().list_plugin_skill_metadata()) if n not in names]

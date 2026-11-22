@@ -44,7 +44,7 @@ _HELPER_SINKS = {"import_module", "__import__", "find_spec", "importorskip"}
 FREE_HELPERS: dict[str, int] = {"_tools_mod": 0, "_lazy": 0}
 """Helpers that ``tui_gateway.method_ctx.bind_module`` puts on a split module's globals at run time, so the file
 that calls them shows no binding: name -> index of the parameter that takes a module name."""
-NAMED_HELPERS: dict[str, dict[int, str]] = {"hermes_cli.web_deps.LateState": {1: "module"}}
+NAMED_HELPERS: dict[str, dict[int, str]] = {"slave_cli.web_deps.LateState": {1: "module"}}
 """Callables (old dotted name) whose argument reaches an import through state the helper scan does not follow: the
 class keeps ``module`` on the instance and resolves it through ``_server`` at each use."""
 _MODULE_OBJECT_CALLS = {"ModuleType", "spec_from_file_location", "spec_from_loader", "ModuleSpec"}
@@ -747,7 +747,7 @@ class SinkFinder(cst.CSTVisitor):
             or isinstance(self._parent(node), cst.Expr)
 
     def _import_chain(self, node: cst.Call, first: cst.SimpleString) -> None:
-        """``__import__("a.b")`` returns ``a``: after the move it returns ``hermes_agent``, so the chain changes."""
+        """``__import__("a.b")`` returns ``a``: after the move it returns ``slave_agent``, so the chain changes."""
         if len(node.args) != 1 or not isinstance(first.evaluated_value, str):
             return
         parts = first.evaluated_value.split(".")

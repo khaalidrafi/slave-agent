@@ -6,7 +6,7 @@ description: "Live prediction-market prices and quant tools for Kalshi, Polymark
 maintainer: predictionmarketspicks
 tier: community
 category: tools
-docs_url: https://github.com/predictionmarketspicks/mcp#install-in-hermes-agent
+docs_url: https://github.com/predictionmarketspicks/mcp#install-in-slave-agent
 version: "1.0.0"
 requires_hermes: ">=0.21.6"
 platforms: []

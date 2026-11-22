@@ -1,7 +1,7 @@
 """A ``webapp:`` block that asks for the Webapp but cannot be used says why.
 
 A malformed block keeps the Webapp off (the listener stays private), and the reason reaches the user:
-``webapp_settings`` returns it, the gateway reports the Webapp unavailable with it, and ``hermes webapp``
+``webapp_settings`` returns it, the gateway reports the Webapp unavailable with it, and ``slave webapp``
 prints it instead of telling the user to set ``webapp.enabled: true`` when it is already set.
 """
 import asyncio
@@ -19,7 +19,7 @@ MALFORMED = [
     ("webapp:\n  enabled: true\n  host: ''\n", "webapp.host"),
     ("webapp:\n  enabled: true\n  port: 70000\n", "webapp.port"),
     ("webapp:\n  enabled: true\n  port: http\n", "webapp.port"),
-    ("webapp:\n  enabled: true\n  public_url: hermes.example.net\n", "webapp.public_url"),
+    ("webapp:\n  enabled: true\n  public_url: slave.example.net\n", "webapp.public_url"),
 ]
 
 
@@ -91,7 +91,7 @@ def test_the_webapp_and_its_sign_in_gate_agree_on_which_hosts_stay_on_this_machi
     open, and only a wildcard bind needs sign-in. Another spelling of 127.0.0.1, ::1 or localhost
     binds that address; any other loopback address, which the gate would treat as public, keeps the
     Webapp off and says which hosts work."""
-    from hermes_cli.web_server_boundary import should_require_auth
+    from slave_cli.web_server_boundary import should_require_auth
 
     settings = webapp.webapp_settings(_home(tmp_path, f"webapp:\n  enabled: true\n  host: {host}\n"))
     if bind_host is None:
@@ -108,7 +108,7 @@ def _gateway(monkeypatch, tmp_path, config):
     from gateway.control_socket import GatewayControlServer
 
     home = _home(tmp_path, config)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
 
     async def start(runner, *, host="127.0.0.1", port=0, webapp=None):
         return SimpleNamespace(api_origin=f"http://127.0.0.1:{port or 50001}")

@@ -17,10 +17,10 @@ from tui_gateway import server
 
 @pytest.fixture
 def db(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     with open_persistence(profile_scope(home=home)) as handle:
         seed_session(handle, "parent", "desktop", model="test-model")
         yield handle
@@ -29,7 +29,7 @@ def db(tmp_path, monkeypatch):
 @pytest.fixture
 def hooks(monkeypatch):
     calls = []
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", lambda name, **kw: calls.append((name, kw)) or [])
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", lambda name, **kw: calls.append((name, kw)) or [])
     return calls
 
 

@@ -1,14 +1,14 @@
 name: repager
 title: repager
-repo: https://github.com/clawpawtech/hermes-repager
+repo: https://github.com/clawpawtech/slave-repager
 sha: fc354afe99ab041e096efee4d87d20190ae0d040
-description: "Evidence-bound hero design lab with approved copy, local layout exploration, revision-bound browser checks and portable review handoffs. Disclosure — captures the public page you name with a locally installed Node.js + Playwright + Chromium (you install the npm dependencies and Chromium; nothing is downloaded at runtime) through a public-address-only local proxy; when you enable allow_model_calls it sends the captured page text, your brief and the approved copy to the host model configured under auxiliary.repager_layout; `hermes repager` opens an optional token-protected workbench on 127.0.0.1; reviews, screenshots and ZIP exports are kept under HERMES_HOME/plugin-data/repager."
+description: "Evidence-bound hero design lab with approved copy, local layout exploration, revision-bound browser checks and portable review handoffs. Disclosure — captures the public page you name with a locally installed Node.js + Playwright + Chromium (you install the npm dependencies and Chromium; nothing is downloaded at runtime) through a public-address-only local proxy; when you enable allow_model_calls it sends the captured page text, your brief and the approved copy to the host model configured under auxiliary.repager_layout; `slave repager` opens an optional token-protected workbench on 127.0.0.1; reviews, screenshots and ZIP exports are kept under SLAVE_HOME/plugin-data/repager."
 maintainer: clawpawtech
 tier: community
 category: web
 requires_hermes: ">=0.22.5"
 version: "0.3.0"
-docs_url: https://github.com/clawpawtech/hermes-repager/blob/fc354afe99ab041e096efee4d87d20190ae0d040/README.md
+docs_url: https://github.com/clawpawtech/slave-repager/blob/fc354afe99ab041e096efee4d87d20190ae0d040/README.md
 readme: true
 platforms: [linux]
 known_issues:

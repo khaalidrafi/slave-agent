@@ -1,11 +1,11 @@
 """Frozen native plugin for the plugin-surface conformance suite.
 
 Written the way the plugin guide tells an external author to write one: ``register(ctx)`` plus the
-documented ABCs, importing only names on the published plugin API. Keep it frozen. When Hermes grows
+documented ABCs, importing only names on the published plugin API. Keep it frozen. When slave-agent grows
 a field, a parameter or a provider method, this file must keep loading and working unchanged; a
 change here is a change to what existing plugins are promised.
 
-Every callback appends one JSON line to ``<HERMES_HOME>/conformance-events.jsonl`` so the tests read
+Every callback appends one JSON line to ``<SLAVE_HOME>/conformance-events.jsonl`` so the tests read
 outcomes, not plugin internals.
 """
 
@@ -20,13 +20,13 @@ from agent.transcription_provider import TranscriptionProvider
 from agent.tts_provider import TTSProvider
 from agent.video_gen_provider import VideoGenProvider
 from agent.web_search_provider import WebSearchProvider
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 PROVIDER_NAME = "conformance"
 
 
 def _record(event, **fields):
-    with open(get_hermes_home() / "conformance-events.jsonl", "a", encoding="utf-8") as fh:
+    with open(get_slave_home() / "conformance-events.jsonl", "a", encoding="utf-8") as fh:
         fh.write(json.dumps({"event": event, **fields}, default=repr) + "\n")
 
 

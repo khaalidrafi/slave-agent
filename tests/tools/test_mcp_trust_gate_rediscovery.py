@@ -112,7 +112,7 @@ def test_reconnect_discovery_of_registered_server_refreshes_read_only_hint():
 
 
 def test_reconnect_omitted_tool_does_not_reuse_cached_read_only_hint():
-    """A reconnect can omit a tool while Hermes still exposes its registered handler."""
+    """A reconnect can omit a tool while slave-agent still exposes its registered handler."""
     task = _install(_server())
     new = _session(read_only=False)
     new.list_tools.return_value = SimpleNamespace(
@@ -155,9 +155,9 @@ def test_recycled_wake_with_unchanged_hint_never_asks():
 
 def test_recheck_with_no_trust_record_reads_the_configured_tier():
     """The post-acquire re-check resolves a missing record like the gate does (#153706), not as ``full``."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
-    (get_hermes_home() / "config.yaml").write_text(json.dumps({"mcp_servers": {"srv": UNTRUSTED}}))  # JSON is YAML
+    (get_slave_home() / "config.yaml").write_text(json.dumps({"mcp_servers": {"srv": UNTRUSTED}}))  # JSON is YAML
     task = _install(_server())
     new = _session(read_only=False)
 

@@ -5,9 +5,9 @@ sha: 9cf8cf3a7677661a938a0ee114b734e803fc33a7
 description: >-
   Autonomous website accessibility testing and repair verification. Scans pages in a real headless
   Chromium with the axe-core engine, stores evidence-backed scans, and compares before/after scans
-  (resolved / remaining / newly introduced) so Hermes can prove its fixes in the rendered page.
+  (resolved / remaining / newly introduced) so slave-agent can prove its fixes in the rendered page.
   Disclosure: launches a local headless Chromium (Playwright) in an isolated subprocess; network access is
-  limited to loopback and origins a human authorises with `hermes a11y allow`; `hermes a11y install`
+  limited to loopback and origins a human authorises with `slave a11y allow`; `slave a11y install`
   downloads Playwright's Chromium from Playwright's official CDN on explicit user command; serves a
   user-supplied local .html folder on 127.0.0.1 for the duration of a scan; stores scan history and
   reports locally via plugin storage; never submits forms, collects credentials or sends data off-machine.

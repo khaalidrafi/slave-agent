@@ -10,9 +10,9 @@ class CronExecutionUnknown(RuntimeError):
 
 
 def journal_path(job_id, request_id):
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     key = hashlib.sha256(json.dumps([job_id, request_id]).encode()).hexdigest()
-    return get_hermes_home() / 'cron' / 'admissions' / (key + '.json')
+    return get_slave_home() / 'cron' / 'admissions' / (key + '.json')
 
 
 def _pause_identity(paused):
@@ -54,8 +54,8 @@ def _lift_pause(job_id, pause):
 
 def run_canonical_job(job, *, extra_prompt=None, cancel_event=None, execution_id=None):
     from gateway.session_cron import owner_for_home, operation
-    from hermes_cli.gateway_client import connect_gateway
-    from hermes_constants import get_hermes_home
+    from slave_cli.gateway_client import connect_gateway
+    from slave_constants import get_slave_home
     from storage_user_copy import error_type_name
     from utils import atomic_json_write
 
@@ -64,7 +64,7 @@ def run_canonical_job(job, *, extra_prompt=None, cancel_event=None, execution_id
         request_id = job['execution_id'] = uuid.uuid4().hex
     params = {'job_id': job['id'], 'request_id': request_id,
               'extra_prompt': extra_prompt}
-    root = get_hermes_home() / 'cron' / 'admissions'
+    root = get_slave_home() / 'cron' / 'admissions'
     journal = journal_path(params['job_id'], params['request_id'])
     record = {'params': params, 'receipt': None}
     if journal.exists():
@@ -72,7 +72,7 @@ def run_canonical_job(job, *, extra_prompt=None, cancel_event=None, execution_id
         if record['params'] != params:
             raise CronExecutionUnknown('cron admission identity conflict')
     attempted = journal.exists()
-    owner = owner_for_home(get_hermes_home())
+    owner = owner_for_home(get_slave_home())
 
     def write_journal():
         root.mkdir(parents=True, exist_ok=True)
@@ -90,7 +90,7 @@ def run_canonical_job(job, *, extra_prompt=None, cancel_event=None, execution_id
         try:
             receipt = await call('submit', params)
         except Exception as exc:
-            from hermes_cli.gateway_client import GatewayRPCError
+            from slave_cli.gateway_client import GatewayRPCError
             # A returned owner exception is definite; a transport disconnect is not. Even an
             # owner error after commit must retain the admitted identity, so verify its absence.
             if owner is not None or isinstance(exc, GatewayRPCError):
@@ -159,8 +159,8 @@ def reconcile_pending(*, allow_connect=True):
     live owner instead of ensuring or spawning a gateway.
     """
     from gateway.session_cron import owner_for_home, operation
-    from hermes_constants import get_hermes_home
-    from hermes_cli.gateway_client import connect_gateway
+    from slave_constants import get_slave_home
+    from slave_cli.gateway_client import connect_gateway
     from cron.executions import FIRER_FINISHED_STATES, execution_owner_live, get_execution
     from cron.jobs import get_job, pause_job
     from cron.scheduler import (_RunDelivery, _FireOwnership, _apply_agent_failure_marker,
@@ -169,7 +169,7 @@ def reconcile_pending(*, allow_connect=True):
     from utils import atomic_json_write
     import logging
 
-    root = get_hermes_home() / 'cron' / 'admissions'
+    root = get_slave_home() / 'cron' / 'admissions'
     for journal in sorted(root.glob('*.json')):
         try:
             record = json.loads(journal.read_text(encoding='utf-8-sig'))
@@ -189,7 +189,7 @@ def reconcile_pending(*, allow_connect=True):
             if 'refusal' in record:
                 state = {'status': 'terminal', 'result': record['refusal'], 'job': record['job']}
             else:
-                owner = owner_for_home(get_hermes_home())
+                owner = owner_for_home(get_slave_home())
                 if owner is None and not allow_connect:
                     continue
                 async def observe():

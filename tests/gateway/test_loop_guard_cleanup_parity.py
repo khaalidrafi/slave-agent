@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli._startup_fast import project_root_str
+from slave_cli._startup_fast import project_root_str
 
 
 @pytest.mark.parametrize("alias_import", [False, True], ids=["canonical", "symlink"])
@@ -22,7 +22,7 @@ def test_loop_guard_attributes_storage_calls_to_external_caller(tmp_path, alias_
             pytest.skip(f"Directory symlinks unavailable: {exc}")
         root = alias
     spec = importlib.util.spec_from_file_location(
-        "loop_guard_attribution_probe", root / "hermes_state_loop_guard.py"
+        "loop_guard_attribution_probe", root / "slave_state_loop_guard.py"
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -32,8 +32,8 @@ def test_loop_guard_attributes_storage_calls_to_external_caller(tmp_path, alias_
         caller = FrameSummary(str(root / "gateway/session_authority.py"), 100, function)
         stack = [
             caller,
-            FrameSummary(str(root / "hermes_state.py"), 300, "_read_ctx"),
-            FrameSummary(str(root / "hermes_state_loop_guard.py"), 90, "wrapped"),
+            FrameSummary(str(root / "slave_state.py"), 300, "_read_ctx"),
+            FrameSummary(str(root / "slave_state_loop_guard.py"), 90, "wrapped"),
         ]
         assert module._caller(stack) is caller
         callers.append(module._caller(stack).name)
@@ -44,11 +44,11 @@ def test_loop_guard_attributes_storage_calls_to_external_caller(tmp_path, alias_
         caller,
         FrameSummary(str(root / "persistence/sqlite/conversation/sessions.py"), 680, "get"),
         FrameSummary(str(root / "persistence/sqlite/_holder.py"), 950, "_read_retrying_ioerr"),
-        FrameSummary(str(root / "hermes_state_loop_guard.py"), 90, "_read_ctx"),
+        FrameSummary(str(root / "slave_state_loop_guard.py"), 90, "_read_ctx"),
     ]
     assert module._caller(stack) is caller
     # An unrelated file sharing a storage-module basename or package path remains attributable.
-    foreign = FrameSummary(str(tmp_path / "foreign/hermes_state.py"), 1, "foreign_call")
+    foreign = FrameSummary(str(tmp_path / "foreign/slave_state.py"), 1, "foreign_call")
     assert module._caller([foreign]) is foreign
     foreign = FrameSummary(str(tmp_path / "foreign/persistence/sqlite/_holder.py"), 1, "foreign_call")
     assert module._caller([foreign]) is foreign
@@ -57,9 +57,9 @@ def test_loop_guard_attributes_storage_calls_to_external_caller(tmp_path, alias_
 def test_startup_watchdog_failure_retains_gateway_logger(monkeypatch, caplog):
     from gateway import shutdown_watchdog
     from gateway.run_startup_liveness import start_loop_liveness_guards
-    import hermes_state_loop_guard
+    import slave_state_loop_guard
 
-    monkeypatch.setattr(hermes_state_loop_guard, "install_from_config", lambda cfg: None)
+    monkeypatch.setattr(slave_state_loop_guard, "install_from_config", lambda cfg: None)
 
     def fail_start(*args, **kwargs):
         raise RuntimeError("synthetic watchdog startup failure")

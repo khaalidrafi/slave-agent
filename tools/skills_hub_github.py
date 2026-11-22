@@ -13,7 +13,7 @@ from agent.retry_utils import parse_retry_after_seconds
 from tools.skills_guard import TRUSTED_REPOS
 from tools.skills_hub_models import (
     SkillBundle, SkillMeta, SkillSource, _cache_metas, _cached_metas, _dedupe_by_trust,
-    _hermes_tags, _matches_query, _parse_frontmatter, _referenced_support_paths, hub,
+    _slave_tags, _matches_query, _parse_frontmatter, _referenced_support_paths, hub,
     _validate_bundle_rel_path,
 )
 
@@ -138,7 +138,7 @@ class GitHubAuth:
     def _try_gh_cli(self) -> Optional[str]:
         # Shared with git clones: strips GH_TOKEN/GITHUB_TOKEN, which gh would otherwise echo back
         # instead of its keyring login (the dead .env token would come back as the "gh" credential).
-        from hermes_cli.git_credentials import _gh_cli_token
+        from slave_cli.git_credentials import _gh_cli_token
         return _gh_cli_token()
 
     def _try_github_app(self) -> Optional[str]:
@@ -392,7 +392,7 @@ class GitHubSource(SkillSource):
         if not content:
             return None
         fm = _parse_frontmatter(content)
-        tags = _hermes_tags(fm) or (fm["tags"] if isinstance(fm.get("tags"), list) else [])
+        tags = _slave_tags(fm) or (fm["tags"] if isinstance(fm.get("tags"), list) else [])
         provider = github_provider_for(repo)
         return SkillMeta(
             name=fm.get("name", skill_path.split("/")[-1] or repo.split("/")[-1]),

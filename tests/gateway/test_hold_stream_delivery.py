@@ -98,9 +98,9 @@ CHATS = {
 
 async def _deliver(chat, *, hold, monkeypatch):
     import gateway.run as gateway_run
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     platform = Platform.SLACK if chat.platform == Platform.RELAY else Platform.TELEGRAM
     source = SessionSource(platform=platform, chat_id="c1", chat_type="dm", user_id="u1")
     event = MessageEvent(text="show me the config", source=source, message_type=MessageType.TEXT)
@@ -108,7 +108,7 @@ async def _deliver(chat, *, hold, monkeypatch):
     with FakeLLMServer(redactor_turn(delay_per_chunk=0.03)) as srv:
         redactor_home(home, srv.base_url, hold=hold)
         plugins._reset_plugin_managers_for_tests()
-        monkeypatch.setattr(gateway_run, "_hermes_home", home)
+        monkeypatch.setattr(gateway_run, "_slave_home", home)
         monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {
             "api_key": "sk-fake-e2e", "base_url": srv.base_url, "provider": "custom", "api_mode": "chat_completions"})
         runner = _make_runner(chat)

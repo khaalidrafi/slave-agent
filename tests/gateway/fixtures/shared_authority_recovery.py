@@ -72,7 +72,7 @@ async def prepare_crash(runner, adapter, source, peer):
     assert any(r['status'] == 'started' for r in evidence['blocked'])
     # Published by rename: the parent SIGKILLs this process the moment the file EXISTS, so a plain
     # write_text (create+truncate, then write) could be killed between the two and leave an empty file.
-    ready = Path(os.environ['HERMES_HOME'], 'crash-ready.json')
+    ready = Path(os.environ['SLAVE_HOME'], 'crash-ready.json')
     ready.with_suffix('.tmp').write_text(json.dumps(evidence))
     os.replace(ready.with_suffix('.tmp'), ready)
     # Hold the loop frozen until the parent's SIGKILL; end early if the parent itself went away.
@@ -84,7 +84,7 @@ async def prepare_crash(runner, adapter, source, peer):
 async def recover_probe(runner, adapter, source, peer):
     from gateway.session_contract import SessionRef
     authority = runner.session_authority
-    before = json.loads(Path(os.environ['HERMES_HOME'], 'crash-ready.json').read_text())
+    before = json.loads(Path(os.environ['SLAVE_HOME'], 'crash-ready.json').read_text())
     safe_sid, blocked_sid = before['safe_sid'], before['blocked_sid']
     safe_source = replace(source, chat_id='recover-chat', thread_id='recover-thread')
     binding = (safe_sid, safe_source, adapter)
@@ -130,5 +130,5 @@ async def recover_probe(runner, adapter, source, peer):
         assert any('LOCAL_ACK' in d['content'] for d in adapter.deliveries)
     evidence = {'safe': safe, 'blocked': blocked, 'model_calls': len(peer.requests),
                 'deliveries': adapter.deliveries, 'recovery': recovered}
-    Path(os.environ['HERMES_HOME'], 'recovery-receipt.json').write_text(json.dumps(evidence, indent=2))
+    Path(os.environ['SLAVE_HOME'], 'recovery-receipt.json').write_text(json.dumps(evidence, indent=2))
     print(json.dumps(evidence))

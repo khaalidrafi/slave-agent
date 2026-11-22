@@ -39,8 +39,8 @@ def test_staleness(state, snapshot, stale):
 
 @pytest.fixture
 def wired(monkeypatch):
-    import hermes_cli.models_pricing as mp
-    import hermes_cli.nous_account as na
+    import slave_cli.models_pricing as mp
+    import slave_cli.nous_account as na
     calls = []
     box = {"snap": _snap(None)}
     monkeypatch.setattr(na, "cached_nous_portal_account_info", lambda any_age=False: box["snap"])
@@ -81,7 +81,7 @@ def test_a_mismatch_the_refresh_did_not_fix_retries(wired, monkeypatch):
     """A refresh that read a lagging portal (same stale gauges back) or a failed fetch reported as
     ``source="error"`` must not end re-syncing for that mismatch: an error rearms at once, a lag after the
     retry interval."""
-    import hermes_cli.nous_account as na
+    import slave_cli.nous_account as na
     calls, box = wired
     box["snap"] = ON_PLAN
     monkeypatch.setattr(na, "get_nous_portal_account_info",
@@ -108,18 +108,18 @@ def test_back_in_step_rearms(wired):
 
 
 def test_each_profile_refreshes_its_own_account_under_its_own_home(wired, tmp_path, monkeypatch):
-    """One process, two profiles: the refresh runs with the asking profile's Hermes home, and one
+    """One process, two profiles: the refresh runs with the asking profile's slave-agent home, and one
     profile's pending mismatch never blocks another's."""
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
-    import hermes_cli.nous_account as na
+    from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
+    import slave_cli.nous_account as na
     homes = []
-    monkeypatch.setattr(na, "get_nous_portal_account_info", lambda force_fresh=False: homes.append(str(get_hermes_home())))
+    monkeypatch.setattr(na, "get_nous_portal_account_info", lambda force_fresh=False: homes.append(str(get_slave_home())))
     for name in ("a", "b"):
-        token = set_hermes_home_override(tmp_path / name)
+        token = set_slave_home_override(tmp_path / name)
         try:
             assert sync.sync_plan_snapshot(_state(True)) is True
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
     assert homes == [str(tmp_path / "a"), str(tmp_path / "b")]
 
 
@@ -132,14 +132,14 @@ def test_an_ordinary_reply_costs_nothing(wired):
 
 
 def test_never_raises(monkeypatch):
-    import hermes_cli.nous_account as na
+    import slave_cli.nous_account as na
     monkeypatch.setattr(na, "cached_nous_portal_account_info", lambda any_age=False: 1 / 0)
     assert sync.sync_plan_snapshot(_state(True)) is False
 
 
 def test_a_non_window_reply_without_a_window_snapshot_reads_nothing(monkeypatch):
     """Every other account: no snapshot read (no auth-state lookup) on any reply."""
-    import hermes_cli.nous_account as na
+    import slave_cli.nous_account as na
     monkeypatch.setattr(na, "_account_info_cache", None)
     monkeypatch.setattr(na, "cached_nous_portal_account_info", lambda any_age=False: 1 / 0)
     assert sync.sync_plan_snapshot(_state(False)) is False

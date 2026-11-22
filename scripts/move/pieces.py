@@ -60,7 +60,7 @@ def _collect(node: cst.CSTNode, pieces: list[_Piece]) -> bool:
                     return False
                 pieces.append(_Piece(part, part.value, text, offsets, quote, True))
             else:
-                marker = f"__hermes_fexpr_{len(pieces)}__"
+                marker = f"__slave_fexpr_{len(pieces)}__"
                 pieces.append(_Piece(part, "", marker, None, quote, True))
         return True
     return False

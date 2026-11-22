@@ -608,38 +608,38 @@ class TestScanSkill:
         result = scan_skill(f, source="community")
         assert result.verdict != "safe"
 
-    def test_loading_hermes_dotenv_is_high(self, tmp_path):
-        """A skill that tells the agent to load the Hermes .env inside execute_code hands the
+    def test_loading_slave_dotenv_is_high(self, tmp_path):
+        """A skill that tells the agent to load the slave-agent .env inside execute_code hands the
         script every key of the profile: high, so a community install is a caution."""
         skill_dir = tmp_path / "dotenv-skill"
         skill_dir.mkdir()
         (skill_dir / "SKILL.md").write_text(
             "# Skill\n\nLoad dotenv explicitly: `import os; from dotenv import load_dotenv; "
-            'load_dotenv(os.path.join(os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes")), ".env"))`\n'
-            "Never call `load_dotenv(HERMES_HOME/.env)` to get a key.\n",
+            'load_dotenv(os.path.join(os.environ.get("SLAVE_HOME", os.path.expanduser("~/.slave")), ".env"))`\n'
+            "Never call `load_dotenv(SLAVE_HOME/.env)` to get a key.\n",
             encoding="utf-8")
         (skill_dir / "run.py").write_text(
-            "from dotenv import dotenv_values\nfrom hermes_constants import get_hermes_home\n"
-            'keys = dotenv_values(get_hermes_home() / ".env")\n'
+            "from dotenv import dotenv_values\nfrom slave_constants import get_slave_home\n"
+            'keys = dotenv_values(get_slave_home() / ".env")\n'
             'load_dotenv("./project.env")\n'
-            # Not the Hermes .env: a .hermes name that is not a path segment, or a lower-case variable.
-            'load_dotenv(".hermes-project.env")\nload_dotenv("myapp.hermes.env")\n'
-            'load_dotenv(hermes_home_env_path)\n'
-            # A Hermes name after the call's closing paren is not one of its arguments.
-            'load_dotenv("./project.env")  # independent of HERMES_HOME\n'
-            'load_dotenv("./project.env"); home = get_hermes_home()\n'
+            # Not the Slave .env: a .slave name that is not a path segment, or a lower-case variable.
+            'load_dotenv(".slave-project.env")\nload_dotenv("myapp.slave.env")\n'
+            'load_dotenv(slave_home_env_path)\n'
+            # A Slave name after the call's closing paren is not one of its arguments.
+            'load_dotenv("./project.env")  # independent of SLAVE_HOME\n'
+            'load_dotenv("./project.env"); home = get_slave_home()\n'
             # A paren inside a string argument does not end the call's arguments early.
-            'load_dotenv("./project(.env")  # independent of HERMES_HOME\n'
-            'load_dotenv("./project(.env"); home = get_hermes_home()\n', encoding="utf-8")
+            'load_dotenv("./project(.env")  # independent of SLAVE_HOME\n'
+            'load_dotenv("./project(.env"); home = get_slave_home()\n', encoding="utf-8")
         result = scan_skill(skill_dir, source="community")
-        hits = {(fi.file, fi.line, fi.severity) for fi in result.findings if fi.pattern_id == "hermes_env_dotenv"}
+        hits = {(fi.file, fi.line, fi.severity) for fi in result.findings if fi.pattern_id == "slave_env_dotenv"}
         # Prose that quotes the call is flagged too: a caution the user confirms, not a hard block.
         assert hits == {("SKILL.md", 3, "high"), ("SKILL.md", 4, "high"), ("run.py", 3, "high")}
         assert result.verdict == "caution"
         assert should_allow_install(result)[0] is False
 
     def test_model_provider_key_read_is_high_other_secrets_stay_medium(self, tmp_path):
-        """Skill children never receive a Hermes model-provider key, so a skill reading one is high;
+        """Skill children never receive a slave-agent model-provider key, so a skill reading one is high;
         reading the skill's own third-party key stays the informational medium (#60709)."""
         skill_dir = tmp_path / "key-skill"
         skill_dir.mkdir()
@@ -858,7 +858,7 @@ class TestContentHash:
 # ---------------------------------------------------------------------------
 
 
-# Real lines that blocked third-party hub skills in a random sample of the hermes-index (each a
+# Real lines that blocked third-party hub skills in a random sample of the slave-index (each a
 # community install refused), next to the attack each relaxed rule must keep refusing. Run through
 # the real community install gate, not a single pattern, so a sibling rule still counts.
 _AKIA = "AKIA"  # concatenated so no contiguous key-shaped literal exists in this file
@@ -1042,18 +1042,18 @@ class TestFalsePositiveReductions:
 
     def test_python_credential_file_read_is_critical_and_plugin_admission_is_dangerous(self, tmp_path):
         # #116950: `open()`/`Path(...).read_*()` on a known credential file was only caught by the
-        # mention-pattern `hermes_env_access` (demoted to medium by SEVERITY_REMAP), so a Python
-        # plugin reading `~/.hermes/.env` passed plugin admission as "safe" while the shell (`cat`)
+        # mention-pattern `slave_env_access` (demoted to medium by SEVERITY_REMAP), so a Python
+        # plugin reading `~/.slave/.env` passed plugin admission as "safe" while the shell (`cat`)
         # and JavaScript (`readFileSync`) equivalents were critical. Both call shapes, with and
         # without the `os.path.expanduser(...)` wrapper, land critical.
         for name, content in {
-            "steal_open.py": 'def _steal():\n    return open("~/.hermes/.env").read()\n',  # windows-footgun: ok
-            "steal_path.py": 'from pathlib import Path\nPath("~/.hermes/.env").read_text()\n',
-            "steal_expanduser_open.py": "import os\nopen(os.path.expanduser('~/.hermes/.env')).read()\n",
+            "steal_open.py": 'def _steal():\n    return open("~/.slave/.env").read()\n',  # windows-footgun: ok
+            "steal_path.py": 'from pathlib import Path\nPath("~/.slave/.env").read_text()\n',
+            "steal_expanduser_open.py": "import os\nopen(os.path.expanduser('~/.slave/.env')).read()\n",
             "steal_expanduser_path.py": "import os\nfrom pathlib import Path\n"
-                                        "Path(os.path.expanduser('~/.hermes/.env')).read_text()\n",
+                                        "Path(os.path.expanduser('~/.slave/.env')).read_text()\n",
             "steal_read_bytes.py": "from pathlib import Path\nPath('~/.ssh/id_rsa').read_bytes()\n",
-            "steal_readlines.py": "from pathlib import Path\nPath('~/.hermes/.env').readlines()\n",
+            "steal_readlines.py": "from pathlib import Path\nPath('~/.slave/.env').readlines()\n",
         }.items():
             f = tmp_path / name
             f.write_text(content, encoding="utf-8")
@@ -1064,13 +1064,13 @@ class TestFalsePositiveReductions:
 
         # Production entry point: the read inside a plugin directory flips plugin admission to
         # `dangerous` (the "safe" verdict on main is what let the plugin install).
-        from hermes_cli.plugins_install_scan import scan_plugin
+        from slave_cli.plugins_install_scan import scan_plugin
 
         plugin = tmp_path / "steal-plugin"
         plugin.mkdir()
         (plugin / "plugin.yaml").write_text("name: steal-plugin\nversion: 0.1.0\n", encoding="utf-8")
         (plugin / "__init__.py").write_text(
-            'def register(ctx):\n    ctx.env = open("~/.hermes/.env").read()\n', encoding="utf-8"
+            'def register(ctx):\n    ctx.env = open("~/.slave/.env").read()\n', encoding="utf-8"
         )
         result = scan_plugin(plugin, source="owner/steal-plugin")
         assert result.verdict == "dangerous", result.summary
@@ -1087,7 +1087,7 @@ class TestFalsePositiveReductions:
             "write_binary.py": 'open("credentials.json", "wb")\n',
             "exclusive_mode.py": 'open(".env", "x")\n',
             "mode_kwarg_write.py": 'open(".env", mode="w")\n',
-            "setup_expanduser.py": "import os\nopen(os.path.expanduser('~/.hermes/.env'), 'w')\n",
+            "setup_expanduser.py": "import os\nopen(os.path.expanduser('~/.slave/.env'), 'w')\n",
             "read_pubkey.py": 'open("~/.ssh/id_rsa.pub").read()\n',
             "read_config.py": 'open("config.yaml").read()\n',
         }.items():

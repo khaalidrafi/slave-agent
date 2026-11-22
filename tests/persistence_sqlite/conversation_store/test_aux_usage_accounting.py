@@ -330,7 +330,7 @@ class TestAmbientAccountingContext:
 
 class TestAnalyticsAuxRows:
     def test_aux_usage_rows_and_merge(self, db):
-        from hermes_cli.web_server_profiles import _aux_task_summary, _aux_usage_rows, _merge_aux_into_by_model
+        from slave_cli.web_server_profiles import _aux_task_summary, _aux_usage_rows, _merge_aux_into_by_model
 
         create_session(db, "s1", source="cli")
         update_token_counts(
@@ -374,7 +374,7 @@ class TestAnalyticsAuxRows:
 
 class TestInsightsAuxTotals:
     def test_overview_totals_include_aux_usage(self, db):
-        """`hermes insights` overview must count aux tokens, not just the
+        """`slave insights` overview must count aux tokens, not just the
         sessions counters (issues #58592, #9979)."""
         from agent.insights import InsightsEngine
 

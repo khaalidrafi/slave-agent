@@ -127,7 +127,7 @@ async def test_plain_exception_still_notifies_without_propagating():
 async def test_turn_exception_text_stays_in_log_not_chat(tmp_path, monkeypatch, caplog, suppressed):
     """Exception text can carry provider credentials (#38012): the traceback stays
     server-side and chat gets only a generic notice, whatever the warning policy."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         f"display: {{suppress_warning_notifications: {str(suppressed).lower()}}}")
     secret = "sk-proj-" + "A1b2C3d4E5f6G7h8I9j0" * 2

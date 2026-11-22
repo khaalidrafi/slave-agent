@@ -1,4 +1,4 @@
-"""Emit ``hermes.compaction`` records as NeMo Relay marks on the owning session's scope stack.
+"""Emit ``slave.compaction`` records as NeMo Relay marks on the owning session's scope stack.
 
 The mark goes under the live turn of the same session when there is one, else under that session's
 scope (gateway hygiene and other out-of-turn compactions), else under the live turn the compacting agent
@@ -19,7 +19,7 @@ from agent import relay_runtime
 
 logger = logging.getLogger(__name__)
 
-COMPACTION_DATA_SCHEMA = {"name": "hermes.compaction", "version": "1"}
+COMPACTION_DATA_SCHEMA = {"name": "slave.compaction", "version": "1"}
 # Marks are observability: after one stalled publish, stop waiting on Relay for the rest of the process
 # so a wedged pipeline costs one bounded timeout, not one per compaction under the compression lease.
 _stalled = False

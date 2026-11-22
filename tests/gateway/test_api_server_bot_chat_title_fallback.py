@@ -2,7 +2,7 @@
 
 ``GET /api/sessions?title=Bot+Chat`` lists a reset lineage as its latest, untitled segment, so a
 fallback returns the titled root. It must not resurrect a deliberately archived Bot Chat into
-``hermes peer dm`` routing, nor answer a ``source=`` query the row does not match."""
+``slave peer dm`` routing, nor answer a ``source=`` query the row does not match."""
 import json
 import sqlite3
 from types import SimpleNamespace

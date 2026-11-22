@@ -1,6 +1,6 @@
 name: house-rules
 title: House Rules
-repo: https://github.com/AIverflow/hermes-house-rules
+repo: https://github.com/AIverflow/slave-house-rules
 sha: 54194a4c402a04cfcefe894c8dd3cbd1612e13ac
 version: "0.2.0"
 description: >-
@@ -20,7 +20,7 @@ description: >-
 maintainer: AIverflow
 tier: community
 category: general
-docs_url: https://github.com/AIverflow/hermes-house-rules#readme
+docs_url: https://github.com/AIverflow/slave-house-rules#readme
 readme: true
 known_issues:
   - "Not a security boundary: aliases, scripts, variables and other programs with the same effect are not seen."

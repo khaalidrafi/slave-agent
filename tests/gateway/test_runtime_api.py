@@ -12,11 +12,11 @@ from websockets.exceptions import InvalidStatus
 
 @pytest.mark.asyncio
 async def test_http_lifespan_does_not_start_or_stop_runtime_services(monkeypatch):
-    from hermes_cli import web_server as web
+    from slave_cli import web_server as web
     from tui_gateway import methods_groups
 
     calls = []
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
+    monkeypatch.setenv("SLAVE_DESKTOP", "1")
     for name in ("_warm_gateway_module", "_eager_reconcile_own_session_db",
                  "_start_desktop_cron_ticker", "_terminate_desktop_managed_gateway"):
         monkeypatch.setattr(web, name, lambda *a, _name=name, **k: calls.append(_name))
@@ -34,7 +34,7 @@ async def test_http_lifespan_does_not_start_or_stop_runtime_services(monkeypatch
 @pytest.mark.parametrize('shared', [False, True])
 async def test_owner_serves_existing_routes_and_ws_without_signal_ownership(monkeypatch, tmp_path, shared):
     from gateway.run_api import start_gateway_api, stop_gateway_api
-    from hermes_cli import web_server as web
+    from slave_cli import web_server as web
 
     from gateway.run import GatewayRunner
     from gateway.config import GatewayConfig

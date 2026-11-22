@@ -8,7 +8,7 @@ import asyncio
 import pytest
 
 import persistence_assembly
-from hermes_constants import get_hermes_home, hermes_home_key
+from slave_constants import get_slave_home, slave_home_key
 from persistence import ProfileScope, StorageHealth, StorageProbe, StorageState, StoreUnavailable
 from persistence.sqlite import _registry
 from tests.persistence_sqlite.conftest import profile_home
@@ -20,8 +20,8 @@ def test_profile_scope_resolves_a_named_profile_and_a_pinned_home():
     scope = persistence_assembly.profile_scope("alpha")
     assert scope == persistence_assembly.profile_scope(home=home)
     assert (scope.profile_dir, scope.name) == (home.resolve(), "alpha")
-    assert scope.hermes_home_key == hermes_home_key(home)
-    elsewhere = persistence_assembly.profile_scope(home=get_hermes_home() / "not-a-profile")
+    assert scope.slave_home_key == slave_home_key(home)
+    elsewhere = persistence_assembly.profile_scope(home=get_slave_home() / "not-a-profile")
     assert elsewhere.name == "default"
 
 
@@ -30,7 +30,7 @@ def test_handles_on_one_profile_share_a_backend_and_release_on_close():
     scope = persistence_assembly.profile_scope(home=home)
     first = persistence_assembly.open_persistence(scope)
     second = persistence_assembly.open_persistence(ProfileScope(profile_dir=home, name="other-label"))
-    assert first.scope == second.scope and persistence_assembly._shared[scope.hermes_home_key][1] == 2
+    assert first.scope == second.scope and persistence_assembly._shared[scope.slave_home_key][1] == 2
     first.state_meta.set("k", "v")
     assert raw_holder(first) is raw_holder(second)
     first.close()
@@ -101,7 +101,7 @@ def test_reader_is_read_only_owned_and_never_creates():
         with persistence_assembly.open_persistence_reader(target) as reader:
             assert reader.read_only and reader.scope.name == "beta"
             assert reader.state_meta.get("k") == "v"
-    missing = get_hermes_home() / "profiles" / "gamma"
+    missing = get_slave_home() / "profiles" / "gamma"
     with persistence_assembly.open_persistence_reader(missing) as reader:
         with pytest.raises(StoreUnavailable):
             reader.state_meta.get("k")
@@ -132,10 +132,10 @@ def test_close_stores_under_sweeps_and_the_handle_reacquires():
 
 def _record_resolution(monkeypatch) -> list[tuple]:
     """Every provider resolution and process-config read the assembly makes from here on."""
-    import hermes_cli.config
+    import slave_cli.config
 
     calls: list[tuple] = []
-    provider_for_home, load_config_readonly = persistence_assembly._provider_for_home, hermes_cli.config.load_config_readonly
+    provider_for_home, load_config_readonly = persistence_assembly._provider_for_home, slave_cli.config.load_config_readonly
 
     def recorded_provider(home):
         calls.append(("provider", home))
@@ -146,7 +146,7 @@ def _record_resolution(monkeypatch) -> list[tuple]:
         return load_config_readonly(*args, **kwargs)
 
     monkeypatch.setattr(persistence_assembly, "_provider_for_home", recorded_provider)
-    monkeypatch.setattr(hermes_cli.config, "load_config_readonly", recorded_config)
+    monkeypatch.setattr(slave_cli.config, "load_config_readonly", recorded_config)
     return calls
 
 
@@ -156,7 +156,7 @@ def _listing(folder):
 
 def test_opening_reads_no_configuration_and_touches_no_file(monkeypatch):
     calls = _record_resolution(monkeypatch)
-    home = get_hermes_home()
+    home = get_slave_home()
     before = _listing(home)
     handle = persistence_assembly.open_persistence(persistence_assembly.profile_scope())
     with persistence_assembly.open_persistence_reader(home) as reader:
@@ -207,9 +207,9 @@ def test_an_unknown_provider_raises_at_first_use_and_at_ready(monkeypatch):
         with pytest.raises(ValueError, match=unknown):
             reader.state_meta.get("k")
     assert not (home / "state.db").exists()
-    import hermes_cli.config
+    import slave_cli.config
 
-    monkeypatch.setattr(hermes_cli.config, "load_config_readonly", lambda: {"persistence": {"provider": "bogus"}})
+    monkeypatch.setattr(slave_cli.config, "load_config_readonly", lambda: {"persistence": {"provider": "bogus"}})
     with persistence_assembly.open_persistence(persistence_assembly.profile_scope()) as current:
         with pytest.raises(ValueError, match=unknown):
             current.ready()

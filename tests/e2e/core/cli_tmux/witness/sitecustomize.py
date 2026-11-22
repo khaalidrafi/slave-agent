@@ -2,7 +2,7 @@
 
 Loaded as ``sitecustomize`` by every Python process the CLI test spawns (the ``PYTHONPATH`` entry
 for this directory is set only in that test's child env). Appends one JSON line per event to
-``$HERMES_E2E_WITNESS``; never changes behaviour. Events:
+``$SLAVE_E2E_WITNESS``; never changes behaviour. Events:
 
 * ``startup <argv>``         emitted once, at interpreter start, by every instrumented process: the
                              attestation that this pid is witnessed. A spawned CLI with no
@@ -24,7 +24,7 @@ import os
 import sys
 import threading
 
-_PATH = os.environ.get("HERMES_E2E_WITNESS")
+_PATH = os.environ.get("SLAVE_E2E_WITNESS")
 _lock = threading.Lock()
 
 

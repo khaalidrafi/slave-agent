@@ -182,7 +182,7 @@ def _copy_of_current_row(row, held: dict[str, Any]) -> bool:
     mismatch means the row was rewritten after the copy. A copy without one (a bare uid copy, or a
     row-addressed load, which omits the digest by design) may predate any number of rewrites, so the row
     is cloned: a duplicate, never an older instruction in place of the current one."""
-    # Runtime import avoids the transcript_repair -> hermes_state_messages module cycle.
+    # Runtime import avoids the transcript_repair -> slave_state_messages module cycle.
     from persistence.sqlite.conversation._store.transcript_repair import transcript_row_snapshot
 
     snapshot = held.get(DB_ROW_SNAPSHOT)

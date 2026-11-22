@@ -1,6 +1,6 @@
 """The clarify tool's whole question batch for a classic-CLI viewer's turn, in one request.
 
-Main's HermesCLI answered ``clarify_callback(questions)`` with its batch panel: every question shown
+Main's SlaveCLI answered ``clarify_callback(questions)`` with its batch panel: every question shown
 at once, one active, answers revisitable until all are locked, ``{answers: {qid: raw | None},
 outcome}``. The messaging path asks one card per question. For a classic-CLI local viewer the owner
 sends the batch as the existing ``clarify`` server→client request (``ClarifyRequestParams`` →

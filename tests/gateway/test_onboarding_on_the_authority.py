@@ -40,11 +40,11 @@ async def _desktop(tmp_path, monkeypatch, turns):
     from gateway.session_controls import AuthorityConnection
     from tui_gateway import server
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr("agent.onboarding_facts.read_facts", lambda **kw: FACTS)
     (home / ".env").write_text("OPENROUTER_API_KEY=sk-or-test\n", encoding="utf-8")
@@ -136,8 +136,8 @@ async def test_a_rerun_with_no_model_opens_no_chat(tmp_path, monkeypatch):
     """Nothing can run the chat: error 5080 and no row, never a session whose launch policy cannot be
     restored (every later resume of it would answer storage_unavailable)."""
     desktop = await _desktop(tmp_path, monkeypatch, [])
-    (tmp_path / ".hermes" / "config.yaml").write_text("{}\n", encoding="utf-8")
-    (tmp_path / ".hermes" / ".env").write_text("", encoding="utf-8")
+    (tmp_path / ".slave" / "config.yaml").write_text("{}\n", encoding="utf-8")
+    (tmp_path / ".slave" / ".env").write_text("", encoding="utf-8")
     monkeypatch.setattr("gateway.run._resolve_gateway_model", lambda config=None: None)
     try:
         before = {entry.session.session_id for entry in desktop.db.sessions.search_sessions(window=SessionWindow(limit=100))}
@@ -211,17 +211,17 @@ async def test_start_from_a_secondary_profile_claims_in_the_default_home(tmp_pat
     from gateway.session_authorities import SessionAuthorities
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     desktop = await _desktop(tmp_path, monkeypatch, [])
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     work = home / "profiles" / "work"
     work.mkdir(parents=True)
     (work / "config.yaml").write_text("{}\n", encoding="utf-8")  # nothing to run on in the asking profile
     claims = []
 
     def claim(*, assume_fresh):
-        claims.append(Path(get_hermes_home()))
-    monkeypatch.setattr("hermes_cli.welcome_trial.claim_desktop_free_tier", claim)
+        claims.append(Path(get_slave_home()))
+    monkeypatch.setattr("slave_cli.welcome_trial.claim_desktop_free_tier", claim)
     runner = desktop.authority.runner
     runner.config = SimpleNamespace(multiplex_profiles=True)
     secondary = await initialize_session_authority(runner, profile_id=str(work), instance_id="owner",
@@ -233,7 +233,7 @@ async def test_start_from_a_secondary_profile_claims_in_the_default_home(tmp_pat
         "user_id": "uid:1", "provider": "local", "profile_id": str(work), "instance_id": "owner",
         "profile_scope": "host"})
     try:
-        from hermes_cli.process_identity import serving_local_desktop
+        from slave_cli.process_identity import serving_local_desktop
         with serving_local_desktop(True):  # what ws._dispatch_request binds for the declared Desktop socket
             started = await connection.dispatch({"jsonrpc": "2.0", "id": 1, "method": "onboarding.start", "params": {}})
         assert "result" in started, started
@@ -258,8 +258,8 @@ async def test_skip_accepts_the_profile_the_desktop_names(tmp_path, monkeypatch)
 @pytest.mark.asyncio
 async def test_deleting_the_onboarding_chat_from_the_sidebar_ends_the_run(tmp_path, monkeypatch):
     from agent import onboarding_record
-    from hermes_cli.onboarding_run import _root_config
-    from hermes_cli.config import read_user_config_raw
+    from slave_cli.onboarding_run import _root_config
+    from slave_cli.config import read_user_config_raw
     turns, ended = [], []
     desktop = await _desktop(tmp_path, monkeypatch, turns)
     onboarding_record.on_ended(ended.append)
@@ -319,7 +319,7 @@ async def test_a_fresh_launch_deletes_the_chat_the_last_launch_left_with_no_view
 async def test_onboarding_start_from_a_client_that_is_not_the_local_desktop_changes_nothing(tmp_path, monkeypatch):
     """A CLI or TUI holds a native ticket too. Its ``onboarding.start`` is refused before the install
     flag is written, so it never schedules first-run onboarding for the Desktop."""
-    from hermes_cli.onboarding_run import _explicit_run
+    from slave_cli.onboarding_run import _explicit_run
     desktop = await _desktop(tmp_path, monkeypatch, [])
     desktop.transport.desktop_local = False
     try:

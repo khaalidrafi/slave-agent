@@ -1,6 +1,6 @@
 name: workroom
 title: Workroom
-repo: https://github.com/Pratiikpy/workroom-for-hermes
+repo: https://github.com/Pratiikpy/workroom-for-slave
 sha: "4d44e9dc229fd5a89d7973881c6e14dbb083e525"
 description: >-
   Gives the agent a room to work on Word, PowerPoint and Excel files while you
@@ -28,24 +28,24 @@ description: >-
   Subprocesses: a local Python child to build files; the Windows icacls tool once
   for the signing key file; PowerShell only on request on Windows with PowerPoint to
   draw slide pictures, or LibreOffice (soffice) for the same on other systems when
-  it is installed. Starts no scheduled job itself (a user-created Hermes cron job
+  it is installed. Starts no scheduled job itself (a user-created slave-agent cron job
   may run its watch script, which can prepare a release but never approves one).
 maintainer: Pratiikpy
 tier: community
 category: tools
 requires_hermes: ">=0.23.0"
 version: "0.4.0"
-docs_url: https://github.com/Pratiikpy/workroom-for-hermes#readme
+docs_url: https://github.com/Pratiikpy/workroom-for-slave#readme
 readme: true
 platforms: [windows, macos, linux]
-image: https://raw.githubusercontent.com/Pratiikpy/workroom-for-hermes/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/00-hero-change-map.png
+image: https://raw.githubusercontent.com/Pratiikpy/workroom-for-slave/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/00-hero-change-map.png
 screenshots:
-  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-hermes/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/pane-needs-you.png
-  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-hermes/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/pane-made-gallery.png
-  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-hermes/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/pane-figure-proof.png
-  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-hermes/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/05-before-and-after.png
+  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-slave/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/pane-needs-you.png
+  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-slave/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/pane-made-gallery.png
+  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-slave/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/pane-figure-proof.png
+  - https://raw.githubusercontent.com/Pratiikpy/workroom-for-slave/4d44e9dc229fd5a89d7973881c6e14dbb083e525/docs/screenshots/05-before-and-after.png
 known_issues:
-  - "Verified on Windows with the real Hermes Desktop and Office. The test suite passes on Windows, Linux (fresh clone) and in macOS CI; the Hermes Desktop screens were run on Windows only."
+  - "Verified on Windows with the real slave-agent Desktop and Office. The test suite passes on Windows, Linux (fresh clone) and in macOS CI; the slave-agent Desktop screens were run on Windows only."
   - "The safety net reverts files that other plugins' tools wrote inside registered projects, and appends one line to those tool results; this is by design and listed in docs/LIMITS.md."
   - "A plugin that bundles its own copy of the PowerPoint or Word library (paper-pptx, paper-docx) cannot share an environment with python-pptx and python-docx; Workroom then cannot build new decks or reports, while reading, editing and releasing existing files keep working."
   - "Real-model checks (bypass, approve, injection, folder tidy) were run with one model, 3 to 5 runs per case, so they are counts, not rates."

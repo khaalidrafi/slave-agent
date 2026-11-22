@@ -148,7 +148,7 @@ def test_abandoned_cleanup_does_not_clobber_an_unproven_or_live_owner(status, mo
     assert cli.names() == ["msstore submission get 9NTEST"]
 
 
-STORE_FILE = "Store-HermesBundled-2026.6864.2132.0-win.msixbundle"
+STORE_FILE = "Store-SlaveBundled-2026.6864.2132.0-win.msixbundle"
 
 
 class _Api:
@@ -273,7 +273,7 @@ def test_release_is_safe_to_rerun():
 
 
 def test_release_leaves_a_submission_from_another_green_run_alone(capsys):
-    api = _Api(files=["Store-HermesBundled-2026.7000.1.0-win.msixbundle"])
+    api = _Api(files=["Store-SlaveBundled-2026.7000.1.0-win.msixbundle"])
     assert _release(api) == "superseded"
     assert api.writes() == [] and "::warning" in capsys.readouterr().out
 
@@ -357,7 +357,7 @@ def test_release_from_env_releases_the_manifests_store_bundle_with_the_configure
         "MS_STORE_CLIENT_ID": "CLIENT",
         "MS_STORE_CLIENT_SECRET": "SECRET",
     }
-    manifest = {"files": [{"path": "HermesBundled-0.22.0-win.msixbundle"}, {"path": STORE_FILE}]}
+    manifest = {"files": [{"path": "SlaveBundled-0.22.0-win.msixbundle"}, {"path": STORE_FILE}]}
     assert release_from_env(env, manifest, run=api) == "immediate"
     token = next(r for r in api.requests if r["url"].endswith("/token"))
     assert token["form"]["client_id"] == "CLIENT"

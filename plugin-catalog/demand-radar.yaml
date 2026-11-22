@@ -1,5 +1,5 @@
 name: demand-radar
-repo: https://github.com/LeonardIrimia/hermes-demand-radar
+repo: https://github.com/LeonardIrimia/slave-demand-radar
 sha: bd9537ff67d2e463cf9cc0c1d91f1676e7fd93db
 description: >-
   Prove someone wants it before you build it. Searches Stack Exchange, Hacker News and GitHub
@@ -10,13 +10,13 @@ description: >-
   validate-idea skill. No API key needed. Disclosure — each check sends the idea text and its
   phrasings as search queries to api.stackexchange.com, hn.algolia.com and api.github.com;
   check history and HTML reports stay in the plugin's own data folder; an optional read-only
-  GitHub token is read through Hermes's secret route; no shell commands, background processes,
+  GitHub token is read through slave-agent’s secret route; no shell commands, background processes,
   telemetry or Python dependencies.
 maintainer: LeonardIrimia
 tier: community
 category: tools
 requires_hermes: ">=0.21.6"
-docs_url: https://github.com/LeonardIrimia/hermes-demand-radar#readme
+docs_url: https://github.com/LeonardIrimia/slave-demand-radar#readme
 version: "1.0.0"
 platforms: []
 capabilities:

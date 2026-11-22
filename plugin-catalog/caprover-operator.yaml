@@ -1,6 +1,6 @@
 name: caprover-operator
 title: CapRover Operator
-repo: https://github.com/fmercurio/hermes-caprover-operator
+repo: https://github.com/fmercurio/slave-caprover-operator
 sha: 1d813b6e23c88c8641f8c891b46c2ae3f065e890
 description: >-
   Read-only setup diagnostics and human-approved, state-bound immutable-image
@@ -19,7 +19,7 @@ maintainer: fmercurio
 tier: community
 category: tools
 requires_hermes: ">=0.22.6"
-docs_url: https://github.com/fmercurio/hermes-caprover-operator#readme
+docs_url: https://github.com/fmercurio/slave-caprover-operator#readme
 version: "0.3.1"
 platforms: [linux, macos]
 known_issues:

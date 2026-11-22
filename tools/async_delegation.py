@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from hermes_constants import get_hermes_home, hermes_home_key
+from slave_constants import get_slave_home, slave_home_key
 from persistence.authority.coordination import (
     DELEGATION_CLAIM_STALE_SECONDS, DELEGATION_MAX_DELIVERY_ATTEMPTS, DELEGATION_ORPHAN_STALE_SECONDS,
     DELEGATION_REPLAY_MAX_AGE_SECONDS, OwnerStamp,
@@ -147,7 +147,7 @@ def _capture_routing_origin() -> dict[str, Any]:
     Best-effort: empty values are omitted."""
     try:
         from gateway.session_context import get_session_env
-        return {k: v for k in _ROUTING_KEYS if (v := get_session_env(f"HERMES_SESSION_{k.upper()}", ""))}
+        return {k: v for k in _ROUTING_KEYS if (v := get_session_env(f"SLAVE_SESSION_{k.upper()}", ""))}
     except Exception:
         return {}
 
@@ -357,7 +357,7 @@ def _offer_pending(completions, target_queue, *, startup: bool = False) -> int:
     """Put each pending completion's event on ``target_queue`` stamped ``restored`` (the store already dropped
     rows past ``_MAX_COMPLETION_REPLAY_AGE_S``). Records the offer so the orphan sweep skips the row until the
     copy is handed back (``return_completion_offer``)."""
-    home, restored = hermes_home_key(get_hermes_home()), 0
+    home, restored = slave_home_key(get_slave_home()), 0
     for completion in completions:
         delegation_id = completion.delegation_id
         with _orphan_lock:
@@ -484,7 +484,7 @@ def sweep_orphaned_completions(target_queue, *, now: Optional[float] = None) -> 
         return 0  # never create a ledger just to sweep it
     recover_abandoned_delegations()
     now = time.time() if now is None else now
-    home = hermes_home_key(get_hermes_home())
+    home = slave_home_key(get_slave_home())
     from tools.process_registry import process_registry
     live = _queued_completion_ids(target_queue, process_registry.completion_queue)
     with _orphan_lock:
@@ -512,7 +512,7 @@ def sweep_orphaned_completions(target_queue, *, now: Optional[float] = None) -> 
 def maybe_sweep_orphaned_completions(target_queue, *, now: Optional[float] = None) -> int:
     """``sweep_orphaned_completions`` at most once per ``ORPHAN_SWEEP_INTERVAL_S`` per home (``now`` is
     monotonic), for delivery loops that tick far more often. Never raises into the loop."""
-    home = hermes_home_key(get_hermes_home())
+    home = slave_home_key(get_slave_home())
     now = time.monotonic() if now is None else now
     with _orphan_lock:
         last = _last_orphan_sweep.get(home)
@@ -714,7 +714,7 @@ def _get_executor(max_workers: int) -> ThreadPoolExecutor:
 def active_count(*, home: Optional[Path] = None) -> int:
     """Number of live async delegation UNITS (one per completion message: a task group or an ungrouped task);
     *home*: only the ones that profile dispatched."""
-    key = hermes_home_key(home) if home is not None else None
+    key = slave_home_key(home) if home is not None else None
     with _records_lock:
         return sum(1 for r in _records.values() if r.get("status") in _LIVE_STATES
                    and (key is None or r.get("_home") == key))
@@ -765,15 +765,15 @@ def _prune_completed_locked() -> None:
 
 
 def _current_origin_session_id() -> str:
-    """Raw session id of the ORIGINATING api_server request, or ``""``. ``HERMES_SESSION_ID``
+    """Raw session id of the ORIGINATING api_server request, or ``""``. ``SLAVE_SESSION_ID``
     is unsafe here: building the child agent calls ``set_current_session_id(child.session_id)``
     just before dispatch, so the wake would self-post into the subagent's own session. The
-    request-scoped ``HERMES_SESSION_CHAT_ID`` (raw X-Hermes-Session-Id on api_server) survives
+    request-scoped ``SLAVE_SESSION_CHAT_ID`` (raw X-Slave-Session-Id on api_server) survives
     child construction; on push platforms chat_id is a chat, not a session => ``""``."""
     try:
         from gateway.session_context import get_session_env
-        is_api = get_session_env("HERMES_SESSION_PLATFORM", "") == "api_server"
-        return (get_session_env("HERMES_SESSION_CHAT_ID", "") or "") if is_api else ""
+        is_api = get_session_env("SLAVE_SESSION_PLATFORM", "") == "api_server"
+        return (get_session_env("SLAVE_SESSION_CHAT_ID", "") or "") if is_api else ""
     except Exception:
         return ""
 
@@ -794,7 +794,7 @@ def _batch_status(combined: dict[str, Any]) -> str:
 
 
 def _dispatch(**kwargs) -> dict[str, Any]:
-    from hermes_cli.backend_retirement import retirement
+    from slave_cli.backend_retirement import retirement
 
     with retirement.work() as admitted:
         if not admitted:
@@ -840,7 +840,7 @@ def _dispatch_admitted(
         "_context": contextvars.copy_context(),
         # Stale-monitor bookkeeping (see _stale_monitor_loop).
         "_progress_token": None, "_progress_ts": dispatched_at, "_interrupted_at": None,
-        "_home": hermes_home_key(get_hermes_home())}  # the profile that dispatched it (``active_count(home=...)``)
+        "_home": slave_home_key(get_slave_home())}  # the profile that dispatched it (``active_count(home=...)``)
     with _records_lock:
         if any((field, record[field]) in _refused_by for field in _FENCED_FIELDS):
             return {"status": "rejected", "error": "This session was closed (exit or /new): no new background work."}
@@ -877,7 +877,7 @@ def _dispatch_admitted(
         finally:
             _finalize(delegation_id, result, status)
 
-    from hermes_cli.backend_retirement import retirement
+    from slave_cli.backend_retirement import retirement
 
     # The outer dispatch reservation prevents a freeze during this handoff. Retain a worker
     # reservation too: the stall monitor may finalize its registry record before it really exits.

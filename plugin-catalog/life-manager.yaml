@@ -2,14 +2,14 @@ name: life-manager
 title: Life Manager
 repo: https://github.com/Daisuke134/life-manager
 sha: 722bc06474c30aeb9437384cb14db20e544c4823
-subdir: hermes-plugin
+subdir: slave-plugin
 version: "1.0.0"
-description: "Records commitments a person states, keeps habit streaks, and injects the board before each turn. A daily Automation Blueprint runs an unattended check-in. Disclosure: no network, no credentials, no shell. Stores commitment text, due dates, streaks, nudged session ids, and the last check-in id in the active Hermes profile plugin state only."
+description: "Records commitments a person states, keeps habit streaks, and injects the board before each turn. A daily Automation Blueprint runs an unattended check-in. Disclosure: no network, no credentials, no shell. Stores commitment text, due dates, streaks, nudged session ids, and the last check-in id in the active slave-agent profile plugin state only."
 maintainer: Daisuke134
 tier: community
 category: automation
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/Daisuke134/life-manager/tree/main/hermes-plugin
+docs_url: https://github.com/Daisuke134/life-manager/tree/main/slave-plugin
 readme: true
 platforms: []
 capabilities:

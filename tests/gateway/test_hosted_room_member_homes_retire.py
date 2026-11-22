@@ -5,7 +5,7 @@ from persistence_assembly import open_persistence, profile_scope
 
 
 def test_disband_forgets_the_rooms_member_homes(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     with open_persistence(profile_scope(home=tmp_path)) as db:
         gateway_id = hosted_rooms.local_authority_gateway_id()
         for room_id in ('room', 'other'):

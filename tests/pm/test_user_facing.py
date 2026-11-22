@@ -1,4 +1,4 @@
-"""The terminal runs the user's own tools first and Hermes's after them (pm.user_facing)."""
+"""The terminal runs the user's own tools first and slave-agent’s after them (pm.user_facing)."""
 from __future__ import annotations
 
 import os
@@ -8,7 +8,7 @@ import pm.user_facing
 from pm.user_facing import user_facing_path
 
 
-def test_user_tools_come_before_hermes_and_python_stops_at_the_store_stub(tmp_path, monkeypatch):
+def test_user_tools_come_before_slave_and_python_stops_at_the_store_stub(tmp_path, monkeypatch):
     npm, node, python, rg = (str(tmp_path / "store" / name) for name in ("npm", "node", "python", "rg"))
     stub = tmp_path / "AppData" / "Local" / "Microsoft" / "WindowsApps"
     stub.mkdir(parents=True)

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -13,8 +13,8 @@ import { useSessionLifecycle } from '../app/useSessionLifecycle.js'
 
 it('branch hydration replaces source authority only after a successful destination attachment', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-slash-branch-'))
-  vi.stubEnv('HERMES_HOME', home)
-  vi.stubEnv('HERMES_TUI_ACTIVE_SESSION_FILE', join(home, 'active'))
+  vi.stubEnv('SLAVE_HOME', home)
+  vi.stubEnv('SLAVE_TUI_ACTIVE_SESSION_FILE', join(home, 'active'))
   resetUiState()
 
   const source = { model: 'test', skills: {}, tools: {}, stored_session_id: 'stored-source',

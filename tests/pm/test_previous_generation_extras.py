@@ -14,7 +14,7 @@ from pm.environments import install_state_dir, runtime_facts_path
 from pm.lock import Facts
 import pytest
 
-from tests.hermes_cli import test_first_generation_carries_legacy_extras as _legacy
+from tests.slave_cli import test_first_generation_carries_legacy_extras as _legacy
 
 
 # The pre-PM carry suite's tree and real PM sync wiring, past its migration.
@@ -23,7 +23,7 @@ legacy_tree = pytest.fixture(_legacy.legacy_tree.__wrapped__)
 
 # Real-shaped extras: an SDK extra names its package; ``vision`` is the empty alias it is upstream.
 PYPROJECT = (
-    '[project]\nname="hermes-agent"\nversion="1"\ndependencies=["Pillow==12.0.0"]\n'
+    '[project]\nname="slave-agent"\nversion="1"\ndependencies=["Pillow==12.0.0"]\n'
     '[project.optional-dependencies]\nall=[]\ntelegram=["python-telegram-bot==22.8"]\n'
     'discord=["discord.py==2.6.4"]\nfal=["fal-client==0.14.1"]\nslack=["slack-sdk==3.45.0"]\nvision=[]\n')
 

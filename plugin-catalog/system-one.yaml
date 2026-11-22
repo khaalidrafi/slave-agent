@@ -1,5 +1,5 @@
 name: system-one
-repo: https://github.com/salismt/hermes-system-one
+repo: https://github.com/salismt/slave-system-one
 sha: 9a48299c73db92e7cb175b23af24dc4315afd49a
 title: System One decision models
 description: >-
@@ -20,7 +20,7 @@ maintainer: salismt
 tier: community
 category: tools
 requires_hermes: ">=0.23"
-docs_url: https://github.com/salismt/hermes-system-one#readme
+docs_url: https://github.com/salismt/slave-system-one#readme
 version: "0.4.1"
 platforms: []
 capabilities:

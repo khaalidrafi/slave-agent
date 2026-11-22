@@ -4,11 +4,11 @@ repo: https://github.com/mojomast/hyperrizz
 sha: 35c482e22413ee43c74955bd6da7fe7b053cdd9b
 subdir: ""
 description: >-
-  Hyperrizz: tell Hermes the story and watch your HyperFrames film take shape in
-  a live review pane, then get a verified MP4. Hermes researches, art-directs,
+  Hyperrizz: tell slave-agent the story and watch your HyperFrames film take shape in
+  a live review pane, then get a verified MP4. slave-agent researches, art-directs,
   writes the scenes, builds, checks and iterates on a HyperFrames project while
   the pane plays the actual composition with sound, a scrubber and frame
-  stepping. Pause on a moment, write a note and press Iterate with Hermes: the
+  stepping. Pause on a moment, write a note and press Iterate with slave-agent: the
   note carries the project, revision and exact frame back into the chat. Full
   editor opens HyperFrames Studio inside the pane (timeline, assets, code,
   layers, inspector), and the agent reconciles your manual edits before it
@@ -19,9 +19,9 @@ description: >-
   Studio) and hyperrizz_produce (build, check, render, inspect jobs, cancel),
   plus the hyperrizz:production skill with its guides, a broadcast kit and
   starter templates. Use it for product promos, release announcements, music-led
-  cuts, and restyling or rescuing an existing film. To start, you need Hermes
+  cuts, and restyling or rescuing an existing film. To start, you need slave-agent
   0.23.0 or newer, Node 22 or newer, Python 3.11 or newer and FFmpeg; Linux is
-  the tested platform. Run hermes plugins install hyperrizz and hermes plugins
+  the tested platform. Run slave plugins install hyperrizz and slave plugins
   enable hyperrizz, enable Hyperrizz under Capabilities → Plugins to show the
   pane, then ask: "Use Hyperrizz to make a 30-second film about this release.
   Show the live project as you work, then deliver the MP4." The first build
@@ -46,7 +46,7 @@ docs_url: https://github.com/mojomast/hyperrizz#readme
 version: "2.1.0"
 image: https://raw.githubusercontent.com/mojomast/hyperrizz/35c482e22413ee43c74955bd6da7fe7b053cdd9b/docs/assets/hyperrizz-banner.svg
 screenshots:
-  - https://raw.githubusercontent.com/mojomast/hyperrizz/35c482e22413ee43c74955bd6da7fe7b053cdd9b/docs/assets/hermes-review-pane.png
+  - https://raw.githubusercontent.com/mojomast/hyperrizz/35c482e22413ee43c74955bd6da7fe7b053cdd9b/docs/assets/slave-review-pane.png
   - https://raw.githubusercontent.com/mojomast/hyperrizz/35c482e22413ee43c74955bd6da7fe7b053cdd9b/docs/assets/hyperframes-studio.jpg
   - https://raw.githubusercontent.com/mojomast/hyperrizz/35c482e22413ee43c74955bd6da7fe7b053cdd9b/docs/examples/broadcast-lab.png
 readme: true

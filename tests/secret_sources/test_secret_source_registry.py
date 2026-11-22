@@ -96,9 +96,9 @@ class TestRegistration:
         assert reg.register_source(object()) is False
 
     def test_same_name_is_isolated_by_profile(self, tmp_path):
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from slave_constants import (
+            reset_slave_home_override,
+            set_slave_home_override,
         )
 
         home_a = str((tmp_path / "secrets-a").resolve())
@@ -108,7 +108,7 @@ class TestRegistration:
         assert reg.register_source(source_a, scope=home_a)
         assert reg.register_source(source_b, scope=home_b)
 
-        token = set_hermes_home_override(home_a)
+        token = set_slave_home_override(home_a)
         try:
             assert reg.get_source("profile_secret") is source_a
             explicit_b_env = {}
@@ -120,12 +120,12 @@ class TestRegistration:
             assert report.sources[0].result.secrets == {"B": "b"}
             assert explicit_b_env == {"B": "b"}
         finally:
-            reset_hermes_home_override(token)
-        token = set_hermes_home_override(home_b)
+            reset_slave_home_override(token)
+        token = set_slave_home_override(home_b)
         try:
             assert reg.get_source("profile_secret") is source_b
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
 
     def test_a_later_source_cannot_take_a_registered_name_or_scheme(self, tmp_path):
         home = str((tmp_path / "secrets-a").resolve())
@@ -174,39 +174,39 @@ class TestApplyAll:
         assert report.provenance["API_KEY"].overrode_env is False
 
     def test_launch_only_key_is_protected_from_sources(self, tmp_path):
-        """A user-configured source supplying HERMES_MANAGED_DIR is skipped (#135200): the
+        """A user-configured source supplying SLAVE_MANAGED_DIR is skipped (#135200): the
         managed scope's directory is a launch-environment decision, not user policy."""
         reg.register_source(
             _make_source(
                 name="vaulty",
-                secrets={"HERMES_MANAGED_DIR": "/user/controlled", "A": "1"},
+                secrets={"SLAVE_MANAGED_DIR": "/user/controlled", "A": "1"},
             )
         )
-        env = {"HERMES_MANAGED_DIR": "/launch/admin"}
+        env = {"SLAVE_MANAGED_DIR": "/launch/admin"}
         report = reg.apply_all({"vaulty": {"enabled": True}}, tmp_path, environ=env)
-        assert env["HERMES_MANAGED_DIR"] == "/launch/admin"
+        assert env["SLAVE_MANAGED_DIR"] == "/launch/admin"
         assert env["A"] == "1"  # control: the source's other secrets still apply
-        assert "HERMES_MANAGED_DIR" in report.sources[0].skipped_protected
+        assert "SLAVE_MANAGED_DIR" in report.sources[0].skipped_protected
 
     def test_launch_only_key_not_set_by_source_without_launch_value(self, tmp_path):
         """Same skip when the launch environment never set the key: a secret source must
         not introduce it either."""
         reg.register_source(
-            _make_source(name="vaulty", secrets={"HERMES_MANAGED_DIR": "/user/controlled"})
+            _make_source(name="vaulty", secrets={"SLAVE_MANAGED_DIR": "/user/controlled"})
         )
         env: dict = {}
         reg.apply_all({"vaulty": {"enabled": True}}, tmp_path, environ=env)
-        assert "HERMES_MANAGED_DIR" not in env
+        assert "SLAVE_MANAGED_DIR" not in env
 
     def test_launch_only_key_protected_in_any_case(self, tmp_path):
-        """Windows env names are case-insensitive: ``hermes_managed_dir`` from a source would
-        set ``HERMES_MANAGED_DIR`` there."""
+        """Windows env names are case-insensitive: ``slave_managed_dir`` from a source would
+        set ``SLAVE_MANAGED_DIR`` there."""
         reg.register_source(_make_source(
-            name="vaulty", secrets={"hermes_managed_dir": "/user/controlled", "Hermes_Home": "/x"}))
+            name="vaulty", secrets={"slave_managed_dir": "/user/controlled", "Slave_Home": "/x"}))
         env: dict = {}
         report = reg.apply_all({"vaulty": {"enabled": True}}, tmp_path, environ=env)
         assert env == {}
-        assert set(report.sources[0].skipped_protected) == {"hermes_managed_dir", "Hermes_Home"}
+        assert set(report.sources[0].skipped_protected) == {"slave_managed_dir", "Slave_Home"}
 
 
 

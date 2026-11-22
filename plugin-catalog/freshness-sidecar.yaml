@@ -12,7 +12,7 @@ description: >-
   compute bounded SHA-256 checks (1 MiB cap; symlinks, files outside the workspace and
   credential-looking files are refused). Stores note text, paths and hashes in profile-scoped
   plugin data. Selected notes and status snapshots are added to the user turn sent to the
-  configured model and persist in Hermes history; forgetting a note stops future recall but
+  configured model and persist in slave-agent history; forgetting a note stops future recall but
   does not erase copies already in history. FRESH means matching bytes, not verified truth.
   No network calls, subprocesses, background services, credential access or self-update.
 maintainer: neweraXX

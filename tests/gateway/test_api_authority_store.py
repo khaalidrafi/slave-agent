@@ -15,7 +15,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 
 @pytest.fixture
 def owned_api(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     runner = SimpleNamespace(_draining=False)
     runner.session_authority = SessionAuthority(
@@ -53,13 +53,13 @@ async def test_bound_api_borrows_selected_authority_store(owned_api):
 async def test_bound_api_never_opens_unserved_home(owned_api, tmp_path, monkeypatch):
     adapter, db = owned_api
     other = tmp_path / 'unserved'
-    monkeypatch.setenv('HERMES_HOME', str(other))
+    monkeypatch.setenv('SLAVE_HOME', str(other))
     # Even an explicit override cannot bypass runtime profile selection.
     adapter._session_db = db
     assert adapter._ensure_store() is None
     assert await adapter._ensure_store_async() is None
     assert not (other / 'state.db').exists()
     adapter.gateway_runner.session_authority = None
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     assert adapter._ensure_store() is None
     assert await adapter._ensure_store_async() is None

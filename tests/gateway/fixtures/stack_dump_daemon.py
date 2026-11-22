@@ -2,7 +2,7 @@
 
 No behaviour change: after ``UGW_STACK_DUMP_AFTER`` seconds every OS thread's stack
 (faulthandler), every asyncio task's coroutine stack, the live runtime descriptor and a
-locally answered ``identify`` are appended to ``$HERMES_HOME/logs/stacks.txt`` so a stall
+locally answered ``identify`` are appended to ``$SLAVE_HOME/logs/stacks.txt`` so a stall
 on a runner without SIGUSR2/strace still names the awaiting frame.
 """
 import asyncio
@@ -14,7 +14,7 @@ from pathlib import Path
 import runpy
 import time
 
-path = Path(os.environ['HERMES_HOME']) / 'logs' / 'stacks.txt'
+path = Path(os.environ['SLAVE_HOME']) / 'logs' / 'stacks.txt'
 path.parent.mkdir(parents=True, exist_ok=True)
 delay = float(os.environ.get('UGW_STACK_DUMP_AFTER', '60'))
 _sink = open(path, "w", encoding="utf-8")
@@ -37,7 +37,7 @@ def _describe(sink):
         if isinstance(descriptor, dict):
             sink.write(f'{type(obj).__name__} id={id(descriptor)} running={attrs.get("_running")} '
                        f'draining={attrs.get("_draining")} descriptor={json.dumps(descriptor, default=str)}\n')
-    sink.write(f'pipe={windows_pipe_name(Path(os.environ["HERMES_HOME"]))}\n')
+    sink.write(f'pipe={windows_pipe_name(Path(os.environ["SLAVE_HOME"]))}\n')
     for obj in gc.get_objects():
         if type(obj) is GatewayControlServer:
             reply = obj.handle_request_line(b'{"protocol":1,"id":1,"verb":"identify"}', 'local')

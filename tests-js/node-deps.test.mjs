@@ -99,14 +99,14 @@ test('read-only dependency preparation reuses complete receipts but refuses miss
   expect(() => prepareNodeDependencies({ ...options, install: false })).toThrow(/disabled/)
   expect(existsSync(join(source, 'node_modules'))).toBe(false)
   prepareNodeDependencies(options)
-  const receipt = readFileSync(join(source, 'node_modules/.hermes-node-deps'))
+  const receipt = readFileSync(join(source, 'node_modules/.slave-node-deps'))
   prepareNodeDependencies({ ...options, install: false })
   prepareNodeDependencies(options)
   expect(installs(source)).toBe(1)
   // A removed store slot leaves a dangling workspace link.
   rmSync(webOnly(source), { recursive: true })
   expect(() => prepareNodeDependencies({ ...options, install: false })).toThrow(/disabled/)
-  expect(readFileSync(join(source, 'node_modules/.hermes-node-deps'))).toEqual(receipt)
+  expect(readFileSync(join(source, 'node_modules/.slave-node-deps'))).toEqual(receipt)
   prepareNodeDependencies(options)
   rmSync(join(source, 'web/node_modules/web-only'))
   expect(() => prepareNodeDependencies({ ...options, install: false })).toThrow(/disabled/)
@@ -287,7 +287,7 @@ test('a failed install restores the previously installed trees', () => {
   const { source, env } = fixture()
   const options = { source, workspaces: ['ui-tui', 'web'], reuse: true, env }
   prepareNodeDependencies(options)
-  const receipt = readFileSync(join(source, 'node_modules/.hermes-node-deps'))
+  const receipt = readFileSync(join(source, 'node_modules/.slave-node-deps'))
   const lock = readFileSync(join(source, 'pnpm-lock.yaml'), 'utf8')
   const manifest = readFileSync(join(source, 'web/package.json'))
   json(join(source, 'web/package.json'), { name: 'web', version: '1.0.0',
@@ -305,7 +305,7 @@ test('a failed install restores the previously installed trees', () => {
   }
   expect(createRequire(join(source, 'package.json'))('root-only')).toBe('root-only')
   // The restored receipt still names the old lockfile, so it is never reused for the new one.
-  expect(readFileSync(join(source, 'node_modules/.hermes-node-deps'))).toEqual(receipt)
+  expect(readFileSync(join(source, 'node_modules/.slave-node-deps'))).toEqual(receipt)
   expect(() => prepareNodeDependencies({ ...options, env: dead, install: false })).toThrow(/disabled/)
   expect(existsSync(join(source, '.cache/node-deps-previous'))).toBe(false)
   // Back on the old inputs, the restored install is complete as it was.
@@ -517,7 +517,7 @@ test.skipIf(process.platform === 'win32').each([['failed', 'rc=1'], ['succeeded'
       `while [ ! -s '${dir}/owner.exit' ]; do sleep 0.1; done`,
       // What A left behind, before B goes on: a receipt or a restored tree would be A's.
       `cp web/node_modules/web-only/built '${dir}/after-owner.built'`,
-      `ls node_modules/.hermes-node-deps* > '${dir}/after-owner.receipts' 2>/dev/null; exit 0`].join('; '))
+      `ls node_modules/.slave-node-deps* > '${dir}/after-owner.receipts' 2>/dev/null; exit 0`].join('; '))
     const timing = { ...lockTiming }
     Object.assign(lockTiming, { stale: 1_500 })
     try {
@@ -534,7 +534,7 @@ test.skipIf(process.platform === 'win32').each([['failed', 'rc=1'], ['succeeded'
     expect(readFileSync(join(dir, 'after-owner.receipts'), 'utf8')).toBe('')
     // The tree is the one B built, and only B's toolchain is certified.
     expect(readFileSync(join(source, 'web/node_modules/web-only/built'), 'utf8')).toBe(readFileSync(join(dir, 'takeover.built'), 'utf8'))
-    expect(readFileSync(join(source, 'node_modules/.hermes-node-deps.native-toolchain'), 'utf8')).toMatch(/"second"\n$/)
+    expect(readFileSync(join(source, 'node_modules/.slave-node-deps.native-toolchain'), 'utf8')).toMatch(/"second"\n$/)
     expect(readdirSync(join(source, '.cache'))).toEqual([])
     prepareNodeDependencies({ source, workspaces: ['web'], reuse: true, env, nativeToolchain: 'second', install: false })
     expect(() => prepareNodeDependencies({ source, workspaces: ['web'], reuse: true, env, nativeToolchain: 'third', install: false })).toThrow(/disabled/)
@@ -576,7 +576,7 @@ test.skipIf(process.platform === 'win32')('an owner stopped during its pnpm inst
   expect(existsSync(join(source, 'node_modules/.written-by-the-stopped-pnpm'))).toBe(false)
   // The tree is the one the receipt certifies.
   expect(readFileSync(join(webOnly(source), 'built'), 'utf8')).toBe(built)
-  expect(readFileSync(join(source, 'node_modules/.hermes-node-deps.native-toolchain'), 'utf8')).toMatch(/"second"\n$/)
+  expect(readFileSync(join(source, 'node_modules/.slave-node-deps.native-toolchain'), 'utf8')).toMatch(/"second"\n$/)
   expect(readdirSync(join(source, '.cache'))).toEqual([])
   prepareNodeDependencies({ source, workspaces: ['web'], reuse: true, env, nativeToolchain: 'second', install: false })
 }, 60000)

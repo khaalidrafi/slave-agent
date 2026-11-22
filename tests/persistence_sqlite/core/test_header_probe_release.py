@@ -1,6 +1,6 @@
 """close_all_under releases the cached header-probe fds of the homes it sweeps.
 
-hermes_state_dbfile keeps one O_RDONLY fd per state.db for lock-safe header reads. Without
+slave_state_dbfile keeps one O_RDONLY fd per state.db for lock-safe header reads. Without
 this release a multiplexed gateway keeps one such fd for every profile it has unserved, until
 the process exits. The fd may only close once nothing else in the process has the inode open,
 because closing any descriptor on the file cancels the process's POSIX locks on it.
@@ -140,7 +140,7 @@ def test_hard_link_alias_opened_after_scan_keeps_probe(tmp_path, monkeypatch):
     os.link(db_path, alias)
     _probe(db_path)
     entry = dbfile._HEADER_PROBE_FDS[str(db_path)]
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from slave_cli.sqlite_safe_read import connect_tracked
 
     writers: list = []
     scan = dbfile.inodes_with_other_descriptors
@@ -299,7 +299,7 @@ def test_close_all_under_does_not_block_on_a_held_probe_lock(tmp_path, monkeypat
     call alone would still pass on a tree whose scan blocks."""
     import contextlib
 
-    from hermes_cli import sqlite_safe_read
+    from slave_cli import sqlite_safe_read
 
     home, db_path = _home(tmp_path, "contended")
     _probe(db_path)

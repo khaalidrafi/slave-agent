@@ -1,4 +1,4 @@
-import type { CommandsCatalogResponse } from '@hermes/shared/gateway-types'
+import type { CommandsCatalogResponse } from '@slave-agent/shared/gateway-types'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { GatewayRpc } from '../app/interfaces.js'

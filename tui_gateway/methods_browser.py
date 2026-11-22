@@ -44,7 +44,7 @@ def _cdp_http_reachable(parsed, timeout: float = 2.0) -> bool:
 def _connect_local_default(port: int, system: str, announce) -> str | None:
     """Discover (or launch) the default local debug browser → CDP URL, or None after announcing."""
     from agent.deadline import poll_until
-    from hermes_cli.browser_connect import (
+    from slave_cli.browser_connect import (
         discover_local_cdp_url, find_free_debug_port, launch_chrome_debug, local_port_in_use,
         manual_chrome_debug_command)
 
@@ -87,14 +87,14 @@ def _connect_local_default(port: int, system: str, announce) -> str | None:
 def _reap_profile_browsers() -> None:
     """Close the current profile's browsers only: the live connection is per profile, so other
     profiles' sessions on a multiplexed gateway keep theirs."""
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     from tools.browser_session_lifecycle import cleanup_profile_browsers
-    cleanup_profile_browsers(hermes_home_key())
+    cleanup_profile_browsers(slave_home_key())
 
 
 def _browser_connect(rid, params: dict) -> dict:
     import platform
-    from hermes_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
+    from slave_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
     from tools.browser_session_cdp import set_live_cdp_override
     from urllib.parse import urlparse
     raw_url = params.get("url")

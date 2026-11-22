@@ -7,7 +7,7 @@ description: "Search Bot Shelf (botshelf.dev), a directory of 9,000+ community G
 maintainer: cradrrat
 tier: community
 category: web
-docs_url: https://github.com/cradrrat/bot-shelf-mcp#add-it-to-hermes-agent
+docs_url: https://github.com/cradrrat/bot-shelf-mcp#add-it-to-slave-agent
 requires_hermes: ">=0.23.0"
 readme: true
 platforms: []

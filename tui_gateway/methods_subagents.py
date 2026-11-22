@@ -74,7 +74,7 @@ def _live_work_owners():
     """``(kind, owner candidates)`` for every live top-level child and running background process in this
     process. A child names its durable conversation (``owner_agent_session_id``, the spine completion delivery
     routes by). A process names the conversation that spawned it (``parent_session_id``, from
-    ``HERMES_SESSION_ID``) and its routing ``session_key``, which on the gateway path is a route
+    ``SLAVE_SESSION_ID``) and its routing ``session_key``, which on the gateway path is a route
     (``agent:main:local:dm:...``), never a stored id."""
     from tools.delegate_tool_registry import _active_subagents, _active_subagents_lock
     from tools.process_registry import process_registry
@@ -97,7 +97,7 @@ def _route_namespaces(profile_home):
     from gateway.session import _session_key_namespace
     from gateway.session_authorities import served_profile_name
 
-    own = _session_key_namespace(served_profile_name(profile_home or _hermes_home)).split(":", 1)[1]
+    own = _session_key_namespace(served_profile_name(profile_home or _slave_home)).split(":", 1)[1]
     sole = profile_home is None and not _served_profile_homes
     return {own, "main"} if sole else {own}
 

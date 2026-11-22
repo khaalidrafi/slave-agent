@@ -62,13 +62,13 @@ class GatewayRestartNoticeMixin:
         so the reconnect / send-path-healed replay can deliver it. One lock serializes the boot pass
         against a replay, so the notice cannot go out twice. A ``replay`` only answers the marker the
         boot pass read: a newer one belongs to a /restart this process has not performed yet."""
-        from gateway.run import _hermes_home
+        from gateway.run import _slave_home
         if self._restart_notice_lock is None:
             self._restart_notice_lock = asyncio.Lock()
         if not replay:
             self._note_restart_notice_boot()
         async with self._restart_notice_lock:
-            notify_path = _hermes_home / ".restart_notify.json"
+            notify_path = _slave_home / ".restart_notify.json"
             if not notify_path.exists():
                 return None
             keep = True  # a send cancelled mid-flight (shutdown) is not proof of delivery: keep it

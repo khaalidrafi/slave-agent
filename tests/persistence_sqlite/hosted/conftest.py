@@ -1,4 +1,4 @@
-"""Fixtures for the hosted-room backend tests: one install under the test's HERMES_HOME with a root store and two profile stores, scopes whose folders are those real homes (so ``'shared'`` resolves to the install's root ``shared-state.db``), a fixed wall clock (``clock``, which the modules using it request), and dumps of a file's hosted-room tables."""
+"""Fixtures for the hosted-room backend tests: one install under the test's SLAVE_HOME with a root store and two profile stores, scopes whose folders are those real homes (so ``'shared'`` resolves to the install's root ``shared-state.db``), a fixed wall clock (``clock``, which the modules using it request), and dumps of a file's hosted-room tables."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any, Iterable
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence import ProfileScope
 from persistence.sqlite import SQLiteBackend
 
@@ -39,8 +39,8 @@ def clock(monkeypatch) -> Clock:
 
 @pytest.fixture
 def root() -> Path:
-    """The install root: the test's HERMES_HOME."""
-    home = get_hermes_home()
+    """The install root: the test's SLAVE_HOME."""
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     return home
 
@@ -63,7 +63,7 @@ def scopes(root: Path) -> dict[str, ProfileScope]:
 
 @pytest.fixture
 def backend(scopes):
-    instance = SQLiteBackend({scope.hermes_home_key: scope.profile_dir / "state.db" for scope in scopes.values()})
+    instance = SQLiteBackend({scope.slave_home_key: scope.profile_dir / "state.db" for scope in scopes.values()})
     try:
         yield instance
     finally:

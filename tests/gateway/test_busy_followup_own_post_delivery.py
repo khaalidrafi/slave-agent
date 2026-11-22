@@ -98,7 +98,7 @@ async def test_authority_busy_follow_up_deletes_its_own_progress_bubbles(monkeyp
         await runner._mark_durable_active_turn(event, quick_key)
         if event.text == 'two':
             await asyncio.wait_for(first_task_done.wait(), 5)
-        event._hermes_run_generation = run_generation  # _hmwa_prepare_turn's two stamps
+        event._slave_run_generation = run_generation  # _hmwa_prepare_turn's two stamps
         runner._bind_adapter_run_generation(adapter, key, run_generation)
         if event.text == 'one':
             await gate.wait()
@@ -133,7 +133,7 @@ async def test_busy_follow_up_goal_notice_keeps_its_bubble_cleanup_without_adapt
     adapter = CleanupAdapter()
     runner.adapters = {Platform.TELEGRAM: adapter}
     event = _event("follow-up")
-    event._hermes_run_generation = 7
+    event._slave_run_generation = 7
     notices = []
 
     async def session(*_args, **_kwargs):
@@ -187,7 +187,7 @@ async def test_busy_follow_up_loop_notice_keeps_its_bubble_cleanup_without_adapt
     adapter = CleanupAdapter()
     runner.adapters = {Platform.TELEGRAM: adapter}
     event = _event("tick")
-    event._hermes_run_generation = 7
+    event._slave_run_generation = 7
     notices = []
 
     async def session(*_args, **_kwargs):

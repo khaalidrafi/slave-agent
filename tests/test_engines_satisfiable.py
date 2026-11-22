@@ -1,13 +1,13 @@
 """The manifest's ``engines`` must be satisfiable by a toolchain we can actually ship.
 
 `engineStrict: true` in `pnpm-workspace.yaml` makes `engines` a hard gate on every
-`pnpm install` — the installer's workspace step, `hermes update`'s dependency refresh,
+`pnpm install` — the installer's workspace step, `slave update`'s dependency refresh,
 and CI alike. So a floor nobody's toolchain can meet is not a strict-hygiene win; it
 is a total install outage.
 
 That is exactly what happened once: `engines.npm` was raised to `>=12.0.0` while
 **no Node release bundled npm 12**. Every fresh install died at the first install,
-and `hermes update` left installs in a mixed state. These tests encode the
+and `slave update` left installs in a mixed state. These tests encode the
 invariants that would have caught it.
 
 Deliberately behavioral, not a snapshot: nothing here pins a version we

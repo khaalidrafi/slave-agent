@@ -25,8 +25,8 @@ DM = f"any;-;{PHONE}"
 
 @pytest.fixture(autouse=True)
 def _isolated_sent_index(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    # rich_sent_store writes under HERMES_HOME/state; keep each test's index private.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # rich_sent_store writes under SLAVE_HOME/state; keep each test's index private.
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
 
 
 def _make_adapter(monkeypatch: pytest.MonkeyPatch, **extra: Any) -> PhotonAdapter:

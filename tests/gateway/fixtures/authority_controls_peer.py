@@ -54,7 +54,7 @@ async def probe(peer, target):
     from gateway.run import GatewayRunner
     from gateway.session import SessionSource
     from gateway.session_authority import admission_row, initialize_session_authority
-    from hermes_cli import web_server
+    from slave_cli import web_server
     from gateway.run_api import start_gateway_api, stop_gateway_api
     from tools.approval import list_gateway_approvals, resolve_gateway_approval
     from run_agent import AIAgent
@@ -155,7 +155,7 @@ async def probe(peer, target):
         assert 'SECRET_MUST_NOT_REPLAY' not in json.dumps(replay)
         assert 'SECRET_MUST_NOT_REPLAY' not in json.dumps(conversation(authority.persistence, ref.session_id))
         assert any(f.get('type') == 'approval.request' for f in replay['result']['events'])
-        Path(os.environ['HERMES_HOME'], 'receipt.json').write_text(json.dumps({
+        Path(os.environ['SLAVE_HOME'], 'receipt.json').write_text(json.dumps({
             'real_terminal_effect': True, 'detach_kept_pending': True, 'fifo_bypassed': True,
             'duplicate_rejected': True, 'model_requests': len(peer.requests), 'admissions': len(rows)}))
     finally:
@@ -172,7 +172,7 @@ async def probe(peer, target):
 
 def main():
     import shlex
-    target = Path(os.environ['HERMES_HOME'], 'owned-removal')
+    target = Path(os.environ['SLAVE_HOME'], 'owned-removal')
     target.mkdir()
     (target / 'owned.txt').write_text('disposable')
     peer = ThreadingHTTPServer(('127.0.0.1', 0), ModelPeer)
@@ -182,7 +182,7 @@ def main():
     url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url,
                       TELEGRAM_ALLOWED_USERS='fixture-user', TERMINAL_ENV='local')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local-control\n  provider: custom\n  base_url: {url}\n'
         'approvals:\n  mode: manual\n  timeout: 30\n'
         'streaming:\n  enabled: false\n'

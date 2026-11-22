@@ -65,8 +65,8 @@ def fake_chromium(tmp_path, monkeypatch):
 
 def _records() -> Path:
     """The test profile's launch records dir (created private, as the launcher creates it)."""
-    from hermes_constants import get_hermes_home
-    path = Path(get_hermes_home()) / "cache" / "browser" / "chromium-records"
+    from slave_constants import get_slave_home
+    path = Path(get_slave_home()) / "cache" / "browser" / "chromium-records"
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     return path
 
@@ -83,8 +83,8 @@ def test_launch_reads_devtools_port_and_runs_headless_on_an_ephemeral_home_profi
     assert browser.cdp_url == "ws://127.0.0.1:45678/devtools/browser/fake-id"
     assert browser.http_url == "http://127.0.0.1:45678"
     assert browser.owned and browser.ephemeral
-    from hermes_constants import get_hermes_home
-    assert Path(browser.user_data_dir).parent == Path(get_hermes_home()) / "cache" / "browser" / "chromium"
+    from slave_constants import get_slave_home
+    assert Path(browser.user_data_dir).parent == Path(get_slave_home()) / "cache" / "browser" / "chromium"
     argv = _argv(browser)
     assert "--remote-debugging-port=0" in argv
     assert f"--user-data-dir={browser.user_data_dir}" in argv
@@ -95,12 +95,12 @@ def test_launch_reads_devtools_port_and_runs_headless_on_an_ephemeral_home_profi
 @pytest.mark.platforms("posix")
 @pytest.mark.live_system_guard_bypass  # the fake browser's reparented helper is ours to stop
 def test_launch_record_lives_in_the_profiles_private_state_dir(fake_chromium):
-    """Launcher state lives in a private per-profile dir: the record under ``<HERMES_HOME>/cache/browser/
+    """Launcher state lives in a private per-profile dir: the record under ``<SLAVE_HOME>/cache/browser/
     chromium-records`` (0700) and the throwaway profile under the 0700 ephemeral root beside it."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     browser, err = launcher.launch_chromium("recorded", env=dict(os.environ))
     assert err is None
-    state = Path(get_hermes_home()) / "cache" / "browser"
+    state = Path(get_slave_home()) / "cache" / "browser"
     assert stat.S_IMODE((state / "chromium-records").stat().st_mode) == 0o700
     assert stat.S_IMODE((state / "chromium").stat().st_mode) == 0o700
     [record] = (state / "chromium-records").glob("*.json")
@@ -125,10 +125,10 @@ def test_one_browser_per_key_and_separate_browsers_for_separate_keys(fake_chromi
 def test_two_processes_on_one_profile_never_share_an_ephemeral_profile(fake_chromium):
     """CLI + gateway on one profile launch the same key (``browser-exec-default``, a named session): each
     process gets its own throwaway profile, and a launch never wipes the other process's live one."""
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     code = ("import sys; from tools.browser_launcher import _default_user_data_dir; "
             "print(_default_user_data_dir(sys.argv[1], sys.argv[2]))")
-    other = Path(subprocess.run([sys.executable, "-c", code, "browser-exec-default", hermes_home_key()],
+    other = Path(subprocess.run([sys.executable, "-c", code, "browser-exec-default", slave_home_key()],
                                 cwd=Path(__file__).resolve().parents[2], env=dict(os.environ),
                                 capture_output=True, text=True, check=True).stdout.strip())
     (other / "Default").mkdir(parents=True)
@@ -308,7 +308,7 @@ def test_records_of_a_live_owner_are_left_alone(tmp_path, fake_chromium):
     assert list(_records().glob("*.json"))
 
 
-# A Hermes process on a persistent profile: launches (or attaches to) its Chromium, prints the pid, waits
+# A Slave process on a persistent profile: launches (or attaches to) its Chromium, prints the pid, waits
 # for a line on stdin, then exits normally (the session layer's exit teardown stops its browsers).
 _SHARED_PROFILE_USER = textwrap.dedent("""\
     import os, sys
@@ -349,7 +349,7 @@ def _kill_fake(pid: int, fake_chromium) -> None:
 @pytest.mark.platforms("linux")
 @pytest.mark.live_system_guard_bypass  # the fake browser is ours to stop if a leg failed
 def test_a_shared_profile_browser_outlives_its_launcher_while_another_process_holds_it(fake_chromium, tmp_path):
-    """Two Hermes processes on one persistent profile: the one that launched its Chromium lets go (its normal
+    """Two slave-agent processes on one persistent profile: the one that launched its Chromium lets go (its normal
     exit) while the other still drives it. The browser stays up for the other one, and that last holder's
     own normal exit stops it, leaving no launcher state behind."""
     udd, key = tmp_path / "shared-profile", f"profile:{tmp_path / 'shared-profile'}"
@@ -372,7 +372,7 @@ def test_a_shared_profile_browser_outlives_its_launcher_while_another_process_ho
 @pytest.mark.platforms("linux")
 @pytest.mark.live_system_guard_bypass  # the fake browser is ours to stop if a leg failed
 def test_a_crashed_launchers_shared_browser_is_reaped_only_after_its_last_holder_is_gone(fake_chromium, tmp_path):
-    """The launcher crashed while another live Hermes process holds its browser: no reaper kills it. Once
+    """The launcher crashed while another live slave-agent process holds its browser: no reaper kills it. Once
     that holder crashed too (proven by pid + start time), the next reap stops it."""
     udd = tmp_path / "shared-profile"
     owner, pid = _shared_profile_user(fake_chromium, udd)
@@ -398,7 +398,7 @@ def test_a_throwaway_profile_left_by_a_process_that_died_mid_launch_is_reclaimed
     """A process that dies between creating its throwaway profile and writing the launch record (a first
     launch can wait 120 s) leaves no record behind. The next reap reclaims the dir by its owner's pid and
     start time; the dir of a live process is never touched."""
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     code = ("import sys\n"
             "from tools.browser_launcher import _default_user_data_dir, _prepare_dir\n"
             "udd = _default_user_data_dir('browser-exec-default', sys.argv[1])\n"
@@ -406,9 +406,9 @@ def test_a_throwaway_profile_left_by_a_process_that_died_mid_launch_is_reclaimed
             "print(udd, flush=True)\n"
             "if sys.argv[2] == 'hold': sys.stdin.readline()\n")
     run = dict(cwd=Path(__file__).resolve().parents[2], env=dict(os.environ), text=True)
-    died = Path(subprocess.run([sys.executable, "-c", code, hermes_home_key(), "die"], capture_output=True,
+    died = Path(subprocess.run([sys.executable, "-c", code, slave_home_key(), "die"], capture_output=True,
                                check=True, **run).stdout.strip())
-    alive = subprocess.Popen([sys.executable, "-c", code, hermes_home_key(), "hold"], stdin=subprocess.PIPE,
+    alive = subprocess.Popen([sys.executable, "-c", code, slave_home_key(), "hold"], stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE, **run)
     try:
         held = Path(alive.stdout.readline().strip())
@@ -432,13 +432,13 @@ _NEVER_READY_CHROMIUM = textwrap.dedent('''\
     time.sleep(600)
 ''')
 
-# A Hermes process waiting for that Chromium's readiness: prints its throwaway dir, then launches.
+# A Slave process waiting for that Chromium's readiness: prints its throwaway dir, then launches.
 _WAITING_LAUNCHER = textwrap.dedent("""\
     import os, sys
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     from tools import browser_launcher as launcher
     launcher.needs_chromium_sandbox_bypass = lambda: False
-    print(launcher._default_user_data_dir("slow", hermes_home_key()), flush=True)
+    print(launcher._default_user_data_dir("slow", slave_home_key()), flush=True)
     launcher.launch_chromium("slow", executable=sys.argv[1], headed=False, env=dict(os.environ), timeout=300)
 """)
 
@@ -446,32 +446,32 @@ _WAITING_LAUNCHER = textwrap.dedent("""\
 @pytest.mark.platforms("linux")
 @pytest.mark.live_system_guard_bypass  # the never-ready fake browser is ours to stop if a leg failed
 def test_a_launcher_killed_during_the_readiness_wait_leaves_its_chromium_to_the_reaper(fake_chromium, tmp_path):
-    """Hermes dies (SIGKILL, a crash) while its new Chromium is still starting (a first launch may wait
+    """slave-agent dies (SIGKILL, a crash) while its new Chromium is still starting (a first launch may wait
     120 s): that browser must already carry a launch record, so the next reap stops it."""
     from tests.waiting import wait_until
     slow = tmp_path / "never-ready-chromium"
     slow.write_text(_NEVER_READY_CHROMIUM.format(python=sys.executable))
     slow.chmod(0o755)
-    hermes = subprocess.Popen([sys.executable, "-c", _WAITING_LAUNCHER, str(slow)], text=True,
+    slave = subprocess.Popen([sys.executable, "-c", _WAITING_LAUNCHER, str(slow)], text=True,
                               cwd=Path(__file__).resolve().parents[2], env=dict(os.environ),
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pid = None
     try:
-        udd = Path(hermes.stdout.readline().strip())
+        udd = Path(slave.stdout.readline().strip())
         pid = int(wait_until(lambda: (udd / "pid").exists() and (udd / "pid").read_text(), timeout=30,
                              what="the launched Chromium to start"))
         # The record is written right after the spawn returns, which can be after the browser's first output:
         # the kill lands in the readiness wait, the window this test is about.
         wait_until(lambda: any((launcher._load_record(p) or {}).get("pid") == pid for p in _records().glob("*.json")),
                    timeout=30, what="the starting Chromium's launch record")
-        hermes.kill()
-        hermes.wait(timeout=10)
+        slave.kill()
+        slave.wait(timeout=10)
         assert launcher._pid_alive(pid)
 
         assert launcher.reap_orphaned_browsers() == 1, "a Chromium whose launcher died mid-launch has no record"
         assert _gone(pid)
     finally:
-        hermes.kill()
+        slave.kill()
         if pid is not None:
             _kill_fake(pid, slow)
 

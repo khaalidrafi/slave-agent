@@ -13,7 +13,7 @@ PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 8
 
 
 def _authority(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     seed_session(db, 's', 'test')
     epoch = db.runtime.begin_epoch(instance_id='current')

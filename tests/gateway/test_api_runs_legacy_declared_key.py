@@ -1,5 +1,5 @@
 """#139835 (LC-13): an API session written by an earlier release stored the client's declared
-``X-Hermes-Session-Key`` in ``sessions.session_key``; the caller that declares that same key is
+``X-Slave-Session-Key`` in ``sessions.session_key``; the caller that declares that same key is
 adopted onto the canonical route, never 409'd forever. A different key still conflicts."""
 import json
 import os
@@ -10,7 +10,7 @@ from pathlib import Path
 
 def test_runs_adopt_legacy_declared_session_key(tmp_path):
     result = subprocess.run([sys.executable, __file__], cwd=Path(__file__).resolve().parents[2],
-        env=dict(os.environ, HERMES_HOME=str(tmp_path)), capture_output=True, text=True, timeout=90, check=False)
+        env=dict(os.environ, SLAVE_HOME=str(tmp_path)), capture_output=True, text=True, timeout=90, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     print((tmp_path / 'legacy-receipt.json').read_text(encoding='utf-8'))
 
@@ -42,7 +42,7 @@ async def probe():
     async def post(client, name, body, key):
         headers = {'Authorization': 'Bearer legacy-probe-secret', 'Idempotency-Key': name}
         if key:
-            headers['X-Hermes-Session-Key'] = key
+            headers['X-Slave-Session-Key'] = key
         async with client.post(f'http://127.0.0.1:{port}/v1/runs', json=body, headers=headers) as response:
             text = await response.text()
             out[name] = [response.status, json.loads(text) if response.content_type == 'application/json' else text]
@@ -68,7 +68,7 @@ async def probe():
         assert route('legacy1') == 'agent:main:api_server:dm:legacy1', route('legacy1')
         assert route('legacy2') == 'webui:legacy2', 'a refused caller must not rewrite the row'
         assert route('legacy3') == 'agent:main:api_server:dm:legacy3', route('legacy3')
-        Path(os.environ['HERMES_HOME'], 'legacy-receipt.json').write_text(encoding='utf-8', data=json.dumps(out))
+        Path(os.environ['SLAVE_HOME'], 'legacy-receipt.json').write_text(encoding='utf-8', data=json.dumps(out))
     finally:
         await adapter.disconnect()
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     import asyncio
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     os.environ.update(OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL='http://127.0.0.1:9/v1')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         'model:\n  default: local-wire-stub\n  provider: custom\n  base_url: http://127.0.0.1:9/v1\n'
         'auxiliary:\n  title_generation:\n    enabled: false\n')
     asyncio.run(probe())

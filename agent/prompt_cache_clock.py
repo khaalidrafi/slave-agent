@@ -40,7 +40,7 @@ response, so a first pure read keeps the saved proof.
 
 Confidence: ``proven`` (the response named the tier), ``declared`` (what we sent, on a route known
 to honour it), ``assumed`` (no guarantee), ``unknown`` (no published retention, or the cache moved:
-route switch, fallback, compaction, or a runtime whose requests Hermes does not build).
+route switch, fallback, compaction, or a runtime whose requests slave-agent does not build).
 """
 
 from __future__ import annotations
@@ -314,7 +314,7 @@ def _confidence(verdict: _Verdict, previous: Optional[CacheEvent], carried: bool
 
 
 def _route_key(provider: Any, base_url: Any, model: Any) -> tuple[str, str, str]:
-    from hermes_cli.route_identity import normalize_route_base_url
+    from slave_cli.route_identity import normalize_route_base_url
     return (str(provider or ""), normalize_route_base_url(str(base_url or "")), str(model or ""))
 
 
@@ -475,7 +475,7 @@ def record_cache_response(agent: Any, usage: Any, *, model: str, provider: str, 
 
 
 def record_unobserved_cache_response(agent: Any, usage: Any, *, reason: str) -> Optional[CacheEvent]:
-    """A runtime whose requests Hermes does not build (the Codex app-server sets its own cache
+    """A runtime whose requests slave-agent does not build (the Codex app-server sets its own cache
     options): the cache moved but its window cannot be known, so it is recorded ``unknown`` and no
     older window outlives it."""
     read, write = int(getattr(usage, "cache_read_tokens", 0) or 0), int(getattr(usage, "cache_write_tokens", 0) or 0)

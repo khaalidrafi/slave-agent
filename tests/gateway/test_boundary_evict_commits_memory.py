@@ -87,7 +87,7 @@ async def test_reset_and_compress_mutations_use_the_boundary_evict(tmp_path, mon
     from gateway.session_controls import AuthorityConnection
     from gateway import run
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {'default': 'fixture'}, 'platform_toolsets': {'cli': []}})
     monkeypatch.setattr(run, '_resolve_gateway_model', lambda config: 'fixture')
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())

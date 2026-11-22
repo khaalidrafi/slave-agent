@@ -24,7 +24,7 @@ import ast
 import re
 from pathlib import Path
 
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 
 # gateway/relay package directory: tests/gateway/relay/ -> repo root parents[3].
 _REPO_ROOT = Path(__file__).resolve().parents[3]

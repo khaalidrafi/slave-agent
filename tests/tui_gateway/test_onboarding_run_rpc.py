@@ -9,19 +9,19 @@ import pytest
 
 from tui_gateway import server
 from agent.onboarding import PROFILE_BUILD_FLAG
-from hermes_cli import profiles
-from hermes_cli.config import read_user_config_raw
-from tests.hermes_cli.anon_portal import as_local_desktop_backend
+from slave_cli import profiles
+from slave_cli.config import read_user_config_raw
+from tests.slave_cli.anon_portal import as_local_desktop_backend
 
 
 @pytest.fixture
 def launched_under_work(tmp_path, monkeypatch) -> tuple[Path, Path]:
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     root.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     work = profiles.create_profile("work", no_alias=True)
-    monkeypatch.setenv("HERMES_HOME", str(work))
+    monkeypatch.setenv("SLAVE_HOME", str(work))
     return root, work
 
 
@@ -77,7 +77,7 @@ def test_skip_leaves_the_first_chat_offer_alone(launched_under_work):
 
 def test_a_failed_write_fails_the_call_and_writes_nothing(launched_under_work, monkeypatch):
     # The offer flag and run land in one write: if it fails the caller sees an error and neither is applied.
-    from hermes_cli import config as config_mod
+    from slave_cli import config as config_mod
 
     root, _work = launched_under_work
     real_write = config_mod.atomic_config_write

@@ -9,7 +9,7 @@ export interface AuxTaskMeta {
 }
 
 // Built-in auxiliary tasks, in the order `_AUX_TASK_SLOTS`
-// (hermes_cli/web_server_config.py) serves them. Plugin-registered tasks are
+// (slave_cli/web_server_config.py) serves them. Plugin-registered tasks are
 // not listed here: the backend appends them to `/api/model/auxiliary` with the
 // plugin's own `label`/`hint` and `auxTaskRows` folds them in after these.
 export const BUILTIN_AUX_TASKS: readonly AuxTaskMeta[] = [

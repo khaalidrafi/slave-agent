@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import pytest
 
-import hermes_cli.models as models_mod
-from hermes_cli.models_catalog_static import PREFERRED_SILENT_DEFAULT_MODEL
+import slave_cli.models as models_mod
+from slave_cli.models_catalog_static import PREFERRED_SILENT_DEFAULT_MODEL
 from tui_gateway import server
 
 
 @pytest.fixture
 def no_model_configured(monkeypatch):
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.delenv("SLAVE_MODEL", raising=False)
+    monkeypatch.delenv("SLAVE_INFERENCE_MODEL", raising=False)
     monkeypatch.setattr(server, "_load_cfg", dict)
 
 

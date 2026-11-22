@@ -19,7 +19,7 @@ def test_live_runtime_writers_prevent_final_lock_release(tmp_path, monkeypatch, 
 
     home = tmp_path / 'runtime'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('SLAVE_HOME', str(home))
     gate = threading.Event()
     started = threading.Event()
     threads = []

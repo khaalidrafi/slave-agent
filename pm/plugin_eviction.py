@@ -15,7 +15,7 @@ cost an enabled one its place.
 Disabling needs evidence about the plugin itself: its requires-python against the pinned
 interpreter, its manifest contract, a resolver proof, or its build failing. A fetch or
 tooling failure could be the moment, so the plugin gets one retry before it is disabled.
-requires_hermes and a plugin's own requirement on hermes-agent are judged against a version
+requires_hermes and a plugin's own requirement on slave-agent are judged against a version
 identity that can lag (a checkout without its release tags), so a misfit there only sits out:
 config is untouched, boot skips it the same way, and it rejoins when the verdict flips. A secondary profile whose config cannot be read
 sits out until its config is fixed.
@@ -55,7 +55,7 @@ def static_verdicts(entries: list[Entry], python_version: str,
                     extras: list[str]) -> tuple[dict[Path, str], dict[Path, str]]:
     """``(disable, sit out)`` reasons found without a resolver, keyed by resolved dir."""
     from pm.plugin_declarations import manifest_version_error, read_python_declaration
-    from pm.workspace import hermes_fit_error
+    from pm.workspace import slave_fit_error
 
     reasons: dict[Path, str] = {}
     waiting: dict[Path, str] = {}
@@ -69,9 +69,9 @@ def static_verdicts(entries: list[Entry], python_version: str,
             reasons[key] = f"its dependency declaration is invalid: {exc}"
             continue
         # Mirrors build_member_dirs, so the recorded stamp is the one boot expects.
-        hermes = hermes_fit_error(declaration, extras)
-        if hermes:
-            waiting[key] = hermes
+        slave = slave_fit_error(declaration, extras)
+        if slave:
+            waiting[key] = slave
             continue
         manifest = manifest_version_error(declaration.manifest, plugin_dir.name)
         reason = (manifest.removeprefix(f"Plugin '{plugin_dir.name}' ") if manifest
@@ -192,7 +192,7 @@ class PluginEviction:
 
     def __init__(self, entries: list[Entry], reasons: dict[Path, str], rejoined: list[Entry] = (), *,
                  tried: dict[Path, str] | None = None, configs=None):
-        from hermes_yaml import roundtrip_yaml
+        from slave_yaml import roundtrip_yaml
         from pm.publication import selection_snapshot
 
         # The snapshot the update decided from: a user edit since then refuses publication.
@@ -407,14 +407,14 @@ def _outcome_notices(entries: list[Entry], recorded: dict[Entry, dict], reasons:
         key = plugin_dir.resolve()
         if key in reasons:
             notices.append(f"Disabled plugin '{name}' in {plugins_dir.parent}: {reasons[key]}; {_RETRY} and turns it "
-                           f"back on once it fits, or run `hermes plugins enable {name}` sooner")
+                           f"back on once it fits, or run `slave plugins enable {name}` sooner")
         elif key in waiting:
             notices.append(f"Left plugin '{name}' in {plugins_dir.parent} out of this update: {waiting[key]}; "
-                           "it stays enabled and rejoins once Hermes reports a version it accepts")
+                           "it stays enabled and rejoins once slave-agent reports a version it accepts")
     for entry, record in recorded.items():
         plugins_dir, name, plugin_dir = entry
         if entry in joined:
-            notices.append(f"Turned plugin '{name}' in {plugins_dir.parent} back on: it fits this Hermes again")
+            notices.append(f"Turned plugin '{name}' in {plugins_dir.parent} back on: it fits this slave-agent again")
             continue
         why = reasons.get(plugin_dir.resolve()) or waiting.get(plugin_dir.resolve()) or record.get("reason") or "unknown"
         notices.append(f"Plugin '{name}' in {plugins_dir.parent} is still disabled: {why}; {_RETRY}")

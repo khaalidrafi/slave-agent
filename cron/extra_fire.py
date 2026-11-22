@@ -1,4 +1,4 @@
-"""Manual runs are EXTRA fires: a run-now (``cronjob run``, ``hermes cron run``, dashboard Run,
+"""Manual runs are EXTRA fires: a run-now (``cronjob run``, ``slave cron run``, dashboard Run,
 gateway-forwarded ``trigger_job``) leaves the job's pending scheduled occurrence and its
 ``repeat`` budget alone. Without this a test-fire of an ``in 30m`` reminder completed the
 one-shot and the real reminder never fired; a recurring ``repeat.times=N`` job lost one of N.

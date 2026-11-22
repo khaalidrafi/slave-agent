@@ -30,7 +30,7 @@ async def _msgraph(tmp_path):
 @pytest.mark.asyncio
 @pytest.mark.parametrize('site', [_msgraph], ids=['msgraph_webhook._admit_notification'])
 async def test_ingress_admission_never_blocks_the_owner_loop_on_a_held_writer(tmp_path, monkeypatch, site):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     authority, admit = await site(tmp_path)
     held, release = threading.Event(), threading.Event()
 

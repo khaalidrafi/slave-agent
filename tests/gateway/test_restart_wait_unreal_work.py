@@ -38,7 +38,7 @@ def test_a_completion_with_no_transport_here_does_not_hold_the_restart():
 
 def test_a_managed_turn_silent_past_the_gateway_timeout_does_not_hold_the_restart(monkeypatch):
     from gateway.session_managed_worker import ManagedWorker
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)  # 1800 s
+    monkeypatch.delenv("SLAVE_AGENT_TIMEOUT", raising=False)  # 1800 s
     runner, _adapter = make_restart_runner()
     worker = ManagedWorker(MagicMock(pid=4242))
     worker._arrived = asyncio.Event()

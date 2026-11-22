@@ -48,6 +48,6 @@ def test_detects_each_documentation_form(drift, monkeypatch):
     monkeypatch.setattr(drift, "config_leaves", lambda: [
         "agent.max_turns", "auxiliary.vision.timeout", "display.pet.size",
         "compression.threshold", "agent.secret_knob", "auxiliary.vision.api_key",
-        "providers.nous.models.hermes.timeout_seconds"])
+        "providers.nous.models.slave.timeout_seconds"])
     monkeypatch.setattr(drift, "slash_commands", list)
     assert drift.find_gaps()["config"] == ["agent.secret_knob", "auxiliary.vision.api_key"]

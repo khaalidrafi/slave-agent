@@ -24,7 +24,7 @@ from gateway.session import (
 
 @pytest.fixture()
 def _isolated_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     return tmp_path
 
 

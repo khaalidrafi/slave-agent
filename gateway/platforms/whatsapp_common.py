@@ -59,7 +59,7 @@ class WhatsAppBehaviorMixin(OwnAccessPolicyMixin):
     ALLOW_ALL_ENV_PREFIX = "WHATSAPP"
     supports_code_blocks = True  # WhatsApp renders fenced code blocks (monospace)
 
-    DEFAULT_REPLY_PREFIX: str = "☤ *Hermes Agent*\n────────────\n"
+    DEFAULT_REPLY_PREFIX: str = "☤ *slave-agent*\n────────────\n"
 
     _OUTBOUND_INVISIBLE_CHARS_RE = re.compile(r"[\u200b\u2060\u2063\ufeff]")
     _OUTBOUND_ODD_SPACE_RE = re.compile(r"[\u00a0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
@@ -290,31 +290,31 @@ class WhatsAppBehaviorMixin(OwnAccessPolicyMixin):
 
 def resolve_whatsapp_bridge_dir() -> Path:
     """Bridge directory for CLI and adapter. A read-only install tree (e.g. Docker
-    /opt/hermes) is mirrored to HERMES_HOME so npm install works."""
+    /opt/hermes) is mirrored to SLAVE_HOME so npm install works."""
     import shutil
-    from hermes_constants import get_hermes_home
-    from hermes_cli._startup_fast import project_root_str
+    from slave_constants import get_slave_home
+    from slave_cli._startup_fast import project_root_str
     install_bridge = Path(project_root_str()) / "scripts" / "whatsapp-bridge"
-    hermes_home_bridge = get_hermes_home() / "scripts" / "whatsapp-bridge"
+    slave_home_bridge = get_slave_home() / "scripts" / "whatsapp-bridge"
     try:
         (install_bridge / ".write_test").touch()
         (install_bridge / ".write_test").unlink()
         return install_bridge
     except OSError:
         pass
-    if hermes_home_bridge.exists():
+    if slave_home_bridge.exists():
         # Refresh the source on every resolve: a mirror frozen at its first copy would keep spawning a pre-update
         # bridge (one without /auth-proof can never pass the adapter's token proof). node_modules is the mirror's
         # own install (re-run by the adapter when package.json changes), so it is left alone.
         try:
-            shutil.copytree(install_bridge, hermes_home_bridge, dirs_exist_ok=True,
+            shutil.copytree(install_bridge, slave_home_bridge, dirs_exist_ok=True,
                             ignore=shutil.ignore_patterns("node_modules"))
         except (OSError, shutil.Error):
             pass  # unreadable install tree: the mirror as it stands is still the best runnable copy
-        return hermes_home_bridge
+        return slave_home_bridge
     try:
-        hermes_home_bridge.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(install_bridge, hermes_home_bridge, dirs_exist_ok=False)
-        return hermes_home_bridge
+        slave_home_bridge.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(install_bridge, slave_home_bridge, dirs_exist_ok=False)
+        return slave_home_bridge
     except Exception:
         return install_bridge

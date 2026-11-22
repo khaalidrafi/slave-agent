@@ -34,7 +34,7 @@
      commits-by-Flash is fixed by dispatch, not relabel).  Kit re-pin
      in this repo moves to the restored equivalent b0e3fb27.
 
-** DONE Upstream catch-up — hermes aaec1339 merged
+** DONE Upstream catch-up — slave aaec1339 merged
    - One merge commit (02e5e6a6f1) carries 26,121 upstream commits
      per the stay-mergeable doctrine.  Conflicts resolved per
      FORK.org: 2,002 modify/delete re-deleted; content favored ours;
@@ -49,7 +49,7 @@
    - The merge favored our side on conflicting hunks, so upstream
      fixes to lines the fork also touched may have dropped
      silently.  Audit the merge diff hunk-by-hunk against
-     hermes/main for the surviving core files; also review the
+     slave/main for the surviving core files; also review the
      local reimplementations (migrate_backends argv/unit
      classification, git_commit_graph common_git_dir).  Executor:
      Software Engineer.
@@ -61,12 +61,12 @@
    :END:
    - The branded branch regen (e5f79a61d2, upstream 730d593) still
      carries 2,750 verify problems, classified: kanban dist CSS class
-     prefix (.hermes-kanban-*, generated artifact), dashboard
-     reverse-proxy /hermes prefix in test fixtures, _TO_HERMES
+     prefix (.slave-kanban-*, generated artifact), dashboard
+     reverse-proxy /slave prefix in test fixtures, _TO_SLAVE
      screaming-snake identifiers the identity arms miss, nix argv
-     checks naming bin/hermes, dead desktop-installer e2e tests
+     checks naming bin/slave, dead desktop-installer e2e tests
      against the P1-deleted apps/ tree (candidates for deletion, P1
-     tail), .hermes-* state-path entries in ignore files.  Each class:
+     tail), .slave-* state-path entries in ignore files.  Each class:
      keep (documented KEEP arm), rewrite (tier arm), or delete (dead
      test); the gate must read zero before the first release
      (docs/RELEASE.md).  Starting data: the classification in commit
@@ -144,7 +144,7 @@
      media"): plugins/agent_team — team_run walks a roster of named
      roles through the sanctioned ctx.llm facade (each role sees the
      task and every earlier role's output); built-ins blog-writing and
-     news-reporting; deployment rosters via settings.teams; hermes team
+     news-reporting; deployment rosters via settings.teams; slave team
      CLI + /team. Evidence: tests/plugins/agent_team green.
 
 ** REVIEW hr/03 — full CANDIDATES.org ranking pass under this Lead
@@ -248,10 +248,10 @@
 
 ** DONE slave_compat as the canonical key + state migration
    - CLOSED 2026-11-17 (GLM 5.3, Lead; commit f793f612c3): slave_compat
-     canonical, hermes_compat working alias (explicit canonical beats a
+     canonical, slave_compat working alias (explicit canonical beats a
      stale alias); save_config upgrades the alias one-way; knob tests
      green. State: brand.LEGACY_STATE_DIR + read-fallback in
-     hermes_constants (the legacy name survives rebranding only in
+     slave_constants (the legacy name survives rebranding only in
      brand.py, the generator's exempt file) + one-shot migrate-state
      (idempotent, conflict-safe). Launcher alias for the old command
      name lands with release tooling — named remainder.** DONE KEEP_RE third-party shape rules + tests

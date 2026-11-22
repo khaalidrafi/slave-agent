@@ -14,7 +14,7 @@ import time
 
 import pytest
 
-from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
 from persistence.sqlite import _holder
 from persistence_assembly import open_persistence, profile_scope
 from tools import async_delegation as ad
@@ -50,7 +50,7 @@ def held_store(reconciles):
 
 
 def _state_db() -> str:
-    return str(get_hermes_home() / "state.db")
+    return str(get_slave_home() / "state.db")
 
 
 def _dispatch(delegation_id: str) -> None:
@@ -78,7 +78,7 @@ def test_each_database_is_reconciled_on_its_own(held_store, reconciles, tmp_path
     first = _state_db()
     other = tmp_path / "other-home"
     other.mkdir()
-    token = set_hermes_home_override(str(other))
+    token = set_slave_home_override(str(other))
     try:
         with open_persistence(profile_scope(), eager=True):
             _dispatch("d-2")
@@ -87,5 +87,5 @@ def test_each_database_is_reconciled_on_its_own(held_store, reconciles, tmp_path
             assert ad.get_durable_delegation("d-2") is not None
             second = _state_db()
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert reconciles == [first, second]

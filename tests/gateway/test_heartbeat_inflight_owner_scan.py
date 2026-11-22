@@ -7,7 +7,7 @@ import pytest
 from gateway.config import Platform
 from gateway.session import SessionSource
 from gateway.session_authority import SessionAuthority
-from hermes_cli.heartbeat import HeartbeatState, save_heartbeat
+from slave_cli.heartbeat import HeartbeatState, save_heartbeat
 from persistence.conversation.lineage import CompressionChild
 from persistence.conversation.messages import NewMessage
 from tests.fixtures.storage_seed import seed_session
@@ -21,7 +21,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 ], ids=['native', 'local'])
 async def test_inflight_heartbeat_on_the_logical_owner_blocks_another(tmp_path, monkeypatch, envelope):
     from gateway.run_heartbeat_acceptance import admit_heartbeat
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = storage_handle(tmp_path)
     seed_session(store, 'root', 'telegram')
     store.lineage.publish_compression_child(

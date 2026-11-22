@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import psutil
 import pytest
 
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 from persistence_assembly import open_persistence, profile_scope, store_location
 from tests.fixtures.storage_holder import raw_holder
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle

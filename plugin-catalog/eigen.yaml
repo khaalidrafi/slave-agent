@@ -1,5 +1,5 @@
 name: eigen
-repo: https://github.com/arjunbagga-xyz/hermes-eigen
+repo: https://github.com/arjunbagga-xyz/slave-eigen
 sha: 4c06465c9b3b1f31d0add0cb01636b647f9b9f12
 title: Eigen
 description: Graph-Laplacian spectral partitioner computing Fiedler vector and algebraic connectivity
@@ -8,4 +8,4 @@ maintainer: arjunbagga-xyz
 tier: community
 category: tools
 version: 0.1.0
-docs_url: https://github.com/arjunbagga-xyz/hermes-eigen#readme
+docs_url: https://github.com/arjunbagga-xyz/slave-eigen#readme

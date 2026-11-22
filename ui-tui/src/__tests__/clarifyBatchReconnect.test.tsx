@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
-import { RECONNECT_BASE_MS } from '@hermes/shared/gateway-client'
+import { renderSync, Text } from '@slave-agent/ink'
+import { RECONNECT_BASE_MS } from '@slave-agent/shared/gateway-client'
 import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
@@ -76,9 +76,9 @@ let home = ''
 
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'ink-clarify-batch-reconnect-'))
-  vi.stubEnv('HERMES_HOME', home)
-  delete process.env.HERMES_TUI_GATEWAY_URL
-  delete process.env.HERMES_TUI_SIDECAR_URL
+  vi.stubEnv('SLAVE_HOME', home)
+  delete process.env.SLAVE_TUI_GATEWAY_URL
+  delete process.env.SLAVE_TUI_SIDECAR_URL
   ;(globalThis as { WebSocket?: unknown }).WebSocket = FakeWebSocket as unknown as typeof WebSocket
   FakeWebSocket.serve = frame =>
     frame.method === 'runtime.describe'

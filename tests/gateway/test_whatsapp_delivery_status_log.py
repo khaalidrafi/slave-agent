@@ -1,4 +1,4 @@
-"""Delivery/read status of messages Hermes sends on WhatsApp is logged to gateway.log, one line per change.
+"""Delivery/read status of messages slave-agent sends on WhatsApp is logged to gateway.log, one line per change.
 
 Coatue request: Baileys already reports `messages.update` status (and per-recipient group receipts),
 but the bridge only forwarded poll updates, so operators could not see whether a reply was delivered
@@ -31,7 +31,7 @@ class _Resp:
 
 @pytest.mark.asyncio
 async def test_delivery_status_is_logged_to_gateway_log_and_never_dispatched(caplog):
-    from hermes_logging import COMPONENT_PREFIXES
+    from slave_logging import COMPONENT_PREFIXES
     from plugins.platforms.whatsapp.adapter import WhatsAppAdapter
 
     adapter = WhatsAppAdapter(PlatformConfig(enabled=True, extra={}))
@@ -67,7 +67,7 @@ async def test_delivery_status_is_logged_to_gateway_log_and_never_dispatched(cap
         f"{tag} message=3EB0A2 chat=120363001234567890@g.us status=delivered recipient=15550001111@s.whatsapp.net at=1760000050",
         f"{tag} message=3EB0A3 chat=15551234567@s.whatsapp.net status=error at=1760000060 error=463",
     ]
-    # gateway.log takes every plugins.platforms.* logger (hermes_logging component prefixes).
+    # gateway.log takes every plugins.platforms.* logger (slave_logging component prefixes).
     assert any("plugins.platforms.whatsapp.adapter".startswith(p) for p in COMPONENT_PREFIXES["gateway"])
     adapter._build_message_event.assert_not_awaited()
     adapter.handle_message.assert_not_awaited()

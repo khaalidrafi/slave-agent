@@ -19,8 +19,8 @@ from agent.secret_sources import registry as reg_module
 from agent.secret_sources.base import FetchResult
 from agent.secret_sources.registry import AppliedVar, ApplyReport, SourceReport
 from agent.tool_dispatch_helpers import make_tool_result_message
-from hermes_cli import env_loader
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_cli import env_loader
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 OPAQUE = "mxq7Tpl2vRw9Kd"  # no vendor prefix: the pattern passes keep it bare
 DSN = "postgres://reporting:Vb8wqLr2@db.internal:5432/prod"
@@ -36,11 +36,11 @@ def _clean(monkeypatch):
 
 @contextmanager
 def _profile(home):
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _fake_source(monkeypatch, secrets: dict[str, str]) -> None:

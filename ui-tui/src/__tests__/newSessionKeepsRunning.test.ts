@@ -1,4 +1,4 @@
-import type { ServerRequest } from '@hermes/shared/json-rpc-channel'
+import type { ServerRequest } from '@slave-agent/shared/json-rpc-channel'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createBackgroundSessionWatch } from '../app/backgroundSessionNotices.js'

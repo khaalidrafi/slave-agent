@@ -1,7 +1,7 @@
 """Delegation Provider ABC.
 
 A delegation provider decides HOW one ``delegate_task`` task becomes a child run: which model,
-provider, endpoint and reasoning effort the child uses, or which Hermes profile it runs as. It may
+provider, endpoint and reasoning effort the child uses, or which slave-agent profile it runs as. It may
 also add per-task parameters to the ``delegate_task`` schema (an enum of profile names, of titled
 model options, ...). Providers register via :meth:`PluginContext.register_delegation_provider`;
 ``delegation.backend`` in config.yaml selects the active one (unset = ``default``, today's
@@ -22,7 +22,7 @@ Route vocabulary (:meth:`DelegationProvider.route_task` returns a dict with any 
 * ``service_tier`` - ``normal``, ``fast`` or ``ultrafast``, checked like ``/fast`` against the
   resolved route (and, for ultrafast, the Codex account); a tier the route does not offer refuses
   the task, and the tier is re-applied after the child is built.
-* ``profile`` - the name of a Hermes profile. Core runs the child as that profile: its config,
+* ``profile`` - the name of a slave-agent profile. Core runs the child as that profile: its config,
   primary model and credentials, skills, ``SOUL.md`` and terminal policy, bound through the same
   scope helpers a multiplexed gateway uses for a routed turn. A profile route ignores the other
   route keys; the profile's own config decides them.

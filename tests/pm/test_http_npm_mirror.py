@@ -28,7 +28,7 @@ def _no_proxy(monkeypatch):
 
 @pytest.fixture
 def archive(dl_server, monkeypatch):
-    """Hermes's pinned archive, the fallback behind every mirrored npm artifact."""
+    """slave-agent’s pinned archive, the fallback behind every mirrored npm artifact."""
     monkeypatch.setattr(artifact_mirror, "PUBLIC_PREFIX", url(dl_server, "/archive/"))
     RangeHandler.payloads["/archive/" + _DIGEST] = _BODY
     return dl_server

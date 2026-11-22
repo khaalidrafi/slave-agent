@@ -1,8 +1,8 @@
 name: signal-notify
-repo: https://github.com/dbrosnan/hermes-signal-notify
+repo: https://github.com/dbrosnan/slave-signal-notify
 sha: 78151657d0c96c308c465d472a73d47ac209f629
 description: >-
-  Signal texts when a Hermes turn pauses, fails or is interrupted, and when Hermes
+  Signal texts when a slave-agent turn pauses, fails or is interrupted, and when slave-agent
   waits on a clarify question, approval or sudo prompt. Sends through the user's own
   signal-cli HTTP daemon (the same SIGNAL_* settings as the core Signal gateway);
   skips Signal-origin, cron and subagent turns, and dedupes identical texts within 60s.
@@ -18,12 +18,12 @@ maintainer: dbrosnan
 tier: community
 category: automation
 requires_hermes: ">=0.21.5"
-docs_url: https://github.com/dbrosnan/hermes-signal-notify#readme
+docs_url: https://github.com/dbrosnan/slave-signal-notify#readme
 version: "1.1.0"
-image: https://raw.githubusercontent.com/dbrosnan/hermes-signal-notify/78151657d0c96c308c465d472a73d47ac209f629/docs/assets/banner.jpg
+image: https://raw.githubusercontent.com/dbrosnan/slave-signal-notify/78151657d0c96c308c465d472a73d47ac209f629/docs/assets/banner.jpg
 screenshots:
-  - https://raw.githubusercontent.com/dbrosnan/hermes-signal-notify/78151657d0c96c308c465d472a73d47ac209f629/docs/assets/texts.jpg
-  - https://raw.githubusercontent.com/dbrosnan/hermes-signal-notify/78151657d0c96c308c465d472a73d47ac209f629/docs/assets/toggles.jpg
+  - https://raw.githubusercontent.com/dbrosnan/slave-signal-notify/78151657d0c96c308c465d472a73d47ac209f629/docs/assets/texts.jpg
+  - https://raw.githubusercontent.com/dbrosnan/slave-signal-notify/78151657d0c96c308c465d472a73d47ac209f629/docs/assets/toggles.jpg
 platforms: []
 capabilities:
   provides_tools: []

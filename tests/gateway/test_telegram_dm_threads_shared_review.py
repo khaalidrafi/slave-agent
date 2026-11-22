@@ -57,7 +57,7 @@ def test_hot_reloaded_dm_topic_stays_isolated(monkeypatch):
     from tests.gateway.conftest import _ensure_telegram_mock
     _ensure_telegram_mock()
     from plugins.platforms.telegram.adapter import TelegramAdapter
-    import hermes_cli.config as cfg
+    import slave_cli.config as cfg
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***", extra=dict(SHARED)))
     topics = [{"chat_id": 111, "topics": [{"name": "W", "thread_id": 501}]}]
     monkeypatch.setattr(cfg, "load_config", lambda: {"platforms": {"telegram": {"extra": {"dm_topics": topics}}}})

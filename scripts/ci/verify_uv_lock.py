@@ -9,7 +9,7 @@ flat 10s, because three attempts inside ~20s all land in the same blip.
 
 uv says "Request failed after N retries" when it cannot reach the registry and "lockfile needs
 to be updated" when the lock is stale. Only the second is the contributor's to fix, so an
-unreachable registry says so instead of sending them to ``hermes pm lock`` with nothing to
+unreachable registry says so instead of sending them to ``slave pm lock`` with nothing to
 regenerate. Writes the ``uv-lockfile`` review status (scripts/ci/review_status.py).
 
 An attempt that outlives ``CHECK_TIMEOUT`` is stopped, its partial log is still printed, and it
@@ -59,13 +59,13 @@ To fix, sync with main and regenerate the lockfile:
 ```bash
 git fetch origin main
 git rebase origin/main   # or `git merge origin/main`
-hermes pm lock                  # regenerate against new pyproject.toml
+slave pm lock                  # regenerate against new pyproject.toml
 git add uv.lock
 git commit -m "chore: refresh uv.lock after syncing with main"
 git push --force-with-lease  # drop --force-with-lease if you merged
 ```
 
-**If you only changed pyproject.toml:** run `hermes pm lock` locally
+**If you only changed pyproject.toml:** run `slave pm lock` locally
 and commit the result.
 
 This check is blocking because the Docker image build uses
@@ -88,8 +88,8 @@ TIMEOUT_STATUS = action_required(
 )
 STALE_STATUS = action_required(
     "uv.lock check", "uv.lock out of sync", "uv.lock is out of sync with pyproject.toml.",
-    "Run `hermes pm lock` locally and commit the result. If on a PR, sync with main first:\n"
-    "```\ngit fetch origin main\ngit rebase origin/main\nhermes pm lock\ngit add uv.lock\n"
+    "Run `slave pm lock` locally and commit the result. If on a PR, sync with main first:\n"
+    "```\ngit fetch origin main\ngit rebase origin/main\nslave pm lock\ngit add uv.lock\n"
     'git commit -m "chore: refresh uv.lock"\n```\n',
 )
 
@@ -149,7 +149,7 @@ def main() -> int:
     if verdict == STALE:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
             fh.write(STALE_SUMMARY)
-        print("::error title=uv.lock out of sync::Run `hermes pm lock` locally and commit the "
+        print("::error title=uv.lock out of sync::Run `slave pm lock` locally and commit the "
               "result. If on a PR, sync with main first.")
         publish(STALE_STATUS, ARTIFACT)
         return 1

@@ -38,8 +38,8 @@ def _write_config(home: Path, text: str) -> None:
 
 @pytest.fixture
 def providers(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_PET_IMAGE_PROVIDER", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.delenv("SLAVE_PET_IMAGE_PROVIDER", raising=False)
     _write_config(tmp_path, "image_gen:\n  provider: nous\n  model: krea-3\n")
     output = tmp_path / "generated.png"
     Image.new("RGBA", (8, 8), "blue").save(output)

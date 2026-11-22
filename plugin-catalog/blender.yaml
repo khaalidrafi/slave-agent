@@ -1,5 +1,5 @@
 name: blender
-repo: https://github.com/NousResearch/hermes-official-plugins
+repo: https://github.com/NousResearch/slave-official-plugins
 sha: 9b11ffeda84b077bea9de52d22733c7a41ca581a
 subdir: blender
 version: "0.4.1"
@@ -8,8 +8,8 @@ title: Blender
 maintainer: NousResearch
 tier: official
 category: tools
-docs_url: https://github.com/NousResearch/hermes-official-plugins/tree/main/blender
-image: https://raw.githubusercontent.com/NousResearch/hermes-official-plugins/9b11ffeda84b077bea9de52d22733c7a41ca581a/assets/blender.jpg
+docs_url: https://github.com/NousResearch/slave-official-plugins/tree/main/blender
+image: https://raw.githubusercontent.com/NousResearch/slave-official-plugins/9b11ffeda84b077bea9de52d22733c7a41ca581a/assets/blender.jpg
 platforms: [windows, macos, linux]
 onboarding: true
 capabilities:

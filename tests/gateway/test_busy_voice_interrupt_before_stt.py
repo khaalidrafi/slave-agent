@@ -51,7 +51,7 @@ async def _interrupt_via(route, runner, event, source, adapter, agent, key):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("route", ["busy_handler", "priority", "monitor"])
 async def test_busy_voice_note_interrupts_before_its_transcription_finishes(route, tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "true")
+    monkeypatch.setenv("SLAVE_GATEWAY_BUSY_ACK_ENABLED", "true")
     runner = GatewayRunner(config=GatewayConfig())
     source = SessionSource(platform=Platform.TELEGRAM, chat_id="c1", user_id="u1", chat_type="dm")
     key = runner._session_key_for_source(source)

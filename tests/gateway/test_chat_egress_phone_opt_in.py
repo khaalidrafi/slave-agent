@@ -1,6 +1,6 @@
 """``security.redact_phone_numbers: false`` keeps only E.164 numbers in chat replies (#68911).
 
-The opt-in is read from a real config.yaml in a temp ``HERMES_HOME`` and judged through the gateway's
+The opt-in is read from a real config.yaml in a temp ``SLAVE_HOME`` and judged through the gateway's
 production chat boundaries: the non-streamed final reply (``_sanitize_gateway_final_response``) and the
 streamed reply (``GatewayStreamConsumer._clean_for_display``). Every value is synthetic.
 """
@@ -33,8 +33,8 @@ _BODY = {
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.delenv("SLAVE_REDACT_SECRETS", raising=False)
 
     def write(security):
         body = "security:\n" + "".join(f"  {k}: {v}\n" for k, v in security.items()) if security else "{}\n"
@@ -68,13 +68,13 @@ def test_phone_numbers_stay_masked_unless_explicitly_false(home, security):
 
 def test_a_refused_config_backend_keeps_numbers_masked_without_aborting_the_reply(home, monkeypatch):
     """``ConfigBackendUnavailable`` is a ``SystemExit``: it must fail closed, not escape delivery."""
-    from hermes_cli import config as hermes_config
-    from hermes_cli.config_backend import ConfigBackendUnavailable
+    from slave_cli import config as slave_config
+    from slave_cli.config_backend import ConfigBackendUnavailable
 
     home({"redact_phone_numbers": "false"})
 
     def refuse(*a, **k):
         raise ConfigBackendUnavailable("backend refused the profile read")
-    monkeypatch.setattr(hermes_config, "load_config_readonly", refuse)
+    monkeypatch.setattr(slave_config, "load_config_readonly", refuse)
     for surface, out in _replies(f"Call {PHONE} now.").items():
         assert PHONE not in out, (surface, out)

@@ -1,4 +1,4 @@
-import type { BillingStateResponse } from '@hermes/shared/gateway-types'
+import type { BillingStateResponse } from '@slave-agent/shared/gateway-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getOverlayState, resetOverlayState } from '../app/overlayStore.js'

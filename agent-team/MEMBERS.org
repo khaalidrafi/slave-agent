@@ -12,7 +12,7 @@
         in khaalidrafi/agent-team.el agent-team/MEMBERS.org — one canonical
         copy; this file carries the roster + seat duties only, no re-cited
         numbers (drift law).
-#+PROJECT: khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; a CUSTOMIZABLE agent with the hermes feature set, mouldable per deployment (personal / business / developer) via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org). Customer names never appear in this tree (Owner order 2026-11-16).
+#+PROJECT: khaalidrafi/slave-agent — light fork of NousResearch/hermes-agent (FORK.org doctrine): light core, optional bulk, generated brand; a CUSTOMIZABLE agent with the slave feature set, mouldable per deployment (personal / business / developer) via generic surfaces only (docs/INTEGRATION-ADMINEVERYWHERE.org). Customer names never appear in this tree (Owner order 2026-11-16).
 
 * Team Lead + Director of Engineering — z.ai-agent (COMBINED SEAT, umbrella)
   - APPOINTMENT (Owner 2026-10-29 05:12Z #hq): one umbrella Lead across

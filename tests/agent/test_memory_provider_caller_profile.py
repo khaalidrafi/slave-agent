@@ -15,7 +15,7 @@ from agent.memory_manager import MemoryManager
 from agent.memory_provider import MemoryProvider, ctx_bound
 from agent.secret_scope import is_multiplex_active
 from agent.tool_executor import _resolve_sequential_dispatch, _ToolCallRef
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 _TOOL = "pw_remember"
 
@@ -37,14 +37,14 @@ class _ProcessWideProvider(MemoryProvider):
         return True
 
     def initialize(self, session_id, **kwargs):
-        type(self).binding = kwargs["hermes_home"]
+        type(self).binding = kwargs["slave_home"]
 
     def get_tool_schemas(self):
         return [{"name": _TOOL, "description": "remember", "parameters": {"type": "object", "properties": {}}}]
 
     def handle_tool_call(self, tool_name, args, **kwargs):
         type(self).calls.append(kwargs)
-        home = kwargs.get("hermes_home") or type(self).binding
+        home = kwargs.get("slave_home") or type(self).binding
         type(self).stores.setdefault(home, []).append(args["content"])
         return json.dumps({"ok": True})
 
@@ -70,10 +70,10 @@ class _Scope:
         self.home = home
 
     def __enter__(self):
-        self.token = set_hermes_home_override(str(self.home))
+        self.token = set_slave_home_override(str(self.home))
 
     def __exit__(self, *exc):
-        reset_hermes_home_override(self.token)
+        reset_slave_home_override(self.token)
 
 
 def _agent(home, gsk, provider_cls=_ProcessWideProvider, *, initialize=True):
@@ -81,7 +81,7 @@ def _agent(home, gsk, provider_cls=_ProcessWideProvider, *, initialize=True):
     with _Scope(home):
         manager.add_provider(provider_cls())
         if initialize:
-            manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", hermes_home=str(home))
+            manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", slave_home=str(home))
     return SimpleNamespace(
         _memory_manager=manager, _context_engine_tool_names=set(), _gateway_session_key=gsk,
         _should_emit_quiet_tool_messages=lambda: False, _should_start_quiet_spinner=lambda: False,
@@ -101,7 +101,7 @@ def _concurrent(agent, content):
 
 @pytest.fixture
 def homes(tmp_path):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     alpha, beta = root / "profiles" / "alpha", root / "profiles" / "beta"
     for home in (alpha, beta):
         home.mkdir(parents=True)
@@ -146,7 +146,7 @@ def _assert_generic_refusal(result, caplog, *homes):
     """The model/chat sees a generic refusal pointing at a log every host writes (errors.log; gateway.log
     too on a gateway); the log keeps the check's code and the homes."""
     error = result.get("error", "")
-    assert "refused" in error and "hermes logs errors" in error, result
+    assert "refused" in error and "slave logs errors" in error, result
     assert _REFUSAL_CODE not in error and not any(str(home) in error for home in homes), result
     logged = "\n".join(r.getMessage() for r in caplog.records if r.name == "agent.memory_caller_scope")
     assert _REFUSAL_CODE in logged, logged
@@ -185,14 +185,14 @@ def test_multiplexed_call_without_a_caller_scope_is_refused_even_for_the_process
     # The manager serves the process's own (launch) profile, but on a multiplexed process a call that
     # names no profile is not proof it came from that profile's turn.
     alpha_home, _ = homes
-    monkeypatch.setenv("HERMES_HOME", str(alpha_home))
+    monkeypatch.setenv("SLAVE_HOME", str(alpha_home))
     alpha = _agent(alpha_home, "agent:alpha:api_server:dm:1")
     for dispatch in (_sequential, _concurrent):
-        token = set_hermes_home_override(None)
+        token = set_slave_home_override(None)
         try:
             result = json.loads(dispatch(alpha, "unscoped"))
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
         _assert_generic_refusal(result, caplog, alpha_home)
     assert _ProcessWideProvider.stores == {}
 
@@ -220,7 +220,7 @@ _HOOK_TOOL = "ct_remember"
 
 class _InstanceScopedProvider(MemoryProvider):
     """A provider that meets the multiplexing contract: its store binding lives on the instance, set
-    from ``initialize``'s ``hermes_home``. Records which binding, and which ambient home, every call
+    from ``initialize``'s ``slave_home``. Records which binding, and which ambient home, every call
     and hook ran under."""
 
     events: list = []
@@ -236,17 +236,17 @@ class _InstanceScopedProvider(MemoryProvider):
         return True
 
     def initialize(self, session_id, **kwargs):
-        self._home = kwargs["hermes_home"]
+        self._home = kwargs["slave_home"]
 
     def _record(self, what):
-        from hermes_constants import get_hermes_home
-        type(self).events.append((what, self._home, str(get_hermes_home())))
+        from slave_constants import get_slave_home
+        type(self).events.append((what, self._home, str(get_slave_home())))
 
     def get_tool_schemas(self):
         return [{"name": _HOOK_TOOL, "description": "remember", "parameters": {"type": "object", "properties": {}}}]
 
     def handle_tool_call(self, tool_name, args, **kwargs):
-        assert kwargs["hermes_home"] == self._home, (kwargs, self._home)
+        assert kwargs["slave_home"] == self._home, (kwargs, self._home)
         self._record("tool")
         return json.dumps({"ok": True})
 
@@ -290,7 +290,7 @@ def _manager(home, provider=None):
     manager = MemoryManager()
     with _Scope(home):
         manager.add_provider(provider or _InstanceScopedProvider())
-        manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", hermes_home=str(home))
+        manager.initialize_all(session_id=f"s-{home.name}", platform="api_server", slave_home=str(home))
     return manager
 
 
@@ -332,7 +332,7 @@ def test_lifecycle_hooks_from_another_profiles_scope_are_refused(homes, caplog):
 
 def test_multiplexed_lifecycle_hooks_without_a_caller_scope_are_refused(homes, multiplexed, monkeypatch, caplog):
     alpha_home, _ = homes
-    monkeypatch.setenv("HERMES_HOME", str(alpha_home))
+    monkeypatch.setenv("SLAVE_HOME", str(alpha_home))
     alpha = _manager(alpha_home)
     for hook in _HOOKS.values():
         hook(alpha)
@@ -360,7 +360,7 @@ def test_tool_calls_reuse_what_initialize_bound(homes, monkeypatch):
 def test_refused_checkpoint_compression_fails_closed(homes):
     alpha_home, beta_home = homes
     alpha = _manager(alpha_home)
-    with _Scope(beta_home), pytest.raises(RuntimeError, match="hermes logs errors"):
+    with _Scope(beta_home), pytest.raises(RuntimeError, match="slave logs errors"):
         alpha.on_pre_compress([{"role": "user", "content": "x"}], require_checkpoint=True)
 
 
@@ -369,13 +369,13 @@ def test_refusals_are_written_to_gateway_log():
     import logging
 
     from agent import memory_caller_scope
-    from hermes_logging import COMPONENT_PREFIXES, _ComponentFilter
+    from slave_logging import COMPONENT_PREFIXES, _ComponentFilter
     record = logging.LogRecord(memory_caller_scope.logger.name, logging.WARNING, __file__, 1, "refused", (), None)
     assert _ComponentFilter(COMPONENT_PREFIXES["gateway"]).filter(record)
 
 
 def test_background_hook_runs_under_the_owning_profile_explicitly(homes, multiplexed):
-    # The turn proves its profile through the secret scope alone (no HERMES_HOME override): the
+    # The turn proves its profile through the secret scope alone (no SLAVE_HOME override): the
     # background worker must still run the provider under the owner's home, not the process's.
     from agent.secret_scope import reset_secret_scope, set_secret_scope
     alpha_home, _ = homes
@@ -457,7 +457,7 @@ def test_agent_whose_provider_instance_is_refused_is_told_and_runs_without_it(ho
     _manager(alpha_home, shared)
     monkeypatch.setattr("plugins.memory.load_memory_provider", lambda name: shared)
     monkeypatch.setattr(agent_init, "_memory_provider_init_kwargs", lambda agent, platform: {
-        "session_id": "s-beta", "platform": platform, "hermes_home": str(beta_home)})
+        "session_id": "s-beta", "platform": platform, "slave_home": str(beta_home)})
     agent = StartupAgent("api_server")
     with _Scope(beta_home), caplog.at_level(logging.DEBUG):
         agent_init._init_memory(agent, {"memory": {"provider": "instancescoped"}}, False, "api_server")
@@ -575,14 +575,14 @@ def test_multiplexing_off_nonweakref_shared_provider_keeps_first_home(homes, cap
             return True
 
         def initialize(self, session_id, **kwargs):
-            self.bound_home = kwargs["hermes_home"]
+            self.bound_home = kwargs["slave_home"]
 
         def get_tool_schemas(self):
             return [{"name": _HOOK_TOOL, "description": "remember",
                      "parameters": {"type": "object", "properties": {}}}]
 
         def handle_tool_call(self, tool_name, args, **kwargs):
-            return json.dumps({"store_home": self.bound_home, "caller_home": kwargs["hermes_home"]})
+            return json.dumps({"store_home": self.bound_home, "caller_home": kwargs["slave_home"]})
 
     alpha_home, beta_home = homes
     shared = _SlotsProvider()

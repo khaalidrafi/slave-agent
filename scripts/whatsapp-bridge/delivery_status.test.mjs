@@ -1,5 +1,5 @@
 /**
- * Delivery/read status events for messages Hermes sent (logged to gateway.log by the adapter).
+ * Delivery/read status events for messages Slave sent (logged to gateway.log by the adapter).
  */
 
 import test from 'node:test';
@@ -49,7 +49,7 @@ test('group receipts name the recipient and the furthest state', () => {
   assert.equal(delivered.status, 'delivered');
 });
 
-test('nothing is reported for messages Hermes did not send', () => {
+test('nothing is reported for messages slave-agent did not send', () => {
   const update = { status: Status.READ };
   // Typed by a human on the linked phone: fromMe but not one of our sends.
   assert.equal(deliveryStatusEvent({ key: { ...dmKey, id: 'human-typed' }, update, isOwnSend }), null);

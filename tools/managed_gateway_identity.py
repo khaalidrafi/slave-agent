@@ -24,9 +24,9 @@ __all__ = [
     "user_agent",
 ]
 
-SESSION_HEADER = "x-nous-hermes-session"
-TURN_HEADER = "x-nous-hermes-turn"
-TOOL_CALL_HEADER = "x-nous-hermes-tool-call"
+SESSION_HEADER = "x-nous-slave-session"
+TURN_HEADER = "x-nous-slave-turn"
+TOOL_CALL_HEADER = "x-nous-slave-tool-call"
 REQUEST_ID_HEADER = "x-request-id"
 
 # sys.platform -> the shared-metrics OS family.
@@ -59,27 +59,27 @@ def _platform_name() -> str:
         return turn.lease.platform
     if platform := session_platform():
         return platform
-    return "cron" if is_truthy_value(get_session_env("HERMES_CRON_SESSION", "")) else "cli"
+    return "cron" if is_truthy_value(get_session_env("SLAVE_CRON_SESSION", "")) else "cli"
 
 
 def request_surface() -> str:
-    from hermes_cli.observability.shared_metrics_contract import execution_surface
+    from slave_cli.observability.shared_metrics_contract import execution_surface
 
     surface = execution_surface({"execution_surface": _platform_name()})
     return "other" if surface == "unknown" else surface
 
 
 def user_agent() -> str:
-    from hermes_cli.version_info import get_version_info
-    from hermes_platform.host.facts import os_family
+    from slave_cli.version_info import get_version_info
+    from slave_platform.host.facts import os_family
 
     os_name = _OS_FAMILY.get(os_family(), "unknown")
-    return f"hermes-agent/{get_version_info().base_version} ({request_surface()}; {os_name})"
+    return f"slave-agent/{get_version_info().base_version} ({request_surface()}; {os_name})"
 
 
 def _send_consented() -> bool:
-    from hermes_cli.config import read_raw_config_readonly
-    from hermes_cli.observability.shared_metrics_send_config import resolve_send_config
+    from slave_cli.config import read_raw_config_readonly
+    from slave_cli.observability.shared_metrics_send_config import resolve_send_config
 
     return resolve_send_config(read_raw_config_readonly() or {}).send is True
 
@@ -88,7 +88,7 @@ def _conversation_id() -> Optional[str]:
     from agent.portal_tags import get_conversation_context
     from gateway.session_context import get_session_env
 
-    return get_conversation_context() or get_session_env("HERMES_SESSION_ID", "") or None
+    return get_conversation_context() or get_session_env("SLAVE_SESSION_ID", "") or None
 
 
 def correlation_headers(call: Optional[CallRef] = None) -> dict[str, str]:

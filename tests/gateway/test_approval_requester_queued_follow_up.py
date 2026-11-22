@@ -48,7 +48,7 @@ async def test_a_queued_follow_up_runs_under_its_own_sender(monkeypatch, tmp_pat
         await runner._run_agent(message="alice-task", context_prompt="", history=[], source=alice.source,
                                 session_id="s1", session_key=KEY)
         from gateway.session_context import get_session_env
-        assert get_session_env("HERMES_SESSION_ACTOR_ID") == "111"  # the opener's binding is restored after
+        assert get_session_env("SLAVE_SESSION_ACTOR_ID") == "111"  # the opener's binding is restored after
     finally:
         runner._clear_session_env(tokens)
 

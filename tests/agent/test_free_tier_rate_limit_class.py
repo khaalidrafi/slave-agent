@@ -11,7 +11,7 @@ from agent.error_classifier import classify_api_error
 from agent.error_surface import build_error_surface_from_result
 from agent.nous_rate_guard import is_long_welcome_rate_limit, welcome_refusal_from_headers
 from agent.turn_recovery import max_retries_exhausted_result, nonretryable_client_error_result
-from tests.hermes_cli.anon_portal import make_jwt
+from tests.slave_cli.anon_portal import make_jwt
 
 WELCOME = "https://welcome-api.nousresearch.com/v1"
 MODEL = "nous/welcome"
@@ -82,7 +82,7 @@ def test_anonymous_refusals_all_offer_sign_in(case_id, status, body, headers, ki
 
 @pytest.mark.parametrize("case_id,status,body,headers,kind,breaker", CASES, ids=[c[0] for c in CASES])
 def test_named_account_same_response_is_not_a_free_tier_refusal(case_id, status, body, headers, kind, breaker):
-    agent = _agent(make_jwt(account_tier="free", client_id="hermes-cli"))
+    agent = _agent(make_jwt(account_tier="free", client_id="slave-cli"))
     error = _error(status, body, headers)
     classified = classify_api_error(error, provider="nous", model=MODEL, base_url=WELCOME, api_key=agent.api_key)
     assert "welcome_refusal" not in classified.error_context

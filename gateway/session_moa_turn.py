@@ -15,8 +15,8 @@ logger = logging.getLogger("gateway.run")
 
 async def default_preset():
     """The configured default MoA preset (the built-in one when config is unreadable)."""
-    from hermes_cli.config import load_config
-    from hermes_cli.moa_config import normalize_moa_config
+    from slave_cli.config import load_config
+    from slave_cli.moa_config import normalize_moa_config
     try:
         cfg = await asyncio.to_thread(load_config)
         return normalize_moa_config(cfg.get("moa") if isinstance(cfg, dict) else {})["default_preset"]
@@ -66,7 +66,7 @@ async def queue_busy_moa(runner, event, session_key, source):
     running turn (whose model is untouched). Without an authority to admit it, the old refusal."""
     from agent.i18n import t
     from gateway.run_busy import _busy_accepted
-    from hermes_cli.moa_config import moa_usage
+    from slave_cli.moa_config import moa_usage
     prompt = event.get_command_args().strip()
     if not prompt:
         return moa_usage()

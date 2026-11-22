@@ -17,7 +17,7 @@ KEY_CMD = "key-cmd"
 MINIMAX_OAUTH = "minimax-oauth"
 
 # Attribute read with getattr only: reading it never invokes the callable.
-SOURCE_ATTR = "hermes_credential_source"
+SOURCE_ATTR = "slave_credential_source"
 
 # Credential source -> i18n key. Both display surfaces resolve labels here.
 SOURCE_LABEL_KEYS = {

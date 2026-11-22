@@ -93,7 +93,7 @@ def keyless_gateway(tmp_path, *, isolation=None, beta=False):
         (home / 'profiles' / 'beta' / 'config.yaml').write_text(json.dumps(profile))
         _probe_plugin(home / 'profiles' / 'beta', tmp_path / 'beta.jsonl')
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     try:
         with daemon(root, home, env, barrier=False) as (proc, desc):

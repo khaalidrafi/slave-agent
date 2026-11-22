@@ -41,7 +41,7 @@ async def test_streamed_completion_approval_resolves_via_runs_endpoint(monkeypat
     async with TestClient(TestServer(app)) as cli:
         with patch.object(adapter, "_create_agent", side_effect=lambda **_k: _approval_agent(decisions)):
             resp = await cli.post("/v1/chat/completions", json={
-                "model": "hermes-agent", "stream": True, "messages": [{"role": "user", "content": "hi"}]})
+                "model": "slave-agent", "stream": True, "messages": [{"role": "user", "content": "hi"}]})
             assert resp.status == 200
             async def _first_approval():
                 event = None
@@ -105,7 +105,7 @@ async def test_canonical_streamed_approval_reaches_sse_and_resolves_via_runs_end
     async with TestClient(TestServer(app)) as cli:
         if surface == "chat_completions":
             resp = await cli.post("/v1/chat/completions", json={
-                "model": "hermes-agent", "stream": True, "messages": [{"role": "user", "content": "hi"}]})
+                "model": "slave-agent", "stream": True, "messages": [{"role": "user", "content": "hi"}]})
             prefix = "chatcmpl"
         else:
             seed_session(owner.persistence, "api-stream", "api_server")
@@ -138,9 +138,9 @@ async def test_exact_streamed_retry_replays_the_already_pending_approval(api, ow
     decisions = []
     owner.runner._handle_message = _canonical_approval_turn(owner, decisions)
     api._api_key = "pending-retry-key-long-enough"
-    headers = {"Authorization": "Bearer " + api._api_key, "X-Hermes-Session-Id": "retry-sse",
+    headers = {"Authorization": "Bearer " + api._api_key, "X-Slave-Session-Id": "retry-sse",
                "Idempotency-Key": "retry-once"}
-    body = {"model": "hermes-agent", "stream": True, "messages": [{"role": "user", "content": "hi"}]}
+    body = {"model": "slave-agent", "stream": True, "messages": [{"role": "user", "content": "hi"}]}
     app = _create_app(api)
     app.router.add_post("/v1/runs/{run_id}/approval", api._handle_run_approval)
     async with TestClient(TestServer(app)) as cli:

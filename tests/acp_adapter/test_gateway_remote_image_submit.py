@@ -9,7 +9,7 @@ import pytest
 from acp.schema import ImageContentBlock, TextContentBlock
 
 from acp_adapter.gateway_server import GatewayACPAgent
-from hermes_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_client import GatewayClientError
 from tests.acp_adapter.test_gateway_prompt_content import _ONE_PX_PNG, _allow_loopback
 
 
@@ -69,7 +69,7 @@ def _prompt(url):
 
 @pytest.mark.asyncio
 async def test_unacked_remote_image_retry_reuses_the_first_staging(tmp_path, monkeypatch, host):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     _allow_loopback(monkeypatch, True)
     agent = GatewayACPAgent()
     agent._gateway = _LosesFirstAck(agent)
@@ -87,7 +87,7 @@ async def test_unacked_remote_image_retry_reuses_the_first_staging(tmp_path, mon
 
 @pytest.mark.asyncio
 async def test_stop_during_a_remote_image_download_submits_nothing(tmp_path, monkeypatch, host):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     _allow_loopback(monkeypatch, True)
     host['gate'] = threading.Event()
     agent = GatewayACPAgent()

@@ -106,7 +106,7 @@ def test_workspace_auto_approval_allows_workspace_and_tmp_but_not_sensitive(tmp_
     # Use tempfile.gettempdir() so this test exercises the same code path on
     # Linux (`/tmp`), macOS (`/private/var/folders/...`) and Windows
     # (`%LOCALAPPDATA%\Temp`). Before the fix this branch only worked on Linux.
-    tmp_file = Path(tempfile.gettempdir()) / "hermes-acp-auto-approve-test.txt"
+    tmp_file = Path(tempfile.gettempdir()) / "slave-acp-auto-approve-test.txt"
     env_file = tmp_path / ".env"
 
     assert should_auto_approve_edit(
@@ -135,7 +135,7 @@ def test_multifile_v4a_patch_checks_every_real_path_not_the_joined_display_strin
     assert not should_auto_approve_edit(proposal, "workspace_session", str(tmp_path))
 
     # Escape target sits outside BOTH allowed roots (tempdir + session cwd).
-    escape = Path.home() / ".hermes-acp-escape-test.txt"
+    escape = Path.home() / ".slave-acp-escape-test.txt"
     hidden_escape = f"*** Update File: {tmp_path}/src/ok.py\n@@\n+ok\n*** Update File: {escape}\n@@\n+evil\n"
     proposal = build_edit_proposal("patch", {"mode": "patch", "patch": hidden_escape})
     assert not should_auto_approve_edit(proposal, "workspace_session", str(tmp_path))

@@ -20,7 +20,7 @@ async def probe(peer, target, kind):
     from gateway.session_authority import initialize_session_authority
     from gateway.session_contract import SessionRef
     from gateway.run_api import start_gateway_api, stop_gateway_api
-    from hermes_cli import web_server
+    from slave_cli import web_server
     from run_agent import AIAgent
     from tools.approval import resolve_gateway_approval
 
@@ -29,7 +29,7 @@ async def probe(peer, target, kind):
     api = await start_gateway_api(runner)
     port = api.socket.getsockname()[1]
     web_server.app.state.auth_required = True
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from slave_cli.dashboard_auth.ws_tickets import mint_ticket
     sid = None
     sockets = []
 
@@ -141,7 +141,7 @@ async def probe(peer, target, kind):
         assert pong.get('result', {}).get('pong') is True, pong
         described = await rpc(c, 'runtime.describe')
         assert described['result']['instance_id'] == authority.instance_id
-        assert str(Path(os.environ['HERMES_HOME'])) not in json.dumps(described)
+        assert str(Path(os.environ['SLAVE_HOME'])) not in json.dumps(described)
         # Public transport auth remains mandatory, even for metadata or fresh sessions.
         try:
             async with websockets.connect(f'ws://127.0.0.1:{port}/api/ws?token=forged') as bad:
@@ -150,7 +150,7 @@ async def probe(peer, target, kind):
             pass
         else:
             raise AssertionError('unauthenticated socket accepted')
-        Path(os.environ['HERMES_HOME'], 'receipt.json').write_text(json.dumps({
+        Path(os.environ['SLAVE_HOME'], 'receipt.json').write_text(json.dumps({
             'terminal_effect': not target.exists(), 'human_response': True,
             'same_agent': True, 'detached_pending': True,
             'negative_controls': True, 'reconnected_identity': sid, 'model_requests': len(peer.requests)}))
@@ -168,7 +168,7 @@ async def probe(peer, target, kind):
 
 
 def main():
-    target = Path(os.environ['HERMES_HOME'], 'owned-removal')
+    target = Path(os.environ['SLAVE_HOME'], 'owned-removal')
     target.mkdir()
     (target / 'owned.txt').write_text('disposable')
     kind = sys.argv[1] if len(sys.argv) > 1 else 'approval'
@@ -179,7 +179,7 @@ def main():
     threading.Thread(target=peer.serve_forever, daemon=True).start()
     url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, TERMINAL_ENV='local')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local-control\n  provider: custom\n  base_url: {url}\n'
         'approvals:\n  mode: manual\n  timeout: 45\n'
         'streaming:\n  enabled: false\n'

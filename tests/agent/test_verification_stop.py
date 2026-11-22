@@ -30,47 +30,47 @@ def _make_project(root: Path) -> None:
 def _ledger_on(monkeypatch):
     """The ledger is inert unless verify-on-stop is enabled; ``clear_verify_env`` (requested
     explicitly, so it runs after this) strips it again for the enabled()-logic tests."""
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")
+    monkeypatch.setenv("SLAVE_VERIFY_ON_STOP", "1")
 
 @pytest.fixture
 def clear_verify_env(monkeypatch):
     """Clear every env signal verify_on_stop_enabled consults.
 
     Tests then set only the variable they exercise, mirroring how the CLI/TUI
-    set HERMES_SESSION_SOURCE and the gateway sets HERMES_SESSION_PLATFORM.
+    set SLAVE_SESSION_SOURCE and the gateway sets SLAVE_SESSION_PLATFORM.
     """
     for var in (
-        "HERMES_VERIFY_ON_STOP",
-        "HERMES_PLATFORM",
-        "HERMES_SESSION_PLATFORM",
-        "HERMES_SESSION_SOURCE",
+        "SLAVE_VERIFY_ON_STOP",
+        "SLAVE_PLATFORM",
+        "SLAVE_SESSION_PLATFORM",
+        "SLAVE_SESSION_SOURCE",
     ):
         monkeypatch.delenv(var, raising=False)
     return monkeypatch
 
 def test_verify_on_stop_env_can_enable(clear_verify_env):
     # Env "1" forces ON regardless of surface (here a messaging platform).
-    clear_verify_env.setenv("HERMES_VERIFY_ON_STOP", "1")
-    clear_verify_env.setenv("HERMES_SESSION_PLATFORM", "telegram")
+    clear_verify_env.setenv("SLAVE_VERIFY_ON_STOP", "1")
+    clear_verify_env.setenv("SLAVE_SESSION_PLATFORM", "telegram")
     assert verify_on_stop_enabled({"agent": {}}) is True
 
 @pytest.mark.parametrize("source", ["cli", "tui", "desktop", "codex", "local"])
 def test_verify_on_stop_auto_on_for_interactive_surfaces(clear_verify_env, source):
     # Under "auto", CLI/TUI/desktop coding surfaces resolve ON.
-    clear_verify_env.setenv("HERMES_SESSION_SOURCE", source)
+    clear_verify_env.setenv("SLAVE_SESSION_SOURCE", source)
     assert verify_on_stop_enabled({"agent": {"verify_on_stop": "auto"}}) is True
 
 def test_verify_on_stop_missing_value_defaults_off(clear_verify_env):
     # A missing/unrecognized config value falls back OFF on every surface,
     # matching the opt-in DEFAULT_CONFIG default — only an explicit "auto"
     # opts into the legacy surface-aware behavior.
-    clear_verify_env.setenv("HERMES_SESSION_SOURCE", "cli")
+    clear_verify_env.setenv("SLAVE_SESSION_SOURCE", "cli")
     assert verify_on_stop_enabled({"agent": {}}) is False
     assert verify_on_stop_enabled({"agent": {"verify_on_stop": "bogus"}}) is False
     assert verify_on_stop_enabled({}) is False
 
 def test_nudge_checks_all_edited_workspaces(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     project_a = tmp_path / "a"
     project_b = tmp_path / "b"
     _make_project(project_a)
@@ -97,7 +97,7 @@ def test_nudge_checks_all_edited_workspaces(tmp_path, monkeypatch):
 
 @pytest.mark.platforms("posix")  # Symlinks require elevated privileges on Windows
 def test_no_suite_nudge_uses_canonical_temp_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     project = tmp_path / "project"
     project.mkdir()
     (project / "package.json").write_text("{}", encoding="utf-8")
@@ -117,10 +117,10 @@ def test_no_suite_nudge_uses_canonical_temp_dir(tmp_path, monkeypatch):
     assert str(linked_temp) not in nudge
 
 def test_ad_hoc_pass_satisfies_no_suite_stop_loop(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
     changed = str(tmp_path / "src" / "app.ts")
-    script = Path(tempfile.gettempdir()) / f"hermes-ad-hoc-stop-{tmp_path.name}.py"
+    script = Path(tempfile.gettempdir()) / f"slave-ad-hoc-stop-{tmp_path.name}.py"
     script.write_text("print('ok')\n", encoding="utf-8")
     try:
         record_terminal_result(
@@ -136,7 +136,7 @@ def test_ad_hoc_pass_satisfies_no_suite_stop_loop(tmp_path, monkeypatch):
     assert build_verify_on_stop_nudge(session_id="s1", changed_paths=[changed]) is None
 
 def test_nudge_attempts_are_bounded(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     _node_project(tmp_path)
     changed = str(tmp_path / "src" / "app.ts")
     mark_workspace_edited(session_id="s1", cwd=tmp_path, paths=[changed])
@@ -151,7 +151,7 @@ def test_nudge_attempts_are_bounded(tmp_path, monkeypatch):
 
 def test_piped_verification_run_satisfies_the_guard(tmp_path, monkeypatch):
     """A piped run counts once the shell's PIPESTATUS is recorded with it."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     _node_project(tmp_path)
     changed = str(tmp_path / "src" / "app.ts")
     mark_workspace_edited(session_id="s1", cwd=tmp_path, paths=[changed])
@@ -169,7 +169,7 @@ def test_piped_verification_run_satisfies_the_guard(tmp_path, monkeypatch):
 
 def test_nudge_explains_only_a_check_run_the_shell_could_not_attribute(tmp_path, monkeypatch):
     """The how-to-run advice names the hidden-status run, and only until a run is scored."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     _node_project(tmp_path)
     changed = str(tmp_path / "src" / "app.ts")
     mark_workspace_edited(session_id="s1", cwd=tmp_path, paths=[changed])
@@ -190,9 +190,9 @@ def test_nudge_explains_only_a_check_run_the_shell_could_not_attribute(tmp_path,
     assert "Your last check run (`pnpm test || true`) did not count" in hidden
     assert "did not count" not in scored
 
-def test_nudge_drops_the_unscored_run_warning_once_hermes_verify_records(tmp_path, monkeypatch):
-    """``hermes verify`` records from its own process: its newer failure is the latest check."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+def test_nudge_drops_the_unscored_run_warning_once_slave_verify_records(tmp_path, monkeypatch):
+    """``slave verify`` records from its own process: its newer failure is the latest check."""
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     _node_project(tmp_path)
     changed = str(tmp_path / "src" / "app.ts")
     mark_workspace_edited(session_id="s1", cwd=tmp_path, paths=[changed])
@@ -206,7 +206,7 @@ def test_nudge_drops_the_unscored_run_warning_once_hermes_verify_records(tmp_pat
     nudge = build_verify_on_stop_nudge(session_id="s1", changed_paths=[changed])
 
     assert nudge is not None
-    assert "hermes verify" in nudge and "did not count" not in nudge
+    assert "slave verify" in nudge and "did not count" not in nudge
 
 # ---------------------------------------------------------------------------
 # Fix C: documentation/prose edits carry no verifiable behavior and must never
@@ -214,7 +214,7 @@ def test_nudge_drops_the_unscored_run_warning_once_hermes_verify_records(tmp_pat
 # ---------------------------------------------------------------------------
 
 def test_mixed_doc_and_code_edit_still_nudges(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     _node_project(tmp_path)
     doc = str(tmp_path / "README.md")
     code = str(tmp_path / "src" / "app.ts")

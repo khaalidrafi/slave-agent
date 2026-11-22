@@ -31,14 +31,14 @@ def test_service_share_retains_bytes_and_reuses_frozen_task(tmp_path, monkeypatc
     db = tmp_path / 'state.db'
     service = service_at(room_store)
     service.create_room(room_id='room', name='Room', members=[
-        {'member_id': 'default', 'profile': 'default', 'handle': 'hermes'},
+        {'member_id': 'default', 'profile': 'default', 'handle': 'slave'},
         {'member_id': 'ops', 'profile': 'ops', 'handle': 'ops'}])
     store = HostedRoomAttachmentStore(storage_handle(tmp_path))
     item = store.put(room_id='room', upload_id='upload', kind='file', name='proof.txt',
                      mime='application/octet-stream', data=b'\x00exact shared bytes\xff')
     manifest = [{k: item[k] for k in ('attachment_id', 'kind', 'name', 'mime', 'size')}]
     event = service.send(room_id='room', event_id='share', payload={
-        'text': '@hermes inspect', 'thread_id': 'thread', 'attachments': manifest})
+        'text': '@slave inspect', 'thread_id': 'thread', 'attachments': manifest})
     before = driver.list_tasks(room_store, placement='profile', room_id='room')[0]
     assert before['payload']['attachments'][0]['event_id'] == event['event_id']
     with closing(sqlite3.connect(db)) as conn, conn:
@@ -57,9 +57,9 @@ def test_service_share_retains_bytes_and_reuses_frozen_task(tmp_path, monkeypatc
 def test_publication_cursor_race_retries_without_new_task(tmp_path, monkeypatch, room_store):
     service = service_at(room_store)
     service.create_room(room_id='room', name='Room', members=[
-        {'member_id': 'default', 'profile': 'default', 'handle': 'hermes'},
+        {'member_id': 'default', 'profile': 'default', 'handle': 'slave'},
         {'member_id': 'ops', 'profile': 'ops', 'handle': 'ops'}])
-    service.send(room_id='room', event_id='share', payload={'text': '@hermes inspect', 'thread_id': 'thread'})
+    service.send(room_id='room', event_id='share', payload={'text': '@slave inspect', 'thread_id': 'thread'})
     binding = service.bindings()[0]
     task = driver.list_tasks(room_store, placement='profile', room_id='room')[0]
     lease = driver.acquire_lease(room_store, placement='profile', room_id='room', gateway_id=binding.gateway_id,

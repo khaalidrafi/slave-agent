@@ -2,7 +2,7 @@
 
 The harness names a daemon by ``BU_NAME`` alone and reuses any live one in its runtime dir, which
 defaults to one dir per OS user. Every profile (a multiplexed gateway's served profiles, and each
-``hermes -p`` CLI, cron or one-shot process) therefore gets its own runtime dir (daemon sockets) and
+``slave -p`` CLI, cron or one-shot process) therefore gets its own runtime dir (daemon sockets) and
 tmp dir (screenshots, debug overlays, logs), so no profile drives a daemon attached to another's
 browser. A runtime dir too long for a 64-character session's AF_UNIX socket moves to a private short
 dir under ``$XDG_RUNTIME_DIR`` or the socket temp root.
@@ -143,11 +143,11 @@ def _claim_short_dir(key: str, budget: Optional[int]) -> Optional[str]:
     """A private ``hbh-<12 hex>`` dir (keyed by uid and ``key``) that fits ``budget``: under the
     user's private ``$XDG_RUNTIME_DIR`` first, else the short socket temp root; None when no
     candidate fits or can be claimed safely."""
-    from hermes_constants import socket_safe_tmpdir
+    from slave_constants import socket_safe_tmpdir
     getuid = getattr(os, "getuid", lambda: 0)
     digest = hashlib.sha256(f"{getuid()}\0{key}".encode()).hexdigest()[:12]
     # socket_safe_tmpdir() caps the root at 50 bytes for Chrome's longer socket names; ours needs a
-    # root of at most 17-21, which a Hermes scratch TMPDIR exceeds, so the sticky system root follows.
+    # root of at most 17-21, which a Slave scratch TMPDIR exceeds, so the sticky system root follows.
     # A container or macOS has no XDG_RUNTIME_DIR, which is why the shared roots stay as fallbacks.
     xdg = [xdg_dir] if (xdg_dir := private_user_runtime_dir()) else []
     roots = dict.fromkeys(os.path.realpath(r) for r in (*xdg, socket_safe_tmpdir(), "/tmp"))  # no-tmp: ok — AF_UNIX sun_path budget; dir claimed 0700 and ownership-checked

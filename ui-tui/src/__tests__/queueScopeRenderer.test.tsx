@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,7 +20,7 @@ describe('pending input destination', () => {
     { profile: 'beta', sid: 'same-session' }
   ])('does not drain or edit another destination: $profile/$sid', async destination => {
     const home = mkdtempSync(join(tmpdir(), 'ink-pending-'))
-    vi.stubEnv('HERMES_HOME', home)
+    vi.stubEnv('SLAVE_HOME', home)
     patchUiState({ info: null, sid: null })
     let queue!: ReturnType<typeof useQueue>
 

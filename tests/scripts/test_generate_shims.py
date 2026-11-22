@@ -1,7 +1,7 @@
 """scripts/move/generate_shims.py: the files that keep old module paths working across a move.
 
 Each test builds a small git repo with the generator, the compat package and one moved package
-(``oldpkg`` -> ``hermes_agent.oldpkg``), then runs the generated files in fresh processes.
+(``oldpkg`` -> ``slave_agent.oldpkg``), then runs the generated files in fresh processes.
 """
 from __future__ import annotations
 
@@ -37,23 +37,23 @@ def repo(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     (root / "scripts/move").mkdir(parents=True)
     shutil.copy2(REPO / "scripts/move/generate_shims.py", root / "scripts/move/generate_shims.py")
-    shutil.copytree(REPO / "hermes_agent/compat", root / "hermes_agent/compat",
+    shutil.copytree(REPO / "slave_agent/compat", root / "slave_agent/compat",
                     ignore=shutil.ignore_patterns("__pycache__"))
-    shutil.copy2(REPO / "hermes_agent/__init__.py", root / "hermes_agent/__init__.py")
+    shutil.copy2(REPO / "slave_agent/__init__.py", root / "slave_agent/__init__.py")
     _write(root, {
-        "hermes_agent/compat/moves.py": 'MOVES = {"oldpkg": "hermes_agent.oldpkg", "oldtop": "hermes_agent.oldtop"}\n',
-        "hermes_agent/compat/required_names.py": (
+        "slave_agent/compat/moves.py": 'MOVES = {"oldpkg": "slave_agent.oldpkg", "oldtop": "slave_agent.oldtop"}\n',
+        "slave_agent/compat/required_names.py": (
             'REQUIRED_NAMES = {"oldpkg": "package", "oldpkg.tool": "module", "oldpkg/data.py": "copy",'
             ' "oldtop": "hand"}\nREQUIRED_TEXT = {"oldpkg.tool": "MARKER the release greps for"}\n'),
-        "hermes_agent/oldpkg/__init__.py": "",
-        "hermes_agent/oldpkg/tool.py": MOVED_TOOL,
-        "hermes_agent/oldpkg/data.py": "# copied byte for byte\nX = 1\n",
-        "hermes_agent/oldtop.py": "",
+        "slave_agent/oldpkg/__init__.py": "",
+        "slave_agent/oldpkg/tool.py": MOVED_TOOL,
+        "slave_agent/oldpkg/data.py": "# copied byte for byte\nX = 1\n",
+        "slave_agent/oldtop.py": "",
         "oldtop.py": "# hand-written\n",
-        "hermes_bootstrap.py": "import sys\nsys.stderr.write('bootstrap ran\\n')\n",
+        "slave_bootstrap.py": "import sys\nsys.stderr.write('bootstrap ran\\n')\n",
         ".gitattributes": "*.py text eol=lf\n" + BLOCK,
         ".gitignore": "__pycache__/\noldpkg/build/\n",
-        "pyproject.toml": '[tool.hermes]\nupdate-startup-files = ["oldtop.py"]\n',
+        "pyproject.toml": '[tool.slave]\nupdate-startup-files = ["oldtop.py"]\n',
     })
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
     assert _generate(root).returncode == 0
@@ -67,7 +67,7 @@ def test_written_tree_passes_check_and_is_marked_generated(repo):
     assert {"/oldpkg/__init__.py", "/oldpkg/tool.py", "/oldpkg/data.py"} <= {
         line.split()[0] for line in block.splitlines()[1:] if line.startswith("/")}
     assert "/oldtop.py" not in block
-    assert (repo / "oldpkg/data.py").read_bytes() == (repo / "hermes_agent/oldpkg/data.py").read_bytes()
+    assert (repo / "oldpkg/data.py").read_bytes() == (repo / "slave_agent/oldpkg/data.py").read_bytes()
     assert "MARKER the release greps for" in (repo / "oldpkg/tool.py").read_text()
 
 
@@ -75,7 +75,7 @@ def test_old_updater_package_reaches_the_moved_module_through_the_shim(repo):
     # An updater imported the old package before the swap: Python finds oldpkg/tool.py on its
     # __path__ and never asks a finder, since none is installed in that process yet.
     probe = (f"import sys, types; p = types.ModuleType('oldpkg'); p.__path__ = [{str(repo / 'oldpkg')!r}]; "
-             "sys.modules['oldpkg'] = p; import oldpkg.tool, hermes_agent.oldpkg.tool as m; "
+             "sys.modules['oldpkg'] = p; import oldpkg.tool, slave_agent.oldpkg.tool as m; "
              "assert sys.modules['oldpkg.tool'] is m; print(m.VALUE)")
     assert _run(repo, "-c", probe).stdout.strip() == "42"
 
@@ -86,21 +86,21 @@ def test_run_as_a_script_runs_the_moved_main_with_its_argv(repo, argv):
     assert result.stdout.strip() == "argv ['a', 'b']", result.stderr
 
 
-def test_old_name_launch_repairs_a_torn_update_before_importing_hermes_agent(repo):
-    # The entry's first import, hermes_bootstrap, repairs a killed update; a merge killed while writing
-    # hermes_agent/ must not stop `python -m <old name>` from reaching it.
-    (repo / "hermes_agent/compat/__init__.py").write_text("def install(", encoding="utf-8")
+def test_old_name_launch_repairs_a_torn_update_before_importing_slave_agent(repo):
+    # The entry's first import, slave_bootstrap, repairs a killed update; a merge killed while writing
+    # slave_agent/ must not stop `python -m <old name>` from reaching it.
+    (repo / "slave_agent/compat/__init__.py").write_text("def install(", encoding="utf-8")
     assert "bootstrap ran" in _run(repo, "-m", "oldpkg.tool").stderr
     assert "bootstrap ran" in _run(repo, "oldpkg/tool.py").stderr  # `python cli.py` is an entry launch too
     plain = _run(repo, "-c", "import oldpkg")  # a plain import stays light and shows the real damage
     assert "bootstrap ran" not in plain.stderr and "SyntaxError" in plain.stderr
 
 
-def test_old_name_launch_from_a_cwd_with_another_hermes_agent_runs_this_trees_module(repo, tmp_path):
-    # `python -m` puts the cwd first on sys.path, so a project there that has its own hermes_agent/ (but no
+def test_old_name_launch_from_a_cwd_with_another_slave_agent_runs_this_trees_module(repo, tmp_path):
+    # `python -m` puts the cwd first on sys.path, so a project there that has its own slave_agent/ (but no
     # old-name package) must not capture the forward: the launch still runs the shim's own tree.
     cwd = tmp_path / "project"
-    _write(cwd, {"hermes_agent/__init__.py": ""})
+    _write(cwd, {"slave_agent/__init__.py": ""})
     env = {**os.environ, "PYTHONPATH": str(repo)}
     result = subprocess.run([sys.executable, "-m", "oldpkg.tool", "a"], cwd=cwd, env=env,
                             capture_output=True, text=True, timeout=60, check=False)
@@ -110,7 +110,7 @@ def test_old_name_launch_from_a_cwd_with_another_hermes_agent_runs_this_trees_mo
 def test_old_name_launch_on_a_healthy_tree_does_not_run_the_bootstrap(repo):
     # Light -m targets (an old updater's abort recovery, uninstall) never imported the bootstrap, so a
     # bootstrap that fails (dependencies that do not activate) must not stop them.
-    (repo / "hermes_bootstrap.py").write_text("import sys\nsys.exit('bootstrap ran')\n", encoding="utf-8")
+    (repo / "slave_bootstrap.py").write_text("import sys\nsys.exit('bootstrap ran')\n", encoding="utf-8")
     result = _run(repo, "-m", "oldpkg.tool", "a")
     assert (result.returncode, result.stdout.strip()) == (0, "argv ['a']"), result.stderr
 
@@ -122,36 +122,36 @@ def test_loaded_by_path_carries_the_moved_names(repo):
 
 
 def test_copy_row_for_a_data_file_copies_that_file(repo):
-    # Released apps fetch hermes_cli/local_runtime/catalog.json from main by URL, so the old path must
+    # Released apps fetch slave_cli/local_runtime/catalog.json from main by URL, so the old path must
     # keep the moved data file's bytes, not its sibling module's.
-    _write(repo, {"hermes_agent/oldpkg/data.json": '{"schema_version": 3}\n'})
-    names = repo / "hermes_agent/compat/required_names.py"
+    _write(repo, {"slave_agent/oldpkg/data.json": '{"schema_version": 3}\n'})
+    names = repo / "slave_agent/compat/required_names.py"
     names.write_text(names.read_text().replace('"oldtop": "hand"}', '"oldtop": "hand", "oldpkg/data.json": "copy"}'))
     assert _generate(repo).returncode == 0
-    assert (repo / "oldpkg/data.json").read_bytes() == (repo / "hermes_agent/oldpkg/data.json").read_bytes()
+    assert (repo / "oldpkg/data.json").read_bytes() == (repo / "slave_agent/oldpkg/data.json").read_bytes()
     assert _generate(repo, "--check").returncode == 0
 
 
 def test_exists_row_writes_a_marker_that_refuses_to_load(repo):
     # A release scans the old folder for __init__.py. The file must exist, and a process that started
     # before the update must not get the moved package through it: it fails and names the new module.
-    _write(repo, {"hermes_agent/oldpkg/sub/__init__.py": "", "hermes_agent/oldpkg/sub/real.py": "VALUE = 7\n"})
-    names = repo / "hermes_agent/compat/required_names.py"
+    _write(repo, {"slave_agent/oldpkg/sub/__init__.py": "", "slave_agent/oldpkg/sub/real.py": "VALUE = 7\n"})
+    names = repo / "slave_agent/compat/required_names.py"
     names.write_text(names.read_text().replace('"oldtop": "hand"}', '"oldtop": "hand", "oldpkg/sub/__init__.py": "exists"}'))
     assert _generate(repo).returncode == 0
     assert (repo / "oldpkg/sub/__init__.py").is_file() and not (repo / "oldpkg/sub/real.py").exists()
     assert _generate(repo, "--check").returncode == 0
     loaded = _run(repo, "-c", "import runpy; runpy.run_path('oldpkg/sub/__init__.py')")
-    assert loaded.returncode != 0 and "ImportError" in loaded.stderr and "hermes_agent.oldpkg.sub" in loaded.stderr
+    assert loaded.returncode != 0 and "ImportError" in loaded.stderr and "slave_agent.oldpkg.sub" in loaded.stderr
     # The marker is not in the way of the old name: the import reaches the moved package.
-    old_name = _run(repo, "-c", "import oldpkg.sub.real as m; print(m.VALUE, 'hermes_agent' in m.__file__)")
+    old_name = _run(repo, "-c", "import oldpkg.sub.real as m; print(m.VALUE, 'slave_agent' in m.__file__)")
     assert old_name.stdout.split() == ["7", "True"], old_name.stderr
 
 
 def test_platform_folders_a_release_scans_keep_their_marker_and_manifest():
     # Released code accepts plugins/platforms/<name>/ only with __init__.py and plugin.yaml, and only then
     # loads <name>/gateway_env.py. A gateway_env.py row without the other two does nothing.
-    from hermes_agent.compat.required_names import REQUIRED_NAMES
+    from slave_agent.compat.required_names import REQUIRED_NAMES
 
     folders = {name.rsplit("/", 1)[0] for name in REQUIRED_NAMES if name.startswith("plugins/platforms/")}
     assert len(folders) >= 16
@@ -180,13 +180,13 @@ def test_check_fails_on_drift_and_strays_but_not_on_ignored_output(repo):
 
 
 def test_startup_list_and_hand_files_fail_only_the_check(repo):
-    (repo / "pyproject.toml").write_text('[tool.hermes]\nupdate-startup-files = ["oldpkg/gone.py"]\n')
+    (repo / "pyproject.toml").write_text('[tool.slave]\nupdate-startup-files = ["oldpkg/gone.py"]\n')
     for args, code in ((["--check"], 1), ([], 0)):
         result = _generate(repo, *args)
         assert result.returncode == code
-        assert "oldpkg/gone.py: listed in [tool.hermes] update-startup-files" in result.stdout
-        assert "oldtop.py: hand-written file is not in [tool.hermes] update-startup-files" in result.stdout
+        assert "oldpkg/gone.py: listed in [tool.slave] update-startup-files" in result.stdout
+        assert "oldtop.py: hand-written file is not in [tool.slave] update-startup-files" in result.stdout
 
-    (repo / "pyproject.toml").write_text('[tool.hermes]\nupdate-startup-files = ["oldtop.py"]\n')
+    (repo / "pyproject.toml").write_text('[tool.slave]\nupdate-startup-files = ["oldtop.py"]\n')
     (repo / "oldtop.py").unlink()
     assert "oldtop.py: hand-written file (required_names kind 'hand') is missing" in _generate(repo, "--check").stdout

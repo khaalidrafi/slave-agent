@@ -28,9 +28,9 @@ def test_db_unavailable_is_one_line_for_chat_surfaces_by_default():
 def test_db_unavailable_commands_are_pinned_to_the_failing_profile(monkeypatch, tmp_path):
     """Both fallbacks that bypass the shared cause table (no cause; network-drive gloss) name the
     profile whose store failed, like the table's actions do."""
-    from hermes_constants import profile_cli_selector
+    from slave_constants import profile_cli_selector
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes" / "profiles" / "research"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave" / "profiles" / "research"))
     selector = profile_cli_selector()
     assert selector.strip()
     storage_user_copy.set_last_init_error(None)
@@ -41,7 +41,7 @@ def test_db_unavailable_commands_are_pinned_to_the_failing_profile(monkeypatch, 
     finally:
         storage_user_copy.set_last_init_error(None)
     for text in (no_cause, network):
-        assert f"`hermes {selector}doctor`" in text and "`hermes doctor`" not in text
+        assert f"`slave {selector}doctor`" in text and "`slave doctor`" not in text
         assert "{profile_arg}" not in text
 
 
@@ -64,7 +64,7 @@ def test_db_unavailable_details_line_carries_raw_cause_only_below_the_lead():
 
 def test_db_unavailable_network_drive_cause_does_not_offer_doctor_fix():
     """A locking-protocol failure means the DB sits on a network filesystem that
-    cannot host SQLite's WAL; `hermes doctor --fix` cannot repair a mount, so it
+    cannot host SQLite's WAL; `slave doctor --fix` cannot repair a mount, so it
     must not be the offered action (only moving the file helps)."""
     storage_user_copy.set_last_init_error("OperationalError: locking protocol")
     try:

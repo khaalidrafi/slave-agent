@@ -58,8 +58,8 @@ def test_an_older_release_delete_of_a_ledgered_session_is_refused_with_the_way_b
     with pytest.raises(sqlite3.IntegrityError) as refused:
         _older_release_delete(path, 'ledgered')
     message = str(refused.value)
-    assert 'newer Hermes' in message and 'Downgrading is unsupported' in message
-    assert 'hermes update' in message and 'pre-update snapshot' in message
+    assert 'newer slave-agent' in message and 'Downgrading is unsupported' in message
+    assert 'slave update' in message and 'pre-update snapshot' in message
     # The older release buckets by phrase; this must not read as damage, contention or a full disk.
     assert classify_persistence_error(refused.value) == 'unknown'
     _older_release_delete(path, 'plain')  # a session without runtime history still deletes
@@ -80,5 +80,5 @@ def test_an_upgraded_store_gains_the_guard_on_its_next_open(tmp_path):
         conn.execute('DROP TRIGGER sessions_runtime_ledger_delete_guard')
         conn.commit()
     StoreHolder(path).close()
-    with pytest.raises(sqlite3.IntegrityError, match='newer Hermes'):
+    with pytest.raises(sqlite3.IntegrityError, match='newer slave-agent'):
         _older_release_delete(path, 's')

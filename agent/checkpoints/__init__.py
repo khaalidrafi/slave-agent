@@ -1,4 +1,4 @@
-"""Snapshots of the working directory that ``/rollback``, ``/undo`` and ``hermes checkpoints`` use.
+"""Snapshots of the working directory that ``/rollback``, ``/undo`` and ``slave checkpoints`` use.
 
 - ``manager``: ``CheckpointManager``; takes, lists, diffs and restores snapshots in the shared store.
 - ``maintenance``: store retention, orphan pruning, status and cleanup.

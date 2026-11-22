@@ -17,15 +17,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from hermes_constants import get_hermes_home, get_hermes_home_override, hermes_home_key
+from slave_constants import get_slave_home, get_slave_home_override, slave_home_key
 from persistence.core.errors import AuthorityRefusal
 
 
 class SessionAuthorities:
-    """Registry of authorities keyed by ``hermes_home_key(home)``."""
+    """Registry of authorities keyed by ``slave_home_key(home)``."""
 
     def __init__(self, launch_home, *, multiplexed=False):
-        self.launch_key = hermes_home_key(launch_home)
+        self.launch_key = slave_home_key(launch_home)
         self._by_key: dict[str, object] = {}
         self._names: dict[str, str | None] = {}
         # One event per slot reserved by ``add(home, None)`` while its authority is being built: set
@@ -36,7 +36,7 @@ class SessionAuthorities:
         self.multiplexed = bool(multiplexed)
 
     def add(self, home, authority, name=None) -> None:
-        key = hermes_home_key(home)
+        key = slave_home_key(home)
         if key in self._by_key:
             raise RuntimeError(f'duplicate session authority for {home}')
         self._by_key[key] = authority
@@ -48,7 +48,7 @@ class SessionAuthorities:
 
     def replace(self, home, authority) -> None:
         """Fill the slot reserved by ``add(home, None, name=...)`` once the authority exists."""
-        key = hermes_home_key(home)
+        key = slave_home_key(home)
         if key not in self._by_key or self._by_key[key] is not None:
             raise RuntimeError(f'no reserved session authority slot for {home}')
         self._by_key[key] = authority
@@ -57,7 +57,7 @@ class SessionAuthorities:
     def remove(self, home):
         """Drop *home*'s slot (a parked boot, a hot-unserved profile); returns the authority or None.
         The launch slot is never removed."""
-        key = hermes_home_key(home)
+        key = slave_home_key(home)
         if key == self.launch_key:
             raise RuntimeError('the launch session authority cannot be removed')
         self._names.pop(key, None)
@@ -72,7 +72,7 @@ class SessionAuthorities:
     def starting(self, profile):
         """``(key, started)`` for the reserved slot *profile* names while its authority is still being
         built, else None. ``started`` is set once the build ends: filled, or dropped because it failed."""
-        from hermes_cli.profiles import profile_matches_home
+        from slave_cli.profiles import profile_matches_home
         return next(((key, started) for key, started in list(self._starting.items())
                      if profile_matches_home(profile, Path(key))), None)
 
@@ -83,7 +83,7 @@ class SessionAuthorities:
     def profile_name(self, authority):
         """Served profile name for *authority*; None for the launch profile (its adapters are
         ``runner.adapters``, its session keys the historical ``agent:main`` namespace)."""
-        key = hermes_home_key(authority.profile_id)
+        key = slave_home_key(authority.profile_id)
         return None if key == self.launch_key else self._names.get(key)
 
     def __len__(self) -> int:
@@ -97,7 +97,7 @@ class SessionAuthorities:
         return (authority for authority in list(self._by_key.values()) if authority is not None)
 
     def __contains__(self, home) -> bool:
-        return hermes_home_key(home) in self._by_key
+        return slave_home_key(home) in self._by_key
 
     @property
     def launch(self):
@@ -105,7 +105,7 @@ class SessionAuthorities:
 
     def for_home(self, home):
         """Authority owning *home*, or None when this process does not serve it."""
-        return self._by_key.get(hermes_home_key(home))
+        return self._by_key.get(slave_home_key(home))
 
     def require(self, home):
         authority = self.for_home(home)
@@ -122,9 +122,9 @@ class SessionAuthorities:
         secondary leaves only the launch slot (a late callback of that profile). Only a runtime
         that never multiplexed is a map of one that answers every scope with the launch authority.
         """
-        if not self.multiplexed or get_hermes_home_override() is None:
+        if not self.multiplexed or get_slave_home_override() is None:
             return self._by_key[self.launch_key]
-        return self._by_key.get(hermes_home_key(get_hermes_home()))
+        return self._by_key.get(slave_home_key(get_slave_home()))
 
     def serving(self) -> list:
         """Authorities that accept work: not a reserved-but-unbuilt slot, not one retiring (a
@@ -182,10 +182,10 @@ def local_bots(runner) -> list[LocalBot]:
 
 def served_profile_name(home) -> str:
     """Canonical profile id of a served home: ``default`` for the root, the directory name for
-    ``profiles/<name>`` (via ``hermes_constants.profile_name_for_home``, the resolver main uses).
-    Any other custom HERMES_HOME is the process's own single profile and keeps the ``default``
-    label the CLI reports for it (``hermes -p`` never targets such a home by name)."""
-    from hermes_constants import profile_name_for_home
+    ``profiles/<name>`` (via ``slave_constants.profile_name_for_home``, the resolver main uses).
+    Any other custom SLAVE_HOME is the process's own single profile and keeps the ``default``
+    label the CLI reports for it (``slave -p`` never targets such a home by name)."""
+    from slave_constants import profile_name_for_home
     return profile_name_for_home(home) or 'default'
 
 

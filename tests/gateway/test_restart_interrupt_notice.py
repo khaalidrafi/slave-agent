@@ -29,7 +29,7 @@ pytestmark = pytest.mark.usefixtures("authority_cwd_in_tmp")  # symbolic profile
 
 def test_restart_drain_timeout_default_stays_zero():
     from gateway.restart import DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT
-    from hermes_cli.config import DEFAULT_CONFIG
+    from slave_cli.config import DEFAULT_CONFIG
 
     assert DEFAULT_CONFIG['agent']['restart_drain_timeout'] == 0
     assert DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT == 0.0
@@ -80,9 +80,9 @@ def test_a_turn_warning_is_not_overwritten():
 
 
 def test_classic_cli_view_prints_the_restart_notice_for_an_interrupted_turn(capsys):
-    """The attached classic CLI (``hermes chat``) prints the notice on stderr; a completed turn's
+    """The attached classic CLI (``slave chat``) prints the notice on stderr; a completed turn's
     warning stays unprinted there, as before."""
-    from hermes_cli.gateway_chat_view import GatewayChatView
+    from slave_cli.gateway_chat_view import GatewayChatView
 
     view = GatewayChatView(object(), {'stored_session_id': 'sid'})
     view._complete('a1', {'text': '', 'status': 'interrupted', 'warning': RESTART_INTERRUPT_NOTICE})
@@ -152,7 +152,7 @@ async def test_user_stop_is_not_relabelled_when_shutdown_starts_during_settlemen
 
 
 STOPPABLE_CHILD = """import json, os, sys, psutil
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 me = psutil.Process()
 out = os.fdopen(os.dup(sys.stdout.fileno()), 'wb', buffering=0)
 def send(frame):
@@ -186,7 +186,7 @@ def test_managed_worker_turn_settles_with_the_cause_of_the_stop_that_reached_it(
     from tests.gateway.restart_test_helpers import make_restart_runner
     from tests.waiting import async_wait_until
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     runner, _adapter = make_restart_runner()
     runner._restart_requested = True
     db = storage_handle(tmp_path)
@@ -371,7 +371,7 @@ def _notices(db):
                                                ('Gateway shutting down', SHUTDOWN_INTERRUPT_NOTICE)])
 def test_owner_stop_reason_is_in_the_transcript_for_a_viewer_that_reconnects(tmp_path, cause, notice):
     """#134889 GW-21: a viewer that reconnects after the restart reads the transcript, not the live
-    frame. The reason commits as a Hermes notice in the settlement's own write, once; the live
+    frame. The reason commits as a slave-agent notice in the settlement's own write, once; the live
     ``message.complete.warning`` stays."""
     from gateway.session_results import finish_result
     db, authority, row, frames, settlement = _settle_on_real_store(tmp_path, cause)
@@ -407,7 +407,7 @@ def _core_closed_turn(tmp_path, monkeypatch, *, principal='person', earlier_fail
     the real AIAgent persists the user row and the real core closer
     (``agent/conversation_loop.py::_close_durable_failed_turn``) writes its failed-turn boundary.
     ``earlier_failed``: a previous turn already ended on a failed-turn boundary before this claim."""
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     from agent.conversation_loop import _close_durable_failed_turn
     from agent.turn_failure_copy import FAILED_TURN_DISPLAY_KIND, FAILED_TURN_NOTICE
     from gateway.session_authority import LiveSession, SessionAuthority, admission_row
@@ -444,7 +444,7 @@ def _core_closed_turn(tmp_path, monkeypatch, *, principal='person', earlier_fail
 def test_restart_notice_replaces_the_core_failed_turn_boundary_of_the_same_turn(tmp_path, monkeypatch, principal):
     """#134889 GW-21 review (GW-A): the agent's own closer already ended this turn with
     "Send it again"; settlement replaces that boundary with the restart notice in its own write,
-    so the transcript holds one Hermes boundary, and an automation row never keeps resend advice."""
+    so the transcript holds one slave-agent boundary, and an automation row never keeps resend advice."""
     from agent.turn_failure_copy import AUTOMATION_INTERRUPTED_NOTICE, FAILED_TURN_NOTICE
     from gateway.session_settlement_recovery import commit_and_publish
     db, authority, live, ref, row, result = _core_closed_turn(tmp_path, monkeypatch, principal=principal)
@@ -483,7 +483,7 @@ def test_shutdown_stop_before_the_managed_worker_spawned_carries_its_cause(tmp_p
     from tests.gateway.restart_test_helpers import make_restart_runner
     from tests.waiting import async_wait_until
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     runner, _adapter = make_restart_runner()
     db = storage_handle(tmp_path)
     seed_session(db, 's', 'test')
@@ -544,7 +544,7 @@ def test_a_stop_during_context_reference_expansion_never_spawns_the_worker(tmp_p
     from gateway.session_policy import build_policy
     from tests.gateway.restart_test_helpers import make_restart_runner
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     runner, _adapter = make_restart_runner()
     db = storage_handle(tmp_path)
     seed_session(db, 's', 'test')

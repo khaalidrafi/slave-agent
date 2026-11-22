@@ -23,7 +23,7 @@ def _controls():
 
 def _config(tmp_path, monkeypatch, body):
     (tmp_path / 'config.yaml').write_text(body, encoding='utf-8')
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
 
 
 def test_unanswered_clarify_times_out_at_the_configured_value(tmp_path, monkeypatch):

@@ -22,7 +22,7 @@ def install(tmp_path, monkeypatch):
     from pm import paths
     from pm.packages import Venv
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     root.mkdir()
     (root / "pyproject.toml").write_text(PYPROJECT, encoding="utf-8")
     store = tmp_path / "tools"

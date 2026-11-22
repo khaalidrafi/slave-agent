@@ -13,7 +13,7 @@ import { loadPendingInputs, savePendingInput } from '../lib/pendingInputs.js'
 
 it('never redispatches an ambiguous legacy attempt after native journal reload', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-legacy-ack-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'runtime', info: { model: 'test', tools: {}, skills: {}, stored_session_id: 'stored' } })
   const destination = captureDestination()

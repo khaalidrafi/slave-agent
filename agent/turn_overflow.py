@@ -377,7 +377,7 @@ def _recover_context_length(st: _Recovery, _retry: TurnRetryState, error_msg: st
             notices=(
                 "❌ The provider rejected the request because the requested output length exceeds its "
                 "output cap for this model, and the error did not state the allowed limit.",
-                "   💡 Hermes has no user setting for the output cap — check the endpoint's default max output "
+                "   💡 slave-agent has no user setting for the output cap — check the endpoint's default max output "
                 "(completion) tokens for this model on the server or proxy. "
                 "(This is an output-cap error, not a context overflow — compression cannot fix it.)",
             ),
@@ -391,14 +391,14 @@ def _recover_context_length(st: _Recovery, _retry: TurnRetryState, error_msg: st
     new_ctx = _adopt_provider_context_limit(st, error_msg, old_ctx)
 
     # A rejection the transcript cannot explain (#114644): the request sits far below the window
-    # Hermes knows for this model (after adopting any limit the server reported), so compressing
+    # Slave knows for this model (after adopting any limit the server reported), so compressing
     # would destroy history for nothing. Single-slot local servers reject like this while ANOTHER
     # request — a background review from an earlier session — holds their context. Name that,
     # keep the turn retryable and transient: no "conversation too long", no gateway auto-reset.
     # Only when the server quoted NO measurement of its own: "prompt is too long: 233153 tokens
     # > 200000" is the server's count and beats the local estimate. Local endpoints only: a hosted
     # route has no shared slot, so the same rejection means its real window is smaller than the one
-    # Hermes assumes, and "wait and /retry" would fail identically forever; compress instead.
+    # Slave assumes, and "wait and /retry" would fail identically forever; compress instead.
     window = agent.context_compressor.context_length
     request_tokens = st.request_tokens() + max(0, int(getattr(agent, "max_tokens", 0) or 0))
     if (

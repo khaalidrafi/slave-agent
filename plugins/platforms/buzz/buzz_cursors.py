@@ -8,15 +8,15 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 _SEEN_CAP = 500  # per-channel de-dupe set bound (events)
-_CURSOR_STATE_SUBDIR = "buzz"  # per-channel cursors survive a restart under HERMES_HOME
+_CURSOR_STATE_SUBDIR = "buzz"  # per-channel cursors survive a restart under SLAVE_HOME
 _CURSOR_STATE_FILENAME = "channel-cursors.json"
 
 
 class BuzzCursorMixin:
     @staticmethod
     def _cursor_path() -> Path:
-        from hermes_constants import get_hermes_home
-        return get_hermes_home() / _CURSOR_STATE_SUBDIR / _CURSOR_STATE_FILENAME
+        from slave_constants import get_slave_home
+        return get_slave_home() / _CURSOR_STATE_SUBDIR / _CURSOR_STATE_FILENAME
 
     def _load_cursors(self) -> None:
         """Read persisted cursors; another identity/relay's file is ignored (ids collide), failures seed from history."""

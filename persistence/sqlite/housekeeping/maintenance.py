@@ -222,7 +222,7 @@ def _inside_tree(worktree_path: str):
 # last viewer quits (an active /loop, /heartbeat or /goal row, status ``active`` when the field is absent) and a row
 # no viewer close ended.
 _SERVED_TREE_SQL = (
-    "SELECT 1 FROM sessions s WHERE hermes_inside_tree(s.cwd) AND (s.ended_at IS NULL OR EXISTS ("
+    "SELECT 1 FROM sessions s WHERE slave_inside_tree(s.cwd) AND (s.ended_at IS NULL OR EXISTS ("
     "SELECT 1 FROM state_meta m WHERE m.key IN ('loop:'||s.id, 'heartbeat:'||s.id, 'goal:'||s.id) "
     "AND (json_valid(m.value)=0 OR COALESCE(json_extract(m.value,'$.status'),'active')='active'))) LIMIT 1")
 
@@ -483,27 +483,27 @@ class SQLiteSessionMaintenance(SessionPortability):
     def retained_tree_is_live(self, worktree_path: str, *, pending_only: bool = False) -> bool:
         inside = _inside_tree(worktree_path)
         with translated(), self._store.holder()._read_ctx_with_timeout(_WORKTREE_READ_BUSY_S) as conn:
-            conn.create_function("hermes_inside_tree", 1, inside, deterministic=True)
+            conn.create_function("slave_inside_tree", 1, inside, deterministic=True)
             try:
                 row = conn.execute(
-                    "SELECT 1 FROM sessions s WHERE hermes_inside_tree(s.cwd) AND ("
+                    "SELECT 1 FROM sessions s WHERE slave_inside_tree(s.cwd) AND ("
                     + ("" if pending_only else "s.message_count>0 OR ")
                     + "EXISTS (SELECT 1 FROM session_admissions a WHERE a.target_session_id=s.id "
                     "AND a.status!='terminal')) LIMIT 1").fetchone()
             finally:
-                conn.create_function("hermes_inside_tree", 1, None)
+                conn.create_function("slave_inside_tree", 1, None)
         return row is not None
 
     def tree_served_sessions(self, worktree_path: str) -> TreeServeFacts:
         with translated(), self._store.holder()._read_ctx_with_timeout(_WORKTREE_READ_BUSY_S) as conn:
-            conn.create_function("hermes_inside_tree", 1, _inside_tree(worktree_path), deterministic=True)
+            conn.create_function("slave_inside_tree", 1, _inside_tree(worktree_path), deterministic=True)
             try:
                 if conn.execute(_SERVED_TREE_SQL).fetchone():
                     return TreeServeFacts(served=True)
                 chats = {row[0] for row in conn.execute(
-                    "SELECT chat_id FROM sessions WHERE hermes_inside_tree(cwd) AND chat_id IS NOT NULL")}
+                    "SELECT chat_id FROM sessions WHERE slave_inside_tree(cwd) AND chat_id IS NOT NULL")}
             finally:
-                conn.create_function("hermes_inside_tree", 1, None)
+                conn.create_function("slave_inside_tree", 1, None)
         return TreeServeFacts(served=False, chat_ids=frozenset(chats))
 
 

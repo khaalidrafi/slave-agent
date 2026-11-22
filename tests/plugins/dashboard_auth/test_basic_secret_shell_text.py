@@ -1,6 +1,6 @@
 """BasicAuthProvider must not sign sessions with a secret that is unexpanded shell text.
 
-A ``HERMES_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)`` line written through
+A ``SLAVE_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)`` line written through
 a quoted heredoc lands in ``.env`` literally, so every install that copied it would share
 one known signing key. ``_resolve_secret`` must ignore such a value and fall back to a
 random per-process key.
@@ -22,11 +22,11 @@ LITERAL = "$(openssl rand -base64 32)"
 @pytest.fixture(autouse=True)
 def _clear_basic_env(monkeypatch):
     for var in (
-        "HERMES_DASHBOARD_BASIC_AUTH_USERNAME",
-        "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD",
-        "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH",
-        "HERMES_DASHBOARD_BASIC_AUTH_SECRET",
-        "HERMES_DASHBOARD_BASIC_AUTH_TTL_SECONDS",
+        "SLAVE_DASHBOARD_BASIC_AUTH_USERNAME",
+        "SLAVE_DASHBOARD_BASIC_AUTH_PASSWORD",
+        "SLAVE_DASHBOARD_BASIC_AUTH_PASSWORD_HASH",
+        "SLAVE_DASHBOARD_BASIC_AUTH_SECRET",
+        "SLAVE_DASHBOARD_BASIC_AUTH_TTL_SECONDS",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -37,7 +37,7 @@ def _clear_basic_env(monkeypatch):
     "<32+ random bytes; openssl rand -base64 32>", "$ (openssl rand -base64 32)", "openssl rand -hex 32",
 ])
 def test_env_secret_with_shell_text_is_not_used(monkeypatch, caplog, value):
-    monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_SECRET", value)
+    monkeypatch.setenv("SLAVE_DASHBOARD_BASIC_AUTH_SECRET", value)
     with caplog.at_level(logging.ERROR, logger=basic.logger.name):
         first = basic._resolve_secret({})
         second = basic._resolve_secret({})
@@ -49,13 +49,13 @@ def test_env_secret_with_shell_text_is_not_used(monkeypatch, caplog, value):
 
 
 def test_shell_text_secret_is_reported_once_on_stderr(monkeypatch, capsys):
-    # The log files are not the console of `hermes serve` / `hermes dashboard`.
+    # The log files are not the console of `slave serve` / `slave dashboard`.
     monkeypatch.setattr(basic, "_shell_text_secret_reported", False, raising=False)
-    monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_SECRET", "$(openssl rand -hex 32)")
+    monkeypatch.setenv("SLAVE_DASHBOARD_BASIC_AUTH_SECRET", "$(openssl rand -hex 32)")
     basic._resolve_secret({})
     basic._resolve_secret({})
     err = capsys.readouterr().err
-    assert err.count("HERMES_DASHBOARD_BASIC_AUTH_SECRET") == 1
+    assert err.count("SLAVE_DASHBOARD_BASIC_AUTH_SECRET") == 1
     assert len(err.strip().splitlines()) == 1
     assert "$(openssl rand -hex 32)" not in err
 
@@ -66,15 +66,15 @@ def test_config_secret_with_shell_text_is_not_used():
 
 def test_generated_secret_still_resolves(monkeypatch):
     key = secrets.token_bytes(32)
-    monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_SECRET", base64.b64encode(key).decode())
+    monkeypatch.setenv("SLAVE_DASHBOARD_BASIC_AUTH_SECRET", base64.b64encode(key).decode())
     assert basic._resolve_secret({}) == key
 
 
 def test_token_signed_with_the_literal_text_is_rejected(monkeypatch):
     monkeypatch.setattr(basic, "_load_config_basic_auth_section", dict)
-    monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
-    monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "choose-a-strong-password")
-    monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_SECRET", LITERAL)
+    monkeypatch.setenv("SLAVE_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
+    monkeypatch.setenv("SLAVE_DASHBOARD_BASIC_AUTH_PASSWORD", "choose-a-strong-password")
+    monkeypatch.setenv("SLAVE_DASHBOARD_BASIC_AUTH_SECRET", LITERAL)
     provider = basic.BasicAuthProvider(**basic._settings())
 
     forged = basic._sign(

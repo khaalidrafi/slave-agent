@@ -20,7 +20,7 @@ from gateway.media_repair import repair_explicit_computer_use_media_paths
 from gateway.platforms.base import BasePlatformAdapter
 from gateway.session_api_turn import api_runtime_locked
 from gateway.turn_context import TurnContext
-from hermes_cli.config import cfg_get
+from slave_cli.config import cfg_get
 from utils import is_truthy_value
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
@@ -47,7 +47,7 @@ class GatewaySessionAgentMixin:
         if policy:
             return policy.ignore_rules
         platforms_cfg = (self._ctx.user_config.get("gateway") or {}).get("platforms") or {}
-        # ``hermes gateway setup`` writes ``gateway.platforms`` as a LIST of enabled platform names,
+        # ``slave gateway setup`` writes ``gateway.platforms`` as a LIST of enabled platform names,
         # not a dict; treat any non-dict shape as "no per-platform overrides" rather than crashing.
         if not isinstance(platforms_cfg, dict):
             return False

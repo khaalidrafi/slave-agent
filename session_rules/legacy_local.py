@@ -1,6 +1,6 @@
 """The legacy-history rules the store applies when it binds or authorizes unrouted pre-authority local history: the login subject parser, the login label Desktop stamps, the owner rule, the client-app label rule, the Nous account label, the login-owner test and the legacy-row check.
 
-The owner rule decides whether a stored owner stamp (a history binding's subject, a routeless row's ``user_id``) belongs to a caller. Hermes is single-user: every sign-in acts as the host owner's own OS subject, so the login stamps older builds stored (``auth:v1:[provider, issuer, user]`` subjects, the ``<provider>:<user>`` labels a served dashboard stamped) read as the owner's, while a ``local`` stamp names an OS user and matches this machine's account only. The host data it reads arrives as an ``OwnerRule``; without one (None) only an equal stamp or the subject's own login label is its owner, and no label is a client app's.
+The owner rule decides whether a stored owner stamp (a history binding's subject, a routeless row's ``user_id``) belongs to a caller. slave-agent is single-user: every sign-in acts as the host owner's own OS subject, so the login stamps older builds stored (``auth:v1:[provider, issuer, user]`` subjects, the ``<provider>:<user>`` labels a served dashboard stamped) read as the owner's, while a ``local`` stamp names an OS user and matches this machine's account only. The host data it reads arrives as an ``OwnerRule``; without one (None) only an equal stamp or the subject's own login label is its owner, and no label is a client app's.
 
 ``validate_legacy_row`` takes the store's own profile name as ``own_profile``. ``AuthorityRefusal`` is the persistence contract's class, ``OwnerRule`` and the source sets the contract vocabulary's. Standard library, ``persistence.core.errors`` and ``persistence.authority.vocabulary`` only.
 """
@@ -56,7 +56,7 @@ def _owner_login(provider: str, user: str, rule: OwnerRule) -> bool:
 
 
 def _login_stamp(value: str, rule: OwnerRule) -> bool:
-    """``<provider>:<user>`` for a dashboard sign-in: the label ``hermes serve`` stamped for a login. Any other
+    """``<provider>:<user>`` for a dashboard sign-in: the label ``slave serve`` stamped for a login. Any other
     prefix (``telegram:42``, ``uid:501``) names someone else, and a ``nous:`` stamp keeps its own rule
     (``legacy_account_label``: a Desktop row's account label)."""
     provider, sep, user = value.partition(':')
@@ -132,7 +132,7 @@ def client_label(source: Any, rule: Optional[OwnerRule]) -> bool:
 def client_history_row(row, rule: Optional[OwnerRule]) -> bool:
     """A chat a client app wrote under its own label before ``session.create`` took only surfaces.
 
-    The pre-authority ``hermes serve`` stored whatever ``source`` a client sent, so phone apps signed
+    The pre-authority ``slave serve`` stored whatever ``source`` a client sent, so phone apps signed
     in through the dashboard login left routeless rows labelled ``mobile``, ``ios`` and the like. They
     are the owner's Desktop-style chats: adopted as ``gui``. A routed row is never one, which keeps a
     plugin platform sharing the label on its messaging route."""
@@ -159,9 +159,9 @@ def legacy_account_label(row):
 def login_owned_by(row, subject, rule: Optional[OwnerRule]) -> bool:
     """Whether *subject* owns the login stamp a served dashboard put on this row.
 
-    Older ``hermes serve`` builds stamped the WS-upgrade login as ``<provider>:<user id>``
+    Older ``slave serve`` builds stamped the WS-upgrade login as ``<provider>:<user id>``
     (tui_gateway/session_transports.py), and the gateway stored a Webapp login as its
-    ``auth:v1:[...]`` subject. Hermes is single-user and sign-in is owner-only, so both name the
+    ``auth:v1:[...]`` subject. slave-agent is single-user and sign-in is owner-only, so both name the
     machine owner: the host owner's subject adopts them (:func:`same_owner`).
     """
     user_id = row.get('user_id')

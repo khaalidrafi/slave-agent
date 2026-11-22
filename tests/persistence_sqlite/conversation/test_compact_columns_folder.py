@@ -4,14 +4,14 @@ ambient home."""
 import hashlib
 import json
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence.conversation.sessions import NewSession
 from persistence.sqlite._schema_ddl import SCHEMA_SQL
 from persistence.sqlite.conversation._store import portability
 
 
 def test_compact_rows_take_the_columns_from_the_stores_own_folder(backend, scope_a, scope_b, monkeypatch):
-    ambient = get_hermes_home() / "cache" / "schema_columns.json"
+    ambient = get_slave_home() / "cache" / "schema_columns.json"
     ambient.parent.mkdir(parents=True, exist_ok=True)
     tables = {"sessions": {"id": "TEXT", "ambient_probe": "TEXT"}}
     ambient.write_text(json.dumps({"schema_hash": hashlib.sha256(SCHEMA_SQL.encode("utf-8")).hexdigest(),

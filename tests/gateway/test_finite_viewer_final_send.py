@@ -1,7 +1,7 @@
 """Regression coverage for #139666 — a finite viewer's turn must not mark the
 reply ``already_sent`` off the stream consumer's transport confirmation.
 
-``hermes -z`` runs through the gateway transport with ``finite: true``: the
+``slave -z`` runs through the gateway transport with ``finite: true``: the
 client drops every ``message.delta`` frame and prints only the terminal reply
 (the completion frame's text). The local route's adapter acknowledges every
 send, so the stream consumer finalizes with ``final_response_sent=True`` even

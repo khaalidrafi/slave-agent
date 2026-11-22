@@ -29,8 +29,8 @@ class _ImmediateThread:
 
 @pytest.fixture
 def profile(monkeypatch):
-    """A named local profile under the Hermes root (``/opt/data/profiles/austin``), placeholder ``terminal.cwd``."""
-    root = server.get_hermes_home()
+    """A named local profile under the slave-agent root (``/opt/data/profiles/austin``), placeholder ``terminal.cwd``."""
+    root = server.get_slave_home()
     home = _write_profile_cfg(root / "profiles" / "austin", ".")
     monkeypatch.setattr(server, "_profile_home", lambda name: home if name else None)
     monkeypatch.setenv("TERMINAL_CWD", str(root))  # the launch profile's workspace
@@ -74,7 +74,7 @@ def resume(profile, monkeypatch):
 
 @pytest.mark.parametrize("stored", ["root", "sibling", "install", None])
 def test_resume_lands_in_the_profiles_own_home(resume, profile, stored):
-    root = server.get_hermes_home()
+    root = server.get_slave_home()
     sibling = root / "profiles" / "jordan"
     sibling.mkdir(parents=True, exist_ok=True)
     install = server.Path(server.__file__).resolve().parent.parent
@@ -103,13 +103,13 @@ def test_resume_keeps_a_folder_chosen_for_the_profile(resume, profile, tmp_path)
     assert live["cwd"] == str(inside)
     assert server._resumable_stored_cwd(str(outside), profile) == str(outside)
     assert server._resumable_stored_cwd(str(profile), profile) == str(profile)
-    # A workspace a user keeps under the Hermes root (not Hermes's own dirs) is not another profile's.
-    under_root = server.get_hermes_home() / "workspace"
+    # A workspace a user keeps under the Slave root (not Slave's own dirs) is not another profile's.
+    under_root = server.get_slave_home() / "workspace"
     under_root.mkdir()
     assert server._resumable_stored_cwd(str(under_root), profile) == str(under_root)
 
 
 def test_launch_profile_resume_is_unchanged():
     """The launch profile (``profile_home`` None) keeps main's rule: its own root is a valid stored workspace."""
-    root = str(server.get_hermes_home())
+    root = str(server.get_slave_home())
     assert server._resumable_stored_cwd(root, None) == root

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Find plugin-catalog entries whose repository is gone or whose pinned commit no longer exists.
 
-An entry like that can no longer be installed: ``hermes plugins install`` clones the repo and checks
+An entry like that can no longer be installed: ``slave plugins install`` clones the repo and checks
 out the pin. The weekly ``catalog-dead-repos.yml`` workflow delists them (deletes the entry file,
 per plugin-catalog/README.md; never ``removed.yaml``, which is the security blocklist) in one PR.
 
@@ -81,7 +81,7 @@ def github_fetch(token: str) -> Fetch:
         req = urllib.request.Request(url, method=method, data=json.dumps(body).encode() if body else None,
                                      headers={"Authorization": f"Bearer {token}",
                                               "Accept": "application/vnd.github+json",
-                                              "User-Agent": "hermes-catalog-dead-repos"})
+                                              "User-Agent": "slave-catalog-dead-repos"})
         last: Exception | None = None
         for attempt in range(ATTEMPTS):
             try:

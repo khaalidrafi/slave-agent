@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 from agent import background_review
 from agent.side_question_lease import issue_side_question_token
@@ -32,7 +32,7 @@ _REGISTERS_TASK = (
 def _consented_with_review_bound(bound: int):
     _install_plugin(PLUGIN, declares=True, body=_REGISTERS_TASK)
     manager = _load([PLUGIN], granted=[PLUGIN])
-    cfg_path = Path(os.environ["HERMES_HOME"]) / "config.yaml"
+    cfg_path = Path(os.environ["SLAVE_HOME"]) / "config.yaml"
     cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
     cfg["auxiliary"] = {"background_review": {"max_input_tokens": bound, "defer": "never"}}
     cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")

@@ -9,8 +9,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 
-// One run at a time per checkout. The callers hold different locks or none (`hermes update`,
-// `hermes --tui`, the dashboard, Desktop, another profile), and a run moves trees in and out of
+// One run at a time per checkout. The callers hold different locks or none (`slave update`,
+// `slave --tui`, the dashboard, Desktop, another profile), and a run moves trees in and out of
 // place, so even a reuse check must not run beside an install. The owner refreshes the lock's mtime
 // from a worker thread (node-deps-heartbeat.mjs; the main thread blocks in pnpm), so liveness never
 // depends on pids, hosts or PID namespaces: a lock a waiter has seen unchanged (content and mtime)

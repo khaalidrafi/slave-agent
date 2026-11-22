@@ -16,14 +16,14 @@ from tools import mcp_tool_events as events
 from tools.mcp_tool_registration import _select_utility_schemas
 from tests.waiting import async_wait_until
 
-PUBLIC_URL = "https://hermes.example.com"
+PUBLIC_URL = "https://slave.example.com"
 ARGS = {"feed_id": "11111111-1111-4111-8111-111111111111"}
 _EVENT_UTILITY_KEYS = ("list_event_types", "subscribe_event", "unsubscribe_event")
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         f"platforms:\n  webhook:\n    enabled: true\n    extra:\n      public_url: {PUBLIC_URL}/\n")
     return tmp_path
@@ -167,7 +167,7 @@ class TestSubscribe:
         assert _routes(home) == data
 
     def test_a_fresh_subscription_ignores_state_left_by_a_removed_route(self, home):
-        name = events._route_name("ambush", "feed.emission.created", ARGS)  # e.g. after `hermes webhook remove`
+        name = events._route_name("ambush", "feed.emission.created", ARGS)  # e.g. after `slave webhook remove`
         (home / "mcp_event_subscriptions.json").write_text(json.dumps({name: {"cursor": "stale"}}))
         session = FakeSession(_grant())
         _subscribe(session)

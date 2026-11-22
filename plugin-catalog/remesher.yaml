@@ -2,7 +2,7 @@ name: remesher
 title: Remesher
 repo: https://github.com/remesher/remesher
 sha: 5f48a067722e10f0c08d368698fc03b05855bb89
-subdir: integrations/hermes
+subdir: integrations/slave
 version: "0.2.1"
 description: >-
   Bounded image-to-GLB jobs using an isolated Remesher CLI, with existing
@@ -21,7 +21,7 @@ category: tools
 requires_hermes: ">=0.22.2"
 platforms: [linux]
 readme: true
-docs_url: https://github.com/remesher/remesher/blob/5f48a067722e10f0c08d368698fc03b05855bb89/integrations/hermes/README.md
+docs_url: https://github.com/remesher/remesher/blob/5f48a067722e10f0c08d368698fc03b05855bb89/integrations/slave/README.md
 known_issues:
   - Native inference tested on Linux ARM64 NVIDIA Spark only; macOS, Windows, CPU, MPS and ROCm inference are not certified.
   - Requires Python 3.11+, a separately installed CLI and configured runtime/model files. Native quality settings are explicit resource-intensive opt-ins, not automatic defaults.

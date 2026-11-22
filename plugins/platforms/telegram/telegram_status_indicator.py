@@ -46,7 +46,7 @@ def _status_text(adapter: TelegramAdapter, online: bool) -> str:
 
 
 def _is_ours(adapter: TelegramAdapter, entry: dict, live: str) -> bool:
-    """Hermes wrote ``live``: it is in the saved list of texts we wrote (survives a changed
+    """slave-agent wrote ``live``: it is in the saved list of texts we wrote (survives a changed
     ``status_online``/``status_offline``), or it is a current status text (a build before this fix
     wrote it and kept no list)."""
     return live in entry.get("written", ()) or live in (_status_text(adapter, True), _status_text(adapter, False))
@@ -54,7 +54,7 @@ def _is_ours(adapter: TelegramAdapter, entry: dict, live: str) -> bool:
 
 async def _capture_original(adapter: TelegramAdapter, bot: Any) -> None:
     """Remember the operator's short description. Read on every connect, so text the operator set
-    in BotFather since the last run replaces the old capture; text Hermes wrote never does. Raises
+    in BotFather since the last run replaces the old capture; text slave-agent wrote never does. Raises
     when the read or the save fails, and the caller then writes no status text this run."""
     live = getattr(await bot.get_my_short_description(), "short_description", "") or ""
     data = _captures(adapter)

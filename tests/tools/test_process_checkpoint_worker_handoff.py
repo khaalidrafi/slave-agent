@@ -16,7 +16,7 @@ import pytest
 
 @pytest.mark.platforms("linux", "macos")
 def test_owner_checkpoint_write_keeps_a_live_worker_handoff(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     from tools import process_registry as pr
     from tools.process_registry_output_log import output_dir
     checkpoint = tmp_path / 'processes.json'

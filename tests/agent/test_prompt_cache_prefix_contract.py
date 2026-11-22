@@ -28,7 +28,7 @@ from typing import Any
 import pytest
 
 from tests.e2e.core.history._helpers import NO_BACKGROUND_REVIEW, OFFLINE_CONFIG, canon, prefix_breaks
-from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_hermes_home
+from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_slave_home
 
 SKILL_BODY = "Follow these steps carefully. " * 300
 
@@ -55,14 +55,14 @@ def _prefix_breaks(requests: list[dict[str, Any]]) -> list[tuple[int, str]]:
 @pytest.fixture
 def caching_route():
     """A custom OpenAI-wire relay declared ``prompt_caching: true`` -> envelope cache layout."""
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["SLAVE_HOME"])
     skill = home / "skills" / "demo"
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text(f"---\nname: demo\ndescription: Demo skill.\n---\n\n# Demo\n\n{SKILL_BODY}\n")
     srv = FakeLLMServer([]).__enter__()
     route = (f"custom_providers:\n  - name: cacherelay\n    base_url: {srv.base_url}\n    api_key: sk-fake-e2e\n"
              "    models:\n      fake-model:\n        prompt_caching: true\n")
-    write_hermes_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + route)
+    write_slave_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + route)
     yield srv, home
     srv.__exit__(None, None, None)
 

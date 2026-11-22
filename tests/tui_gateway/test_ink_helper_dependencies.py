@@ -1,11 +1,11 @@
 """Ink's Python helpers boot PM's committed dependency generation themselves (regression for #138878).
 
 Ink runs ``ui-tui/scripts/gateway_bootstrap.py`` (``localGatewayBootstrap.ts``) and
-``ui-tui/scripts/clipboard_image.py`` (``imageAttachments.ts``) on ``HERMES_PYTHON`` with
-``PYTHONPATH=<root>`` only. On a source install ``HERMES_PYTHON`` is PM's store Python, which owns no
+``ui-tui/scripts/clipboard_image.py`` (``imageAttachments.ts``) on ``SLAVE_PYTHON`` with
+``PYTHONPATH=<root>`` only. On a source install ``SLAVE_PYTHON`` is PM's store Python, which owns no
 packages, so the launcher's own activation never reaches these children. Each child here runs with
 ``-S`` -- the test interpreter's site-packages are out of reach, exactly like the store Python's --
-and its dependencies are importable only through a generation committed in the temp HERMES_HOME.
+and its dependencies are importable only through a generation committed in the temp SLAVE_HOME.
 """
 
 from __future__ import annotations
@@ -42,17 +42,17 @@ def _commit_generation() -> None:
 
 
 def _ink_child(script: str, *args: str, scripts: Path = _SCRIPTS, **env: str) -> subprocess.CompletedProcess:
-    """Exactly what localGatewayBootstrap.ts runs: PYTHONPATH and HERMES_PYTHON_SRC_ROOT name the Python root."""
+    """Exactly what localGatewayBootstrap.ts runs: PYTHONPATH and SLAVE_PYTHON_SRC_ROOT name the Python root."""
     child_env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
-    child_env.update(PYTHONPATH=str(_ROOT), HERMES_PYTHON_SRC_ROOT=str(_ROOT), **env)
+    child_env.update(PYTHONPATH=str(_ROOT), SLAVE_PYTHON_SRC_ROOT=str(_ROOT), **env)
     return subprocess.run([sys.executable, "-S", str(scripts / script), *args], cwd=_ROOT,
                           env=child_env, capture_output=True, text=True, timeout=60, check=False)
 
 
 def test_gateway_bootstrap_reaches_a_verdict_on_the_store_python():
     """With no owner running, discovery's fallback imports a dependency (gateway.status -> utils ->
-    hermes_yaml -> ruamel). The bootstrap must answer with its bounded gateway verdict, not die on
-    the import -- which left a fresh `hermes --tui` unable to start or recover a gateway at all."""
+    slave_yaml -> ruamel). The bootstrap must answer with its bounded gateway verdict, not die on
+    the import -- which left a fresh `slave --tui` unable to start or recover a gateway at all."""
     _commit_generation()
 
     child = _ink_child("gateway_bootstrap.py")
@@ -65,9 +65,9 @@ def test_gateway_bootstrap_reaches_a_verdict_on_the_store_python():
 def test_packaged_gateway_bootstrap_boots_the_root_it_is_given_or_names_why_it_cannot(tmp_path):
     """The TUI product ships the helper in its own dist/scripts/ (a separate Nix store path, #139208),
     where parents[2] is not the Python root: the helper must boot the generation of the root Ink
-    passes, and an interpreter that still cannot load Hermes is a named, terminal verdict the client
+    passes, and an interpreter that still cannot load slave-agent is a named, terminal verdict the client
     stops retrying on, never a bare ImportError retried every 30 s (#138878)."""
-    packaged = tmp_path / "hermes-tui" / "dist" / "scripts"
+    packaged = tmp_path / "slave-tui" / "dist" / "scripts"
     packaged.mkdir(parents=True)
     shutil.copy2(_SCRIPTS / "gateway_bootstrap.py", packaged / "gateway_bootstrap.py")
 
@@ -85,8 +85,8 @@ def test_packaged_gateway_bootstrap_boots_the_root_it_is_given_or_names_why_it_c
 def _store_python_child(script: str, *args: str) -> subprocess.CompletedProcess:
     """The helper on PM's store Python: a non-venv interpreter living under the runtime dir."""
     child_env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
-    child_env.update(PYTHONPATH=str(_ROOT), HERMES_PYTHON_SRC_ROOT=str(_ROOT),
-                     HERMES_RUNTIME_DIR=str(Path(sys.base_prefix).resolve().parent))
+    child_env.update(PYTHONPATH=str(_ROOT), SLAVE_PYTHON_SRC_ROOT=str(_ROOT),
+                     SLAVE_RUNTIME_DIR=str(Path(sys.base_prefix).resolve().parent))
     python = getattr(sys, "_base_executable", sys.executable)
     return subprocess.run([python, "-S", str(_SCRIPTS / script), *args], cwd=_ROOT, env=child_env,
                           capture_output=True, text=True, timeout=60, check=False)
@@ -99,11 +99,11 @@ def test_store_python_without_a_generation_names_the_remedy():
     lines = bootstrap.stderr.strip().splitlines()
     assert bootstrap.returncode == 1
     assert lines[0] == "gateway unavailable: bootstrap_dependencies", bootstrap.stderr
-    assert lines[-1] == "gateway unavailable: run `hermes pm repair`, then restart the TUI", bootstrap.stderr
+    assert lines[-1] == "gateway unavailable: run `slave pm repair`, then restart the TUI", bootstrap.stderr
 
 
 def test_clipboard_helper_without_a_generation_answers_false(tmp_path):
-    """The clipboard helper activates before importing Hermes, and a missing generation is `false`
+    """The clipboard helper activates before importing slave-agent, and a missing generation is `false`
     on stdout (no image), not a traceback before Ink can parse anything."""
     clipboard = _store_python_child("clipboard_image.py", str(tmp_path / "paste.png"))
     assert clipboard.returncode == 0, clipboard.stderr

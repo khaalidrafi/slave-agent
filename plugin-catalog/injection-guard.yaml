@@ -1,5 +1,5 @@
 name: injection-guard
-repo: https://github.com/moneya/hermes-injection-guard
+repo: https://github.com/moneya/slave-injection-guard
 sha: 33a44c7331cde46f34aae0b3d44a6d5fd0f0feb3
 description: >-
   Prompt-injection firewall for tool output. A tool_execution middleware scans results from web,
@@ -21,7 +21,7 @@ description: >-
 maintainer: moneya
 tier: community
 category: tools
-docs_url: https://github.com/moneya/hermes-injection-guard#readme
+docs_url: https://github.com/moneya/slave-injection-guard#readme
 version: "0.1.1"
 platforms: []
 capabilities:

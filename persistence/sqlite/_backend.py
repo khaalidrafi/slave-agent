@@ -1,6 +1,6 @@
 """The assembled SQLite backend.
 
-One ``SQLiteBackend`` holds the stores one assembly was built for, each profile's ``hermes_home_key`` mapped to one
+One ``SQLiteBackend`` holds the stores one assembly was built for, each profile's ``slave_home_key`` mapped to one
 ``state.db`` file. ``open(scope)`` returns a ``SQLiteStore`` handle bound to that one profile: every repository of the
 handle acts on that file only, through the registry's single holder for it (a read-only backend opens its own
 ``mode=ro`` holder instead and never creates, migrates or repairs), and no verb takes a scope. Each handle's ``aio`` is
@@ -159,21 +159,21 @@ def _store_executor() -> ThreadPoolExecutor:
     global _executor
     with _executor_lock:
         if _executor is None:
-            _executor = ThreadPoolExecutor(max_workers=_EXECUTOR_WORKERS, thread_name_prefix="hermes-sqlite-store")
+            _executor = ThreadPoolExecutor(max_workers=_EXECUTOR_WORKERS, thread_name_prefix="slave-sqlite-store")
         return _executor
 
 
 @contextmanager
 def _home_bound(home: Path) -> Iterator[None]:
-    """``home`` as the current Hermes home while a store opens, so the opening reads that profile's configuration
+    """``home`` as the current slave-agent home while a store opens, so the opening reads that profile's configuration
     (``database.*`` connection settings among it), as main's open under the served profile's scope does. A folder
     without a ``config.yaml`` has no settings of its own and is left unbound: reading the configuration under a
-    bound home sets that folder up as a Hermes home (``sessions/``, ``logs/``, ``SOUL.md`` and the rest). Only the
+    bound home sets that folder up as a slave-agent home (``sessions/``, ``logs/``, ``SOUL.md`` and the rest). Only the
     home moves: a bound scope, its secrets and its terminal policy stay the caller's."""
-    from hermes_constants import get_hermes_home, hermes_home_key
-    from hermes_scope import push_state
+    from slave_constants import get_slave_home, slave_home_key
+    from slave_scope import push_state
 
-    bind = (home / "config.yaml").is_file() and hermes_home_key(home) != hermes_home_key(get_hermes_home())
+    bind = (home / "config.yaml").is_file() and slave_home_key(home) != slave_home_key(get_slave_home())
     token = push_state(home=str(home)) if bind else None
     try:
         yield
@@ -188,7 +188,7 @@ class SQLiteBackend:
 
     def __init__(self, stores: Mapping[str, Path], *, read_only: bool = False,
                  read_patience_s: Optional[float] = None) -> None:
-        """``stores`` maps each served ``hermes_home_key`` to its ``state.db`` path. ``read_patience_s`` is the lock
+        """``stores`` maps each served ``slave_home_key`` to its ``state.db`` path. ``read_patience_s`` is the lock
         wait each read-only holder opens its connection with; None keeps the holder's default."""
         self._stores = {key: Path(path) for key, path in stores.items()}
         self.read_only = read_only
@@ -214,7 +214,7 @@ class SQLiteBackend:
     def open(self, scope: ProfileScope) -> SQLiteStore:
         """A handle bound to ``scope``'s store; opening touches no file. A profile this backend holds no store for is
         refused with ``ValueError``."""
-        path = self._stores.get(scope.hermes_home_key)
+        path = self._stores.get(scope.slave_home_key)
         if path is None:
             raise ValueError(f"this SQLite backend holds no store for {scope.profile_dir}")
         self._require_open()
@@ -279,7 +279,7 @@ class SQLiteBackend:
     def _admin_file(self, target: ProfileScope | Path) -> Path:
         if not isinstance(target, ProfileScope):
             return Path(target)
-        path = self._stores.get(target.hermes_home_key)
+        path = self._stores.get(target.slave_home_key)
         if path is None:
             raise ValueError(f"this SQLite backend holds no store for {target.profile_dir}")
         return path
@@ -330,7 +330,7 @@ class SQLiteStore:
     def holder(self, *, reacquire: bool = True) -> StoreHolder:
         """The open holder for this profile's store, acquired on first touch. ``reacquire=False`` keeps the holder a
         registry sweep closed, so a read through it with ``reopen=False`` refuses instead of opening the store again."""
-        self._held = self._backend._holder(self.scope.hermes_home_key, reacquire=reacquire, held=self._held)
+        self._held = self._backend._holder(self.scope.slave_home_key, reacquire=reacquire, held=self._held)
         return self._held
 
     def ready(self) -> None:

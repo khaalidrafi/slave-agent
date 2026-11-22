@@ -17,7 +17,7 @@ from persistence.sqlite.conversation._store.sql_common import (
 from persistence.sqlite._holder import StoreHolder
 
 
-logger = logging.getLogger("hermes_state")
+logger = logging.getLogger("slave_state")
 
 
 _COOLDOWN_ROW_SQL = (

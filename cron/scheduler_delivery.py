@@ -264,7 +264,7 @@ def _open_continuable_cron_thread(job: dict, adapter, chat_id: str, loop) -> Opt
     create_thread = getattr(adapter, "create_handoff_thread", None)
     if not callable(create_thread) or loop is None:
         return None
-    thread_name = f"Hermes — {_cron_display_name(job)}"
+    thread_name = f"slave-agent — {_cron_display_name(job)}"
     try:
         from agent.async_utils import safe_schedule_threadsafe
         coro = create_thread(str(chat_id), thread_name)
@@ -412,7 +412,7 @@ def _cron_job_origin_log_suffix(job: dict) -> str:
 def _plugin_cron_env_var(platform_name: str) -> str:
     """Cron home-channel env var registered by a plugin ``PlatformEntry.cron_deliver_env_var``."""
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import discover_plugins
+        from slave_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         entry = platform_registry.get(platform_name.lower())
@@ -520,7 +520,7 @@ def _get_home_target_thread_id(platform_name: str) -> Optional[str]:
 def _iter_home_target_platforms():
     """Iterate plugin platform names that expose a home channel, ``_HOME_TARGET_PRIORITY`` first."""
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import discover_plugins
+        from slave_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         named = [e.name for e in platform_registry.plugin_entries() if e.cron_deliver_env_var]
@@ -567,7 +567,7 @@ def cron_delivery_targets() -> list[dict]:
 
     # Bot Chat targets: one per local profile (machine-local; no gateway config or home channel).
     try:
-        from hermes_cli.profiles import list_profile_names
+        from slave_cli.profiles import list_profile_names
         for profile_name in list_profile_names():
             targets.append({
                 "id": f"{BOT_CHAT_PLATFORM}:{profile_name}",
@@ -744,8 +744,8 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *,
     import hashlib
     import json
     import uuid
-    from hermes_constants import get_hermes_home
-    from hermes_cli.profiles import get_profile_dir
+    from slave_constants import get_slave_home
+    from slave_cli.profiles import get_profile_dir
     from tools.bot_live_delivery import (
         deliver_to_live_owner, find_canonical_live_owner, read_delivery_result,
     )
@@ -754,10 +754,10 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *,
     profile_label = profile or "(own)"
     message = bot_chat_message(job, content)
     try:
-        source_home = get_hermes_home().resolve()
+        source_home = get_slave_home().resolve()
         home = (get_profile_dir(profile) if profile else source_home).resolve()
         from gateway.warning_notifications import warning_notifications_enabled
-        from hermes_cli.config_effective import load_user_config_effective
+        from slave_cli.config_effective import load_user_config_effective
         suppress_notification = for_failure and not warning_notifications_enabled(
             BOT_CHAT_POLICY_PLATFORM, load_user_config_effective(home / "config.yaml"))
         # run_one_job/claim_fire attach the durable execution id before delivery. The
@@ -854,7 +854,7 @@ def _resolve_bot_chat_target(job: dict, profile_arg: str) -> Optional[dict]:
     if not profile_arg:
         return {"platform": BOT_CHAT_PLATFORM, "chat_id": "", "thread_id": None}
     try:
-        from hermes_cli.profiles import normalize_profile_name, profile_exists
+        from slave_cli.profiles import normalize_profile_name, profile_exists
         canon = normalize_profile_name(profile_arg)
         if not profile_exists(canon):
             logger.warning(
@@ -1735,9 +1735,9 @@ def _deliver_result(
     # Restart-safe workers have no live gateway adapters: hand the send back through a durable
     # queue so the current or replacement gateway performs it with relay/E2EE parity. The execution
     # id is the idempotency key (the queue never retries an uncertain claimed send). Match on THIS
-    # job's own attempt: a worker's script may dispatch another job in-process (`hermes cron run`),
+    # job's own attempt: a worker's script may dispatch another job in-process (`slave cron run`),
     # and that nested delivery must not be keyed under the outer execution id.
-    external_execution = os.environ.get("_HERMES_CRON_EXTERNAL_WORKER", "")
+    external_execution = os.environ.get("_SLAVE_CRON_EXTERNAL_WORKER", "")
     if (external_execution and adapters is None
             and external_execution == str(job.get("execution_id") or "")
             and any(target["platform"] not in (BOT_CHAT_PLATFORM, ROOM_PLATFORM) for target in targets)):
@@ -1764,7 +1764,7 @@ def _deliver_result(
     # Mark live sends FINAL so the platform pushes them (Telegram "important" mode mutes otherwise).
     notify_delivery = _cron_delivery_notify_enabled(user_cfg)
     # Targets acked with NO evidence (bare SendResult(success=True) — Slack/Matrix/Mattermost);
-    # persisted as ``last_delivery_unverified`` so `hermes cron list` shows it.
+    # persisted as ``last_delivery_unverified`` so `slave cron list` shows it.
     unverified_targets: list = []
     if wrap_response:
         task_name = job.get("name", job["id"])
@@ -1781,7 +1781,7 @@ def _deliver_result(
 
     from gateway.platforms.base import BasePlatformAdapter
     # Bridge media-policy config into the env vars the path validator reads. The gateway does this
-    # at boot; standalone runs (`hermes cron run`) did not, silently dropping files. Idempotent.
+    # at boot; standalone runs (`slave cron run`) did not, silently dropping files. Idempotent.
     from gateway.media_policy import apply_media_policy_env
     apply_media_policy_env(user_cfg)
     media_files, cleaned_delivery_content = BasePlatformAdapter.extract_media(delivery_content)
@@ -1854,8 +1854,8 @@ def _deliver_result(
             continue
         if target["platform"] == "local":
             from gateway.session_cron import deliver_to_local_chat
-            from hermes_constants import get_hermes_home
-            local_error = deliver_to_local_chat(get_hermes_home(), target["chat_id"],
+            from slave_constants import get_slave_home
+            local_error = deliver_to_local_chat(get_slave_home(), target["chat_id"],
                                                 cleaned_delivery_content, diagnostic=for_failure)
             if local_error:
                 delivery_errors.append(local_error)

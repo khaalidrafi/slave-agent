@@ -77,7 +77,7 @@ def test_local_session_voice_tts_never_synthesizes_unplayable_audio(tmp_path):
         'tts': {'provider': 'openai', 'openai': {'base_url': url, 'api_key': 'loopback-only'}},
     }))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out = {}
 

@@ -1,7 +1,7 @@
 """/branch on thread-capable platforms opens a sibling thread and keeps the origin (#66023).
 
 Drives the REAL ``_handle_branch_command`` against a REAL SessionStore and its real store (SQLite in
-the test HERMES_HOME); only the platform adapter is a fake whose ``create_handoff_thread`` returns a fixed id.
+the test SLAVE_HOME); only the platform adapter is a fake whose ``create_handoff_thread`` returns a fixed id.
 """
 
 from __future__ import annotations

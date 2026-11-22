@@ -8,7 +8,7 @@ import pytest
 
 from agent import onboarding_record
 from session_rules.onboarding_flow import End, Facts
-from hermes_cli.config import read_user_config_raw
+from slave_cli.config import read_user_config_raw
 from persistence.conversation.lineage import CompressionChild
 from persistence.conversation.messages import NewMessage
 from persistence.conversation.sessions import NewSession
@@ -19,11 +19,11 @@ FACTS = Facts(os="macos", arch="arm64", machine_kind="Mac", plugins=())
 
 @pytest.fixture
 def db(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     monkeypatch.setattr(server, "_db", None)
     db = server._get_db()
     db.sessions.create(NewSession(session_id="onb", source="desktop"))
@@ -39,12 +39,12 @@ def ended(monkeypatch) -> list[dict]:
 
 
 def _flag(db) -> bool:
-    return read_user_config_raw(Path(server._hermes_home) / "config.yaml")["onboarding"]["run"]
+    return read_user_config_raw(Path(server._slave_home) / "config.yaml")["onboarding"]["run"]
 
 
 def _delete(db, session_id: str) -> bool:
     """Delete *session_id* through the store; True when it existed."""
-    return bool(db.sessions.delete(session_id, media_root=str(Path(server._hermes_home) / "media")))
+    return bool(db.sessions.delete(session_id, media_root=str(Path(server._slave_home) / "media")))
 
 
 def test_a_refused_delete_leaves_the_run_going(db, ended):
@@ -68,7 +68,7 @@ def test_deleting_the_newest_copy_ends_the_run_on_every_copy(db, ended):
 
 
 def _failing_flag_write(monkeypatch):
-    from hermes_cli import onboarding_run
+    from slave_cli import onboarding_run
 
     def disk_full(value, **kw):
         raise OSError("disk full")

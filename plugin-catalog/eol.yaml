@@ -1,6 +1,6 @@
 name: eol
 title: End-of-Life Checks
-repo: https://github.com/adriens/hermes-eol-plugin
+repo: https://github.com/adriens/slave-eol-plugin
 sha: b55b3b662cfc50633ea2203e3832aaf13a9b4091
 version: "0.3.0"
 description: |
@@ -16,15 +16,15 @@ description: |
 
   Disclosures
   - Network: HTTPS GET to endoflife.date/api/v1 when a tool is called; only product names are sent (plus fetching the public purl/CPE mapping tables).
-  - No file access: stack files are passed in and returned as text; writing goes through Hermes' write_file and its approvals.
+  - No file access: stack files are passed in and returned as text; writing goes through slave-agent’ write_file and its approvals.
   - No credentials, no shell commands, no background processes; 6-hour in-memory cache only.
   - The pre_llm_call hook only reads the current user message, matches keywords locally and appends a fixed note; it sends nothing anywhere.
-  - Stdlib only, no Python dependencies (YAML via Hermes' public hermes_yaml helper).
+  - Stdlib only, no Python dependencies (YAML via slave-agent’ public slave_yaml helper).
 maintainer: adriens
 tier: community
 category: tools
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/adriens/hermes-eol-plugin#readme
+docs_url: https://github.com/adriens/slave-eol-plugin#readme
 readme: true
 platforms: []
 capabilities:

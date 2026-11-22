@@ -169,10 +169,10 @@ def _legacy_order(path, record):
 
 def _home(authority, actor, profile):
     from gateway.session_authorities import served_profile_name
-    from tools.bot_mode_probe import _handle, _hermes_root, _roster
+    from tools.bot_mode_probe import _handle, _slave_root, _roster
     home = authority_persistence(authority).scope.profile_dir
     name = served_profile_name(home)
-    handle = _handle(name, [n for n, _d in _roster(_hermes_root(home))]) if name == 'default' else name
+    handle = _handle(name, [n for n, _d in _roster(_slave_root(home))]) if name == 'default' else name
     if actor.profile_id != authority.profile_id or profile not in (name, handle):
         raise AuthorityRefusal('profile_mismatch')
     if 'session:submit' not in actor.capabilities:
@@ -339,7 +339,7 @@ def _displace_bot_chat(store, sid):
 
 
 async def _create_bot_chat(authority, actor, *, displace=None):
-    """No Bot Chat yet (or *displace*, an API conversation holding its title, is moved aside first): mint it the way ``hermes chat --in ~ -c "Bot Chat" --create-if-missing``
+    """No Bot Chat yet (or *displace*, an API conversation holding its title, is moved aside first): mint it the way ``slave chat --in ~ -c "Bot Chat" --create-if-missing``
     did on the CLI lane this door replaced, so a fresh profile's first delivery has somewhere
     to land instead of being recorded as failed. Same owner step as ``session.create`` with a
     title: lookup, creation and title run under the authority's titled-create lock, with the
@@ -401,7 +401,7 @@ def _bot_chat_creation_id(authority, actor):
     chain = LocalGenerations(profile_id=authority.profile_id, principal_id=actor.subject, base_request_id=base)
     pick = store.runtime.first_generation(chain)
     # Handed off (``/handoff``), it is a messaging lane's conversation: its receipt went with it,
-    # and a reset's head carried its name there (``hermes_state_local.hand_off_conversations``).
+    # and a reset's head carried its name there (``slave_state_local.hand_off_conversations``).
     while pick.row is not None and (bool(pick.row.title) or pick.row.archived or _messaging_platform(pick.row.source) is not None):
         pick = store.runtime.first_generation(chain, start=pick.generation + 1)
     return generation_request_id(base, pick.generation)
@@ -714,7 +714,7 @@ async def _migrate(authority, actor, home, root):
             continue
         if authority_persistence(authority).lineage.tip(owner['session_id']) != entry.session_id:
             continue
-        from hermes_cli.active_sessions import active_session_liveness_guard
+        from slave_cli.active_sessions import active_session_liveness_guard
         with active_session_liveness_guard(owner['session_id'], registry_home=home) as active:
             if active:
                 raise AuthorityRefusal('runtime_coordination_required')

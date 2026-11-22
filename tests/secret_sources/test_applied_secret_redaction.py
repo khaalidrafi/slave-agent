@@ -19,8 +19,8 @@ from agent import redact_secret_sources
 from agent.redact import redact_sensitive_text, redact_terminal_output, register_vault_redaction_value
 from agent.secret_sources import registry as reg
 from agent.secret_sources.base import FetchResult, SecretSource
-from hermes_cli import env_loader
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from slave_cli import env_loader
+from slave_constants import reset_slave_home_override, set_slave_home_override
 
 
 def _key(label: str, kind: str, lines: int) -> tuple[str, list[str]]:
@@ -55,11 +55,11 @@ def _clean(monkeypatch):
 
 @contextmanager
 def _profile(home):
-    token = set_hermes_home_override(str(home))
+    token = set_slave_home_override(str(home))
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _home(tmp_path, name):

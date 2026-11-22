@@ -1,5 +1,5 @@
 name: cloudgpu-provider
-repo: https://github.com/mrhy7176/hermes-cloudgpu
+repo: https://github.com/mrhy7176/slave-cloudgpu
 sha: 8094603d776e185cfe362618d353841e6b453189
 subdir: model-providers/cloudgpu
 title: "CloudGPU"
@@ -8,7 +8,7 @@ maintainer: mrhy7176
 tier: community
 category: models
 requires_hermes: ">=0.21.5"
-docs_url: https://github.com/mrhy7176/hermes-cloudgpu#readme
+docs_url: https://github.com/mrhy7176/slave-cloudgpu#readme
 version: "1.0.0"
 platforms: []
 capabilities:

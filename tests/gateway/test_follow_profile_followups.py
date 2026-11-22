@@ -29,10 +29,10 @@ def _profile(home, model, port, key, **extra):
 @pytest.fixture
 def home(monkeypatch):
     from gateway import run
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     return home
 
 
@@ -212,7 +212,7 @@ async def test_a_later_reasoning_command_replaces_the_pick_after_a_restart(home,
 
 @pytest.mark.asyncio
 async def test_follow_session_runs_the_profiles_current_toolsets_and_a_frozen_one_does_not(home):
-    """C03 (main #124211): ``hermes tools disable`` reaches a following Bot Chat's next turn."""
+    """C03 (main #124211): ``slave tools disable`` reaches a following Bot Chat's next turn."""
     from gateway.session_policy import active_policy, policy_for_source, policy_scope
     _profile(home, 'old', 1, 'k')
     store, runner, authority, owner = _owner(home)

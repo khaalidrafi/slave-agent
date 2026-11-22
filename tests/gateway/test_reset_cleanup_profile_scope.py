@@ -22,7 +22,7 @@ from agent import memory_caller_scope, secret_scope
 from gateway.config import GatewayConfig, Platform
 from gateway.run import GatewayRunner, _profile_runtime_scope
 from gateway.session import SessionSource
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 
 class _RecordingAgent:
@@ -33,7 +33,7 @@ class _RecordingAgent:
         self.seen, self.bound_home = seen, bound_home
 
     def shutdown_memory_provider(self, messages=None):
-        self.seen["cleanup"] = str(get_hermes_home())
+        self.seen["cleanup"] = str(get_slave_home())
         self.seen["secret"] = (secret_scope.current_secret_scope() or {}).get("HINDSIGHT_LLM_API_KEY")
         self.seen["guard"] = memory_caller_scope.caller_scope(
             memory_caller_scope.bound_scope(self.bound_home), "hook on_session_end")
@@ -53,11 +53,11 @@ def _runner(profile_homes: dict[str, Path]) -> GatewayRunner:
 
 
 def _profile_b(tmp_path, monkeypatch) -> Path:
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".slave"
     prof_b = default_home / "profiles" / "b"
     prof_b.mkdir(parents=True)
     (prof_b / ".env").write_text("HINDSIGHT_LLM_API_KEY=key-of-b\n")
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("SLAVE_HOME", str(default_home))
     return prof_b
 
 
@@ -66,10 +66,10 @@ async def test_reset_runs_memory_cleanup_and_session_hooks_under_the_owning_prof
     prof_b = _profile_b(tmp_path, monkeypatch)
     key = "agent:b:telegram:dm:1"
     seen: dict = {}
-    monkeypatch.setattr("hermes_cli.lifecycle.finalize_session",
-                        lambda **_kw: seen.__setitem__("finalize", str(get_hermes_home())))
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", lambda name, **_kw: seen.__setitem__(name, (
-        str(get_hermes_home()), (secret_scope.current_secret_scope() or {}).get("HINDSIGHT_LLM_API_KEY"))))
+    monkeypatch.setattr("slave_cli.lifecycle.finalize_session",
+                        lambda **_kw: seen.__setitem__("finalize", str(get_slave_home())))
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", lambda name, **_kw: seen.__setitem__(name, (
+        str(get_slave_home()), (secret_scope.current_secret_scope() or {}).get("HINDSIGHT_LLM_API_KEY"))))
     runner = _runner({key: prof_b})
     runner._agent_cache[key] = (_RecordingAgent(seen, prof_b), "sig")
     source = SessionSource(platform=Platform.TELEGRAM, chat_id="1", user_id="1", chat_type="dm")
@@ -111,29 +111,29 @@ async def test_reset_gateway_events_reach_only_the_owning_profile_hooks(tmp_path
     names the owner of the session that ended, so a source that routes elsewhere (no profile on it)
     must not move the hooks either."""
     from gateway.hooks import HookRegistry, ProfileHookRegistries
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
 
     prof_b = _profile_b(tmp_path, monkeypatch)
     key = "agent:b:telegram:dm:1"
     runner = _runner({key: prof_b})
     # The confirm callback itself is unscoped; the source routes to B, or to the launch profile.
-    runner._profile_scope_key_for_source = lambda _source: prof_b if source_profile else tmp_path / ".hermes"
+    runner._profile_scope_key_for_source = lambda _source: prof_b if source_profile else tmp_path / ".slave"
     runner._finalize_session_off_loop = AsyncMock(return_value=[])
     runner._deliver_session_end_messages = AsyncMock()
     seen = []
     hooks = ProfileHookRegistries()
-    for home, label in ((tmp_path / ".hermes", "default"), (prof_b, "b")):
+    for home, label in ((tmp_path / ".slave", "default"), (prof_b, "b")):
         registry = HookRegistry()
 
         def record(event_type, payload, *, _label=label):
             seen.append((
-                _label, event_type, payload["session_key"], str(get_hermes_home()),
+                _label, event_type, payload["session_key"], str(get_slave_home()),
                 (secret_scope.current_secret_scope() or {}).get("HINDSIGHT_LLM_API_KEY"),
             ))
 
         registry._handlers["session:end"] = [record]
         registry._handlers["session:reset"] = [record]
-        hooks._by_home[hermes_home_key(home)] = registry
+        hooks._by_home[slave_home_key(home)] = registry
     runner.hooks = hooks
     source = SessionSource(platform=Platform.TELEGRAM, chat_id="1", user_id="1",
                            chat_type="dm", profile=source_profile)
@@ -161,9 +161,9 @@ def test_a_key_whose_profile_home_is_gone_warns_before_releasing_under_root(tmp_
     secret_scope.set_multiplex_active(True)
     try:
         with caplog.at_level("WARNING", logger="gateway.run"):
-            runner._run_release_in_profile_scope(lambda: seen.__setitem__("home", str(get_hermes_home())), (),
+            runner._run_release_in_profile_scope(lambda: seen.__setitem__("home", str(get_slave_home())), (),
                                                  "agent:ghost:telegram:dm:1")
     finally:
         secret_scope.set_multiplex_active(False)
-    assert seen["home"] == str(tmp_path / ".hermes")
+    assert seen["home"] == str(tmp_path / ".slave")
     assert any("'ghost'" in r.getMessage() and "no home" in r.getMessage() for r in caplog.records), caplog.text

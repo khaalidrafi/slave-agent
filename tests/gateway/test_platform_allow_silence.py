@@ -17,7 +17,7 @@ from gateway.config import GatewayConfig, Platform, load_gateway_config
 from gateway.run_turn import _unexpected_silence_reply
 from gateway.session import SessionSource
 from gateway.session_identity import RoutingIdentity
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.gateway.test_active_turn_recovery import _close_store_handles, _db_runner, _entry_for
 from tests.gateway.test_gateway_silence_tokens import _runner
 from tests.gateway.test_slack_ignore_other_user_mentions import BOT_USER_ID, CHANNEL_ID
@@ -33,7 +33,7 @@ def _write(home, raw):
 
 def _loaded(raw):
     """The launch profile's config exactly as the gateway loads it."""
-    _write(get_hermes_home(), raw)
+    _write(get_slave_home(), raw)
     return load_gateway_config()
 
 

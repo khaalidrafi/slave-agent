@@ -57,7 +57,7 @@ class TestFtsRebuildLoopWithoutTrigram:
     single ``StoreHolder`` open, holding the write lock, and never converged.
 
     The v23 repair also clears the deferred-rebuild resume markers, so an
-    interrupted ``hermes sessions optimize-storage`` silently lost its place
+    interrupted ``slave sessions optimize-storage`` silently lost its place
     every time the store was reopened.
     """
 
@@ -500,7 +500,7 @@ class TestFTS5ToolCallMigration:
         try:
             assert _FtsStorageOptimizer(session_db).fts_optimize_available() is True
 
-            # `hermes db optimize` performs the v23 transition; afterwards the
+            # `slave db optimize` performs the v23 transition; afterwards the
             # tool fields are searchable.
             result = _FtsStorageOptimizer(session_db).optimize_fts_storage(vacuum=False)
             assert result["ok"] is True

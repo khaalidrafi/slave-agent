@@ -11,7 +11,7 @@ docs_url: https://www.slaide.de/ai-assistants
 version: "1.0.0"
 readme: true
 known_issues:
-  - "Portable mcp.json cannot complete OAuth. Add mcp_servers.slaide with url https://app.slaide.de/api/mcp, auth: oauth and trust: untrusted to config.yaml, then run hermes mcp login slaide and hermes mcp test slaide."
+  - "Portable mcp.json cannot complete OAuth. Add mcp_servers.slaide with url https://app.slaide.de/api/mcp, auth: oauth and trust: untrusted to config.yaml, then run slave mcp login slaide and slave mcp test slaide."
   - "Creating and updating documents uses the user's Slaide plan allowance. Changes are versioned and can be restored in Slaide. The remote tool list can change without a new pin of this package."
 capabilities:
   provides_tools: []

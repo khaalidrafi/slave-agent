@@ -101,7 +101,7 @@ PARTIAL_FAILED_TURN_NOTICE = (
 
 
 # ``messages.display_kind`` of that row: display-only (stripped before every provider request),
-# so renderers show a Hermes notice and room pollers never read it as the model's reply.
+# so renderers show a Slave notice and room pollers never read it as the model's reply.
 FAILED_TURN_DISPLAY_KIND = "failed_turn"
 
 
@@ -742,7 +742,7 @@ MESSAGE_UID = "message_uid"
 # absorption order (the uid sibling of ``_absorbed_row_ids``; persisted as ``messages.absorbed_message_uids``).
 # The survivor keeps the FIRST constituent's uid.
 ABSORBED_MESSAGE_UIDS = "_absorbed_message_uids"
-# Per-occurrence tool-call identity. Provider tool-call ids repeat (Hermes mints deterministic ``call_<12hex>``
+# Per-occurrence tool-call identity. Provider tool-call ids repeat (Slave mints deterministic ``call_<12hex>``
 # ids for identical calls, and models reuse ids), so an assistant row carries ``{provider id: uid}`` for its
 # ``tool_calls`` (``messages.tool_call_uids``) and its tool-result rows carry the matching uid
 # (``messages.tool_call_uid``). The provider-facing ``id`` is untouched; these never reach the wire.

@@ -13,7 +13,7 @@ from acp.schema import ImageContentBlock
 
 from acp_adapter.gateway_commands import run_command
 from acp_adapter.gateway_server import GatewayACPAgent
-from hermes_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_client import GatewayClientError
 from tests.acp_adapter.test_acp_image_staging_boundary import PNG
 
 

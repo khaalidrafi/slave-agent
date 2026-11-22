@@ -5,7 +5,7 @@ import json
 import pytest
 
 import storage_limits
-from hermes_cli.session_export import to_legacy_export_dict
+from slave_cli.session_export import to_legacy_export_dict
 from persistence.core.errors import ExportTooLarge
 from persistence.sqlite.conversation._store.api_content import set_latest_user_api_content
 from persistence.sqlite.conversation._store.compression import publish_compression_child

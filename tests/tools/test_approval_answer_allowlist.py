@@ -46,10 +46,10 @@ NOT_CONSENT = [
 @pytest.fixture(autouse=True)
 def _clean_approval_env(monkeypatch):
     """Neutral approval environment: no yolo, manual mode, tirith quiet, no leftover grants."""
-    for key in ("HERMES_EXEC_ASK", "HERMES_GATEWAY_SESSION", "HERMES_SESSION_PLATFORM",
-                "HERMES_CRON_SESSION", "HERMES_YOLO_MODE"):
+    for key in ("SLAVE_EXEC_ASK", "SLAVE_GATEWAY_SESSION", "SLAVE_SESSION_PLATFORM",
+                "SLAVE_CRON_SESSION", "SLAVE_YOLO_MODE"):
         monkeypatch.delenv(key, raising=False)
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
     monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
     monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
     approval_module._session_approved.clear()
@@ -65,7 +65,7 @@ def _clean_approval_env(monkeypatch):
 
 def _drive_gateway(monkeypatch, answer):
     """Run the command gate through the gateway branch with ``answer`` as the user's reply."""
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
     monkeypatch.setattr(approval_module, "_gateway_notify_cb", lambda _sk: (lambda *a, **k: True))
     monkeypatch.setattr(
         approval_module, "_await_gateway_decision",
@@ -93,7 +93,7 @@ class TestGatewayAnswersMustBeConsentWords:
 
     def test_unrecognized_answer_summary_names_the_gate_noun(self, monkeypatch):
         """execute_code's refusal must say "code", like every other refusal on that gate."""
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+        monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
         monkeypatch.setattr(approval_module, "_gateway_notify_cb", lambda _sk: (lambda *a, **k: True))
         monkeypatch.setattr(
             approval_module, "_await_gateway_decision",

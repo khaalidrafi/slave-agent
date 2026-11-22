@@ -159,7 +159,7 @@ def _setup_bridge_dir(tmp_path: Path) -> Path:
     (bridge_dir / "package.json").write_text('{"name": "bridge"}\n', encoding="utf-8")
     nm = bridge_dir / "node_modules"
     nm.mkdir()
-    (nm / ".hermes-pkg-hash").write_text(_file_content_hash(bridge_dir / "package.json"))
+    (nm / ".slave-pkg-hash").write_text(_file_content_hash(bridge_dir / "package.json"))
     session_path = tmp_path / "session"
     session_path.mkdir()
     (session_path / "creds.json").write_text("{}", encoding="utf-8")
@@ -309,7 +309,7 @@ class TestListenerDiscovery:
 
     @linux
     # psutil's system-wide scan readlinks /proc/<pid>/exe of every process, which names files under
-    # the real Hermes home whenever a Hermes process runs on the box; it reads, never writes.
+    # the real Slave home whenever a Slave process runs on the box; it reads, never writes.
     @pytest.mark.allow_real_home_io
     def test_psutil_fallback_when_lsof_and_ss_missing(self, monkeypatch):
         """Neither lsof nor ss on PATH (the repo image ships neither): the psutil TCP scan still

@@ -2,7 +2,7 @@
 
 Every ``external_process`` model provider (a plugin profile whose ``create_client`` returns an
 ``ACPClient`` subclass) inherits these, so they are pinned on the generic base with a vendor-neutral
-subclass: the agent's own permission requests are never granted (Hermes has no human channel on that
+subclass: the agent's own permission requests are never granted (slave-agent has no human channel on that
 path), the ``fs/*`` bridge is confined to the session cwd, honours the write deny-list and redacts
 secrets it hands back, and every spawned agent process is reaped by its own session or by ``close()``.
 """
@@ -84,7 +84,7 @@ def test_read_text_file_redacts_sensitive_content(client, tmp_path, redact_toggl
     secret_file = tmp_path / "config.env"
     secret_file.write_text("OPENAI_API_KEY=sk-proj-abc123def456ghi789jkl012", encoding="utf-8")
 
-    # agent.redact snapshots HERMES_REDACT_SECRETS at import time into _REDACT_ENABLED, so patching
+    # agent.redact snapshots SLAVE_REDACT_SECRETS at import time into _REDACT_ENABLED, so patching
     # os.environ is a no-op; flip the constant. The fs bridge hands file text to a third-party agent
     # process, so it redacts whatever the user's display toggle says.
     with patch("agent.redact._REDACT_ENABLED", redact_toggle):
@@ -162,12 +162,12 @@ def test_write_text_file_respects_safe_root(client, tmp_path):
     safe_root.mkdir()
     outside = tmp_path / "outside.txt"
 
-    with patch.dict(os.environ, {"HERMES_WRITE_SAFE_ROOT": str(safe_root)}, clear=False):
+    with patch.dict(os.environ, {"SLAVE_WRITE_SAFE_ROOT": str(safe_root)}, clear=False):
         response = _dispatch(client, _request("fs/write_text_file", {"path": str(outside), "content": "should-not-write"}),
                              cwd=str(tmp_path))
 
     assert "error" in response
-    assert "HERMES_WRITE_SAFE_ROOT" in str(response["error"])
+    assert "SLAVE_WRITE_SAFE_ROOT" in str(response["error"])
     assert not outside.exists()
 
 
@@ -444,18 +444,18 @@ def _capture_popen(captured):
 
 
 def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch, tmp_path):
-    hermes_home = tmp_path / "hermes"
-    (hermes_home / "home").mkdir(parents=True)
+    slave_home = tmp_path / "slave"
+    (slave_home / "home").mkdir(parents=True)
     real_home = tmp_path / "real-home"
     real_home.mkdir()
     monkeypatch.setenv("HOME", str(real_home))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    # Hermeticity: an ambient HERMES_REAL_HOME / TERMINAL_HOME_MODE outranks HOME in the candidate
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
+    # Hermeticity: an ambient SLAVE_REAL_HOME / TERMINAL_HOME_MODE outranks HOME in the candidate
     # ladder, and a containerized runner flips get_subprocess_home()'s auto mode; the host branch is
     # the contract under test.
-    monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
+    monkeypatch.delenv("SLAVE_REAL_HOME", raising=False)
     monkeypatch.delenv("TERMINAL_HOME_MODE", raising=False)
-    monkeypatch.setattr("hermes_constants.is_container", lambda: False)
+    monkeypatch.setattr("slave_constants.is_container", lambda: False)
     captured = {}
 
     # The --acp support probe runs subprocess.run before Popen; inconclusive so no host CLI interferes.
@@ -465,12 +465,12 @@ def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch,
         _launch_client(tmp_path)._run_prompt("hello", timeout_seconds=1)
 
     assert captured["kwargs"]["env"]["HOME"] == str(real_home)
-    assert captured["kwargs"]["env"]["HERMES_REAL_HOME"] == str(real_home)
+    assert captured["kwargs"]["env"]["SLAVE_REAL_HOME"] == str(real_home)
 
 
 def test_run_prompt_passes_home_when_parent_env_is_clean(monkeypatch, tmp_path):
     monkeypatch.delenv("HOME", raising=False)
-    monkeypatch.delenv("HERMES_HOME", raising=False)
+    monkeypatch.delenv("SLAVE_HOME", raising=False)
     captured = {}
 
     with patch("agent.acp_client.subprocess.run", side_effect=FileNotFoundError), \

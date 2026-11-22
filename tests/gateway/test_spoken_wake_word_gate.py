@@ -31,7 +31,7 @@ def _telegram(voice_mention_patterns):
     if voice_mention_patterns is not None:
         extra["voice_mention_patterns"] = voice_mention_patterns
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***", extra=extra))
-    adapter._bot = SimpleNamespace(id=999, username="hermes_bot")
+    adapter._bot = SimpleNamespace(id=999, username="slave_bot")
     adapter._is_callback_user_authorized = lambda *_a, **_k: True
     adapter.handle_message = AsyncMock()
     return adapter
@@ -55,12 +55,12 @@ def _voice_note():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("opt_in,spoken,admitted", [
-    (True, "hermes, what is on today", True),
+    (True, "slave, what is on today", True),
     (True, "just chatting about lunch", False),
-    (None, "hermes, what is on today", False),  # off by default: no STT for unaddressed notes
+    (None, "slave, what is on today", False),  # off by default: no STT for unaddressed notes
 ], ids=["wake-word", "no-wake-word", "not-opted-in"])
 async def test_telegram_group_voice_note_wakes_on_the_spoken_wake_word(tmp_path, monkeypatch, opt_in, spoken, admitted):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     transcribe, calls = _stt(spoken)
     adapter = _telegram(opt_in)
     msg = _voice_note()
@@ -85,7 +85,7 @@ async def test_the_turn_reuses_the_gate_transcript(tmp_path):
     clip = tmp_path / "gate.ogg"
     clip.write_bytes(OGG)
     recaptured = tmp_path / "admitted.ogg"
-    transcribe, calls = _stt("hermes, what is on today")
+    transcribe, calls = _stt("slave, what is on today")
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
         assert await spoken_mention_clips([str(clip)], [re.compile(p) for p in PATTERNS]) == [str(clip)]
         recaptured.write_bytes(clip.read_bytes())
@@ -94,15 +94,15 @@ async def test_the_turn_reuses_the_gate_transcript(tmp_path):
         text, transcripts = await runner._enrich_message_with_transcription("", [str(recaptured)])
 
     assert calls == [str(clip)]
-    assert transcripts == ["hermes, what is on today"] and text.startswith('"hermes, what is on today"')
+    assert transcripts == ["slave, what is on today"] and text.startswith('"slave, what is on today"')
     assert "gate.ogg" not in text  # the note is the turn's own, never the gate copy's
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("spoken,admitted", [("hermes, what is on today", True), ("lunch?", False)])
+@pytest.mark.parametrize("spoken,admitted", [("slave, what is on today", True), ("lunch?", False)])
 async def test_whatsapp_group_voice_note_wakes_on_the_spoken_wake_word(tmp_path, monkeypatch, spoken, admitted):
     from plugins.platforms.whatsapp.adapter import WhatsAppAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     clip = tmp_path / "cache" / "audio" / "aud_1.ogg"
     clip.parent.mkdir(parents=True)
     clip.write_bytes(OGG)
@@ -128,11 +128,11 @@ async def test_whatsapp_group_voice_note_wakes_on_the_spoken_wake_word(tmp_path,
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("spoken,admitted", [("hermes, what is on today", True), ("lunch?", False)])
+@pytest.mark.parametrize("spoken,admitted", [("slave, what is on today", True), ("lunch?", False)])
 async def test_photon_group_voice_note_wakes_on_the_spoken_wake_word(tmp_path, monkeypatch, spoken, admitted):
     import base64
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
@@ -151,13 +151,13 @@ async def test_photon_group_voice_note_wakes_on_the_spoken_wake_word(tmp_path, m
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("spoken,admitted", [("hermes, what is on today", True), ("just chatting about lunch", False)])
+@pytest.mark.parametrize("spoken,admitted", [("slave, what is on today", True), ("just chatting about lunch", False)])
 async def test_photon_grouped_voice_payload_matches_spoken_wake_word(tmp_path, monkeypatch, spoken, admitted):
     """Photon's ``group`` envelope can carry the voice item (with a photo beside it): only the audio is
     transcribed, and a rejected envelope leaves none of its cached files behind."""
     import base64
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
@@ -179,12 +179,12 @@ async def test_photon_grouped_voice_payload_matches_spoken_wake_word(tmp_path, m
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("spoken,admitted", [("hermes, what is on today", True), ("lunch?", False)])
+@pytest.mark.parametrize("spoken,admitted", [("slave, what is on today", True), ("lunch?", False)])
 async def test_bluebubbles_group_voice_memo_wakes_on_the_spoken_wake_word(tmp_path, monkeypatch, spoken, admitted):
     import asyncio
     import json
     from plugins.platforms.bluebubbles.adapter import BlueBubblesAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     adapter = BlueBubblesAdapter(PlatformConfig(enabled=True, extra={
         "server_url": "http://localhost:1234", "password": "secret", "require_mention": True,
         "mention_patterns": PATTERNS, "voice_mention_patterns": True, "send_read_receipts": False}))
@@ -215,7 +215,7 @@ async def test_a_bluebubbles_memo_from_an_unauthorized_sender_is_never_fetched_o
     import asyncio
     import json
     from plugins.platforms.bluebubbles.adapter import BlueBubblesAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     adapter = BlueBubblesAdapter(PlatformConfig(enabled=True, extra={
         "server_url": "http://localhost:1234", "password": "secret", "require_mention": True,
         "mention_patterns": PATTERNS, "voice_mention_patterns": True, "send_read_receipts": False}))
@@ -226,7 +226,7 @@ async def test_a_bluebubbles_memo_from_an_unauthorized_sender_is_never_fetched_o
         "guid": "m1", "text": "", "handle": {"address": "+155****0100"}, "isFromMe": False, "isGroup": True,
         "chats": [{"guid": "iMessage;+;group-chat"}], "attachments": [{"guid": "a1", "mimeType": "audio/ogg"}]}}).encode()
     request = SimpleNamespace(query={"password": "secret"}, headers={}, read=AsyncMock(return_value=body))
-    transcribe, calls = _stt("hermes, what is on today")
+    transcribe, calls = _stt("slave, what is on today")
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
         await adapter._handle_webhook(request)
         await asyncio.sleep(0)
@@ -241,7 +241,7 @@ async def test_disabled_stt_never_transcribes_at_the_gate_even_with_local_fallba
     """``stt.enabled: false`` is not a provider failure: the local fallback must not run either."""
     import re
     from gateway.platforms.helpers import spoken_mention_clips
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("stt:\n  enabled: false\n")
     clip = tmp_path / "gate.ogg"
     clip.write_bytes(OGG)
@@ -249,7 +249,7 @@ async def test_disabled_stt_never_transcribes_at_the_gate_even_with_local_fallba
 
     def fallback(path, _model=None):
         local.append(path)
-        return {"success": True, "transcript": "hermes, what is on today", "provider": "local"}
+        return {"success": True, "transcript": "slave, what is on today", "provider": "local"}
     with patch("tools.transcription_tools.transcribe_audio_local_fallback", side_effect=fallback):
         assert await spoken_mention_clips([str(clip)], [re.compile(p) for p in PATTERNS]) == []
     assert local == []
@@ -260,27 +260,27 @@ async def test_telegram_gate_transcribes_in_the_routed_profile(tmp_path, monkeyp
     """A shared bot's chat routed to another profile: the gate's STT runs in that profile's scope
     (its ``stt`` config and secrets), the scope the turn enters, never the receiving bot's."""
     import contextlib
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import get_slave_home, reset_slave_home_override, set_slave_home_override
     launch, routed = tmp_path / "launch", tmp_path / "routed"
     for home, enabled in ((launch, "false"), (routed, "true")):
         home.mkdir()
         (home / "config.yaml").write_text(f"stt:\n  enabled: {enabled}\n")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     entered = []
 
     @contextlib.asynccontextmanager
     async def scope(source):
         entered.append(source.chat_id)
-        token = set_hermes_home_override(str(routed))
+        token = set_slave_home_override(str(routed))
         try:
             yield
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
     homes = []
 
     def transcribe(path, _model=None, _source=None):
-        homes.append(str(get_hermes_home()))
-        return {"success": True, "transcript": "hermes, what is on today", "provider": "fake"}
+        homes.append(str(get_slave_home()))
+        return {"success": True, "transcript": "slave, what is on today", "provider": "fake"}
     adapter = _telegram(True)
     adapter.gateway_runner = SimpleNamespace(_async_profile_scope_for_source=scope,
                                              _profile_name_for_source=lambda *_a, **_k: None)
@@ -300,7 +300,7 @@ async def test_photon_gate_stt_never_holds_the_inbound_reader(tmp_path, monkeypa
     import json
     import threading
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
@@ -311,7 +311,7 @@ async def test_photon_gate_stt_never_holds_the_inbound_reader(tmp_path, monkeypa
 
     def slow(path, _model=None, _source=None):
         release.wait(10)
-        return {"success": True, "transcript": "hermes, what is on today", "provider": "fake"}
+        return {"success": True, "transcript": "slave, what is on today", "provider": "fake"}
 
     def line(mid, space, content):
         return json.dumps({"messageId": mid, "space": space, "sender": {"id": "+15551234567"},
@@ -321,7 +321,7 @@ async def test_photon_gate_stt_never_holds_the_inbound_reader(tmp_path, monkeypa
     voice = {"type": "voice", "name": "v.ogg", "mimeType": "audio/ogg", "data": base64.b64encode(OGG).decode()}
     with patch("tools.transcription_tools.transcribe_audio", side_effect=slow):
         await asyncio.wait_for(adapter._on_inbound_line(line("v1", group, voice)), 2)
-        await asyncio.wait_for(adapter._on_inbound_line(line("t1", group, {"type": "text", "text": "hermes later"})), 2)
+        await asyncio.wait_for(adapter._on_inbound_line(line("t1", group, {"type": "text", "text": "slave later"})), 2)
         await asyncio.wait_for(adapter._on_inbound_line(line("s1", dm, {"type": "text", "text": "/stop"})), 2)
         assert seen == ["s1"]
         release.set()
@@ -338,11 +338,11 @@ async def test_the_gate_honours_the_runners_stt_setting(tmp_path, monkeypatch):
     (``GatewayConfig.stt_enabled``); the gate reads that same value, so the note is never sent to STT."""
     import re
     from gateway.platforms.helpers import spoken_mention_clips
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     clip = tmp_path / "gate.ogg"
     clip.write_bytes(OGG)
     adapter = SimpleNamespace(gateway_runner=SimpleNamespace(config=SimpleNamespace(stt_enabled=False)))
-    transcribe, calls = _stt("hermes, what is on today")
+    transcribe, calls = _stt("slave, what is on today")
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
         assert await spoken_mention_clips([str(clip)], [re.compile(p) for p in PATTERNS], adapter=adapter) == []
     assert calls == []
@@ -355,25 +355,25 @@ async def test_a_gate_transcript_never_crosses_profiles(tmp_path):
     import re
     from gateway.platforms.helpers import spoken_mention_clips
     from gateway.run_inbound_transcription import GatewayInboundTranscriptionMixin
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     clip = tmp_path / "gate.ogg"
     clip.write_bytes(OGG)
     (tmp_path / "a").mkdir()
     (tmp_path / "b").mkdir()
-    transcribe, calls = _stt("hermes, what is on today")
+    transcribe, calls = _stt("slave, what is on today")
     runner = GatewayInboundTranscriptionMixin()
     runner.config = SimpleNamespace(stt_enabled=True)
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
-        token = set_hermes_home_override(str(tmp_path / "a"))
+        token = set_slave_home_override(str(tmp_path / "a"))
         try:
             assert await spoken_mention_clips([str(clip)], [re.compile(p) for p in PATTERNS], keep=frozenset({str(clip)}))
         finally:
-            reset_hermes_home_override(token)
-        token = set_hermes_home_override(str(tmp_path / "b"))
+            reset_slave_home_override(token)
+        token = set_slave_home_override(str(tmp_path / "b"))
         try:
             await runner._enrich_message_with_transcription("", [str(clip)])
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
     assert len(calls) == 2
 
 
@@ -395,7 +395,7 @@ async def test_the_turn_notes_name_its_own_audio_never_the_gate_copy(tmp_path):
         with open(path, "rb") as fh:
             if fh.read().endswith(b"2"):
                 return {"success": False, "error": "provider down"}
-        return {"success": True, "transcript": "hermes, what is on today", "provider": "fake"}
+        return {"success": True, "transcript": "slave, what is on today", "provider": "fake"}
     runner = GatewayInboundTranscriptionMixin()
     runner.config = SimpleNamespace(stt_enabled=True)
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe), \
@@ -423,7 +423,7 @@ async def test_a_sender_the_runner_refuses_is_never_transcribed(tmp_path):
     runner = SimpleNamespace(config=SimpleNamespace(stt_enabled=True),
                              _is_user_authorized_for_source=lambda src: asked.append(src.user_id) or False)
     adapter = SimpleNamespace(gateway_runner=runner, _canonicalize=lambda _src: None)
-    transcribe, calls = _stt("hermes, what is on today")
+    transcribe, calls = _stt("slave, what is on today")
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
         assert await spoken_mention_clips([str(clip)], [re.compile(p) for p in PATTERNS], adapter=adapter,
                                           source=SimpleNamespace(user_id="blocked")) == []
@@ -436,13 +436,13 @@ async def test_photon_caf_attachment_voice_note_wakes_on_the_spoken_wake_word(tm
     them as voice exactly as normalisation does."""
     import base64
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
         "require_mention": True, "mention_patterns": PATTERNS, "voice_mention_patterns": True}))
     adapter.handle_message = AsyncMock()
-    transcribe, calls = _stt("hermes, what is on today")
+    transcribe, calls = _stt("slave, what is on today")
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
         await adapter._dispatch_inbound({
             "messageId": "caf1", "space": {"id": "group-guid", "type": "group", "phone": None},
@@ -461,13 +461,13 @@ async def test_photon_document_first_envelope_still_sends_its_spoken_audio_to_st
     import base64
     from gateway.run_inbound import GatewayInboundMixin
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
         "require_mention": True, "mention_patterns": PATTERNS, "voice_mention_patterns": True}))
     adapter.handle_message = AsyncMock()
-    transcribe, _calls = _stt("hermes, read this")
+    transcribe, _calls = _stt("slave, read this")
     content = {"type": "group", "items": [
         {"content": {"type": "attachment", "name": "a.pdf", "mimeType": "application/pdf", "data": base64.b64encode(b"%PDF").decode()}},
         {"content": {"type": "voice", "name": "voice.ogg", "mimeType": "audio/ogg", "data": base64.b64encode(OGG).decode()}}]}
@@ -490,7 +490,7 @@ async def test_a_group_control_command_never_waits_on_an_earlier_voice_check(tmp
     import json
     import threading
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
@@ -501,7 +501,7 @@ async def test_a_group_control_command_never_waits_on_an_earlier_voice_check(tmp
 
     def slow(path, _model=None, _source=None):
         release.wait(10)
-        return {"success": True, "transcript": "hermes, what is on today", "provider": "fake"}
+        return {"success": True, "transcript": "slave, what is on today", "provider": "fake"}
 
     def line(mid, content):
         return json.dumps({"messageId": mid, "space": {"id": "group-guid", "type": "group", "phone": None},
@@ -509,9 +509,9 @@ async def test_a_group_control_command_never_waits_on_an_earlier_voice_check(tmp
     voice = {"type": "voice", "name": "v.ogg", "mimeType": "audio/ogg", "data": base64.b64encode(OGG).decode()}
     with patch("tools.transcription_tools.transcribe_audio", side_effect=slow):
         await asyncio.wait_for(adapter._on_inbound_line(line("v1", voice)), 2)
-        await asyncio.wait_for(adapter._on_inbound_line(line("t1", {"type": "text", "text": "hermes later"})), 2)
+        await asyncio.wait_for(adapter._on_inbound_line(line("t1", {"type": "text", "text": "slave later"})), 2)
         # Photon's group mention gate needs the wake word on a command too.
-        await asyncio.wait_for(adapter._on_inbound_line(line("s1", {"type": "text", "text": "/stop hermes"})), 2)
+        await asyncio.wait_for(adapter._on_inbound_line(line("s1", {"type": "text", "text": "/stop slave"})), 2)
         assert seen == ["s1"]
         release.set()
         for _ in range(200):
@@ -532,13 +532,13 @@ async def test_a_busy_session_sends_only_the_admitted_envelopes_audio_to_stt(tmp
     import base64
     from gateway.run_inbound_transcription import GatewayInboundTranscriptionMixin
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
         "require_mention": True, "mention_patterns": PATTERNS, "voice_mention_patterns": True}))
     adapter.handle_message = AsyncMock()
-    transcribe, _calls = _stt("hermes, look at this")
+    transcribe, _calls = _stt("slave, look at this")
     content = {"type": "group", "items": [{"content": first}, {"content": {
         "type": "voice", "name": "v.ogg", "mimeType": "audio/ogg", "data": base64.b64encode(OGG).decode()}}]}
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
@@ -553,7 +553,7 @@ async def test_a_busy_session_sends_only_the_admitted_envelopes_audio_to_stt(tmp
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("command", ["/new hermes", "/undo hermes", "/status hermes"])
+@pytest.mark.parametrize("command", ["/new slave", "/undo slave", "/status slave"])
 async def test_a_session_command_keeps_its_place_behind_an_earlier_voice_note(tmp_path, monkeypatch, command):
     """Only the running-agent escape hatches skip the per-chat order: a ``/new``, ``/undo`` or
     ``/status`` sent after a voice note still at gate STT runs after that note, as on Telegram."""
@@ -562,7 +562,7 @@ async def test_a_session_command_keeps_its_place_behind_an_earlier_voice_note(tm
     import json
     import threading
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
@@ -573,7 +573,7 @@ async def test_a_session_command_keeps_its_place_behind_an_earlier_voice_note(tm
 
     def slow(path, _model=None, _source=None):
         release.wait(10)
-        return {"success": True, "transcript": "hermes, what is on today", "provider": "fake"}
+        return {"success": True, "transcript": "slave, what is on today", "provider": "fake"}
 
     def line(mid, content):
         return json.dumps({"messageId": mid, "space": {"id": "group-guid", "type": "group", "phone": None},
@@ -582,7 +582,7 @@ async def test_a_session_command_keeps_its_place_behind_an_earlier_voice_note(tm
     with patch("tools.transcription_tools.transcribe_audio", side_effect=slow):
         await asyncio.wait_for(adapter._on_inbound_line(line("v1", voice)), 2)
         await asyncio.wait_for(adapter._on_inbound_line(line("c1", {"type": "text", "text": command})), 2)
-        await asyncio.wait_for(adapter._on_inbound_line(line("t1", {"type": "text", "text": "hermes later"})), 2)
+        await asyncio.wait_for(adapter._on_inbound_line(line("t1", {"type": "text", "text": "slave later"})), 2)
         assert seen == []  # an inline dispatch would have landed during _on_inbound_line
         release.set()
         for _ in range(200):
@@ -599,13 +599,13 @@ async def test_a_photon_caf_sent_as_octet_stream_is_transcribed_as_the_voice_it_
     import base64
     from gateway.run_inbound import GatewayInboundMixin
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
         "require_mention": True, "mention_patterns": PATTERNS, "voice_mention_patterns": True}))
     adapter.handle_message = AsyncMock()
-    transcribe, calls = _stt("hermes, what is on today")
+    transcribe, calls = _stt("slave, what is on today")
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
         await adapter._dispatch_inbound({
             "messageId": "caf2", "space": {"id": "group-guid", "type": "group", "phone": None},
@@ -628,7 +628,7 @@ async def test_a_threaded_reply_stop_never_waits_on_an_earlier_voice_check(tmp_p
     import json
     import threading
     from plugins.platforms.photon.adapter import PhotonAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PHOTON_PROJECT_ID", "p")
     monkeypatch.setenv("PHOTON_PROJECT_SECRET", "s")
     adapter = PhotonAdapter(PlatformConfig(enabled=True, token="", extra={
@@ -639,13 +639,13 @@ async def test_a_threaded_reply_stop_never_waits_on_an_earlier_voice_check(tmp_p
 
     def slow(path, _model=None, _source=None):
         release.wait(10)
-        return {"success": True, "transcript": "hermes, what is on today", "provider": "fake"}
+        return {"success": True, "transcript": "slave, what is on today", "provider": "fake"}
 
     def line(mid, content):
         return json.dumps({"messageId": mid, "space": {"id": "group-guid", "type": "group", "phone": None},
                            "sender": {"id": "+15551234567"}, "timestamp": "2026-05-14T19:06:32.000Z", "content": content})
     voice = {"type": "voice", "name": "v.ogg", "mimeType": "audio/ogg", "data": base64.b64encode(OGG).decode()}
-    stop = {"type": "reply", "targetMessageId": "old", "content": {"type": "text", "text": "/stop hermes"}}
+    stop = {"type": "reply", "targetMessageId": "old", "content": {"type": "text", "text": "/stop slave"}}
     try:
         with patch("tools.transcription_tools.transcribe_audio", side_effect=slow):
             await asyncio.wait_for(adapter._on_inbound_line(line("v1", voice)), 2)
@@ -667,7 +667,7 @@ async def test_a_bluebubbles_memo_beside_a_file_sends_only_its_audio_to_stt_and_
     import json
     from gateway.run_inbound import GatewayInboundMixin
     from plugins.platforms.bluebubbles.adapter import BlueBubblesAdapter
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     adapter = BlueBubblesAdapter(PlatformConfig(enabled=True, extra={
         "server_url": "http://localhost:1234", "password": "secret", "require_mention": True,
         "mention_patterns": PATTERNS, "voice_mention_patterns": True, "send_read_receipts": False}))
@@ -682,7 +682,7 @@ async def test_a_bluebubbles_memo_beside_a_file_sends_only_its_audio_to_stt_and_
         "chats": [{"guid": "iMessage;+;group-chat"}],
         "attachments": [{"guid": "a1", **memo}, {"guid": "d1", **other}]}}).encode()
     request = SimpleNamespace(query={"password": "secret"}, headers={}, read=AsyncMock(return_value=body))
-    transcribe, calls = _stt("hermes, look at this")
+    transcribe, calls = _stt("slave, look at this")
     with patch("tools.transcription_tools.transcribe_audio", side_effect=transcribe):
         await adapter._handle_webhook(request)
         await asyncio.sleep(0)

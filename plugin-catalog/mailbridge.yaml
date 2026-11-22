@@ -1,6 +1,6 @@
 name: mailbridge
 title: Mailbridge
-repo: https://github.com/MadanChaollaPark/hermes-mailbridge
+repo: https://github.com/MadanChaollaPark/slave-mailbridge
 sha: 3aa9d6a41c7e7bd6aeee865b421eb16434a7d8a8
 subdir: plugin
 description: "Resumable legacy POP and EML migration to Gmail with source preservation, uncertain-write recovery, and verified coverage. Disclosure — imports mail into the signed-in Google account (gmail.insert, gmail.readonly, gmail.labels) from POP accounts and EML folders using detached background workers that keep running after the tool call returns; each Gmail plan needs a one-time approval typed in a local terminal."
@@ -11,7 +11,7 @@ requires_hermes: ">=0.23.1"
 version: "0.3.0"
 platforms: [linux, macos]
 readme: true
-docs_url: https://github.com/MadanChaollaPark/hermes-mailbridge/tree/main/plugin
+docs_url: https://github.com/MadanChaollaPark/slave-mailbridge/tree/main/plugin
 known_issues:
   - Google consent and live Gmail imports have not been tested; validation uses fictional mail and mocked Gmail responses.
   - The JSON upload transport accepts prepared messages up to 25 MiB; larger messages stop before upload.

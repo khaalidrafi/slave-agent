@@ -46,7 +46,7 @@ def _no_leaked_clarify():
 
 
 def _runner(tmp_path, monkeypatch, receiver=None):
-    monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+    monkeypatch.setattr("gateway.run._slave_home", tmp_path)
     runner = GatewayRunner(config=GatewayConfig())
     if receiver is not None:
         runner._session_state(SESSION_KEY).turn.agent = receiver

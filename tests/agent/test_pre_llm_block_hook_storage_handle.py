@@ -11,7 +11,7 @@ SECRET = "CUSTOMER-ID-4242"
 def test_a_submit_time_row_is_rewritten_to_the_placeholder_through_the_handle(tmp_path, monkeypatch):
     """The TUI and Desktop store the user row at submit time; the veto rewrites that row in place, so the stored
     content is the placeholder and the typed text is kept only in the row's display metadata."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     from session_rules.turns import withheld_prompt_text
     from persistence.conversation.messages import NewMessage
     from persistence.conversation.sessions import NewSession

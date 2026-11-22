@@ -19,7 +19,7 @@ screenshots:
   - https://raw.githubusercontent.com/folarihn/Sentinel/525fd7a1c8a9eb99c03270c2ab57039378bc132a/docs/images/guard-mobile.jpg
 known_issues:
   - "Trusted in-process hooks, not an OS sandbox; protection depends on the plugin being enabled and loaded."
-  - "Native Hermes approval modes stay authoritative; YOLO can skip approval escalation but never turns a Sentinel BLOCK into an allow."
+  - "Native slave-agent approval modes stay authoritative; YOLO can skip approval escalation but never turns a Sentinel BLOCK into an allow."
   - "Shell analysis is conservative; directory-scoped missions block shell work that cannot be confined."
   - "Recovery covers supported local files only; it cannot undo remote APIs, emails, deployments or database writes."
   - "Checkpoint backups keep original file bytes in the local state folder; protect it with OS permissions."

@@ -28,7 +28,7 @@ def ops(tmp_path, local_env, monkeypatch, lane):
     if not all(shutil.which(cmd) for cmd in required):
         pytest.skip("Real search executable unavailable: " + ", ".join(required))
     local_env.cwd = str(tmp_path)
-    monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "1" if lane == "rg-native" else "0")
+    monkeypatch.setenv("SLAVE_NATIVE_FILE_READ", "1" if lane == "rg-native" else "0")
     instance = ShellFileOperations(local_env)
     if lane.startswith("grep"):
         resolve = instance._resolve_command

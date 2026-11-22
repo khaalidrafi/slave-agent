@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -13,7 +13,7 @@ import { useQueue } from '../hooks/useQueue.js'
 
 it('only the newest attachment request may replace session authority', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-attachment-order-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'source' })
   const pending: Array<{ method: string; resolve: (value: any) => void }> = []
@@ -63,7 +63,7 @@ it('only the newest attachment request may replace session authority', async () 
 
 it('resumes a successor with a reset epoch while retaining original attempted admission targets', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-resume-epoch-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   const info = { model: 'test', skills: {}, tools: {}, stored_session_id: 'stored-old', execution_epoch: 'old', execution_generation: 9, running: true }
   patchUiState({ sid: 'old-session', info, busy: true })
@@ -113,7 +113,7 @@ it('resumes a successor with a reset epoch while retaining original attempted ad
 
 it('detaches the prior canonical subscription only after the replacement attaches', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-session-detach-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   const pending: Array<{ method: string; params: any; resolve: (value: any) => void }> = []
 
@@ -190,7 +190,7 @@ it('detaches the prior canonical subscription only after the replacement attache
 
 it('waits for a delayed detach before reattaching the same canonical session', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-session-switchback-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   const subscriptions = new Map<string, string>()
   const delivered: string[] = []

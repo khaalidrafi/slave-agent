@@ -89,7 +89,7 @@ async def capture(tmp):
 
 def main():
     tmp = Path(tempfile.mkdtemp())
-    os.environ['HERMES_HOME'] = str(tmp)
+    os.environ['SLAVE_HOME'] = str(tmp)
     Path(sys.argv[1]).write_text(json.dumps(asyncio.run(capture(tmp)), indent=1) + '\n', encoding='utf-8')
 
 

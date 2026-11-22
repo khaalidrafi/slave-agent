@@ -1,5 +1,5 @@
 name: followthrough
-repo: https://github.com/AbdullahBalfaqih/hermes-followthrough
+repo: https://github.com/AbdullahBalfaqih/slave-followthrough
 sha: a31ec76c21335bf7ecb4481717df1418e4266910
 subdir: followthrough
 description: Capture and track user-selected commitments with owners, due dates, and source references.

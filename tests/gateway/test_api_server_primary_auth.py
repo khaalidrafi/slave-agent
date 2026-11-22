@@ -23,7 +23,7 @@ def test_a_model_route_that_changes_the_backups_account_drops_the_primary_login(
             agents.append(self)
 
     _patch_create_agent_runtime(monkeypatch, captured, FakeAgent)
-    failure = PrimaryAuthFailure(provider="nous", error="expired", relogin="hermes portal", backup="openrouter")
+    failure = PrimaryAuthFailure(provider="nous", error="expired", relogin="slave portal", backup="openrouter")
     monkeypatch.setattr("gateway.run._resolve_runtime_agent_kwargs", lambda: {
         "provider": "openrouter", "api_key": "sk-global", "base_url": "https://openrouter.ai/api/v1",
         "api_mode": "chat_completions", RUNTIME_KEY: failure})

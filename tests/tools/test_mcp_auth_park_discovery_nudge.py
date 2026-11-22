@@ -10,14 +10,14 @@ import pytest
 
 @pytest.mark.no_isolate
 def test_auth_parked_oauth_server_ignores_discovery_until_credentials_change(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     from tools import mcp_tool
-    from tools.mcp_oauth import HermesTokenStorage, OAuthNonInteractiveError
+    from tools.mcp_oauth import SlaveTokenStorage, OAuthNonInteractiveError
     from tools.mcp_tool import MCPServerTask
     from tools.mcp_tool_discovery import _select_new_servers
 
     cfg = {"url": "https://mcp.example.test/mcp", "auth": "oauth"}
-    token_file = HermesTokenStorage("cloud")._tokens_path()
+    token_file = SlaveTokenStorage("cloud")._tokens_path()
     token_file.parent.mkdir(parents=True)
     token_file.write_text(json.dumps({"access_token": "a", "token_type": "Bearer", "refresh_token": "dead"}))
     attempts = []
@@ -47,7 +47,7 @@ def test_auth_parked_oauth_server_ignores_discovery_until_credentials_change(mon
         assert len(attempts) == 1
 
         token_file.write_text(json.dumps({"access_token": "b", "token_type": "Bearer", "refresh_token": "new"}))
-        _select_new_servers({"cloud": cfg})  # `hermes mcp login` landed: the next pass revives it
+        _select_new_servers({"cloud": cfg})  # `slave mcp login` landed: the next pass revives it
         await _settle()
         assert len(attempts) == 2
 

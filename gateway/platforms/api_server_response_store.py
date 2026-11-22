@@ -57,8 +57,8 @@ class ResponseStore:
         if db_path is None:
             db_path = ":memory:"
             with suppress(Exception):
-                from hermes_cli.config import get_hermes_home
-                db_path = str(get_hermes_home() / "response_store.db")
+                from slave_cli.config import get_slave_home
+                db_path = str(get_slave_home() / "response_store.db")
         self._db_path: Optional[str] = db_path if db_path != ":memory:" else None
         try:
             self._conn = sqlite3.connect(db_path, check_same_thread=False)

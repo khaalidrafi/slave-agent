@@ -21,7 +21,7 @@ def _adapter(monkeypatch, proxy):
     from plugins.platforms.telegram import adapter as tg
 
     monkeypatch.setenv("TELEGRAM_PROXY", proxy)
-    monkeypatch.setenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
+    monkeypatch.setenv("SLAVE_TELEGRAM_DISABLE_FALLBACK_IPS", "true")
     adapter = tg.TelegramAdapter(PlatformConfig(enabled=True, token="123456:TOKEN"))
     adapter._ptb_proxy_url = proxy  # what _build_ptb_requests() binds at connect
     return tg, adapter

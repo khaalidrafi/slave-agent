@@ -1,4 +1,4 @@
-"""``session.usage`` / ``session.stats``: the session-cumulative counters main's HermesCLI read off its
+"""``session.usage`` / ``session.stats``: the session-cumulative counters main's SlaveCLI read off its
 in-process agent (status bar, /usage, exit summary), published from the gateway (wave A2, CALLMAP W3)."""
 from __future__ import annotations
 
@@ -142,7 +142,7 @@ def test_usage_frame_carries_the_tui_view_the_desktop_status_bar_reads():
     from tui_gateway.contracts.registry import EVENTS
     frame = usage_frame(usage_stats(_agent()))
     EVENTS['session.usage'].payload.model_validate(frame)
-    # The classic CLI / TUI mirror (``hermes_cli.gateway_agent.apply_session_usage``) reads these.
+    # The classic CLI / TUI mirror (``slave_cli.gateway_agent.apply_session_usage``) reads these.
     assert frame['tokens_per_s'] == 10.0 and frame['context_length'] == 128000
     # The Desktop status bar reads these: context bar, cache-hit rate, throughput.
     usage = frame['usage']
@@ -203,7 +203,7 @@ def test_turn_end_publishes_the_agents_banner_info():
     from gateway.session_local_inventory import publish_settled_info
     published = []
     agent = _agent()
-    agent._cached_system_prompt = 'You are Hermes.' * 10
+    agent._cached_system_prompt = 'You are Slave.' * 10
     agent.tools = [{'function': {'name': 'terminal'}}]
     turn = _turn(Platform.LOCAL, published, agent)
     turn._approval_owner = (SimpleNamespace(profile_id='p'), 's', 1)

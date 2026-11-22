@@ -14,7 +14,7 @@ def turn_run_generation(event: Any) -> int | None:
     ``session_ingress._hand_over_turn_marker`` hands it to the event of the lifecycle that sends the
     reply), or None. Per turn, unlike the adapter's session guard Event, which every turn running
     while one adapter task holds the guard shares."""
-    generation = getattr(event, "_hermes_run_generation", None)
+    generation = getattr(event, "_slave_run_generation", None)
     return generation if isinstance(generation, int) and not isinstance(generation, bool) else None
 
 

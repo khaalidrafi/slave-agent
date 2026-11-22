@@ -316,7 +316,7 @@ async def test_cancel_during_the_private_copy_leaves_no_orphaned_attachment(floo
         await asyncio.gather(sending, return_exceptions=True)
         release.set()
         assert await asyncio.to_thread(finished.wait, 10)
-        await async_wait_until(lambda: not list(tmp_path.glob("hermes-tg-flood-*")), timeout=5,
+        await async_wait_until(lambda: not list(tmp_path.glob("slave-tg-flood-*")), timeout=5,
                                what="the finished copy removed")
         assert not adapter._background_tasks  # no upload was scheduled for the cancelled send
     finally:

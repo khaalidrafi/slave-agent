@@ -49,7 +49,7 @@ _slack_mod.SLACK_AVAILABLE = True
 
 from gateway.config import Platform, load_gateway_config
 from gateway.pairing import PairingStore
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from plugins.platforms.slack.adapter import SlackAdapter
 
 STRONG_HEADER = "Messages prefixed with [unverified]"
@@ -74,7 +74,7 @@ def _wired_adapter(slack_yaml: str, messages=THREAD):
     """SlackAdapter from a real config.yaml, wired to the real runner auth callback."""
     from gateway.run import GatewayRunner
 
-    (get_hermes_home() / "config.yaml").write_text(
+    (get_slave_home() / "config.yaml").write_text(
         "slack:\n  enabled: true\n" + slack_yaml, encoding="utf-8")
     cfg = load_gateway_config()
     adapter = SlackAdapter(cfg.platforms[Platform.SLACK])

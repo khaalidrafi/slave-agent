@@ -1,4 +1,4 @@
-import { Box, Text } from '@hermes/ink'
+import { Box, Text } from '@slave-agent/ink'
 import { useStore } from '@nanostores/react'
 import { memo, useEffect, useState } from 'react'
 

@@ -1,4 +1,4 @@
-"""``config.set`` refuses a key the administrator's managed scope pins, like ``hermes config set``.
+"""``config.set`` refuses a key the administrator's managed scope pins, like ``slave config set``.
 
 Before, both TUI paths wrote the pinned key and answered success while the managed value kept
 winning on every read. A managed scope that pins something else must not block other keys.
@@ -6,23 +6,23 @@ winning on every read. A managed scope that pins something else must not block o
 from types import SimpleNamespace
 
 import pytest
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
-from hermes_cli import managed_scope
+from slave_cli import managed_scope
 from tui_gateway import server
 
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    from hermes_cli import managed_scope
+    from slave_cli import managed_scope
     home, managed = tmp_path / "home", tmp_path / "managed"
     home.mkdir()
     managed.mkdir()
     (managed / "config.yaml").write_text("display:\n  skin: corp\n  sections:\n    tools: collapsed\n"
                                          "custom_prompt: policy\nmodel:\n  default: acme/pinned\n")
     (home / "config.yaml").write_text("display:\n  tui_theme: dark\n")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
-    monkeypatch.setattr(server, "_hermes_home", home)
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", str(managed))
+    monkeypatch.setattr(server, "_slave_home", home)
     managed_scope.invalidate_managed_cache()
     server._cfg_cache = server._cfg_sig = server._cfg_path = None
     yield home
@@ -59,13 +59,13 @@ _CLEARED = ("other/model --global", "model.context_length", "model:\n  context_l
     *((running, *row) for running in (True, False) for row in _DEFINITE), (False, *_CLEARED)])
 def test_tui_persisting_model_pick_is_refused_before_anything_changes(homes, monkeypatch, running, pick, pinned, managed):
     """Refused before the live switch, the model persist or the mid-turn queue, not after a partial success."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from slave_cli.model_switch import ModelSwitchResult
     if managed:
         (homes.parent / "managed" / "config.yaml").write_text(managed)
         managed_scope.invalidate_managed_cache()
     (homes / "config.yaml").write_text("model:\n  default: old/model\n  provider: nous\n  context_length: 4096\n")
-    monkeypatch.setenv("HERMES_HOME", str(homes))
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
+    monkeypatch.setenv("SLAVE_HOME", str(homes))
+    monkeypatch.setattr("slave_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
         success=True, new_model="other/model", target_provider="openrouter", is_global=True))
     agent = SimpleNamespace(model="old/model", provider="nous", reasoning_config=None)  # no switch_model: never swapped
     server._sessions["managed-pick"] = session = {"session_key": "managed-pick", "agent": agent, "running": running}
@@ -88,12 +88,12 @@ def test_tui_config_set_still_writes_a_key_the_scope_does_not_pin(homes):
 
 def _queue_then_apply(homes, monkeypatch, raw_model, pick, resolved):
     """Queue ``pick`` on a busy session (live agent on another model), then apply it at turn start."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from slave_cli.model_switch import ModelSwitchResult
     (homes.parent / "managed" / "config.yaml").write_text("model:\n  context_length: 8192\n")
     managed_scope.invalidate_managed_cache()
     (homes / "config.yaml").write_text(raw_model)
-    monkeypatch.setenv("HERMES_HOME", str(homes))
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
+    monkeypatch.setenv("SLAVE_HOME", str(homes))
+    monkeypatch.setattr("slave_cli.model_switch.switch_model", lambda **kw: ModelSwitchResult(
         success=True, is_global=True, **resolved))
     swaps, notices = [], []
     for name in ("_restart_slash_worker", "_persist_live_session_runtime", "_persist_live_session_system_prompt",

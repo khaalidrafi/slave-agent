@@ -2,7 +2,7 @@ name: agent-data-tools
 title: Agent Data Tools
 repo: https://github.com/Nutshell2000/agent-data-tools
 sha: c3b9c596a792c19bd4e3e28b177ca3dd1892b198
-subdir: integrations/hermes
+subdir: integrations/slave
 version: "1.0.1"
 description: |
   Over 600 hosted data and AI tools through three MCP tools (find_tool, tool_details, call_tool), so the agent's context holds three definitions: web search, the text of a web page or PDF, screenshots, weather, FX, stock and token prices, wallet and chain reads, sanctions and company checks, DNS lookups, LLM chat, speech to text, converters and calculators. 25 free calls with no key or sign-up, and one bundled skill. Portable Agent Plugins v1 package (plugin.json + mcp.json + skills/), configuration only.
@@ -17,7 +17,7 @@ description: |
 maintainer: Nutshell2000
 tier: community
 category: tools
-docs_url: https://github.com/Nutshell2000/agent-data-tools/tree/main/integrations/hermes#readme
+docs_url: https://github.com/Nutshell2000/agent-data-tools/tree/main/integrations/slave#readme
 requires_hermes: ">=0.22.3"
 readme: true
 platforms: []

@@ -214,7 +214,7 @@ def adapter():
 
 @pytest.fixture(autouse=True)
 def _redirect_cache(tmp_path, monkeypatch):
-    """Point document cache to tmp_path so tests don't touch ~/.hermes."""
+    """Point document cache to tmp_path so tests don't touch ~/.slave."""
     monkeypatch.setattr(
         "gateway.platforms.base.DOCUMENT_CACHE_DIR", tmp_path / "doc_cache"
     )
@@ -264,7 +264,7 @@ class TestSlashCommandSessionIsolation:
         "Running /x" promise."""
         adapter.config.extra.update(extra)
         ack = AsyncMock()
-        await adapter._handle_hermes_command(ack, {
+        await adapter._handle_slave_command(ack, {
             "command": "/status", "text": "hello", "user_id": "U123", "channel_id": channel_id,
             "team_id": "T123"})
 
@@ -384,7 +384,7 @@ class TestAppMentionHandler:
         assert "assistant_thread_started" in registered_events
         assert "assistant_thread_context_changed" in registered_events
         # Slack slash commands are registered via a single regex matcher
-        # covering every COMMAND_REGISTRY entry (e.g. /hermes, /btw, /stop,
+        # covering every COMMAND_REGISTRY entry (e.g. /slave, /btw, /stop,
         # /model, ...) so users get native-slash parity with Discord and
         # Telegram. Verify the regex matches the key expected slashes.
         assert (
@@ -394,7 +394,7 @@ class TestAppMentionHandler:
         import re as _re
 
         assert isinstance(slash_matcher, _re.Pattern)
-        for expected in ("/hermes", "/btw", "/stop", "/model", "/help"):
+        for expected in ("/slave", "/btw", "/stop", "/model", "/help"):
             assert slash_matcher.match(
                 expected
             ), f"Slack slash regex does not match {expected}"
@@ -563,7 +563,7 @@ class TestSlackConnectCleanup:
     async def test_disconnect_closes_workspace_clients_and_clears_runtime_state(self):
         """Regression for #51465: shutdown must close Slack WebClients.
 
-        ``hermes gateway run --replace`` takes the old process through the
+        ``slave gateway run --replace`` takes the old process through the
         normal adapter.disconnect() path. If Slack leaves AsyncWebClient
         instances open there, aiohttp logs ``Unclosed client session`` while
         the old gateway exits after SIGTERM.
@@ -975,19 +975,19 @@ class TestSlackProxyBehavior:
         await pin_proxy(client=per_request_client, next_=_continue)
         assert per_request_client.proxy == "http://proxy.example.com:3128"
         assert continued is True
-        assert "hermes_feedback" in created_apps[0].registered_actions
-        assert "hermes_clarify_other" in created_apps[0].registered_actions
+        assert "slave_feedback" in created_apps[0].registered_actions
+        assert "slave_clarify_other" in created_apps[0].registered_actions
         clarify_choice_patterns = [
             action_id
             for action_id in created_apps[0].registered_actions
             if hasattr(action_id, "fullmatch")
         ]
         assert any(
-            pattern.fullmatch("hermes_clarify_choice_0")
+            pattern.fullmatch("slave_clarify_choice_0")
             for pattern in clarify_choice_patterns
         )
         assert not any(
-            pattern.fullmatch("hermes_clarify_choice")
+            pattern.fullmatch("slave_clarify_choice")
             for pattern in clarify_choice_patterns
         )
 
@@ -1194,12 +1194,12 @@ class TestStandaloneSendUserDmResolution:
             result = await _slack_mod._standalone_send(
                 config,
                 "C123",
-                "[Hermes](https://example.com/hermes)",
+                "[slave-agent](https://example.com/slave)",
             )
 
         assert result["success"] is True
         payload = session.post.call_args.kwargs["json"]
-        assert payload["text"] == "<https://example.com/hermes|Hermes>"
+        assert payload["text"] == "<https://example.com/slave|slave-agent>"
         assert payload["unfurl_links"] is False
         assert payload["unfurl_media"] is False
 
@@ -3249,7 +3249,7 @@ class TestSlashCommands:
 
     # ------------------------------------------------------------------
     # Native slash commands — /btw, /stop, /model, ... dispatched directly
-    # instead of as /hermes subcommands. This is the Discord/Telegram parity
+    # instead of as /slave subcommands. This is the Discord/Telegram parity
     # fix: the slash name itself becomes the command.
     # ------------------------------------------------------------------
 
@@ -3292,15 +3292,15 @@ class TestSlashCommands:
 
 
     @pytest.mark.asyncio
-    async def test_legacy_hermes_prefix_still_works(self, adapter):
-        """Backward compat: /hermes btw foo must still route to /btw foo.
+    async def test_legacy_slave_prefix_still_works(self, adapter):
+        """Backward compat: /slave btw foo must still route to /btw foo.
 
-        Old workspace manifests only declared /hermes as the single slash.
+        Old workspace manifests only declared /slave as the single slash.
         After users refresh their manifest they get /btw natively, but the
         legacy form must keep working during the transition.
         """
         command = {
-            "command": "/hermes",
+            "command": "/slave",
             "text": "btw run the tests",
             "user_id": "U1",
             "channel_id": "C1",
@@ -3325,7 +3325,7 @@ class TestMessageSplitting:
 
     @pytest.mark.asyncio
     async def test_send_coerces_string_unfurl_options(self, adapter):
-        """`hermes config set` / Railway persist YAML booleans as strings.
+        """`slave config set` / Railway persist YAML booleans as strings.
 
         Relay-plane parity: string "false"/"true" must coerce instead of
         being silently dropped (which would leave previews on with no error).
@@ -4283,10 +4283,10 @@ class TestTrackingStructureBounds:
     @pytest.mark.asyncio
     async def test_slash_command_contexts_bounded(self, adapter):
         adapter._SLASH_CTX_MAX = 4
-        adapter.handle_hermes_command = AsyncMock(return_value=None)
+        adapter.handle_slave_command = AsyncMock(return_value=None)
         for i in range(10):
             command = {
-                "command": "/hermes",
+                "command": "/slave",
                 "text": "/status",
                 "user_id": f"U{i}",
                 "channel_id": "C1",
@@ -5534,7 +5534,7 @@ class TestSlackAuthoredTextDeduplication:
     @pytest.mark.parametrize(
         "flat",
         [
-            "hey <@U_BOT|hermes> please look",
+            "hey <@U_BOT|slave> please look",
             "hey <@U_BOT> please look",
             "hey &lt;@U_BOT&gt; please look",
         ],

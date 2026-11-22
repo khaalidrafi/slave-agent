@@ -167,7 +167,7 @@ def test_gateway_restart_resumes_queued_room_for_multiplexed_profile(store):
             {
                 "member_id": "default",
                 "profile": "default",
-                "handle": "hermes",
+                "handle": "slave",
             },
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],
@@ -209,7 +209,7 @@ def test_dashboard_and_gateway_workers_share_one_fenced_execution_owner(store):
             {
                 "member_id": "default",
                 "profile": "default",
-                "handle": "hermes",
+                "handle": "slave",
             },
             {"member_id": "ops", "profile": "ops", "handle": "ops"},
         ],

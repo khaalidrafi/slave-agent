@@ -1,6 +1,6 @@
 """Tool calls made from inside an execute_code cell fire pre_tool_call hooks under the calling
 conversation's identity (#145870): without it a hook sees ``session_id=""`` and, in a
-multiplexed gateway, can only fall back to the process-wide HERMES_SESSION_ID of whichever
+multiplexed gateway, can only fall back to the process-wide SLAVE_SESSION_ID of whichever
 conversation bound a turn last."""
 
 import json
@@ -30,7 +30,7 @@ def hook_calls():
         calls.append((tool_name, hook_kwargs))
         return None, None
 
-    with patch("hermes_cli.plugins._dispatch_pre_tool_call_hooks", side_effect=_record):
+    with patch("slave_cli.plugins._dispatch_pre_tool_call_hooks", side_effect=_record):
         yield calls
 
 
@@ -41,7 +41,7 @@ def _nested(calls, tool):
 def test_nested_call_in_a_local_cell_carries_the_outer_session_and_turn(tmp_path, hook_calls):
     target = tmp_path / "note.txt"
     target.write_text("hello\n", encoding="utf-8")
-    code = f"from hermes_tools import read_file\nprint(read_file({str(target)!r})['content'])"
+    code = f"from slave_tools import read_file\nprint(read_file({str(target)!r})['content'])"
 
     result = json.loads(handle_function_call(
         "execute_code", {"code": code}, task_id="task-A", session_id="sess-A", turn_id="turn-A",

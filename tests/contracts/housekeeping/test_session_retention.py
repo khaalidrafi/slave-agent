@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 import session_retention
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence import SessionId
 from persistence.conversation.messages import NewMessage
 from persistence.conversation.sessions import NewSession
@@ -55,9 +55,9 @@ def events(monkeypatch, sessions_dir):
     seen: list = []
 
     def hook(name, **payload):
-        seen.append(["hook", name, payload, str(get_hermes_home()), _files(sessions_dir)])
+        seen.append(["hook", name, payload, str(get_slave_home()), _files(sessions_dir)])
 
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", hook)
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", hook)
     monkeypatch.setattr(session_retention, "collect_retired_media", lambda store, home: seen.append(["collect", _files(sessions_dir)]))
     return seen
 
@@ -92,7 +92,7 @@ class _Admin:
 
 
 def _messages(caplog, *, debug=False):
-    return [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "hermes_state" and (debug or r.levelname != "DEBUG")]
+    return [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "slave_state" and (debug or r.levelname != "DEBUG")]
 
 
 # ── after_sessions_removed and emit_session_deleted ─────────────────────────
@@ -149,8 +149,8 @@ def test_a_failing_hook_never_breaks_the_delete(monkeypatch, caplog, scope_a):
     def boom(name, **payload):
         raise RuntimeError("hook boom")
 
-    monkeypatch.setattr("hermes_cli.lifecycle.invoke_hook", boom)
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    monkeypatch.setattr("slave_cli.lifecycle.invoke_hook", boom)
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     session_retention.emit_session_deleted(scope_a.profile_dir, ["s-j"], reason="delete", primary="s-j")
     # CONTRACT: the dispatch fails open with one warning.
     assert _messages(caplog) == [("WARNING", "on_session_delete dispatch failed")]
@@ -186,7 +186,7 @@ def test_archive_sessions_archives_matching_tips_and_notifies_each(backend, scop
 def test_run_auto_archive_gates_on_the_interval_and_never_raises(backend, scope_a, caplog, monkeypatch, events):
     store = backend.open(scope_a)
     _seed(store, _payload("s-idle", NOW - 10 * DAY, NOW - 10 * DAY, "done"), _payload("s-fresh", NOW))
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     # CONTRACT: the result dicts: a run, a gated rerun, a rerun past a corrupt stamp.
     assert session_retention.run_auto_archive(store, idle_days=3) == {"skipped": False, "archived": 1}
     assert float(store.state_meta.get("last_auto_archive")) >= NOW
@@ -221,7 +221,7 @@ def _prune(store, scope, admin, **kwargs):
 
 def test_run_auto_prune_refuses_a_negative_retention(backend, scope_a, caplog):
     admin = _Admin()
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     assert _prune(backend.open(scope_a), scope_a, admin, retention_days=-1) == {"skipped": True, "pruned": 0, "closed": 0, "vacuumed": False}
     assert _messages(caplog) == [("WARNING", "state.db auto-maintenance skipped: sessions.retention_days=-1 is outside the allowed range "
                                              "(a whole number of days >= 0); set sessions.auto_prune: false to disable pruning")]
@@ -235,7 +235,7 @@ def test_run_auto_prune_prunes_closes_and_vacuums(backend, scope_a, sessions_dir
           _payload("s-open-cli", NOW - 100 * DAY), _payload("s-open-tui", NOW - 100 * DAY, source="tui"), _payload("s-recent", NOW, NOW, "done"))
     _transcript_files(sessions_dir, "s-old1")
     admin = _Admin(ratio=0.0)
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     result = _prune(store, scope_a, admin, retention_days=90, sessions_dir=sessions_dir, min_vacuum_freelist_ratio=-1.0)
     assert result == {"skipped": False, "pruned": 2, "closed": 1, "vacuumed": True, "freelist_ratio": 0.0}
     assert _messages(caplog) == [("INFO", "state.db auto-maintenance: closed 1 stale open session(s), pruned 2 session(s) inactive for 90 days + VACUUM")]
@@ -263,7 +263,7 @@ def test_run_auto_prune_without_pruned_rows_never_considers_vacuum(backend, scop
     store = backend.open(scope_a)
     _seed(store, _payload("s-young", NOW, NOW, "done"))
     admin = _Admin()
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     assert _prune(store, scope_a, admin, retention_days=90) == {"skipped": False, "pruned": 0, "closed": 0, "vacuumed": False}
     assert _messages(caplog, debug=True) == []
     assert events == [["collect", []]]
@@ -279,7 +279,7 @@ def test_run_auto_prune_without_pruned_rows_never_considers_vacuum(backend, scop
 def test_run_auto_prune_skips_vacuum(backend, scope_a, events, caplog, admin, expected, debug_line):
     store = backend.open(scope_a)
     _seed(store, _payload("s-o", NOW - 100 * DAY, NOW - 100 * DAY, "done"))
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     ratio = {"min_vacuum_freelist_ratio": -1.0} if admin.blockers else {}
     assert _prune(store, scope_a, admin, retention_days=90, **ratio) == {"skipped": False, "pruned": 1, "closed": 0, "vacuumed": False, **expected}
     assert _messages(caplog, debug=True) == [("DEBUG", debug_line),
@@ -307,7 +307,7 @@ def test_run_auto_prune_reports_a_failing_prune_and_releases_the_lock(backend, s
         raise RuntimeError("prune boom")
 
     monkeypatch.setattr(store.maintenance, "prune_sessions", boom)
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     assert _prune(store, scope_a, admin, retention_days=90) == {"skipped": False, "pruned": 0, "closed": 0, "vacuumed": False, "error": "prune boom"}
     assert _messages(caplog) == [("WARNING", "state.db auto-maintenance failed: prune boom")]
     assert store.state_meta.get("last_auto_prune") is None
@@ -317,7 +317,7 @@ def test_run_auto_prune_reports_a_failing_prune_and_releases_the_lock(backend, s
 def test_run_auto_prune_survives_a_failing_vacuum(backend, scope_a, events, caplog):
     store = backend.open(scope_a)
     _seed(store, _payload("s-o", NOW - 100 * DAY, NOW - 100 * DAY, "done"))
-    caplog.set_level(logging.DEBUG, logger="hermes_state")
+    caplog.set_level(logging.DEBUG, logger="slave_state")
     result = _prune(store, scope_a, _Admin(vacuum_error=RuntimeError("vac boom")), retention_days=90, min_vacuum_freelist_ratio=-1.0)
     assert result == {"skipped": False, "pruned": 1, "closed": 0, "vacuumed": False, "freelist_ratio": 0.0}
     assert _messages(caplog) == [("WARNING", "state.db VACUUM failed: vac boom"),
@@ -369,9 +369,9 @@ def test_collect_retired_spillover_unlinks_unreferenced_archives(backend, scope_
     # The deleted session points at both archives; a surviving sibling still points at one of them.
     for sid in ("s-spill", "s-sibling"):
         store.sessions.create(NewSession(session_id=SessionId(sid), source="cli"))
-    store.messages.append(SessionId("s-spill"), NewMessage(role="tool", content="output in ~/.hermes/cache/spillover/gone.txt", tool_call_id="c1", tool_name="terminal"))
-    store.messages.append(SessionId("s-spill"), NewMessage(role="assistant", content="short", api_content="see ~/.hermes/cache/spillover/kept.txt"))
-    store.messages.append(SessionId("s-sibling"), NewMessage(role="user", content="~/.hermes/cache/spillover/kept.txt"))
+    store.messages.append(SessionId("s-spill"), NewMessage(role="tool", content="output in ~/.slave/cache/spillover/gone.txt", tool_call_id="c1", tool_name="terminal"))
+    store.messages.append(SessionId("s-spill"), NewMessage(role="assistant", content="short", api_content="see ~/.slave/cache/spillover/kept.txt"))
+    store.messages.append(SessionId("s-sibling"), NewMessage(role="user", content="~/.slave/cache/spillover/kept.txt"))
     assert store.sessions.delete(SessionId("s-spill"), media_root=MEDIA_ROOT) == (SessionId("s-spill"),)
     scanned: list = []
 

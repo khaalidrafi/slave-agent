@@ -30,10 +30,10 @@ pytestmark = pytest.mark.usefixtures('authority_cwd_in_tmp')  # symbolic profile
 def home(monkeypatch):
     """The profile home the follow-profile tests write ``config.yaml`` into."""
     from gateway import run
-    from hermes_constants import get_hermes_home
-    profile = get_hermes_home()
+    from slave_constants import get_slave_home
+    profile = get_slave_home()
     profile.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', profile)
+    monkeypatch.setattr(run, '_slave_home', profile)
     return profile
 
 
@@ -676,7 +676,7 @@ async def test_a_deferred_model_pick_that_was_refused_is_no_pick_when_an_open_ad
     import asyncio
     from gateway.run_turn_prepare import GatewayTurnPrepareMixin
     from gateway.session_contract import Submission
-    from hermes_cli import model_switch
+    from slave_cli import model_switch
     from tests.waiting import async_wait_until
     monkeypatch.setattr(model_switch, 'switch_model', lambda **k: model_switch.ModelSwitchResult(
         success=False, new_model='', target_provider=''))

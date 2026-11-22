@@ -2,7 +2,7 @@
 ``MAX_AUTO_ATTEMPTS`` times, and never once its parent moved on (the parent wins).
 
 Only the model is scripted; the child build, registry, SessionDB, async dispatch, durable records and the scheduler's
-own tick are real, against a temp HERMES_HOME.
+own tick are real, against a temp SLAVE_HOME.
 """
 
 import json
@@ -64,11 +64,11 @@ def _enable(*, gateway=True, **extra):
     """``delegation.auto_resume`` on; *gateway*: this process owns the profile the way a gateway does (the only
     process whose watcher resumes its children, so the only one whose stop notices promise a resume)."""
     from gateway.runtime_ownership import process_ownership
-    from hermes_constants import get_hermes_home
-    (get_hermes_home() / "config.yaml").write_text(json.dumps(
+    from slave_constants import get_slave_home
+    (get_slave_home() / "config.yaml").write_text(json.dumps(
         {"delegation": {"auto_resume": True, "worktree_isolation": True, **extra}}))
     if gateway:
-        process_ownership.reserve([get_hermes_home()])
+        process_ownership.reserve([get_slave_home()])
 
 
 def _scheduler(parent, dispatched):

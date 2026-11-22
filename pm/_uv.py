@@ -15,7 +15,7 @@ def _toolchain(*, realize: bool = True, explicit: bool = False) -> tuple[Path, P
     A read-only probe never installs. A sealed Windows payload builds on a verified writable
     copy of its Python: uv starts a venv's ``Scripts\\python.exe`` to query it, and that
     redirector runs outside the package, so its target must too. A redirector naming the
-    packaged interpreter dies with exit 101 (#135236). Hermes itself still enters those venvs
+    packaged interpreter dies with exit 101 (#135236). slave-agent itself still enters those venvs
     on the packaged interpreter (``pm.environments.venv_command``).
     """
     from pm.install import _installed_location, _lockfile, ensure, sealed
@@ -33,7 +33,7 @@ def _toolchain(*, realize: bool = True, explicit: bool = False) -> tuple[Path, P
         if location is None:
             if not realize:
                 return None
-            raise InstallError(name, "pinned tool is unavailable", "run `hermes pm install`")
+            raise InstallError(name, "pinned tool is unavailable", "run `slave pm install`")
         if name == "python" and target.startswith("win32") and sealed():
             location = writable_copy(name, realize=realize, explicit=explicit,
                                      why="a writable Python is required for bundled builds")
@@ -44,7 +44,7 @@ def _toolchain(*, realize: bool = True, explicit: bool = False) -> tuple[Path, P
         if binary is None or not binary.is_file():
             if not realize:
                 return None
-            raise InstallError(name, "installed binary is missing", "run `hermes pm install`")
+            raise InstallError(name, "installed binary is missing", "run `slave pm install`")
         binaries[name] = binary
     # Callers execute and compare these outside PM's own file calls: the ordinary spelling, not the store's.
     return Path(native(binaries["uv"])), Path(native(binaries["python"]))

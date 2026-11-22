@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-import { renderSync, Text } from '@hermes/ink'
+import { renderSync, Text } from '@slave-agent/ink'
 import React from 'react'
 import { expect, it, vi } from 'vitest'
 
@@ -14,7 +14,7 @@ import * as pending from '../lib/pendingInputs.js'
 
 it('moves compression queues across cached successors without changing attempted receipts or losing settlement', () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-migrate-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'old', info: { model: 'test', profile_name: 'alpha', skills: {}, tools: {} } })
   let queue!: ReturnType<typeof useQueue>
@@ -98,7 +98,7 @@ it('moves compression queues across cached successors without changing attempted
 
 it('keeps queue order when inputs queued in the same millisecond on two sessions merge', () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-order-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000) // a fast machine: every enqueue in one ms
   resetUiState()
   patchUiState({ sid: 'old', info: { model: 'test', profile_name: 'alpha', skills: {}, tools: {} } })
@@ -144,12 +144,12 @@ it('uses the canonical profile home through symlinks, including a missing descen
   symlinkSync(real, alias, 'junction')
 
   try {
-    vi.stubEnv('HERMES_HOME', alias)
+    vi.stubEnv('SLAVE_HOME', alias)
     const captured = captureDestination()
     expect(captured.profileHome).toBe(realpathSync(real))
-    vi.stubEnv('HERMES_HOME', real)
+    vi.stubEnv('SLAVE_HOME', real)
     expect(isCurrentDestination(captured)).toBe(true)
-    vi.stubEnv('HERMES_HOME', join(alias, 'missing', 'nested'))
+    vi.stubEnv('SLAVE_HOME', join(alias, 'missing', 'nested'))
     expect(captureDestination().profileHome).toBe(join(realpathSync(real), 'missing', 'nested'))
   } finally {
     vi.unstubAllEnvs()

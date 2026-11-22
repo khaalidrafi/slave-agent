@@ -3,7 +3,7 @@
 The header-less session id is derived from the system prompt + first user message, and a deleted
 session's id stays retired for good. A new conversation with the same opening moves to the next
 generation of that opening instead of being refused forever; its later turns keep landing there.
-An explicit X-Hermes-Session-Id and a spent Idempotency-Key are never moved.
+An explicit X-Slave-Session-Id and a spent Idempotency-Key are never moved.
 """
 import json
 
@@ -37,12 +37,12 @@ def _app(api):
 async def _post(client, messages, *, session_id=None, key=None):
     headers = {'Authorization': 'Bearer ' + _API_KEY}
     if session_id:
-        headers['X-Hermes-Session-Id'] = session_id
+        headers['X-Slave-Session-Id'] = session_id
     if key:
         headers['Idempotency-Key'] = key
-    response = await client.post('/v1/chat/completions', json={'model': 'hermes-agent', 'messages': messages},
+    response = await client.post('/v1/chat/completions', json={'model': 'slave-agent', 'messages': messages},
                                  headers=headers)
-    return response.status, await response.json(), response.headers.get('X-Hermes-Session-Id')
+    return response.status, await response.json(), response.headers.get('X-Slave-Session-Id')
 
 
 async def _delete(client, session_id):
@@ -139,7 +139,7 @@ async def test_a_store_that_cannot_answer_the_lookup_returns_an_openai_error(api
     monkeypatch.setattr('gateway.session_api.implicit_api_session', unreadable)
     async with TestClient(TestServer(_app(api))) as client:
         response = await client.post('/v1/chat/completions',
-                                     json={'model': 'hermes-agent', 'messages': _OPENING, 'stream': stream},
+                                     json={'model': 'slave-agent', 'messages': _OPENING, 'stream': stream},
                                      headers={'Authorization': 'Bearer ' + _API_KEY})
         assert response.content_type == 'application/json', await response.text()
         payload = await response.json()

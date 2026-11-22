@@ -37,7 +37,7 @@ from gateway.run_inbound_unauthorized import (
 )
 from gateway.session import SessionSource, build_session_context, label_shared_sender
 from gateway.turn_lease import TurnLeaseTimeoutError
-from hermes_cli.observability.shared_metrics_busy import (
+from slave_cli.observability.shared_metrics_busy import (
     note_busy_admitting, note_busy_outcome, settle_busy_arrival, stamp_busy_arrival)
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -136,10 +136,10 @@ class GatewayInboundMixin(
     async def _hm_report_ignored_dm(self, source: SessionSource) -> None:
         """Unauthorized DM under behaviour ``ignore``: nothing goes to the sender. The owner gets the
         sender's ID and the allowlist fix in the WARNING log and, once per sender, in the home channel."""
-        from hermes_constants import display_hermes_home
+        from slave_constants import display_slave_home
         platform_name = source.platform.value if source.platform else "unknown"
         hint = unauthorized_owner_hint(
-            platform_name, source.user_id, source.user_name or "", hermes_home=display_hermes_home(),
+            platform_name, source.user_id, source.user_name or "", slave_home=display_slave_home(),
         )
         logger.warning("Unauthorized user (ignored): %s", hint)
         notifier = getattr(self, "_unauthorized_owner_notifier", None)
@@ -159,7 +159,7 @@ class GatewayInboundMixin(
         _config = getattr(self, "config", None)
 
         # 🔴 Cross-session leak guard: this per-message task was create_task()'d with a copy of the
-        # spawning context, which may carry ANOTHER message's HERMES_SESSION_* ContextVars; until
+        # spawning context, which may carry ANOTHER message's SLAVE_SESSION_* ContextVars; until
         # _set_session_env binds ours a subprocess would read the foreign identity. Reset to _UNSET.
         try:
             from gateway.session_context import reset_session_vars
@@ -206,7 +206,7 @@ class GatewayInboundMixin(
         if (
             getattr(self, "_startup_restore_in_progress", False)
             and not is_internal
-            and not getattr(event, "_hermes_startup_restore_replay", False)
+            and not getattr(event, "_slave_startup_restore_replay", False)
             and not executing_admission.get()
         ):
             self._queue_startup_restore_event(event)
@@ -260,7 +260,7 @@ class GatewayInboundMixin(
         with suppress(Exception):
             _estop_cmd = event.get_command()
             if _estop_cmd:
-                from hermes_cli.commands import resolve_command as _resolve_estop_cmd
+                from slave_cli.commands import resolve_command as _resolve_estop_cmd
                 if _resolve_estop_cmd(_estop_cmd) is not None:
                     return True
         with suppress(Exception):
@@ -283,7 +283,7 @@ class GatewayInboundMixin(
     def _hm_estop_gate(
         self, event: MessageEvent, source: SessionSource, is_internal: bool
     ) -> Optional[str]:
-        """Global emergency-stop (`hermes pause`) notice when this turn must be blocked, else None.
+        """Global emergency-stop (`slave pause`) notice when this turn must be blocked, else None.
         Placed after auth so unauthorized senders can't probe pause state. A synthetic heartbeat that
         slipped past the poller's pause check gets "" (blocked, nothing sent): nobody typed it, and
         settle_heartbeat_attempt leaves its tick due for after resume."""
@@ -309,13 +309,13 @@ class GatewayInboundMixin(
     @staticmethod
     def _hm_write_update_response(response_text: str) -> Optional[str]:
         """Atomically hand *response_text* to the detached update process; returns the OSError str."""
-        from gateway.run import _hermes_home
-        response_path = _hermes_home / ".update_response"
+        from gateway.run import _slave_home
+        response_path = _slave_home / ".update_response"
         try:
             tmp = response_path.with_suffix(".tmp")
             tmp.write_text(response_text, encoding="utf-8")
             tmp.replace(response_path)
-            (_hermes_home / ".update_prompt.json").unlink(missing_ok=True)
+            (_slave_home / ".update_prompt.json").unlink(missing_ok=True)
         except OSError as e:
             return str(e)
         return None
@@ -347,7 +347,7 @@ class GatewayInboundMixin(
         else:
             if cmd:
                 with suppress(Exception):
-                    from hermes_cli.commands import resolve_command as _resolve_update_cmd
+                    from slave_cli.commands import resolve_command as _resolve_update_cmd
                     _cmd_def = _resolve_update_cmd(cmd)
                     _recognized_cmd = _cmd_def.name if _cmd_def else None
             response_text = "" if _recognized_cmd else (event.text or "").strip()
@@ -566,7 +566,7 @@ class GatewayInboundMixin(
         wall-clock age. The pending sentinel is never evicted (no get_activity_summary() → idle
         reads inf and would race the async setup path)."""
         from gateway.run import _AGENT_PENDING_SENTINEL, _float_env
-        _raw_stale_timeout = _float_env("HERMES_AGENT_TIMEOUT", 1800)
+        _raw_stale_timeout = _float_env("SLAVE_AGENT_TIMEOUT", 1800)
         _quick_state = self._peek_session_state(_quick_key)
         _stale_ts = _quick_state.turn.started_ts if _quick_state else 0
         if _quick_state is None or _quick_state.turn.agent is None or not _stale_ts:
@@ -660,7 +660,7 @@ class GatewayInboundMixin(
     ) -> tuple[bool, Optional[str]]:
         """Slash-command / photo-burst handling on the busy fast-path → ``(handled, result)``. Each
         command's mid-run behavior is declared on its CommandDef (busy_policy / busy_handler)."""
-        from hermes_cli.commands import resolve_command as _resolve_cmd_inner
+        from slave_cli.commands import resolve_command as _resolve_cmd_inner
         _evt_cmd = event.get_command()
         _cmd_def_inner = _resolve_cmd_inner(_evt_cmd) if _evt_cmd else None
 
@@ -746,9 +746,9 @@ class GatewayInboundMixin(
 
     def _hm_in_telegram_grace(self, event: MessageEvent, source: SessionSource, _quick_key: str) -> bool:
         """A Telegram text or voice follow-up inside the post-start grace window (it waits, never interrupts).
-        Invalid or empty ``HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS`` falls back to 3.0 via ``_float_env``."""
+        Invalid or empty ``SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS`` falls back to 3.0 via ``_float_env``."""
         from gateway.run import _float_env
-        _grace = _float_env("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", 3.0)
+        _grace = _float_env("SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", 3.0)
         _grace_state = self._peek_session_state(_quick_key)
         _started_at = _grace_state.turn.started_ts if _grace_state else 0
         # Send time (batching can admit 1.5s later); an edit keeps its message's ``date``, so use ``edit_date``.
@@ -914,7 +914,7 @@ class GatewayInboundMixin(
     ) -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
         """Resolve the slash command (aliases, access gate, hooks) → ``(handled, result, command,
         canonical)``; when ``handled`` the caller returns ``result`` as-is (may be None)."""
-        from hermes_cli.commands import (is_gateway_known_command, is_interrupt_then_dispatch,
+        from slave_cli.commands import (is_gateway_known_command, is_interrupt_then_dispatch,
                                          resolve_command as _resolve_cmd)
 
         def _canon(cmd):
@@ -982,7 +982,7 @@ class GatewayInboundMixin(
         return True, ""
 
     async def _hm_cmd_egress(self, event, source, _quick_key):
-        from hermes_cli.proxy_cli import format_status_text
+        from slave_cli.proxy_cli import format_status_text
         return True, format_status_text()
 
     async def _hm_rewrite_turn_to_prompt(self, event, source, name: str, ack: str, build) -> tuple[bool, Optional[str]]:
@@ -1013,7 +1013,7 @@ class GatewayInboundMixin(
 
     async def _hm_cmd_init(self, event, source, _quick_key):
         # /init builds the prompt first: the ack wording depends on whether AGENTS.md exists.
-        from hermes_cli.init_command import build_init_prompt_for_cwd
+        from slave_cli.init_command import build_init_prompt_for_cwd
 
         try:
             # The SESSION's active directory, not this process's launch dir: the desktop app
@@ -1137,7 +1137,7 @@ class GatewayInboundMixin(
     def _hm_unknown_slash_reply(command: str, source: SessionSource) -> Optional[str]:
         """Reply for a /command that is not built-in/plugin/skill; None when it is known."""
         from gateway.run import _check_unavailable_skill
-        from hermes_cli.commands import GATEWAY_KNOWN_COMMANDS
+        from slave_cli.commands import GATEWAY_KNOWN_COMMANDS
         # Known commands never need an unavailable-skill hint (which can require a cold scan).
         if command.replace("_", "-") in GATEWAY_KNOWN_COMMANDS:
             return None
@@ -1358,7 +1358,7 @@ class GatewayInboundMixin(
             return None
         event, source, is_internal = _admitted
         if not is_internal:
-            from hermes_cli.observability.shared_metrics_events import record_gateway_slash_command
+            from slave_cli.observability.shared_metrics_events import record_gateway_slash_command
             record_gateway_slash_command(event)
         # TERMINAL-DECLINE LATCH TEARDOWN. Deliberately placed AFTER admission,
         # not on the adapter's raw inbound: profile routing, the ignored-channel
@@ -1424,7 +1424,7 @@ class GatewayInboundMixin(
         _claim_state.turn.agent = _AGENT_PENDING_SENTINEL
         _claim_state.turn.event = event
         _claim_state.turn.started_ts = time.time()
-        from hermes_cli.observability.shared_metrics_gateway import start_reply_clock
+        from slave_cli.observability.shared_metrics_gateway import start_reply_clock
         start_reply_clock(source, internal=is_internal)
         self._persist_active_agents()
         _run_generation = self._begin_session_run_generation(_quick_key)
@@ -1723,7 +1723,7 @@ class GatewayInboundMixin(
                 if _msg_raw_ctx is not None:
                     _msg_config_ctx = int(_msg_raw_ctx)
             try:
-                from hermes_cli.config import get_compatible_custom_providers
+                from slave_cli.config import get_compatible_custom_providers
 
                 _msg_custom_providers = get_compatible_custom_providers(_msg_cfg)
             except Exception:
@@ -1741,7 +1741,7 @@ class GatewayInboundMixin(
             _msg_config_ctx = None
         if _msg_config_ctx is not None:
             try:
-                from hermes_cli.route_identity import should_clear_context_pin_async
+                from slave_cli.route_identity import should_clear_context_pin_async
 
                 if await should_clear_context_pin_async(
                     None, None,  # model match already checked above
@@ -1753,7 +1753,7 @@ class GatewayInboundMixin(
                 _msg_config_ctx = None
         if _msg_custom_providers and _msg_base_url:
             with suppress(Exception):
-                from hermes_cli.config import get_custom_provider_context_length
+                from slave_cli.config import get_custom_provider_context_length
 
                 _msg_config_ctx = get_custom_provider_context_length(
                     model=_msg_model, base_url=_msg_base_url, custom_providers=_msg_custom_providers,
@@ -1896,7 +1896,7 @@ class GatewayInboundMixin(
         try:
             from agent.image_routing import decide_image_input_mode
             from agent.auxiliary_client import _read_main_model, _read_main_provider
-            from hermes_cli.config import load_config
+            from slave_cli.config import load_config
 
             cfg = user_config if isinstance(user_config, dict) else load_config()
             resolved_provider = (provider or "").strip()

@@ -13,7 +13,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 
 def _settled_native_document(tmp_path, monkeypatch, note):
     from gateway.platforms.base import get_document_cache_dir
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     staged = get_document_cache_dir() / 'doc_1_report.pdf'
     staged.write_bytes(b'%PDF-1.4 retained')
     media = capture_native_media([staged])
@@ -33,7 +33,7 @@ def _settled_native_document(tmp_path, monkeypatch, note):
 @pytest.mark.parametrize('note', [
     lambda path: f"[The user sent a document: 'report.pdf'. It is saved at: {path}.]",
     # A docker/modal backend's agent-visible spelling of the same retained file.
-    lambda path: "It is saved at: /root/.hermes/cache/documents/" + path.split('/documents/', 1)[1],
+    lambda path: "It is saved at: /root/.slave/cache/documents/" + path.split('/documents/', 1)[1],
 ], ids=['host-path', 'agent-visible-path'])
 def test_settled_native_document_named_by_the_transcript_survives_settlement(tmp_path, monkeypatch, note):
     import gateway.session_ingress_media as media_module

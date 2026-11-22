@@ -236,7 +236,7 @@ def test_surfaces_that_cannot_ask_still_report_prompt_unavailable(loop, monkeypa
     if case == "adapter_without_code_card":
         turn._ctx._status_adapter = SimpleNamespace(send=AsyncMock())  # e.g. a webhook-style text adapter
     if case == "cron":
-        monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+        monkeypatch.setenv("SLAVE_CRON_SESSION", "1")
     p1, p2, p3 = _enter_code_page({})
     with p1, p2, p3, vault_prompt_scope(turn, SimpleNamespace()):
         out = json.loads(browser_vault_tool.browser_vault_enter_code(task_id="t"))

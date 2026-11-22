@@ -3,7 +3,7 @@
 One gateway process per host multiplexes every profile, so "does a gateway own cron for profile
 X" stopped being answerable from the launch home alone: ``gateway.status.owns_gateway_runtime_lock``
 is a process-global boolean set once at boot, and every path resolver behind
-``is_gateway_runtime_lock_active`` goes through ``get_process_hermes_home()``, which ignores the
+``is_gateway_runtime_lock_active`` goes through ``get_process_slave_home()``, which ignores the
 per-tick ``_profile_cron_scope`` override. Both therefore answer about the LAUNCH home while the
 ticker is scoped to some other profile.
 
@@ -22,7 +22,7 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
-from hermes_constants import get_hermes_home, hermes_home_key
+from slave_constants import get_slave_home, slave_home_key
 
 # Home key -> home path for every profile this process ticks, republished each ticker cycle so a
 # profile created or tombstoned mid-run is reflected without a restart.
@@ -45,7 +45,7 @@ def register_ticked_homes(homes) -> None:
     resolved, stores = {}, {}
     for home in homes:
         path = Path(home)
-        key = hermes_home_key(path)
+        key = slave_home_key(path)
         resolved[key] = path
         stores[key] = store_key(path)
     with _ticked_lock:
@@ -71,7 +71,7 @@ def ticked_homes() -> dict:
 
 def serves_profile(home: Optional[Path | str] = None) -> bool:
     """True when THIS process's cron ticker owns ``home`` (default: the active cron scope)."""
-    key = hermes_home_key(home if home is not None else get_hermes_home())
+    key = slave_home_key(home if home is not None else get_slave_home())
     with _ticked_lock:
         return key in _ticked_homes
 
@@ -102,14 +102,14 @@ def record_serves_profile(record: Any, home: Optional[Path | str] = None) -> boo
     if not isinstance(record, dict):
         return False
     from gateway.status import (
-        _get_process_hermes_home, _profile_label_for_home, _same_hermes_home)
+        _get_process_slave_home, _profile_label_for_home, _same_slave_home)
 
     try:
-        target = Path(home) if home is not None else get_hermes_home()
-        record_home = record.get("hermes_home")
+        target = Path(home) if home is not None else get_slave_home()
+        record_home = record.get("slave_home")
         if not isinstance(record_home, str) or not record_home.strip():
-            record_home = _get_process_hermes_home()
-        if _same_hermes_home(record_home, target):
+            record_home = _get_process_slave_home()
+        if _same_slave_home(record_home, target):
             return True
     except Exception:
         return False
@@ -150,7 +150,7 @@ def live_gateway_ticking(home: Optional[Path | str] = None) -> Optional[dict]:
 
 def _claim_owner_is_dead(claim: dict[str, Any]) -> bool:
     """True when the claim's ``by`` names a process on THIS host that provably no longer exists.
-    ``_machine_id()`` stamps ``host:pid[:token]``; a foreign host, an explicit HERMES_MACHINE_ID,
+    ``_machine_id()`` stamps ``host:pid[:token]``; a foreign host, an explicit SLAVE_MACHINE_ID,
     or any liveness-probe failure returns False (fail safe: only a proven death shortens the TTL)."""
     parts = str(claim.get("by") or "").split(":")
     if len(parts) < 2 or not parts[1].isdigit():

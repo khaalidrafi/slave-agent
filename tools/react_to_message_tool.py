@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent emoji reaction in the Hermes desktop app: the counterpart to the user's tapback
+"""Agent emoji reaction in the slave-agent desktop app: the counterpart to the user's tapback
 (same store, one-per-author, ``author="agent"``). Lives in the ``desktop_ui`` toolset so it
 costs nothing elsewhere; defaults to the triggering message and emits ``message.reaction``
 for live painting."""
@@ -30,7 +30,7 @@ def react_to_message_tool(emoji: str, message_row_id=None, messages_back=None) -
     """Attach (or with an empty ``emoji`` retract) the agent's reaction."""
     emoji = (emoji or "").strip()
     # Routing keys identify a channel; message rows belong to the live durable session.
-    session_key = get_session_env("HERMES_SESSION_ID", "") or get_session_env("HERMES_SESSION_KEY", "")
+    session_key = get_session_env("SLAVE_SESSION_ID", "") or get_session_env("SLAVE_SESSION_KEY", "")
     if not session_key:
         return tool_error("No active session — reactions need a persisted conversation.")
     persistence = _open_session_db()

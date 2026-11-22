@@ -1,28 +1,28 @@
-"""CLI entry point for the hermes-agent ACP adapter.
+"""CLI entry point for the slave-agent ACP adapter.
 
-Loads ``~/.hermes/.env``, routes logging to stderr (stdout is reserved for ACP
+Loads ``~/.slave/.env``, routes logging to stderr (stdout is reserved for ACP
 JSON-RPC), and starts the ACP agent server.
 
 Usage::
 
-    python -m acp_adapter.entry   # or: hermes acp / hermes-acp
+    python -m acp_adapter.entry   # or: slave acp / slave-acp
 """
 
-# IMPORTANT: hermes_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See hermes_bootstrap.py for full rationale.
+# IMPORTANT: slave_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See slave_bootstrap.py for full rationale.
 try:
-    import hermes_bootstrap
+    import slave_bootstrap
 except ModuleNotFoundError as exc:
-    # Partial ``hermes update`` (git-reset landed, ``uv pip install -e .`` did not).
-    if exc.name != "hermes_bootstrap" and not "hermes_bootstrap".startswith(f"{exc.name}."):
+    # Partial ``slave update`` (git-reset landed, ``uv pip install -e .`` did not).
+    if exc.name != "slave_bootstrap" and not "slave_bootstrap".startswith(f"{exc.name}."):
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 else:
-    # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch cwd from shadowing Hermes modules.
-    hermes_bootstrap.harden_import_path()
+    # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch cwd from shadowing Slave modules.
+    slave_bootstrap.harden_import_path()
 
-# `hermes-acp` runs without hermes_cli.main: repair a `hermes update` killed mid-pull here, before
-# importing anything else from the checkout (a no-op under `hermes acp`, which already did).
-from hermes_cli import _early_recovery
+# `slave-acp` runs without slave_cli.main: repair a `slave update` killed mid-pull here, before
+# importing anything else from the checkout (a no-op under `slave acp`, which already did).
+from slave_cli import _early_recovery
 
 if _early_recovery.restore_interrupted_pull():
     _early_recovery.relaunch_after_restore()
@@ -32,8 +32,8 @@ import asyncio
 import logging
 import os
 import sys
-from hermes_constants import get_hermes_home
-from hermes_cli._startup_fast import project_root_str
+from slave_constants import get_slave_home
+from slave_cli._startup_fast import project_root_str
 
 
 # Liveness-probe methods outside the ACP schema. The router correctly answers JSON-RPC -32601
@@ -79,24 +79,24 @@ def _setup_logging() -> None:
 
 
 def _load_env() -> None:
-    """Load .env from HERMES_HOME (default ``~/.hermes``)."""
-    from hermes_cli.env_loader import load_hermes_dotenv
+    """Load .env from SLAVE_HOME (default ``~/.slave``)."""
+    from slave_cli.env_loader import load_slave_dotenv
 
-    hermes_home = get_hermes_home()
-    loaded = load_hermes_dotenv(hermes_home=hermes_home)
+    slave_home = get_slave_home()
+    loaded = load_slave_dotenv(slave_home=slave_home)
     log = logging.getLogger(__name__)
     for env_file in loaded or ():
         log.info("Loaded env from %s", env_file)
     if not loaded:
-        log.info("No .env found at %s, using system env", hermes_home / ".env")
+        log.info("No .env found at %s, using system env", slave_home / ".env")
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="hermes-acp", description="Run Hermes Agent as an ACP stdio server.")
-    parser.add_argument("--version", action="store_true", help="Print Hermes version and exit")
+    parser = argparse.ArgumentParser(prog="slave-acp", description="Run slave-agent as an ACP stdio server.")
+    parser.add_argument("--version", action="store_true", help="Print slave-agent version and exit")
     parser.add_argument("--check", action="store_true", help="Verify ACP dependencies and adapter imports, then exit")
     parser.add_argument("--setup", action="store_true",
-                        help="Run interactive Hermes provider/model setup for ACP terminal auth")
+                        help="Run interactive slave-agent provider/model setup for ACP terminal auth")
     parser.add_argument("--setup-browser", action="store_true",
                         help="Prepare PM's pinned Chromium for browser_exec.")
     parser.add_argument("--yes", "-y", action="store_true", dest="assume_yes",
@@ -105,25 +105,25 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _print_version() -> None:
-    from hermes_cli.version_info import get_version_info
+    from slave_cli.version_info import get_version_info
 
     print(get_version_info().derived_version)
 
 
 def _run_check() -> None:
     import acp
-    from acp_adapter.server import HermesACPAgent
+    from acp_adapter.server import SlaveACPAgent
 
-    print("Hermes ACP check OK")
+    print("slave-agent ACP check OK")
 
 
 def _run_setup() -> None:
-    from hermes_cli.main import main as hermes_main
+    from slave_cli.main import main as slave_main
 
     old_argv = sys.argv[:]
     try:
-        sys.argv = [old_argv[0] if old_argv else "hermes", "model"]
-        hermes_main()
+        sys.argv = [old_argv[0] if old_argv else "slave", "model"]
+        slave_main()
     finally:
         sys.argv = old_argv
 
@@ -162,11 +162,11 @@ def _warm_memory_provider_import(logger: logging.Logger) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     """Entry point: load env, configure logging, run the ACP agent."""
-    if argv is None and "hermes_cli.main" not in sys.modules:
-        sys.argv = [sys.argv[0] if sys.argv else "hermes-acp", "acp", *sys.argv[1:]]
-        from hermes_cli.main import main as hermes_main
+    if argv is None and "slave_cli.main" not in sys.modules:
+        sys.argv = [sys.argv[0] if sys.argv else "slave-acp", "acp", *sys.argv[1:]]
+        from slave_cli.main import main as slave_main
 
-        return hermes_main()
+        return slave_main()
     args = _parse_args(argv)
     for flag, action in (("version", _print_version), ("check", _run_check), ("setup", _run_setup)):
         if getattr(args, flag):
@@ -180,7 +180,7 @@ def main(argv: list[str] | None = None) -> None:
     _load_env()
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting hermes-agent ACP adapter")
+    logger.info("Starting slave-agent ACP adapter")
 
     # Ensure the project root is on sys.path so ``from run_agent import AIAgent`` works
     project_root = project_root_str()
@@ -189,13 +189,13 @@ def main(argv: list[str] | None = None) -> None:
 
     # One TLS authority: trust the OS store before any outbound call (bare
     # requests/urllib included) resolves a CA bundle — see agent/ssl_verify.py.
-    # This console script bypasses hermes_cli.main, which does the same.
+    # This console script bypasses slave_cli.main, which does the same.
     from agent.ssl_verify import install_truststore
 
     install_truststore()
 
     import acp
-    from .server import HermesACPAgent
+    from .server import SlaveACPAgent
 
     # Windows: import the configured memory provider (and numpy) on the main thread before
     # the ACP stdin-reader thread starts. A first-time native-extension import racing another
@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> None:
         _warm_memory_provider_import(logger)
 
     # MCP discovery and execution belong to the gateway daemon; this process is a viewer.
-    agent = HermesACPAgent()
+    agent = SlaveACPAgent()
 
     async def serve():
         # MCP and execution belong to the daemon. Close only this viewer, while

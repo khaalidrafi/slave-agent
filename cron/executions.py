@@ -19,10 +19,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from slave_constants import get_slave_home
+from slave_time import now as _slave_now
 from cron.constants import CLAIM_TTL_INACTIVITY_HEADROOM
-from hermes_cli.observability.shared_metrics_gateway import record_cron_finish
+from slave_cli.observability.shared_metrics_gateway import record_cron_finish
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ MAX_TERMINAL_EXECUTIONS = 1000
 HANDOFF_ADOPTION_GRACE_SECONDS = 30.0
 # Floor for the live-owner stale-claim bound (#115692); see _live_owner_stale_after_seconds.
 LIVE_OWNER_STALE_CLAIM_FLOOR_SECONDS = 7200.0
-# ``cancelled``: an operator stopped the run (``hermes cron cancel``, removing the job mid-run).
+# ``cancelled``: an operator stopped the run (``slave cron cancel``, removing the job mid-run).
 # ``missed``: never started — one row books every occurrence the scheduler skipped past.
 _TERMINAL_STATES = ("completed", "failed", "unknown", "cancelled", "missed")
 _STATUS_CHECK = "('claimed','running','completed','failed','unknown','cancelled','missed')"
@@ -49,18 +49,18 @@ _PROCESS_ID = uuid.uuid4().hex
 
 def _connect() -> sqlite3.Connection:
     # Late imports: a scheduler daemon that outlives an on-disk upgrade already has the OLD
-    # ``hermes_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
+    # ``slave_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
     # not at import time (the guarantee cron/ledger.py used to carry, see e24c8499).
     from cron.jobs import _ensure_cron_dir
-    from hermes_cli.sqlite_util import open_db
+    from slave_cli.sqlite_util import open_db
 
-    path = EXECUTIONS_FILE or (get_hermes_home().resolve() / "cron" / "executions.db")
+    path = EXECUTIONS_FILE or (get_slave_home().resolve() / "cron" / "executions.db")
     _ensure_cron_dir(path.parent)
     return open_db(path, db_label="cron/executions.db", synchronous_full=True, initialize=_initialize_schema)
 
 
 def _initialize_schema(conn: sqlite3.Connection) -> None:
-    from hermes_cli.sqlite_util import add_column_if_missing
+    from slave_cli.sqlite_util import add_column_if_missing
 
     conn.execute(
         f"""CREATE TABLE IF NOT EXISTS executions (
@@ -135,7 +135,7 @@ def _widen_status_check(conn: sqlite3.Connection) -> None:
 
 @contextmanager
 def _transaction() -> Iterator[sqlite3.Connection]:
-    from hermes_cli.sqlite_util import transaction
+    from slave_cli.sqlite_util import transaction
 
     with _lock, transaction(_connect()) as conn:
         yield conn
@@ -188,7 +188,7 @@ def _live_owner_stale_after_seconds() -> Optional[float]:
     """Age past which a claimed/running row with a LIVE owner is treated as wedged.
 
     Derived from the existing knobs, never a bare wall-clock constant:
-    ``max(3 × HERMES_CRON_TIMEOUT, cron script timeout, 7200)``. Returns ``None`` (never reclaim
+    ``max(3 × SLAVE_CRON_TIMEOUT, cron script timeout, 7200)``. Returns ``None`` (never reclaim
     live owners — today's behaviour) when the inactivity timeout is 0/unlimited or not a finite
     positive number: with no bound to derive from, fail closed.
     """
@@ -206,8 +206,8 @@ def _live_owner_stale_after_seconds() -> Optional[float]:
 
 
 def _claim_age_seconds(claimed_at: str) -> float:
-    """Seconds since ``claimed_at`` (NOT NULL, always the aware ISO string from hermes_time.now)."""
-    return (_hermes_now() - datetime.fromisoformat(claimed_at)).total_seconds()
+    """Seconds since ``claimed_at`` (NOT NULL, always the aware ISO string from slave_time.now)."""
+    return (_slave_now() - datetime.fromisoformat(claimed_at)).total_seconds()
 
 
 def _stale_age_seconds(claimed_at: str, progress_at: Optional[str]) -> float:
@@ -223,7 +223,7 @@ def _stale_age_seconds(claimed_at: str, progress_at: Optional[str]) -> float:
 def touch_execution_progress(execution_id: str) -> bool:
     """Stamp ``progress_at`` on a running attempt this process owns. Returns False when the row
     is no longer ours or no longer running (the caller treats that as informational only)."""
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     with _transaction() as conn:
         cur = conn.execute(
             """UPDATE executions SET progress_at=?
@@ -251,7 +251,7 @@ def create_execution(
     """Persist a claimed attempt before executor/provider dispatch."""
     from cron.occurrences import scheduled_instant as canonical_instant
 
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     execution_id = uuid.uuid4().hex
     pid = os.getpid()
     with _transaction() as conn:
@@ -308,7 +308,7 @@ def adopt_claimed_execution(execution_id: str) -> Optional[dict[str, Any]]:
     """
     pid = os.getpid()
     process_started_at = _process_start_time(pid)
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     with _transaction() as conn:
         cur = conn.execute(
             """UPDATE executions
@@ -327,7 +327,7 @@ def adopt_claimed_execution(execution_id: str) -> Optional[dict[str, Any]]:
 
 def mark_execution_running(execution_id: str) -> Optional[dict[str, Any]]:
     """Transition one claimed attempt to running exactly once."""
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     with _transaction() as conn:
         cur = conn.execute(
             """UPDATE executions
@@ -353,7 +353,7 @@ def finish_execution(
     Only the owning process may finish its attempt; receipt recovery for a departed owner
     settles through ``recover_receipted_execution``.
     """
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     status = "cancelled" if cancelled else ("completed" if success else "failed")
     detail = None if success else (str(error) if error else "unknown failure")
     if detail is not None:
@@ -389,7 +389,7 @@ def record_missed_occurrences(
 
     if count < 1:
         return None
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     execution_id = uuid.uuid4().hex
     pid = os.getpid()
     with _transaction() as conn:
@@ -415,7 +415,7 @@ def recover_receipted_execution(execution_id, job_id, *, success, error=None, de
     """
     from cron.jobs_error_text import sanitize_persisted_error
 
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     detail = None if success else sanitize_persisted_error(str(error) if error else 'unknown failure')
     with _transaction() as conn:
         row = _recoverable_row(conn, execution_id, job_id)
@@ -496,7 +496,7 @@ def recover_interrupted_executions() -> int:
     """Mark abandoned attempts unknown without scheduling retries: rows whose owner is provably
     dead, plus rows whose live owner holds a claim older than the derived stale bound (the
     process is not killed)."""
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     changed = 0
     recovered: list[dict[str, Any]] = []
     # Derived on the first live-owned row only: the bound reads config, and the idle gateway
@@ -587,7 +587,7 @@ def terminalize_dead_owner(execution_id: str, *, reason: str) -> bool:
     this process, inside the handoff adoption grace, or owned by a live process: a
     worker that is still running must never be terminalized out from under itself.
     """
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     with _transaction() as conn:
         row = conn.execute(
             """SELECT id, status, process_id, pid, process_started_at,
@@ -628,7 +628,7 @@ def give_up_execution(execution_id: str, *, reason: str) -> bool:
     ``unknown`` now, owner-fenced to this process, instead of leaving it ``running`` until a
     restart's dead-owner sweep. Receipt recovery never acts for a same-process running row, so
     the owner's later terminal receipt can settle it only once it is marked given up."""
-    now = _hermes_now().isoformat()
+    now = _slave_now().isoformat()
     with _transaction() as conn:
         cur = conn.execute(
             """UPDATE executions SET status='unknown', finished_at=?, error=?,

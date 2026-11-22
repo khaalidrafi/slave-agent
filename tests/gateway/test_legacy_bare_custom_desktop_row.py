@@ -26,11 +26,11 @@ DICT = {'model': PROFILE, 'providers': {'mock': {'name': 'Mock', 'api': URL, 'ke
 async def test_a_bare_custom_desktop_row_resumes_on_the_profiles_route(monkeypatch, config, model_config):
     from gateway import run
     from gateway.session_local_migration import resolve_local_target
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from tests.gateway.test_session_follow_profile_config import _owner, _route
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     monkeypatch.setenv('OPENAI_API_KEY', 'profile-key')  # the key lives in .env, loaded into the env
     (home / 'config.yaml').write_text(json.dumps(config))
     store, runner, authority, owner = _owner(home)

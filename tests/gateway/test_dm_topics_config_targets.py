@@ -86,14 +86,14 @@ def test_unnamed_group_topic_is_listed(tmp_path):
 async def test_topic_setup_does_not_mutate_shared_config_cache(tmp_path, monkeypatch):
     """Setup writes created thread_ids into its own copy; the process-wide config cache only learns
     them through the persist path."""
-    from hermes_cli.config import load_config_readonly
+    from slave_cli.config import load_config_readonly
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
     (home / "config.yaml").write_text(
         "platforms:\n  telegram:\n    extra:\n      dm_topics:\n"
         "      - chat_id: 222\n        topics:\n        - name: WEBSITE\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***", extra={
         "dm_topics": [{"chat_id": 222, "topics": [{"name": "WEBSITE"}]}]}))
     adapter._bot = AsyncMock()
@@ -111,12 +111,12 @@ async def test_topic_setup_does_not_mutate_shared_config_cache(tmp_path, monkeyp
 async def test_reconnect_after_failed_save_reuses_the_created_topic(tmp_path, monkeypatch):
     """Reload stays enabled and the thread_id save fails: the reconnect's fresh config copy lacks the
     id, so setup must reuse the one this adapter created instead of creating a duplicate topic."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
     (home / "config.yaml").write_text(
         "platforms:\n  telegram:\n    extra:\n      dm_topics:\n"
         "      - chat_id: 222\n        topics:\n        - name: WEBSITE\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***", extra={
         "dm_topics": [{"chat_id": 222, "topics": [{"name": "WEBSITE"}]}]}))
     ids = iter((58890, 58891))
@@ -134,12 +134,12 @@ async def test_reconnect_after_failed_save_reuses_the_created_topic(tmp_path, mo
 @pytest.mark.asyncio
 async def test_reconnect_after_failed_save_keeps_the_topic_listed(tmp_path, monkeypatch):
     """The reused unsaved id must stay a channel-directory target, not only a cache entry."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
     (home / "config.yaml").write_text(
         "platforms:\n  telegram:\n    extra:\n      dm_topics:\n"
         "      - chat_id: 222\n        topics:\n        - name: WEBSITE\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***", extra={
         "dm_topics": [{"chat_id": 222, "topics": [{"name": "WEBSITE"}]}]}))
     adapter._bot = AsyncMock()
@@ -182,10 +182,10 @@ async def test_dm_topics_outside_platforms_telegram_extra_are_set_up(tmp_path, m
     ``platforms.telegram.extra``) is set up, and a rebuild from the same boot-time config reuses the thread_id the first adapter saved instead of creating it again."""
     from gateway.config import load_gateway_config
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
     (home / "config.yaml").write_text(config_yaml)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123:abc")
     boot_config = load_gateway_config().platforms[Platform.TELEGRAM]
     adapters = []
@@ -205,12 +205,12 @@ async def test_dm_topics_outside_platforms_telegram_extra_are_set_up(tmp_path, m
 async def test_saved_thread_id_wins_over_the_boot_snapshot(tmp_path, monkeypatch):
     """A topic re-created since boot (``force_create`` saves the new id): setup on the boot-time config
     must use the saved id, not the stale one the snapshot carries."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "slave"
     home.mkdir()
     (home / "config.yaml").write_text(
         "platforms:\n  telegram:\n    extra:\n      dm_topics:\n"
         "      - chat_id: 222\n        topics:\n        - name: WEBSITE\n          thread_id: 200\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***", extra={
         "dm_topics": [{"chat_id": 222, "topics": [{"name": "WEBSITE", "thread_id": 100}]}]}))
     adapter._bot = AsyncMock()

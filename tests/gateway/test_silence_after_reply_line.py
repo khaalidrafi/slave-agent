@@ -45,7 +45,7 @@ def _source():
 
 
 async def _run(monkeypatch, tmp_path, *, queued_reply_expected=None, queued=False, **turn_kwargs):
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
     (tmp_path / "config.yaml").write_text(yaml.safe_dump({"display": {}}), encoding="utf-8")
     fake_dotenv = types.ModuleType("dotenv")
@@ -61,7 +61,7 @@ async def _run(monkeypatch, tmp_path, *, queued_reply_expected=None, queued=Fals
     monkeypatch.setitem(_ACTIVE_ADAPTER, "adapter", adapter)
     runner = _make_runner(adapter)
     gateway_run = importlib.import_module("gateway.run")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"})
     session_key = "agent:main:telegram:dm:dm-1"
     if queued:

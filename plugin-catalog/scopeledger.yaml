@@ -1,7 +1,7 @@
 name: scopeledger
 title: ScopeLedger
 description: Local-first billing-evidence reconciliation and owner-review reports for service agencies.
-repo: https://github.com/221h0lmes/scopeledger-hermes
+repo: https://github.com/221h0lmes/scopeledger-slave
 sha: 7bda42a2c0bd28bd5918bbc1ddc9f30d018a75c1
 version: "0.3.7"
 maintainer: 221h0lmes

@@ -79,7 +79,7 @@ def _pwd_after_restart(tmp_path, *, remove_sub_before_restart=False, new_before_
            'platform_toolsets': {'telegram': ['terminal']}, 'terminal': {'cwd': str(work), 'backend': 'local'}}
     (home / 'config.yaml').write_text(json.dumps(cfg), encoding='utf-8')
     env = child_env()
-    env.update(HOME=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only',
+    env.update(HOME=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only',
                OPENAI_BASE_URL=base, PYTHONUNBUFFERED='1', TELEGRAM_BOT_TOKEN='987654321:owned-loopback-fixture',
                TELEGRAM_ALLOWED_USERS='202')
     update_id = 0

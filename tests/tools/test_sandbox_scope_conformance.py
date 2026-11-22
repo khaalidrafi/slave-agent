@@ -13,7 +13,7 @@ import json
 import pytest
 
 from agent import terminal_env_registry as reg
-from hermes_scope import Principal, Scope
+from slave_scope import Principal, Scope
 from tools.environments import sandbox_conformance as conformance
 from tools.environments.sandbox_scope import (
     CrossAgentHandleRefused, HostedSandboxRequired, SandboxIdentity, ScopedEnvironment, sandbox_identity,
@@ -44,7 +44,7 @@ def provider(monkeypatch):
 
 @pytest.fixture
 def host_dir(tmp_path):
-    """A workspace-looking host directory, apart from the test's HERMES_HOME (Hermes reading its
+    """A workspace-looking host directory, apart from the test's SLAVE_HOME (slave-agent reading its
     own state is not a tool touching the host)."""
     path = tmp_path / "host-workspace"
     path.mkdir()
@@ -61,7 +61,7 @@ def test_conformance(name, provider, host_dir):
 
 
 def test_identity_is_tenant_and_agent_only():
-    turn = A.for_turn("session-1", "turn-1", fence=__import__("hermes_scope").Fence(1, 1))
+    turn = A.for_turn("session-1", "turn-1", fence=__import__("slave_scope").Fence(1, 1))
     assert sandbox_identity(turn) == sandbox_identity(A) == SandboxIdentity("acme", "agent-a")
     assert sandbox_identity(OTHER_TENANT_A).key != sandbox_identity(A).key
     # Percent-quoting keeps the key injective across tenant/agent boundaries.
@@ -153,10 +153,10 @@ def test_another_agents_process_never_makes_a_prefix_ambiguous(provider):
 
 
 @pytest.mark.platforms("posix")
-def test_local_long_lived_process_dies_with_hermes_until_stopped(tmp_path, monkeypatch):
+def test_local_long_lived_process_dies_with_slave_until_stopped(tmp_path, monkeypatch):
     """A long-lived local process is owned (its group is covered by the owner-death supervisor, so a
-    SIGKILLed Hermes takes it down) from start until ``stop_process`` releases it."""
-    from hermes_cli import process_identity
+    SIGKILLed slave-agent takes it down) from start until ``stop_process`` releases it."""
+    from slave_cli import process_identity
     from tools.environments.local import LocalEnvironment
 
     owned, released = [], []
@@ -249,7 +249,7 @@ def test_stopping_an_exited_leader_still_stops_its_descendants(tmp_path, monkeyp
     import os
     import signal
     psutil = pytest.importorskip("psutil")
-    from hermes_cli import process_identity
+    from slave_cli import process_identity
     from tests.waiting import wait_until
     from tools.environments.local import LocalEnvironment
 

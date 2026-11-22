@@ -70,16 +70,16 @@ def test_the_tree_probe_reads_the_checkout_on_disk(tmp_path):
     git("init", "-b", "main")
     git("config", "user.email", "t@example.invalid")
     git("config", "user.name", "T")
-    (tmp_path / "hermes_state_common.py").write_text("SCHEMA = 'CREATE TABLE IF NOT EXISTS sessions'\n")
+    (tmp_path / "slave_state_common.py").write_text("SCHEMA = 'CREATE TABLE IF NOT EXISTS sessions'\n")
     git("add", ".")
     git("commit", "-m", "old release")
     git("tag", "old")
-    (tmp_path / "hermes_state_common.py").write_text("SCHEMA = 'CREATE TABLE IF NOT EXISTS session_admissions'\n")
+    (tmp_path / "slave_state_common.py").write_text("SCHEMA = 'CREATE TABLE IF NOT EXISTS session_admissions'\n")
     git("commit", "-am", "runtime")
     assert rde.tree_predates_runtime(tmp_path) is False
     git("checkout", "-q", "--detach", "old")
     assert rde.tree_predates_runtime(tmp_path) is True
-    nested = tmp_path / "hermes_agent" / "hermes_state"
+    nested = tmp_path / "slave_agent" / "slave_state"
     nested.mkdir(parents=True)
     (nested / "common.py").write_text("SCHEMA = 'CREATE TABLE IF NOT EXISTS session_admissions'\n")
     assert rde.tree_predates_runtime(tmp_path) is False  # the store moved into the package still counts
@@ -87,9 +87,9 @@ def test_the_tree_probe_reads_the_checkout_on_disk(tmp_path):
 
 
 def test_the_tree_probe_reads_the_backend_schema(tmp_path):
-    """A checkout whose ledger DDL lives in ``persistence/sqlite/_schema_ddl.py`` beside a ``hermes_state.py``
+    """A checkout whose ledger DDL lives in ``persistence/sqlite/_schema_ddl.py`` beside a ``slave_state.py``
     stand-in without it has the runtime; the same checkout before the ledger does not."""
-    (tmp_path / "hermes_state.py").write_text("from persistence_assembly import open_persistence\n")
+    (tmp_path / "slave_state.py").write_text("from persistence_assembly import open_persistence\n")
     schema = tmp_path / "persistence" / "sqlite" / "_schema_ddl.py"
     schema.parent.mkdir(parents=True)
     schema.write_text('SCHEMA_SQL = "CREATE TABLE IF NOT EXISTS session_admissions (seq INTEGER)"\n')

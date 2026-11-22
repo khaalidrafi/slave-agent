@@ -56,12 +56,12 @@ def _route(runner, live):
 @pytest.mark.asyncio
 async def test_follow_profile_session_runs_the_profiles_current_route_and_a_pick_until_superseded(monkeypatch):
     from gateway import run
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from slave_constants import get_slave_home
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
     # gateway.run binds its home at first import; another test module may have imported it under
-    # a different HERMES_HOME. The loader itself is real.
-    monkeypatch.setattr(run, '_hermes_home', home)
+    # a different SLAVE_HOME. The loader itself is real.
+    monkeypatch.setattr(run, '_slave_home', home)
     _profile(home, 'old', 1, 'k-old')
     store, runner, authority, owner = _owner(home)
     try:

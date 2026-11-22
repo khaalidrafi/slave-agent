@@ -1,6 +1,6 @@
 name: zolva
 title: Zolva
-repo: https://github.com/zolvaagent/hermes-zolva
+repo: https://github.com/zolvaagent/slave-zolva
 sha: 17516f666abcc422f0302bae7be3ca2d9f6d2139
 description: >-
   Read Zolva's trading agents on Robinhood Chain (tokenized US stocks and ETFs, ETH and BTC, and

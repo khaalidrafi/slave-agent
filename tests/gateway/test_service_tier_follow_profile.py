@@ -6,7 +6,7 @@ import pytest
 
 from gateway.session_contract import SessionRef
 from gateway.session_policy import policy_for_source
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from persistence_assembly import store_location
 from tests.gateway.test_session_create_tier_cwd import _owner
 
@@ -18,7 +18,7 @@ async def test_service_tier_choices_follow_profile_model_provider_and_endpoint_t
     tmp_path, monkeypatch, initially_supported, retained,
 ):
     monkeypatch.chdir(tmp_path)
-    home = get_hermes_home()
+    home = get_slave_home()
     supported = {'provider': 'openai', 'default': 'gpt-6.1-sol', 'base_url': 'https://api.openai.com/v1'}
     unsupported = {'provider': 'custom', 'default': 'gpt-6.1-sol', 'base_url': 'http://127.0.0.1:12345/v1'}
     before, after = (supported, unsupported) if initially_supported else (unsupported, supported)
@@ -54,7 +54,7 @@ async def test_service_tier_choices_follow_profile_model_provider_and_endpoint_t
 @pytest.mark.asyncio
 async def test_followed_account_eligibility_does_not_use_the_retained_agents_key(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    home = get_hermes_home()
+    home = get_slave_home()
     before = {'provider': 'custom', 'default': 'gpt-6.1-sol', 'base_url': 'http://127.0.0.1:12345/v1'}
     after = {'provider': 'openai-codex', 'default': 'gpt-6.1-sol',
              'base_url': 'https://chatgpt.com/backend-api/codex', 'api_key': 'next-route-key'}

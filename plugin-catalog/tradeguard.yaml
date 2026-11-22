@@ -1,9 +1,9 @@
 name: tradeguard
 title: TradeGuard
-repo: https://github.com/vansh-attention/hermes-tradeguard
+repo: https://github.com/vansh-attention/slave-tradeguard
 sha: 46434c99ce192f0fa9e3c718d91d57be20d056e4
 description: >-
-  Read-only stocks and ETF research for Hermes: evidence-aware fundamentals,
+  Read-only stocks and ETF research for slave-agent: evidence-aware fundamentals,
   daily technical observations, ETF structure, comparable ranking,
   microstructure calculations and an explicitly experimental walk-forward ML
   baseline. It provides explainable heuristic research priority, not trade
@@ -21,7 +21,7 @@ maintainer: Vansh Khosla
 tier: community
 category: tools
 requires_hermes: ">=0.22.7"
-docs_url: https://github.com/vansh-attention/hermes-tradeguard#readme
+docs_url: https://github.com/vansh-attention/slave-tradeguard#readme
 version: "0.1.0"
 readme: true
 platforms: []

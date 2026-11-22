@@ -12,7 +12,7 @@ import os
 import time
 from types import SimpleNamespace
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from gateway.config import Platform, load_gateway_config
@@ -27,12 +27,12 @@ GATE_VARS = ("DISCORD_ALLOWED_ROLES", "DISCORD_ALLOWED_USERS", "TELEGRAM_ALLOWED
 
 @pytest.fixture(autouse=True)
 def _home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     for var in GATE_VARS:  # setenv first so teardown also removes what the loader bridges in
         monkeypatch.setenv(var, "")
         monkeypatch.delenv(var)
-        monkeypatch.setenv(f"HERMES_BRIDGED_{var}", "")
-        monkeypatch.delenv(f"HERMES_BRIDGED_{var}")
+        monkeypatch.setenv(f"SLAVE_BRIDGED_{var}", "")
+        monkeypatch.delenv(f"SLAVE_BRIDGED_{var}")
     return tmp_path
 
 
@@ -101,7 +101,7 @@ def test_slash_and_component_follow_the_edit(_home):
 
 
 def test_operator_env_still_beats_the_edited_yaml(_home, monkeypatch):
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
     monkeypatch.setattr(env_loader, "_LOADED_DOTENV_KEYS", {"DISCORD_ALLOWED_ROLES"})  # set in .env
     monkeypatch.setenv("DISCORD_ALLOWED_ROLES", "2")
     _write(_home, {"allowed_roles": ["2"]})
@@ -171,7 +171,7 @@ def test_a_secondary_owners_edit_seen_under_a_routed_scope_is_loaded_once(tmp_pa
     launch, owner, routed = (tmp_path / n for n in ("default", "a", "b"))
     for home in (launch, owner, routed):
         home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     _write(owner, {"allowed_roles": ["2"]})
     _write(routed, {"allowed_roles": ["7"]})
     token = set_multiplex_context(True)
@@ -269,7 +269,7 @@ def test_a_command_in_a_newly_allowed_telegram_chat_is_processed(_home):
 
     _write(_home, telegram_cfg={"allowed_chats": ["-100"], "require_mention": False})
     adapter = TelegramAdapter(load_gateway_config().platforms[Platform.TELEGRAM])
-    adapter._bot = SimpleNamespace(id=999, username="hermes_bot")
+    adapter._bot = SimpleNamespace(id=999, username="slave_bot")
     mark_live_gate_baseline(adapter)
     _write(_home, telegram_cfg={"allowed_chats": ["-100", "-200"], "require_mention": False})
     assert adapter._should_process_message(_group_message("/status", chat_id=-200), is_command=True) is True
@@ -474,7 +474,7 @@ def test_a_launch_profile_edit_first_seen_under_a_routed_scope_still_applies(tmp
     default, routed = tmp_path / "default", tmp_path / "b"
     default.mkdir()
     routed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(default))
+    monkeypatch.setenv("SLAVE_HOME", str(default))
     _write(default, {"allowed_roles": ["2"]})
     _write(routed, {"allowed_roles": ["7"]})
     token = set_multiplex_context(True)

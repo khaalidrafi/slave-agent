@@ -150,7 +150,7 @@ def test_idle_stop_disabled_by_zero(tmp_path, monkeypatch):
 def test_an_infinite_idle_window_is_off_and_never_overflows_the_next_check(monkeypatch):
     """``idle_stop_minutes: .inf`` meant "never stop" before the self-stop; the launcher's first-check delay
     is computed from it in start(), where an infinite window raised OverflowError."""
-    from hermes_cli import config
+    from slave_cli import config
     from tools.bot_desktop.idle_watch import next_check_in
     for minutes in (float("inf"), 1e308):  # 1e308 is finite, but not in seconds
         monkeypatch.setattr(config, "load_config_readonly", lambda m=minutes: {"bot_desktop": {"idle_stop_minutes": m}})
@@ -244,17 +244,17 @@ def _spawn(monkeypatch, tmp_path) -> dict[str, str]:
 
 @pytest.mark.platforms("posix")
 def test_the_launcher_runs_its_idle_check_through_the_installs_stable_command(tmp_path, monkeypatch):
-    """The screen outlives ``hermes update``: a check pinned to the starter's interpreter and its inherited
+    """The screen outlives ``slave update``: a check pinned to the starter's interpreter and its inherited
     dependency generation fails with ModuleNotFoundError once that generation is collected, forever. On a store
-    install the launcher gets the ``hermes --run-module`` launcher, which loads the current one at every run."""
-    from hermes_cli import _launchers
+    install the launcher gets the ``slave --run-module`` launcher, which loads the current one at every run."""
+    from slave_cli import _launchers
 
     root = runtime._LAUNCHER.resolve().parents[2]
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda repo_root, **_: tmp_path / "store/bin/python3")
 
-    command = shlex.split(_spawn(monkeypatch, tmp_path)["HERMES_BD_IDLE_CMD"])
+    command = shlex.split(_spawn(monkeypatch, tmp_path)["SLAVE_BD_IDLE_CMD"])
     assert command == _launchers.installation_command(root, module="tools.bot_desktop.idle_watch")
-    assert command == [str(root / ".hermes/bin/hermes"), "--run-module", "tools.bot_desktop.idle_watch"]
+    assert command == [str(root / ".slave/bin/slave"), "--run-module", "tools.bot_desktop.idle_watch"]
 
 
 @pytest.mark.platforms("posix")

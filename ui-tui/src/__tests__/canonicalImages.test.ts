@@ -15,10 +15,10 @@ const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 
 it('stages private immutable local bytes, uploads remote bytes, and never falls back to a client path', async () => {
   // macOS: tmpdir() is /var/..., a symlink to /private/var; captureDestination() realpaths
-  // HERMES_HOME, so the expected staging dir must be built from the canonical path too.
+  // SLAVE_HOME, so the expected staging dir must be built from the canonical path too.
   const home = realpathSync(mkdtempSync(join(tmpdir(), 'ink-images-')))
-  vi.stubEnv('HERMES_HOME', home)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', '')
+  vi.stubEnv('SLAVE_HOME', home)
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', '')
   resetUiState()
   patchUiState({ sid: 'owner' })
   const source = join(home, 'my shot.png')
@@ -39,7 +39,7 @@ it('stages private immutable local bytes, uploads remote bytes, and never falls 
     submitPrompt(source, { gw: { isCanonical: true, request: prompt } as any, appendMessage: vi.fn(), enqueue: vi.fn(), expand: s => s, setLastUserMsg: vi.fn(), sys: vi.fn() })
     await vi.waitFor(() => expect(prompt).toHaveBeenCalledWith('prompt.submit', expect.objectContaining({ attachments: [{ path: expect.any(String), mime: 'image/png' }] })))
     expect(readFileSync(prompt.mock.calls.find(([method]) => method === 'prompt.submit')![1].attachments[0].path)).toEqual(png)
-    vi.stubEnv('HERMES_TUI_GATEWAY_URL', 'wss://owner.example/ws')
+    vi.stubEnv('SLAVE_TUI_GATEWAY_URL', 'wss://owner.example/ws')
     const remote = await stageImagePath(source, gw, captureDestination())
     expect(remote.path).toBe('/owner/cache/images/upload.png')
     expect(request).toHaveBeenCalledWith('image.attach_bytes', expect.objectContaining({
@@ -57,24 +57,24 @@ it('resolves a relative image path in the session folder, never the ui-tui insta
   const project = join(home, 'project')
   mkdirSync(project)
   writeFileSync(join(project, 'shot.png'), png)
-  vi.stubEnv('HERMES_HOME', home)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', '')
-  vi.stubEnv('HERMES_CWD', '')
+  vi.stubEnv('SLAVE_HOME', home)
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', '')
+  vi.stubEnv('SLAVE_CWD', '')
   const gw = { request: vi.fn() } as any
 
   try {
     resetUiState(); patchUiState({ sid: 'owner', info: { cwd: project } as never })
     expect(readFileSync((await stageImagePath('shot.png caption', gw, captureDestination())).path)).toEqual(png)
-    // No session folder yet: the folder `hermes --tui` was launched from.
-    resetUiState(); patchUiState({ sid: 'owner' }); vi.stubEnv('HERMES_CWD', project)
+    // No session folder yet: the folder `slave --tui` was launched from.
+    resetUiState(); patchUiState({ sid: 'owner' }); vi.stubEnv('SLAVE_CWD', project)
     expect(await stageImagePath('./shot.png', gw, captureDestination())).toMatchObject({ mime: 'image/png', name: 'shot.png' })
   } finally { resetUiState(); vi.unstubAllEnvs(); rmSync(home, { recursive: true, force: true }) }
 })
 
 it('extracts clipboard on the client and uploads only captured bytes to a remote owner', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-clipboard-'))
-  vi.stubEnv('HERMES_HOME', home)
-  vi.stubEnv('HERMES_TUI_GATEWAY_URL', 'wss://remote.example')
+  vi.stubEnv('SLAVE_HOME', home)
+  vi.stubEnv('SLAVE_TUI_GATEWAY_URL', 'wss://remote.example')
   resetUiState(); patchUiState({ sid: 'owner' })
   const request = vi.fn(async () => ({ path: '/owner/cache/images/clip.png' }))
 
@@ -94,7 +94,7 @@ it('extracts clipboard on the client and uploads only captured bytes to a remote
 
 it('journals canonical attachment payload before sending and replays it unchanged after a lost acknowledgement', async () => {
   const home = mkdtempSync(join(tmpdir(), 'ink-image-retry-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'owner' })
   const destination = captureDestination()

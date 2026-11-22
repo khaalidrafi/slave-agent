@@ -136,10 +136,10 @@ async def test_relay_admission_queued_across_a_restart_runs_and_replies_with_egr
 
 
 def _reserve_homes(tmp_path, monkeypatch):
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.slave'
     root.mkdir(mode=0o700)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     work = root / 'profiles' / 'work'
     work.mkdir(parents=True, mode=0o700)
     (work / 'config.yaml').write_text('{}')

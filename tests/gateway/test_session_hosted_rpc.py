@@ -313,7 +313,7 @@ def test_room_member_turns_cannot_block_on_an_unanswerable_clarify(hosted_owner,
     """A room has no clarification reply and hosted principals lack session:respond, so a
     member turn that called clarify would block for clarify_timeout with its question never
     shown. The frozen member policy must exclude the tool even when the profile's toolsets
-    (here the hermes-cli bundle) include it; the member asks in its room reply instead."""
+    (here the slave-cli bundle) include it; the member asks in its room reply instead."""
     from gateway import run
     from gateway.session_hosted_rpc import HostedRoomAuthorityRPC
     from gateway.session_local_recovery import local_adapter_map
@@ -323,7 +323,7 @@ def test_room_member_turns_cannot_block_on_an_unanswerable_clarify(hosted_owner,
 
     authority, loop, principal, _ = hosted_owner
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {
-        'model': {'default': 'fixture'}, 'platform_toolsets': {'cli': ['hermes-cli']}})
+        'model': {'default': 'fixture'}, 'platform_toolsets': {'cli': ['slave-cli']}})
     rpc = HostedRoomAuthorityRPC(authority, loop, room_id='room', member_id='one', profile='default',
                                  principal=principal, authorize=lambda *args: True)
     sid = rpc.create(profile='default', title='Group: room', source='bot_room')['session_id']

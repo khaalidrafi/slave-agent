@@ -1,11 +1,11 @@
 """Native plugin surface conformance: a frozen plugin keeps working through the real discovery path.
 
 ``fixtures/conformance_surface`` is written the way the plugin guide tells an external author to
-write a plugin. It is copied into a temp ``HERMES_HOME``, enabled in that home's ``config.yaml`` and
-loaded by the process plugin manager, as ``hermes`` itself loads it. The tests assert what a user
+write a plugin. It is copied into a temp ``SLAVE_HOME``, enabled in that home's ``config.yaml`` and
+loaded by the process plugin manager, as ``slave`` itself loads it. The tests assert what a user
 of the plugin would see: the tool answers through ``handle_function_call``, hooks fire with the
 documented keyword fields, middleware rewrites the call, ``/conformance-ping`` and
-``hermes conformance-cli`` answer, each provider resolves by name, and unloading the plugin takes
+``slave conformance-cli`` answer, each provider resolves by name, and unloading the plugin takes
 every one of those back. See website/docs/developer-guide/plugins/index.md § Native plugin
 compatibility contract.
 """
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 
 _FIXTURE = Path(__file__).parent / "fixtures" / "conformance_surface"
 _ROOT = Path(__file__).resolve().parents[3]
@@ -58,15 +58,15 @@ def _install_fixture(home: Path) -> None:
 @pytest.fixture
 def surface(tmp_path, monkeypatch):
     """The process plugin manager after real discovery of a temp home holding only the fixture."""
-    from hermes_cli import plugins
+    from slave_cli import plugins
 
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "slave-home"
     home.mkdir()
     _install_fixture(home)
     bundled = tmp_path / "no-bundled-plugins"
     bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_BUNDLED_PLUGINS", str(bundled))
     plugins._reset_plugin_managers_for_tests()
     plugins.discover_plugins()
     manager = plugins.get_plugin_manager()
@@ -124,7 +124,7 @@ def test_tool_call_runs_middleware_hooks_and_handler_with_documented_kwargs(surf
 
 
 def test_pre_command_hook_fires_with_documented_kwargs(surface):
-    from hermes_cli.plugins import fire_pre_command_hook
+    from slave_cli.plugins import fire_pre_command_hook
 
     _manager, home = surface
     fire_pre_command_hook(surface="cli", command="help", alias_used="help", args_raw="extra",
@@ -136,7 +136,7 @@ def test_pre_command_hook_fires_with_documented_kwargs(surface):
 
 
 def test_slash_command_dispatches_to_the_plugin_handler(surface):
-    from hermes_cli.plugins import get_plugin_command_handler, get_plugin_commands
+    from slave_cli.plugins import get_plugin_command_handler, get_plugin_commands
 
     assert get_plugin_commands()["conformance-ping"]["description"] == "Conformance ping"
     handler = get_plugin_command_handler("conformance-ping")
@@ -153,7 +153,7 @@ def test_provider_registrar_makes_the_provider_resolvable_by_name(surface, regis
 
 def test_unload_disposes_every_registration(surface):
     """Disabling/uninstalling a plugin unloads it: nothing it registered stays live."""
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from tools.registry import registry
 
     manager, home = surface
@@ -173,16 +173,16 @@ def test_unload_disposes_every_registration(surface):
     assert _events(home, "pre_command") == []
 
 
-def test_cli_command_runs_from_the_hermes_entry_point(tmp_path):
-    """``register_cli_command`` adds ``hermes <name>``: run the real CLI in a child process."""
-    home = tmp_path / "hermes-home"
+def test_cli_command_runs_from_the_slave_entry_point(tmp_path):
+    """``register_cli_command`` adds ``slave <name>``: run the real CLI in a child process."""
+    home = tmp_path / "slave-home"
     home.mkdir()
     _install_fixture(home)
     bundled = tmp_path / "no-bundled-plugins"
     bundled.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home), "HERMES_BUNDLED_PLUGINS": str(bundled),
+    env = {**os.environ, "SLAVE_HOME": str(home), "SLAVE_BUNDLED_PLUGINS": str(bundled),
            "HOME": str(tmp_path / "os-home"), "PYTHONPATH": str(_ROOT)}
-    proc = subprocess.run([sys.executable, "-m", "hermes_cli.main", "conformance-cli", "--word", "hi"],
+    proc = subprocess.run([sys.executable, "-m", "slave_cli.main", "conformance-cli", "--word", "hi"],
                           cwd=tmp_path, env=env, capture_output=True, text=True, timeout=120, check=False)
     diagnostics = (proc.returncode, proc.stdout[-2000:], proc.stderr[-2000:])
     assert "conformance-cli:hi" in proc.stdout, diagnostics

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Fail when anything but ``hermes_cli/profile_provision.py`` uses ``create_profile``.
+"""Fail when anything but ``slave_cli/profile_provision.py`` uses ``create_profile``.
 
 Flags any reference to the name (call, import, alias, attribute, string constant) in non-test Python;
-``hermes_cli/profiles.py`` may only define it. An unparseable file fails. Suppress with
+``slave_cli/profiles.py`` may only define it. An unparseable file fails. Suppress with
 ``# profile-create: ok — <why>`` on the flagged line.
 
 Usage: python3 scripts/check_profile_create_entry.py [paths...]
@@ -18,9 +18,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SKIP_TOP = {"tests", "tests-js", "website", "apps", "ui-tui", "web", "native", "nix"}
 SKIP_ANY = {"tests", "node_modules", "__pycache__", "venv"}
 sys.path.append(str(ROOT))
-from hermes_agent.compat.paths import current_path
+from slave_agent.compat.paths import current_path
 
-ALLOWED_FILES = {ROOT / current_path("hermes_cli/profile_provision.py"), Path(__file__).resolve()}
+ALLOWED_FILES = {ROOT / current_path("slave_cli/profile_provision.py"), Path(__file__).resolve()}
 SUPPRESS = "# profile-create: ok"
 NAME = "create_profile"
 
@@ -64,7 +64,7 @@ def main(argv: list[str]) -> int:
         if f.resolve() not in ALLOWED_FILES:
             problems.extend(scan_file(f))
     if problems:
-        print("Create profiles through hermes_cli.profile_provision.provision_profile:", file=sys.stderr)
+        print("Create profiles through slave_cli.profile_provision.provision_profile:", file=sys.stderr)
         for p in problems:
             print(f"  {p}", file=sys.stderr)
         return 1

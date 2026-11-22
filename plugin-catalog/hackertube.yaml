@@ -1,9 +1,9 @@
 name: hackertube
-title: HackerTube for Hermes
+title: HackerTube for slave-agent
 repo: https://github.com/rcmiller01/hackertube
 sha: 3e65af3b424bb932de944731340d99122f0a67ed
 subdir: hackertube
-description: "Source-backed media discovery with existing Hermes providers and a profile-local library. Disclosure — each explicit Search sends your question and candidate metadata to the Hermes auxiliary model you pick and your Hermes web-search backend (this may spend credits). It also queries hn.algolia.com, itunes.apple.com, openlibrary.org, librivox.org and, with your key, www.googleapis.com (YouTube) and api.podcastindex.org. Searches run in a Python worker subprocess that re-launches the `hermes` CLI from PATH with Hermes's environment (YOLO vars stripped). An hourly local thread purges expired records from plugin-data/hackertube/profile.db."
+description: "Source-backed media discovery with existing slave-agent providers and a profile-local library. Disclosure — each explicit Search sends your question and candidate metadata to the slave-agent auxiliary model you pick and your slave-agent web-search backend (this may spend credits). It also queries hn.algolia.com, itunes.apple.com, openlibrary.org, librivox.org and, with your key, www.googleapis.com (YouTube) and api.podcastindex.org. Searches run in a Python worker subprocess that re-launches the `slave` CLI from PATH with slave-agent’s environment (YOLO vars stripped). An hourly local thread purges expired records from plugin-data/hackertube/profile.db."
 maintainer: rcmiller01
 tier: community
 category: web
@@ -22,8 +22,8 @@ capabilities:
   provides_middleware: []
   requires_env: []
 known_issues:
-  - Requires macOS/Linux and Hermes CLI on PATH; macOS verified, Linux integration unrun.
+  - Requires macOS/Linux and slave-agent CLI on PATH; macOS verified, Linux integration unrun.
   - Local cancellation cannot revoke remote processing or billing already accepted by a provider.
   - Model rankings can be partial or omit categories; no broad relevance guarantee is claimed.
   - Podcast Index is optional and not live-tested; Reddit remains disabled pending approval.
-  - Local retention cannot execute while Hermes is stopped; cleanup precedes access after restart and exported backups are operator-managed.
+  - Local retention cannot execute while slave-agent is stopped; cleanup precedes access after restart and exported backups are operator-managed.

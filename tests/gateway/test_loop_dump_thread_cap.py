@@ -22,7 +22,7 @@ def _wedge_loop_behind_fillers(tmp_path, monkeypatch, secret=None):
     """Run a real loop on a NON-main thread, wedge it, start 110 filler threads, fire the watchdog.
 
     Returns (file dump text, stderr text)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     state: dict[str, object] = {"secret": secret}
     frozen, release, fired, fillers_up = (threading.Event() for _ in range(4))
     stop_fillers = threading.Event()

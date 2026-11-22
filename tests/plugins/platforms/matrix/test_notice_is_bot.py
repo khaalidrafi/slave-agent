@@ -56,7 +56,7 @@ async def _deliver(adapter, source_content):
 
 @pytest.mark.asyncio
 async def test_notice_sender_arrives_flagged_as_bot(monkeypatch):
-    monkeypatch.setenv("HERMES_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0")
+    monkeypatch.setenv("SLAVE_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0")
     adapter = _make_adapter()
     captured = []
     _stub_room_gates(adapter, captured)
@@ -69,7 +69,7 @@ async def test_notice_sender_arrives_flagged_as_bot(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_text_sender_still_arrives_as_person(monkeypatch):
-    monkeypatch.setenv("HERMES_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0")
+    monkeypatch.setenv("SLAVE_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0")
     adapter = _make_adapter()
     captured = []
     _stub_room_gates(adapter, captured)

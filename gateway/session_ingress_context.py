@@ -158,9 +158,9 @@ def _binding(runner, source, profile):
                 raise AuthorityRefusal('profile_mismatch')
             homes[name] = canonical
         # The primary is the reserved entry whose home IS the launch home (identity, not the
-        # display name: a custom HERMES_HOME reports 'custom' while its reservation says 'default').
-        from hermes_constants import get_process_hermes_home
-        launch = get_process_hermes_home().resolve()
+        # display name: a custom SLAVE_HOME reports 'custom' while its reservation says 'default').
+        from slave_constants import get_process_slave_home
+        launch = get_process_slave_home().resolve()
         primary = next((name for name, path in homes.items() if path == launch), None)
         if primary is None:
             raise AuthorityRefusal('profile_mismatch')

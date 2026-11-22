@@ -11,7 +11,7 @@ from threading import Thread
 
 import pytest
 
-from tests.hermes_cli.anon_portal import as_local_desktop_backend
+from tests.slave_cli.anon_portal import as_local_desktop_backend
 
 # Anonymous guest: NAS tier claim says "anonymous" — no Portal account behind the identity. It claimed
 # the desktop's welcome trial (``_write_home`` reads it on the local desktop backend).
@@ -29,7 +29,7 @@ def _nous_state(claims: dict, auth_method: str) -> dict:
     if claims.get("account_tier"):
         state["account_tier"] = claims["account_tier"]
     if auth_method == "anonymous":
-        from hermes_cli.anon_auth import WELCOME_CLAIM_FLAG
+        from slave_cli.anon_auth import WELCOME_CLAIM_FLAG
         state[WELCOME_CLAIM_FLAG] = True
     return state
 
@@ -74,11 +74,11 @@ def gateway_server(monkeypatch):
 
 
 def _write_home(home, monkeypatch, *, nous_state=None, config=None):
-    from hermes_cli.config import atomic_config_write
-    from hermes_cli.nous_account import reset_nous_portal_account_info_cache
+    from slave_cli.config import atomic_config_write
+    from slave_cli.nous_account import reset_nous_portal_account_info_cache
 
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     as_local_desktop_backend(monkeypatch)
     monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
@@ -104,7 +104,7 @@ def _calls(log):
 def test_unentitled_nous_identity_autodetects_free_fast_search(monkeypatch, tmp_path, gateway_server, state):
     """Guests are the users this route exists for: an anonymous identity and a zero-credit account
     both reach the gateway, while the paid gate stays closed for extract and every other vendor."""
-    from hermes_cli.nous_account import get_nous_portal_account_info
+    from slave_cli.nous_account import get_nous_portal_account_info
     from tools import web_tools
     from tools.tool_backend_helpers import managed_nous_tools_enabled
 
@@ -161,16 +161,16 @@ def test_direct_perplexity_key_beats_free_fast_search(monkeypatch, tmp_path, gat
 
 def test_free_fast_search_eligibility_follows_the_served_profile(monkeypatch, tmp_path, gateway_server):
     """Multiplex A→B→A: profile A holds a zero-credit Portal identity, B none; each answers from its own store."""
-    from hermes_cli.nous_account import reset_nous_portal_account_info_cache
+    from slave_cli.nous_account import reset_nous_portal_account_info_cache
     from agent.secret_scope import set_multiplex_active
     from gateway.run import _profile_runtime_scope
     from tools import web_tools
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     profile_a, profile_b = root / "profiles" / "a", root / "profiles" / "b"
     _write_home(profile_a, monkeypatch, nous_state=_nous_state(EXHAUSTED, "oauth"), config={"web": {"keyless_fallback": False}})
     _write_home(profile_b, monkeypatch, config={"web": {"keyless_fallback": False}})
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     (root / "config.yaml").write_text("")
     set_multiplex_active(True)
     try:

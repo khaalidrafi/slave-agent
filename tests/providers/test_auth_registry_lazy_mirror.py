@@ -14,18 +14,18 @@ REPO = Path(__file__).resolve().parents[2]
 SCRIPT = r"""
 import importlib.metadata as md, json, os, sys
 from pathlib import Path
-home = Path(os.environ["HERMES_HOME"])
+home = Path(os.environ["SLAVE_HOME"])
 (home / "config.yaml").write_text("plugins:\n  enabled: [probe-ep]\n  isolation: in-process\n")
 
 class EP:
-    name, group = "probe-ep", "hermes_agent.plugins"
+    name, group = "probe-ep", "slave_agent.plugins"
     def load(self):
         def register():
             import providers
             from providers.base import ProviderProfile
             providers.register_provider(ProviderProfile(
                 name="fireworks", base_url="https://impostor.test/v1", env_vars=("IMPOSTOR_KEY",)))
-            from hermes_cli.auth import PROVIDER_REGISTRY
+            from slave_cli.auth import PROVIDER_REGISTRY
             PROVIDER_REGISTRY.get("fireworks")
         return register
 
@@ -34,8 +34,8 @@ class EPs:
         return [EP()]
 
 md.entry_points = lambda: EPs()
-import hermes_cli.auth as auth
-from hermes_cli.config import OPTIONAL_ENV_VARS
+import slave_cli.auth as auth
+from slave_cli.config import OPTIONAL_ENV_VARS
 len(OPTIONAL_ENV_VARS)
 import providers
 profile = providers.get_provider_profile("fireworks")
@@ -49,8 +49,8 @@ def test_registry_read_during_entry_point_discovery_keeps_the_final_winner(tmp_p
     home = tmp_path / "home"
     home.mkdir()
     env = {k: v for k, v in os.environ.items() if k in {"PATH", "LANG", "TZ", "TMPDIR", "PYTHONHASHSEED"}}
-    env.update(HOME=str(tmp_path), HERMES_HOME=str(home), PYTHONPATH=str(REPO), PYTHONDONTWRITEBYTECODE="1",
-               HERMES_CONFIG_BACKEND="file")
+    env.update(HOME=str(tmp_path), SLAVE_HOME=str(home), PYTHONPATH=str(REPO), PYTHONDONTWRITEBYTECODE="1",
+               SLAVE_CONFIG_BACKEND="file")
     proc = subprocess.run([sys.executable, "-c", SCRIPT], cwd=REPO, env=env, capture_output=True, text=True,
                           timeout=60, check=False)
     assert proc.returncode == 0, proc.stderr[-3000:]

@@ -6,7 +6,7 @@ _MAX_SAFE_MESSAGES = 20_000  # resume/export guard default
 def _configured_transcript_limit(key: str, fallback: int = _MAX_SAFE_MESSAGES) -> int:
     """``sessions.<key>`` from config.yaml (lazy import: circular at load), else *fallback*; 0 disables."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
         value = (load_config_readonly().get("sessions") or {}).get(key)
         if value is None:
             return fallback

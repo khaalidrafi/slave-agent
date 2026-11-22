@@ -242,7 +242,7 @@ def test_claim_custody_and_final_payload_identity_reach_every_privileged_phase()
         assert call["claim-object"] == "${{ needs.admit.outputs.claim-object }}"
     desktop = workflow("desktop-bundled-release.yml")
     assert "release-epoch" in desktop["jobs"]["validate"]["outputs"]
-    assert "HERMES_RELEASE_EPOCH" not in desktop["jobs"]["termux-deb"]["env"]
+    assert "SLAVE_RELEASE_EPOCH" not in desktop["jobs"]["termux-deb"]["env"]
     # B3: each build group stages its own receipt before its smoke, and the
     # receipt URL and digest cross the call boundary as workflow outputs.
     assert "manifest-url" not in desktop["on"]["workflow_call"]["outputs"]
@@ -320,7 +320,7 @@ def test_release_gates_extract_consumer_facing_versions():
         step["run"] for step in nix["flake-check"]["steps"]
         if step.get("name") == "Verify release package runtime identity"
     )
-    assert '"$package/bin/hermes" --version' in nix_check
+    assert '"$package/bin/slave" --version' in nix_check
     assert "actual != expected" in nix_check
     # A path: flake has no git metadata; without ?rev= the stamp has no commit
     # and the packaged CLI reports "unknown".

@@ -9,7 +9,7 @@ notices (a Bot Chat sat ten hours behind one).
 
 Such a row settles through the same fenced resolution a person's Discard uses
 (``admissions.resolve_unknown``): terminal ``interrupted``, never requeued or replayed, with a
-Hermes transcript notice committed in the same transaction. No second recovery store.
+slave-agent transcript notice committed in the same transaction. No second recovery store.
 """
 from __future__ import annotations
 

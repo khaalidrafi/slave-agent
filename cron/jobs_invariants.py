@@ -5,7 +5,7 @@ bypass a rule the create door enforces.
 """
 from typing import Optional
 
-from hermes_constants import display_hermes_home
+from slave_constants import display_slave_home
 
 NO_AGENT_WITHOUT_SCRIPT_ERROR = (
     "no_agent=True requires a script — with no agent and no script "
@@ -39,7 +39,7 @@ def _validate_job_mode_invariants(
         raise ValueError(NO_AGENT_WITHOUT_SCRIPT_ERROR)
     if script and _script_is_command_line(script):
         raise ValueError(SCRIPT_IS_COMMAND_LINE_ERROR.format(
-            scripts_dir=display_hermes_home() + "/scripts/", script=script))
+            scripts_dir=display_slave_home() + "/scripts/", script=script))
 
 
 def validate_schedule_knobs(
@@ -70,7 +70,7 @@ def validate_schedule_knobs(
 def _script_is_command_line(script: str) -> bool:
     """A ``script`` with whitespace that resolves to no file is a command line (``echo hi``),
     not a path; run every tick it would deliver "Script not found" as the payload. A plain
-    missing filename stays creatable (``hermes cron doctor`` reports it)."""
+    missing filename stays creatable (``slave cron doctor`` reports it)."""
     if not any(ch.isspace() for ch in script.strip()):
         return False
     from cron.lifecycle_guard import _resolve_script_path

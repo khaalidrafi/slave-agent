@@ -1,5 +1,5 @@
 """``get_read_block_error`` — the published plugin path check — refuses the device and /proc
-files Hermes's own read_file refuses, so a plugin that follows the docs cannot read process
+files slave-agent’s own read_file refuses, so a plugin that follows the docs cannot read process
 secrets (environment, argv, memory layout) or hang on an endless device."""
 
 from __future__ import annotations

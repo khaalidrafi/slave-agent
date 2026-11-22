@@ -1,6 +1,6 @@
 """A tool this session cannot reach must never be answered with "call it directly".
 
-``_HERMES_CORE_TOOLS`` is static, so ``tool_call`` matched any core tool by name, including
+``_SLAVE_CORE_TOOLS`` is static, so ``tool_call`` matched any core tool by name, including
 ``clarify`` inside a subagent, where no direct call can ever succeed and the model retries. Absence
 is reported as unavailability. In a managed worker (every Kanban card) ``delegate_task`` works
 through owner-reserved children (#141793), so a turn whose toolsets leave delegation off gets the

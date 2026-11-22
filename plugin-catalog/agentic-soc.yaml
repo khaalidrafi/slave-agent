@@ -1,13 +1,13 @@
 name: agentic-soc
-title: Hermes Agentic SOC
-repo: https://github.com/CyStrat-Services-GmbH/hermes-agentic-soc
+title: slave-agentic SOC
+repo: https://github.com/CyStrat-Services-GmbH/slave-agentic-soc
 sha: 7206d9e1d4a4a5ba1dd843e45ada77214f06119c
-description: "Evidence-first SOC and DFIR work for Hermes: six defense specialist personas (L1 triage, L2 incident response, threat hunting, DFIR compromise assessment, detection engineering, vulnerability management), 39 skills, 25 technology scaffolds and deterministic THOR Lite triage with exact event counts, correlation, audit trail and human approval. Everything is local file work. Disclosure — runs the user's own separately licensed THOR Lite executable (path set in plugin settings) on operator-allowed scan directories, and can create a new Hermes profile through the local `hermes` CLI that gets a persona SOUL.md and a copy of the plugin's skills; both actions run only after Hermes approval, and child processes get a minimal environment (PATH, locale and temp vars; HERMES_HOME for the `hermes` CLI). Reads evidence files only inside operator-configured roots and writes reports, a pseudonym salt and an audit log under the plugin's data directory; no network calls."
+description: "Evidence-first SOC and DFIR work for slave-agent: six defense specialist personas (L1 triage, L2 incident response, threat hunting, DFIR compromise assessment, detection engineering, vulnerability management), 39 skills, 25 technology scaffolds and deterministic THOR Lite triage with exact event counts, correlation, audit trail and human approval. Everything is local file work. Disclosure — runs the user's own separately licensed THOR Lite executable (path set in plugin settings) on operator-allowed scan directories, and can create a new slave-agent profile through the local `slave` CLI that gets a persona SOUL.md and a copy of the plugin's skills; both actions run only after slave-agent approval, and child processes get a minimal environment (PATH, locale and temp vars; SLAVE_HOME for the `slave` CLI). Reads evidence files only inside operator-configured roots and writes reports, a pseudonym salt and an audit log under the plugin's data directory; no network calls."
 maintainer: CyStrat-Services-GmbH
 tier: community
 category: tools
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/CyStrat-Services-GmbH/hermes-agentic-soc
+docs_url: https://github.com/CyStrat-Services-GmbH/slave-agentic-soc
 version: "0.2.6"
 platforms: []
 known_issues:

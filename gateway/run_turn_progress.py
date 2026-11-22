@@ -20,7 +20,7 @@ from gateway.media_repair import repair_explicit_computer_use_media_paths
 from gateway.platforms.base import BasePlatformAdapter
 from gateway.platforms.helpers import typing_metadata_for_turn
 from gateway.turn_context import TurnContext
-from hermes_cli.config import cfg_get
+from slave_cli.config import cfg_get
 from utils import is_truthy_value
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
@@ -297,7 +297,7 @@ class GatewayTurnProgressMixin:
     def _progress_onboarding_hint(self, kwargs: dict) -> None:
         """First-touch onboarding: the first time a tool exceeds _LONG_TOOL_THRESHOLD_S while
         streaming every tool (progress_mode == "all"), append a one-time /verbose hint."""
-        from gateway.run import _hermes_home, _load_gateway_config
+        from gateway.run import _slave_home, _load_gateway_config
         ctx = self._ctx
         try:
             if (kwargs.get("duration") or 0) >= ctx._LONG_TOOL_THRESHOLD_S and ctx.progress_mode == "all":
@@ -307,7 +307,7 @@ class GatewayTurnProgressMixin:
                 if gate_on and not is_seen(cfg, TOOL_PROGRESS_FLAG):
                     ctx.long_tool_hint_fired[0] = True
                     ctx.progress_queue.put(tool_progress_hint_gateway())
-                    mark_seen(_hermes_home / "config.yaml", TOOL_PROGRESS_FLAG)
+                    mark_seen(_slave_home / "config.yaml", TOOL_PROGRESS_FLAG)
         except Exception as err:
             logger.debug("tool-progress onboarding hint failed: %s", err)
 

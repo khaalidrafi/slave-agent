@@ -1,10 +1,10 @@
 """Shared harness for the classic-CLI tmux suites (``display.interface: cli``).
 
-A real ``python -m hermes_cli.main`` runs in a private tmux server (own ``-L`` socket) with a
-hermetic fake HOME / HERMES_HOME and a config that routes the model to a loopback
+A real ``python -m slave_cli.main`` runs in a private tmux server (own ``-L`` socket) with a
+hermetic fake HOME / SLAVE_HOME and a config that routes the model to a loopback
 ``FakeLLMServer``. The CLI is a thin client of the profile's gateway daemon, which it spawns on
 first connect; cleanup stops that daemon and then kills anything left whose environ carries this
-run's exact ``HERMES_HOME`` (never a pattern kill).
+run's exact ``SLAVE_HOME`` (never a pattern kill).
 
 Driver rule (the CLI reads an Enter processed within 50 ms of the last buffer change as a pasted
 newline): type with ``send-keys -l``, wait until the composer shows the text, pause, then send
@@ -49,12 +49,12 @@ def require_tmux() -> None:
     """Skip without tmux, except in the CI E2E lane, where a skip is green over zero coverage.
 
     The release/dispatch ``e2e`` job (``.github/workflows/tests.yml``) sets
-    ``HERMES_E2E_REQUIRE_TUI=1`` and GitHub sets ``CI``; under both, a missing tmux fails.
+    ``SLAVE_E2E_REQUIRE_TUI=1`` and GitHub sets ``CI``; under both, a missing tmux fails.
     """
     if shutil.which("tmux") is not None:
         return
-    if os.environ.get("CI") and os.environ.get("HERMES_E2E_REQUIRE_TUI") == "1":
-        pytest.fail("tmux missing in the CI e2e lane (HERMES_E2E_REQUIRE_TUI=1): install it in the e2e job")
+    if os.environ.get("CI") and os.environ.get("SLAVE_E2E_REQUIRE_TUI") == "1":
+        pytest.fail("tmux missing in the CI e2e lane (SLAVE_E2E_REQUIRE_TUI=1): install it in the e2e job")
     pytest.skip("needs tmux")
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -73,9 +73,9 @@ def new_needle(needles: list[str], before: str, after: str) -> str | None:
     return None
 
 
-def home_pids(hermes_home: Path) -> set[int]:
-    """PIDs (never this one) whose environ carries exactly ``HERMES_HOME=<hermes_home>``."""
-    needle = f"HERMES_HOME={hermes_home}".encode()
+def home_pids(slave_home: Path) -> set[int]:
+    """PIDs (never this one) whose environ carries exactly ``SLAVE_HOME=<slave_home>``."""
+    needle = f"SLAVE_HOME={slave_home}".encode()
     found: set[int] = set()
     for entry in os.listdir("/proc"):
         if not entry.isdigit() or int(entry) == os.getpid():
@@ -89,8 +89,8 @@ def home_pids(hermes_home: Path) -> set[int]:
     return found
 
 
-def kill_home_processes(hermes_home: Path, stop: Callable[[], object] | None = None) -> None:
-    """Graceful stop, then SIGTERM/SIGKILL whatever still runs against *hermes_home*.
+def kill_home_processes(slave_home: Path, stop: Callable[[], object] | None = None) -> None:
+    """Graceful stop, then SIGTERM/SIGKILL whatever still runs against *slave_home*.
 
     The signal sweep runs in ``finally``: a ``stop`` that times out or raises still leaves no
     CLI or gateway behind.
@@ -100,13 +100,13 @@ def kill_home_processes(hermes_home: Path, stop: Callable[[], object] | None = N
             stop()
     finally:
         for sig, grace in ((signal.SIGTERM, 8.0), (signal.SIGKILL, 2.0)):
-            for pid in home_pids(hermes_home):
+            for pid in home_pids(slave_home):
                 try:
                     os.kill(pid, sig)
                 except OSError:
                     pass
             end = time.monotonic() + grace
-            while home_pids(hermes_home) and time.monotonic() < end:
+            while home_pids(slave_home) and time.monotonic() < end:
                 time.sleep(0.2)
 
 BASE_CONFIG = f"""model:
@@ -142,7 +142,7 @@ auxiliary:
 class ClassicHome:
     root: Path
     extra_env: dict[str, str] = field(default_factory=dict)
-    # (pid, argv) of every hermes process the harness started: tmux pane CLIs and piped runs.
+    # (pid, argv) of every slave process the harness started: tmux pane CLIs and piped runs.
     spawned: list[tuple[int, str]] = field(default_factory=list)
 
     @property
@@ -150,8 +150,8 @@ class ClassicHome:
         return self.root / "home"
 
     @property
-    def hermes_home(self) -> Path:
-        return self.home / ".hermes"
+    def slave_home(self) -> Path:
+        return self.home / ".slave"
 
     @property
     def work(self) -> Path:
@@ -162,28 +162,28 @@ class ClassicHome:
         return self.root / "stderr.log"
 
     def write(self, base_url: str, extra_config: str = "") -> ClassicHome:
-        self.hermes_home.mkdir(parents=True, exist_ok=True)
+        self.slave_home.mkdir(parents=True, exist_ok=True)
         self.work.mkdir(parents=True, exist_ok=True)
-        (self.hermes_home / "config.yaml").write_text(BASE_CONFIG.format(base_url=base_url) + extra_config,
+        (self.slave_home / "config.yaml").write_text(BASE_CONFIG.format(base_url=base_url) + extra_config,
                                                       encoding="utf-8")
-        (self.hermes_home / ".env").write_text("OPENAI_API_KEY=sk-fake-e2e\n", encoding="utf-8")
+        (self.slave_home / ".env").write_text("OPENAI_API_KEY=sk-fake-e2e\n", encoding="utf-8")
         return self
 
     def env(self) -> dict[str, str]:
-        """Allowlisted child env: no inherited HERMES_*, provider keys, display or TMUX variables."""
+        """Allowlisted child env: no inherited SLAVE_*, provider keys, display or TMUX variables."""
         keep = ("PATH", "LANG", "USER", "LOGNAME", "SHELL", "TMPDIR")
         env = {k: os.environ[k] for k in keep if k in os.environ}
         env.update({
             "LC_ALL": "C.UTF-8", "LANG": "C.UTF-8", "TERM": "xterm-256color", "TZ": "UTC",
-            "HOME": str(self.home), "HERMES_HOME": str(self.hermes_home), "PYTHONPATH": str(REPO_ROOT),
+            "HOME": str(self.home), "SLAVE_HOME": str(self.slave_home), "PYTHONPATH": str(REPO_ROOT),
             # The child's state.db IS this tmp home's db; the live-DB guard would refuse it under pytest.
-            "HERMES_STATE_DB_GUARD_BYPASS": "1", "PYTHONFAULTHANDLER": "1", "NO_GCE_CHECK": "True",
+            "SLAVE_STATE_DB_GUARD_BYPASS": "1", "PYTHONFAULTHANDLER": "1", "NO_GCE_CHECK": "True",
         })
         env.update(self.extra_env)
         return env
 
     def argv(self, *args: str) -> list[str]:
-        return [sys.executable, "-m", "hermes_cli.main", *args]
+        return [sys.executable, "-m", "slave_cli.main", *args]
 
     def run(self, *args: str, timeout: float = 180.0) -> subprocess.CompletedProcess:
         """A non-TTY run (stdout piped): ``chat -q`` one-shots, ``gateway stop``."""
@@ -200,13 +200,13 @@ class ClassicHome:
         return subprocess.CompletedProcess(argv, proc.returncode, out, err)
 
     def pids(self) -> set[int]:
-        return home_pids(self.hermes_home)
+        return home_pids(self.slave_home)
 
     def diagnostics(self, limit: int = 3000) -> str:
         """The CLI's stderr and the gateway log tails: why a pane died, for a failure message."""
         parts = []
-        for label, path in (("cli stderr", self.stderr_log), ("gateway log", self.hermes_home / "logs" / "gateway.log"),
-                            ("agent log", self.hermes_home / "logs" / "agent.log")):
+        for label, path in (("cli stderr", self.stderr_log), ("gateway log", self.slave_home / "logs" / "gateway.log"),
+                            ("agent log", self.slave_home / "logs" / "agent.log")):
             try:
                 text = path.read_text(encoding="utf-8", errors="replace")
             except OSError:
@@ -218,7 +218,7 @@ class ClassicHome:
     def reap(self) -> None:
         """Operator stop for the profile's gateway, then SIGTERM/SIGKILL whatever this home still runs
         (even when the stop times out)."""
-        kill_home_processes(self.hermes_home, lambda: self.run("gateway", "stop", timeout=60))
+        kill_home_processes(self.slave_home, lambda: self.run("gateway", "stop", timeout=60))
 
 
 class Pane:
@@ -226,7 +226,7 @@ class Pane:
 
     def __init__(self, ch: ClassicHome) -> None:
         self.ch = ch
-        self.sock = f"hermes-e2e-classic-{uuid.uuid4().hex[:8]}"
+        self.sock = f"slave-e2e-classic-{uuid.uuid4().hex[:8]}"
         # Scrollback snapshot taken just before the latest input: what `wait` must see grow.
         self.baseline = ""
 

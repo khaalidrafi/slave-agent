@@ -16,7 +16,7 @@ def test_cron_admission_uses_job_model_and_exact_retry(tmp_path, monkeypatch):
     from gateway.session_contract import SessionActor
     from persistence.core.errors import AuthorityRefusal
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(jobs, 'get_job', lambda jid: {'id': jid, 'prompt': 'original', 'model': 'per-job-model'})
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {}, 'platform_toolsets': {'cli': []}})
     db = storage_handle(tmp_path)
@@ -56,7 +56,7 @@ async def test_cron_cancel_between_claim_and_execution_registration_stops_the_jo
     from gateway.session_authority import LiveSession, SessionAuthority, admission_row
     from gateway.session_contract import SessionActor, SessionRef
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     seed_session(db, 's', 'cron')
     authority = SessionAuthority(SimpleNamespace(_draining=False), profile_id='p', instance_id='test',
@@ -101,7 +101,7 @@ async def test_owner_execution_binds_the_scheduler_cron_identity_inside_run_job(
     from gateway.session_authority import LiveSession, SessionAuthority, admission_row
     from gateway.session_contract import SessionRef
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     execution = create_execution('job', source='builtin', scheduled_instant='2026-10-08T09:00:00')
     record = mark_execution_running(execution['id'])
     db = storage_handle(tmp_path)
@@ -146,7 +146,7 @@ def test_draining_owner_still_answers_status_and_cancel_of_admitted_cron_work(tm
     from gateway.session_authority import SessionAuthority, admission_row
     from persistence.core.errors import AuthorityRefusal
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     monkeypatch.setattr(jobs, 'get_job', lambda jid: {'id': jid, 'prompt': 'p', 'model': 'm'})
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'model': {}, 'platform_toolsets': {'cli': []}})
     db = storage_handle(tmp_path)

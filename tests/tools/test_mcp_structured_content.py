@@ -324,7 +324,7 @@ class TestContentStructuredArbitration:
     def test_plugin_call_mcp_keeps_sdk_structured_content(self, _patch_mcp_server):
         """Only the model view collapses the SDK wrapper: ``ctx.call_mcp`` (the handler without
         ``native_images``) still hands plugins the typed ``structuredContent``."""
-        from hermes_cli.plugins_context import PluginContext
+        from slave_cli.plugins_context import PluginContext
         from mcp.server import MCPServer
 
         sdk = MCPServer("wrap")
@@ -402,7 +402,7 @@ class TestContentStructuredArbitration:
         spills as the text alone, with no escaped second copy in ``<mcp-result-metadata>``."""
         import tools.tool_result_storage as trs
         from tools.budget_config import DEFAULT_BUDGET, DEFAULT_MCP_RESULT_SIZE_CHARS
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         monkeypatch.setattr(trs, "_spillover_pruned_homes", set())
         handler = _mcp_handlers._make_tool_handler("test-server", "my-tool", 30.0, native_images=True)
         row = "| FY2027E | Revenue | 630.7 |\n"

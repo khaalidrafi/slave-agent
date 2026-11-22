@@ -12,14 +12,14 @@ from threading import Event, Thread
 
 import pytest
 
-from hermes_cli import config
+from slave_cli import config
 from sqlite_support import apply_wal_with_fallback
 from utils import atomic_yaml_write
 import sqlite_support
 
 
 def test_config_import_and_provider_env_catalog_never_read_config(tmp_path):
-    """Importing hermes_cli.config and building the provider part of OPTIONAL_ENV_VARS list no
+    """Importing slave_cli.config and building the provider part of OPTIONAL_ENV_VARS list no
     providers through discovery (which reads config), so neither can take part in a config/WAL
     lock-order cycle with a thread opening a database."""
     script = textwrap.dedent(
@@ -36,16 +36,16 @@ def test_config_import_and_provider_env_catalog_never_read_config(tmp_path):
         root = Path(os.environ["STATE_CONFIG_TEST_ROOT"]) / "cold-import"
         root.mkdir()
         os.environ["HOME"] = str(root)
-        os.environ["HERMES_HOME"] = str(root / ".hermes")
+        os.environ["SLAVE_HOME"] = str(root / ".slave")
         database = root / "state.db"
         with sqlite3.connect(database) as connection:
             connection.execute("CREATE TABLE retained (value TEXT)")
         outcomes = []
 
         def importer():
-            import hermes_cli.config
+            import slave_cli.config
             outcomes.append("import-returned")
-            assert "ANTHROPIC_API_KEY" in hermes_cli.config.OPTIONAL_ENV_VARS
+            assert "ANTHROPIC_API_KEY" in slave_cli.config.OPTIONAL_ENV_VARS
             outcomes.append("fill-returned")
 
         def opener():
@@ -69,7 +69,7 @@ def test_config_import_and_provider_env_catalog_never_read_config(tmp_path):
         env={
             **os.environ,
             "HOME": str(tmp_path),
-            "HERMES_HOME": str(tmp_path / ".hermes"),
+            "SLAVE_HOME": str(tmp_path / ".slave"),
             "STATE_CONFIG_TEST_ROOT": str(tmp_path),
         },
         capture_output=True,
@@ -92,7 +92,7 @@ def test_existing_database_does_not_wait_for_config_writer(
     tmp_path, monkeypatch, caplog, mode, require_wal, vulnerable
 ):
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda: vulnerable)
     config.save_config({"database": {"journal_mode": mode}, "marker": "before"})
@@ -156,7 +156,7 @@ def test_existing_database_does_not_wait_for_config_writer(
 
 @pytest.mark.parametrize("state", ["empty", "unknown", "required_wal"])
 def test_unestablished_or_strict_modes_still_wait_for_real_policy(tmp_path, monkeypatch, state):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda: False)
@@ -189,7 +189,7 @@ def test_unestablished_or_strict_modes_still_wait_for_real_policy(tmp_path, monk
 
 
 def test_deferred_mode_change_is_applied_after_writer_finishes(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(sqlite_support, "is_sqlite_wal_reset_vulnerable", lambda: False)

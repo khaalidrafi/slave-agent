@@ -24,7 +24,7 @@ from gateway import shutdown_forensics as sf
 class TestSnapshotShutdownContext:
 
     def test_detects_takeover_marker_for_self(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
         marker = tmp_path / ".gateway-takeover.json"
         marker.write_text(
             f'{{"target_pid": {os.getpid()}, "replacer_pid": 99999}}',
@@ -37,10 +37,10 @@ class TestSnapshotShutdownContext:
     @pytest.mark.parametrize("env, expected", [
         ({}, "under_systemd=no supervisor=none"),  # a macOS launchd orphan: ppid 1, nothing revives it
         ({"INVOCATION_ID": "abc"}, "under_systemd=yes supervisor=systemd"),
-        ({"HERMES_LAUNCHD_LABEL": "ai.hermes.gateway"}, "under_systemd=no supervisor=launchd"),
+        ({"SLAVE_LAUNCHD_LABEL": "ai.slave.gateway"}, "under_systemd=no supervisor=launchd"),
     ])
     def test_supervisor_comes_from_its_stamp_not_from_ppid_1(self, monkeypatch, env, expected):
-        for key in ("INVOCATION_ID", "XPC_SERVICE_NAME", "HERMES_LAUNCHD_LABEL"):
+        for key in ("INVOCATION_ID", "XPC_SERVICE_NAME", "SLAVE_LAUNCHD_LABEL"):
             monkeypatch.delenv(key, raising=False)
         for key, value in env.items():
             monkeypatch.setenv(key, value)

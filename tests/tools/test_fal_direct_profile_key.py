@@ -18,14 +18,14 @@ def two_profiles(tmp_path, monkeypatch):
     from agent import secret_scope
     from tools import fal_common
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".slave"
     homes = {"A": root, "B": root / "profiles" / "b"}
     keys = {"A": "fal-key-launch-A", "B": "fal-key-routed-B"}
     for label, home in homes.items():
         home.mkdir(parents=True, exist_ok=True)
         (home / ".env").write_text(f"FAL_KEY={keys[label]}\n")
         (home / "config.yaml").write_text("{}\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     monkeypatch.setenv("FAL_KEY", keys["A"])
     monkeypatch.setattr(fal_common, "_direct_clients", {}, raising=False)
     was_active = secret_scope.is_multiplex_active()
@@ -84,8 +84,8 @@ def test_routed_turns_sign_with_their_own_profile_key(two_profiles, monkeypatch,
 def test_single_profile_run_keeps_its_env_key(tmp_path, monkeypatch, submit):
     from tools import fal_common
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir()
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+    (tmp_path / ".slave").mkdir()
     monkeypatch.setenv("FAL_KEY", "fal-key-shell")
     monkeypatch.setattr(fal_common, "_direct_clients", {}, raising=False)
     module, constructed, signed = _recording_fal_client({"fal-key-shell": "shell"})
@@ -100,8 +100,8 @@ def test_rotated_key_replaces_the_profiles_client(tmp_path, monkeypatch, submit)
     profile, not one per key ever seen."""
     from tools import fal_common
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir()
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+    (tmp_path / ".slave").mkdir()
     monkeypatch.setattr(fal_common, "_direct_clients", {}, raising=False)
     module, constructed, signed = _recording_fal_client({"fal-key-old": "old", "fal-key-new": "new"})
 

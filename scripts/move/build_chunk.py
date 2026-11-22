@@ -3,12 +3,12 @@
 
 usage: python3 scripts/move/build_chunk.py NN-name ROOT... [--log-dir DIR] [--only-a] [--from-a]
 
-Run it with any Python 3.11+ (``just move-chunk`` does), never through ``scripts/hermes-python``: the
+Run it with any Python 3.11+ (``just move-chunk`` does), never through ``scripts/slave-python``: the
 repository's environment tooling imports packages this command moves, so nothing that syncs the
 environment can run once ``git mv`` has happened. Order:
 
   1. resolve the repository environment's interpreter and a libcst interpreter (before anything moves)
-  2. git mv each ROOT into hermes_agent/, commit A, add the renames to MOVES (amends A)
+  2. git mv each ROOT into slave_agent/, commit A, add the renames to MOVES (amends A)
   3. write the old-path files (generate_shims.py), then the codemod, the docs pass and the generators
   4. stage tracked changes plus the files the tools report they wrote, commit B
 
@@ -81,11 +81,11 @@ def resolve_interpreters(root: Path, saved: dict | None, python: str | None, cst
         resolved["python"], resolved["env"] = python, resolved.get("env", {})
     if "python" not in resolved:
         code = "import json, os, sys; print(json.dumps({'python': sys.executable, 'env': dict(os.environ)}))"
-        probe = run([str(root / "scripts/run-in-hermes-env"), "python", "-c", code], cwd=root)
+        probe = run([str(root / "scripts/run-in-slave-env"), "python", "-c", code], cwd=root)
         found = json.loads(last_line(probe.stdout))
         omitted = {"PWD", "OLDPWD", "SHLVL", "_"}
         # The test environment's venv interpreter carries its own packages; the base interpreter does not.
-        resolved["python"] = found["env"].get("__HERMES_TEST_PYTHON") or found["python"]
+        resolved["python"] = found["env"].get("__SLAVE_TEST_PYTHON") or found["python"]
         resolved["env"] = {k: v for k, v in found["env"].items() if os.environ.get(k) != v and k not in omitted}
     if not Path(resolved["python"]).exists():
         raise Failure(f"could not resolve the repository interpreter (got {resolved['python']!r}); pass --python")
@@ -128,7 +128,7 @@ def interpreters_file(log_dir: Path) -> Path:
 
 
 def commit_trailer(root: Path, ref: str) -> str | None:
-    match = re.search(r"^Hermes-Move: (.+)$", git(root, "log", "-1", "--format=%B", ref, check=False), re.MULTILINE)
+    match = re.search(r"^Slave-Move: (.+)$", git(root, "log", "-1", "--format=%B", ref, check=False), re.MULTILINE)
     return match.group(1) if match else None
 
 
@@ -156,14 +156,14 @@ def move_roots(root: Path, name: str, roots: list[str]) -> str:
             raise Failure(f"ROOT must be a path relative to the repository root: {rel}")
         if not (root / rel).exists():
             raise Failure(f"no such root: {rel}")
-        target = root / "hermes_agent" / rel
-        if git(root, "ls-files", "--", f"hermes_agent/{rel}").strip():
-            raise Failure(f"hermes_agent/{rel} is already tracked")
+        target = root / "slave_agent" / rel
+        if git(root, "ls-files", "--", f"slave_agent/{rel}").strip():
+            raise Failure(f"slave_agent/{rel} is already tracked")
         if target.exists():
             clear_destination(root, target)
     for rel in roots:
-        (root / "hermes_agent" / rel).parent.mkdir(parents=True, exist_ok=True)
-        git(root, "mv", rel, f"hermes_agent/{rel}")
+        (root / "slave_agent" / rel).parent.mkdir(parents=True, exist_ok=True)
+        git(root, "mv", rel, f"slave_agent/{rel}")
         old = root / rel
         if old.is_dir():
             for cache in list(old.rglob("__pycache__")):
@@ -177,9 +177,9 @@ def move_roots(root: Path, name: str, roots: list[str]) -> str:
                 old.rmdir()
             except OSError:
                 pass
-    git(root, "commit", "-q", "-m", f"refactor: move {' '.join(roots)} into hermes_agent", "-m", f"Hermes-Move: {name} move")
+    git(root, "commit", "-q", "-m", f"refactor: move {' '.join(roots)} into slave_agent", "-m", f"Slave-Move: {name} move")
     summary = update_moves_table(root)
-    git(root, "add", "hermes_agent/compat/moves.py")
+    git(root, "add", "slave_agent/compat/moves.py")
     git(root, "commit", "-q", "--amend", "--no-edit")
     return summary
 
@@ -191,7 +191,7 @@ def update_moves_table(root: Path) -> str:
         from renames import current_name, module_renames
     finally:
         sys.path.pop(0)
-    table_file = root / "hermes_agent/compat/moves.py"
+    table_file = root / "slave_agent/compat/moves.py"
     source = table_file.read_text(encoding="utf-8-sig")
     node = next(n for n in ast.parse(source).body
                 if isinstance(n, ast.AnnAssign) and getattr(n.target, "id", None) == "MOVES")
@@ -275,7 +275,7 @@ def build_b(root: Path, name: str, a: str, log_dir: Path, resolved: dict) -> int
     git(root, "commit", "-q", "--allow-empty", "-m", f"refactor: rewrite old module names for the {name} move",
         "-m", f"Generated by scripts/move/build_chunk.py from {a}: scripts/move/generate_shims.py, rewrite_imports.py, "
               "rewrite_docs.py and the generators `just move-generate` runs.",
-        "-m", f"Hermes-Move: {name} codemod")
+        "-m", f"Slave-Move: {name} codemod")
     b = git(root, "rev-parse", "HEAD").strip()
     report(root, name, a, b, log_dir, codemod.stdout, times)
     if generate_failed:
@@ -332,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         resuming = trailer == f"{args.name} move"
         if args.from_a and not resuming:
-            raise Failure(f"--from-a: HEAD has no 'Hermes-Move: {args.name} move' trailer")
+            raise Failure(f"--from-a: HEAD has no 'Slave-Move: {args.name} move' trailer")
         if not resuming and not args.roots:
             parser.error("at least one ROOT is required")
         remembered = interpreters_file(log_dir)

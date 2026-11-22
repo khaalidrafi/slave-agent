@@ -8,6 +8,6 @@ provides_hooks:
   - post_tool_call
   - transform_tool_result
   - pre_command
-# A field no Hermes release defines: native manifests ignore unknown fields.
+# A field no slave-agent release defines: native manifests ignore unknown fields.
 conformance_future_field:
   additive: true

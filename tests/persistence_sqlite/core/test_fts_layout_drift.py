@@ -107,17 +107,17 @@ def test_realign_does_not_stamp_current_while_the_trigram_is_stale(v1_trigram_db
 
 
 def test_doctor_offers_optimize_storage_for_a_stale_trigram(v1_trigram_db, monkeypatch):
-    from hermes_cli import doctor_state
+    from slave_cli import doctor_state
     from persistence.sqlite._state.dbfile import collect_state_db_stats
 
     stats = collect_state_db_stats(v1_trigram_db)
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(stats)
-    assert any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
+    assert any("slave sessions optimize-storage" in detail for _, _, detail in rows)
 
 
 def test_fresh_store_is_stamped_on_creation_and_doctor_stays_quiet(tmp_path, monkeypatch):
-    from hermes_cli import doctor_state
+    from slave_cli import doctor_state
     from persistence.sqlite._state.dbfile import collect_state_db_stats
 
     db_path = tmp_path / "state.db"
@@ -127,15 +127,15 @@ def test_fresh_store_is_stamped_on_creation_and_doctor_stays_quiet(tmp_path, mon
     assert _stamp(db_path) == str(_schema_ddl.FTS_STORAGE_VERSION)
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(collect_state_db_stats(db_path))
-    assert not any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
+    assert not any("slave sessions optimize-storage" in detail for _, _, detail in rows)
 
 
 def _notice_for(db_path: pathlib.Path, monkeypatch) -> str:
-    """Run the `hermes update` notice against *db_path* with the size gate satisfied for state.db only."""
-    from hermes_cli import update_cmd_maint
-    import hermes_constants
+    """Run the `slave update` notice against *db_path* with the size gate satisfied for state.db only."""
+    from slave_cli import update_cmd_maint
+    import slave_constants
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: db_path.parent)
+    monkeypatch.setattr(slave_constants, "get_slave_home", lambda: db_path.parent)
     real_stat = pathlib.Path.stat
 
     def _big(path, *args, **kwargs):
@@ -154,7 +154,7 @@ def _notice_for(db_path: pathlib.Path, monkeypatch) -> str:
 
 def test_notice_for_a_stale_trigram_does_not_claim_the_legacy_reclaim(v1_trigram_db, monkeypatch):
     out = _notice_for(v1_trigram_db, monkeypatch)
-    assert "hermes sessions optimize-storage" in out
+    assert "slave sessions optimize-storage" in out
     assert "60%" not in out and "old storage layout" not in out.lower()
 
 
@@ -486,7 +486,7 @@ def test_optimize_storage_on_a_newer_layout_finishes_its_work_without_restamping
 
 def test_doctor_offers_the_resume_after_backfill_before_teardown(tmp_path, monkeypatch):
     """optimize-storage interrupted after backfill but before trash teardown: doctor agrees with the update notice."""
-    from hermes_cli import doctor_state
+    from slave_cli import doctor_state
     from persistence.sqlite._state.dbfile import collect_state_db_stats
 
     db_path = tmp_path / "state.db"
@@ -502,15 +502,15 @@ def test_doctor_offers_the_resume_after_backfill_before_teardown(tmp_path, monke
     assert "optimize-storage" in _notice_for(db_path, monkeypatch)
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(collect_state_db_stats(db_path))
-    assert any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
+    assert any("slave sessions optimize-storage" in detail for _, _, detail in rows)
 
 
 @pytest.mark.parametrize("mode, heading", [("advise", "Search index update available"),
                                            ("require", "required by your notice policy")])
 def test_the_follow_up_notice_makes_no_size_or_effort_claim(v1_trigram_db, monkeypatch, mode, heading):
-    from hermes_cli import config as hermes_config
+    from slave_cli import config as slave_config
 
-    monkeypatch.setattr(hermes_config, "load_config", lambda: {"sessions": {"fts_optimize_notice": mode}})
+    monkeypatch.setattr(slave_config, "load_config", lambda: {"sessions": {"fts_optimize_notice": mode}})
     out = _notice_for(v1_trigram_db, monkeypatch)
     assert heading in out
     assert "%" not in out and "smaller" not in out.lower()

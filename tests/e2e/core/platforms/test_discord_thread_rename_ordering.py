@@ -48,7 +48,7 @@ async def test_batched_thread_updates_retire_the_alias_through_connected_bot(mon
         assert await adapter.connect()
         try:
             assert not adapter._platform_events_subscribed()
-            parent = SimpleNamespace(id=700, name="ops", guild=SimpleNamespace(name="Hermes Server"))
+            parent = SimpleNamespace(id=700, name="ops", guild=SimpleNamespace(name="slave-agent Server"))
 
             class CachedThread:
                 id, parent_id = 800, 700
@@ -67,7 +67,7 @@ async def test_batched_thread_updates_retire_the_alias_through_connected_bot(mon
             monkeypatch.setattr(adapter._client, "get_channel", lambda _id: thread)
             first = adapter._format_thread_chat_name(thread)
             assert await adapter.rename_thread("800", "Database outage", only_if_current_name=thread.name)
-            # Do not call the formatter on Hermes's title before the moderator
+            # Do not call the formatter on Slave's title before the moderator
             # roundtrip: its cache-lag fallback would otherwise hide this seam.
             guild = SimpleNamespace(get_thread=lambda _id: thread)
             state = SimpleNamespace(_get_guild=lambda _id: guild, dispatch=adapter._client.dispatch)

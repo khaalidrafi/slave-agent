@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { JsonRpcGatewayError } from '@hermes/shared/json-rpc-channel'
+import { JsonRpcGatewayError } from '@slave-agent/shared/json-rpc-channel'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import { submitPrompt, type SubmitPromptDeps } from '../app/submissionCore.js'
@@ -19,7 +19,7 @@ let home: string
 
 beforeEach(() => {
   home = mkdtempSync(join(process.env.TMPDIR ?? '.', 'ink-undelivered-'))
-  vi.stubEnv('HERMES_HOME', home)
+  vi.stubEnv('SLAVE_HOME', home)
   resetUiState()
   patchUiState({ sid: 'owner', busy: true, status: 'running…' })
 })

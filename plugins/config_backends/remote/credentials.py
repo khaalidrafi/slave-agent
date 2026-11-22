@@ -23,11 +23,11 @@ _IDP_KEYS = ("token_url", "client_id", "client_secret", "scope")
 
 PLANE_CREDENTIAL_ENV_NAMES = frozenset({
     # which backend, which plane, which agent record
-    "HERMES_CONFIG_BACKEND", "HERMES_CONFIG_REMOTE_URL", "HERMES_CONFIG_INSTANCE_ID",
+    "SLAVE_CONFIG_BACKEND", "SLAVE_CONFIG_REMOTE_URL", "SLAVE_CONFIG_INSTANCE_ID",
     # on-prem workload identity
     *(IDP_ENV_PREFIX + k.upper() for k in _IDP_KEYS),
     # Cloud: where auth.json lives and where its refresh token is sent
-    "HERMES_SHARED_AUTH_DIR", "HERMES_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL",
+    "SLAVE_SHARED_AUTH_DIR", "SLAVE_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL",
 })
 
 _HTTP_TIMEOUT_S = 15.0
@@ -60,13 +60,13 @@ def plane_token(home: Path) -> str:
 
 
 def _nous_token(home: Path) -> str:
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
 
     try:
-        from hermes_cli.auth import resolve_nous_access_token
+        from slave_cli.auth import resolve_nous_access_token
     except Exception as exc:
         raise PlaneCredentialError(f"cannot load the Nous auth module: {exc}", retryable=False) from exc
-    token = set_hermes_home_override(home)  # auth.json is per profile home
+    token = set_slave_home_override(home)  # auth.json is per profile home
     scope_token = None
     try:
         scope_token = _bind_owner_secret_scope(home)  # inside the try: a failed build still resets the home
@@ -80,13 +80,13 @@ def _nous_token(home: Path) -> str:
         if scope_token is not None:
             from agent.secret_scope import reset_secret_scope
             reset_secret_scope(scope_token)
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def _bind_owner_secret_scope(home: Path):
     """Under multiplexing, bind ``home``'s own secret scope for the token resolution; None otherwise.
 
-    The resolver reads the Portal override (``HERMES_PORTAL_BASE_URL``) through the profile secret
+    The resolver reads the Portal override (``SLAVE_PORTAL_BASE_URL``) through the profile secret
     scope. The poller thread, and any caller resolving another profile's token, has no scope (or
     the wrong profile's), so the read fails closed, the override counts as absent and the refresh
     token is sent to the default Portal. Bound always, not only when nothing is bound: a turn for

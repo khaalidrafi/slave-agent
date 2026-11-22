@@ -1,4 +1,4 @@
-"""Name the picks pnpm's minimumReleaseAge refuses during `hermes pm update --pnpm`.
+"""Name the picks pnpm's minimumReleaseAge refuses during `slave pm update --pnpm`.
 
 `pnpm update --no-save` reports a too-young pick only as ERR_PNPM_STRICT_MIN_RELEASE_AGE_REQUIRES_SAVE,
 which names no package (pnpm 12 returns before it formats the violations). The same update with
@@ -72,10 +72,10 @@ def immature_picks(pnpm: str, root: Path, env: dict[str, str], *, timeout: int =
 
 
 def _locked_versions(lock_text: str) -> dict[str, set[str]]:
-    import hermes_yaml
+    import slave_yaml
 
     locked: dict[str, set[str]] = {}
-    for key in (hermes_yaml.safe_load(lock_text) or {}).get("packages") or {}:
+    for key in (slave_yaml.safe_load(lock_text) or {}).get("packages") or {}:
         name, _, version = str(key).partition("(")[0].rpartition("@")
         if name:
             locked.setdefault(name, set()).add(version)
@@ -96,11 +96,11 @@ def _yaml_scalar(value: str) -> str:
     A plain scalar can't start with `@` (every scoped name), `!`, `&`, `*`, `?`, `%`, a quote and the
     like, and `: ` or ` #` inside one changes its meaning; pnpm then refuses to load the workspace.
     """
-    import hermes_yaml
+    import slave_yaml
 
     try:
-        plain = hermes_yaml.safe_load(f"- {value}") == [value]
-    except hermes_yaml.YAMLError:
+        plain = slave_yaml.safe_load(f"- {value}") == [value]
+    except slave_yaml.YAMLError:
         plain = False
     return value if plain else "'" + value.replace("'", "''") + "'"
 
@@ -112,10 +112,10 @@ def prune_excludes(workspace_yaml: Path, lock_yaml: Path) -> list[str]:
     rewrite a tracked file there; this runs only where the lock is refreshed. Each entry is one
     line, `  - name@version  # why`, so a dropped line takes its reason with it.
     """
-    import hermes_yaml
+    import slave_yaml
 
     text = workspace_yaml.read_text(encoding="utf-8")
-    entries = (hermes_yaml.safe_load(text) or {}).get("minimumReleaseAgeExclude") or []
+    entries = (slave_yaml.safe_load(text) or {}).get("minimumReleaseAgeExclude") or []
     locked = _locked_versions(lock_yaml.read_text(encoding="utf-8"))
     dropped, lines, in_block = [], [], False
     for line in text.splitlines(keepends=True):

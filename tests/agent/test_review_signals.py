@@ -1,7 +1,7 @@
 """``post_llm_call``'s ``review_signals`` (``agent/review_signals.py``).
 
 Real turns through ``AIAgent.run_conversation`` with a plugin loaded through real discovery from a
-temp ``HERMES_HOME``; the provider is a scripted client. The signals a plugin reads must be the
+temp ``SLAVE_HOME``; the provider is a scripted client. The signals a plugin reads must be the
 exact decision the finalizer then makes about the background review, turn after turn.
 """
 
@@ -13,10 +13,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
-import hermes_cli.plugins as plugins_mod
+import slave_cli.plugins as plugins_mod
 
 _TOOLS = [
     {"type": "function", "function": {"name": name, "description": name,
@@ -26,7 +26,7 @@ _TOOLS = [
 
 
 def _install_recorder(rows: Path, *, mutate: bool = False) -> None:
-    plugin_dir = Path(os.environ["HERMES_HOME"]) / "plugins" / "recorder"
+    plugin_dir = Path(os.environ["SLAVE_HOME"]) / "plugins" / "recorder"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "recorder"}), encoding="utf-8")
     (plugin_dir / "__init__.py").write_text(
@@ -45,7 +45,7 @@ def _install_recorder(rows: Path, *, mutate: bool = False) -> None:
         + "    ctx.register_hook('post_llm_call', _record)\n",
         encoding="utf-8",
     )
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["SLAVE_HOME"]) / "config.yaml").write_text(
         yaml.safe_dump({"plugins": {"enabled": ["recorder"]}}), encoding="utf-8")
     plugins_mod._plugin_manager = plugins_mod.PluginManager()
     plugins_mod.discover_plugins(force=True)
@@ -101,7 +101,7 @@ def _rows(path: Path) -> list[dict]:
 
 
 def test_review_signals_track_the_review_decision_across_turns(monkeypatch):
-    rows_path = Path(os.environ["HERMES_HOME"]) / "signals.jsonl"
+    rows_path = Path(os.environ["SLAVE_HOME"]) / "signals.jsonl"
     _install_recorder(rows_path)
     tool_turn = [_reply(tool="noop"), _reply(tool="noop"), _reply("done")]
     spawns = _run_turns(monkeypatch, [[_reply("a")], tool_turn, [_reply("b")], [_reply("c")]])
@@ -129,7 +129,7 @@ def test_review_signals_track_the_review_decision_across_turns(monkeypatch):
 
 
 def test_review_signals_report_a_suppressed_review(monkeypatch):
-    rows_path = Path(os.environ["HERMES_HOME"]) / "signals.jsonl"
+    rows_path = Path(os.environ["SLAVE_HOME"]) / "signals.jsonl"
     _install_recorder(rows_path)
     spawns = _run_turns(monkeypatch, [[_reply("a")], [_reply("b")]], skip_background_review=True)
     rows = _rows(rows_path)
@@ -139,9 +139,9 @@ def test_review_signals_report_a_suppressed_review(monkeypatch):
 
 
 def test_review_signals_disabled_in_config(monkeypatch):
-    rows_path = Path(os.environ["HERMES_HOME"]) / "signals.jsonl"
+    rows_path = Path(os.environ["SLAVE_HOME"]) / "signals.jsonl"
     _install_recorder(rows_path)
-    cfg = Path(os.environ["HERMES_HOME"]) / "config.yaml"
+    cfg = Path(os.environ["SLAVE_HOME"]) / "config.yaml"
     data = yaml.safe_load(cfg.read_text())
     data["auxiliary"] = {"background_review": {"enabled": False}}
     cfg.write_text(yaml.safe_dump(data), encoding="utf-8")
@@ -150,7 +150,7 @@ def test_review_signals_disabled_in_config(monkeypatch):
 
 
 def test_one_plugin_cannot_change_what_the_next_one_reads(monkeypatch):
-    rows_path = Path(os.environ["HERMES_HOME"]) / "signals.jsonl"
+    rows_path = Path(os.environ["SLAVE_HOME"]) / "signals.jsonl"
     _install_recorder(rows_path, mutate=True)
     _run_turns(monkeypatch, [[_reply("a")]])
     assert _rows(rows_path)[0]["skill_review_due"] is False

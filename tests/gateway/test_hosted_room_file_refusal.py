@@ -52,7 +52,7 @@ def _bind(store: HostedRoomAttachmentStore, room_id: str, member_id: str) -> lis
 
 @pytest.fixture
 def tui_db(tmp_path: Path, monkeypatch, store) -> Path:
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "member-home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "member-home"))
     path = tmp_path / "shared-state.db"
     hosted_rooms.create_room(
         store, placement="shared", room_id=ROOM_ID, name="Release room", members=[{"profile": PROFILE, "handle": PROFILE}],

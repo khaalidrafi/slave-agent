@@ -40,7 +40,7 @@ const buildUiState = (): UiState => ({
   streaming: true,
   timestamps: false,
   // Last session's resolved theme paints frame one (flash-free boot, like
-  // the desktop's hermes-boot-* keys); DEFAULT_THEME only on first launch.
+  // the desktop's slave-boot-* keys); DEFAULT_THEME only on first launch.
   theme: bootTheme ?? DEFAULT_THEME,
   usage: ZERO
 })
@@ -53,9 +53,9 @@ export const $uiInlineImages = computed($uiState, state => state.inlineImages)
 
 export const getUiState = () => $uiState.get()
 
-// The folder a user-typed path is relative to: the session's, else the one `hermes --tui` was
+// The folder a user-typed path is relative to: the session's, else the one `slave --tui` was
 // launched from. Never this process's cwd (the ui-tui install) or the shared gateway's.
-export const sessionCwd = (): string | undefined => $uiState.get().info?.cwd || process.env.HERMES_CWD || undefined
+export const sessionCwd = (): string | undefined => $uiState.get().info?.cwd || process.env.SLAVE_CWD || undefined
 
 export const patchUiState = (next: Partial<UiState> | ((state: UiState) => UiState)) =>
   $uiState.set(typeof next === 'function' ? next($uiState.get()) : { ...$uiState.get(), ...next })

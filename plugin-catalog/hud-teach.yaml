@@ -1,5 +1,5 @@
 name: hud-teach
-repo: https://github.com/iamlukethedev/hermes-hud-teach
+repo: https://github.com/iamlukethedev/slave-hud-teach
 sha: 41741e4a970a8b32545ddd303f3fc4d0b965bd5f
 description: 'Step-by-step lessons on any live Mac window — numbered click-through
   marks plus an on-screen step card for chess, games, Photoshop, Settings.'
@@ -7,7 +7,7 @@ maintainer: iamlukethedev
 tier: community
 category: desktop
 requires_hermes: ">=0.20.0"
-docs_url: https://github.com/iamlukethedev/hermes-hud-teach
+docs_url: https://github.com/iamlukethedev/slave-hud-teach
 version: "0.2.0"
 platforms: [macos]
 capabilities:

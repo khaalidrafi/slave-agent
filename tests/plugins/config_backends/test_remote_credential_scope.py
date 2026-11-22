@@ -1,7 +1,7 @@
 """The Nous plane credential resolves under its own profile's secret scope when the gateway multiplexes.
 
 The Remote Config poller is a bare thread with no profile scope. Without a binding, the resolver's
-read of ``HERMES_PORTAL_BASE_URL`` fails closed, the override counts as absent, the stored
+read of ``SLAVE_PORTAL_BASE_URL`` fails closed, the override counts as absent, the stored
 non-production ``portal_base_url`` fails the host allowlist and the refresh token is sent to the
 production Portal (``invalid_grant`` -> the login is quarantined).
 """
@@ -23,9 +23,9 @@ OTHER = "https://portal.other-nousresearch.com"
 
 def _profile(home: Path, portal: str) -> Path:
     home.mkdir(parents=True, exist_ok=True)
-    (home / ".env").write_text(f"HERMES_PORTAL_BASE_URL={portal}\n", encoding="utf-8")
+    (home / ".env").write_text(f"SLAVE_PORTAL_BASE_URL={portal}\n", encoding="utf-8")
     nous = {"access_token": "expired-access", "refresh_token": f"refresh-for-{portal}",
-            "client_id": "hermes-cli-vps", "portal_base_url": portal,
+            "client_id": "slave-cli-vps", "portal_base_url": portal,
             "expires_at": "2000-01-01T00:00:00+00:00"}
     (home / "auth.json").write_text(json.dumps(
         {"version": 1, "active_provider": "nous", "providers": {"nous": nous}}), encoding="utf-8")
@@ -34,17 +34,17 @@ def _profile(home: Path, portal: str) -> Path:
 
 @pytest.fixture
 def launch_home(tmp_path, monkeypatch):
-    home = _profile(tmp_path / "hermes", STAGING)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared"))
-    monkeypatch.delenv("HERMES_PORTAL_BASE_URL", raising=False)
+    home = _profile(tmp_path / "slave", STAGING)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_SHARED_AUTH_DIR", str(tmp_path / "shared"))
+    monkeypatch.delenv("SLAVE_PORTAL_BASE_URL", raising=False)
     monkeypatch.delenv("NOUS_PORTAL_BASE_URL", raising=False)
     return home
 
 
 @pytest.fixture
 def refreshes(monkeypatch):
-    from hermes_cli import auth, auth_nous
+    from slave_cli import auth, auth_nous
 
     seen: list[tuple[str, str]] = []
 
@@ -116,7 +116,7 @@ def test_another_profiles_bound_scope_does_not_route_this_profiles_token(launch_
     set_multiplex_active(True)
     caplog.set_level(logging.WARNING)
 
-    bound = set_secret_scope({"HERMES_PORTAL_BASE_URL": STAGING}, profile_home=str(launch_home))
+    bound = set_secret_scope({"SLAVE_PORTAL_BASE_URL": STAGING}, profile_home=str(launch_home))
     try:
         credentials.plane_token(secondary)
         assert current_secret_scope_home() == str(launch_home)
@@ -129,7 +129,7 @@ def test_another_profiles_bound_scope_does_not_route_this_profiles_token(launch_
 
 def test_scope_is_reset_when_resolution_fails(launch_home, monkeypatch):
     from agent.secret_scope import current_secret_scope
-    from hermes_cli import auth
+    from slave_cli import auth
 
     set_multiplex_active(True)
 
@@ -149,7 +149,7 @@ def test_scope_is_reset_when_resolution_fails(launch_home, monkeypatch):
 
 def test_home_and_scope_are_restored_when_the_scope_build_fails(launch_home, monkeypatch):
     from agent.secret_scope import current_secret_scope_home
-    from hermes_constants import get_hermes_home_override, reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import get_slave_home_override, reset_slave_home_override, set_slave_home_override
     from tui_gateway import launch_profile_policy
 
     secondary = _profile(launch_home / "profiles" / "work", OTHER)
@@ -159,29 +159,29 @@ def test_home_and_scope_are_restored_when_the_scope_build_fails(launch_home, mon
         raise RuntimeError("unreadable managed .env")
 
     monkeypatch.setattr(launch_profile_policy, "owner_secret_scope", boom)
-    home_token = set_hermes_home_override(str(launch_home))
+    home_token = set_slave_home_override(str(launch_home))
     scope_token = set_secret_scope({}, profile_home=str(launch_home))
     try:
         with pytest.raises(credentials.PlaneCredentialError):
             credentials.plane_token(secondary)
-        assert get_hermes_home_override() == str(launch_home)
+        assert get_slave_home_override() == str(launch_home)
         assert current_secret_scope_home() == str(launch_home)
     finally:
         reset_secret_scope(scope_token)
-        reset_hermes_home_override(home_token)
+        reset_slave_home_override(home_token)
 
 
 def test_launch_profile_keeps_its_env_only_override_frozen_at_activation(tmp_path, monkeypatch, refreshes):
     """A launch Portal override with no .env line (systemd / ``op run``) is the launch profile's
     own: it survives later live-env mutation because the launch scope reads the frozen env."""
-    home = _profile(tmp_path / "hermes", STAGING)
+    home = _profile(tmp_path / "slave", STAGING)
     (home / ".env").write_text("", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared"))
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", STAGING)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_SHARED_AUTH_DIR", str(tmp_path / "shared"))
+    monkeypatch.setenv("SLAVE_PORTAL_BASE_URL", STAGING)
     from tui_gateway.launch_profile_policy import activate_multi_profile_hosting
     activate_multi_profile_hosting()  # freezes the launch env
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", OTHER)  # poisoned afterwards
+    monkeypatch.setenv("SLAVE_PORTAL_BASE_URL", OTHER)  # poisoned afterwards
 
     _in_fresh_thread(lambda: credentials.plane_token(home))
 
@@ -193,7 +193,7 @@ def test_secondary_never_borrows_the_launch_profiles_env_override(launch_home, m
     on the launch profile's process-env override."""
     secondary = _profile(launch_home / "profiles" / "work", "https://portal.nousresearch.com")
     (secondary / ".env").write_text("", encoding="utf-8")
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", STAGING)
+    monkeypatch.setenv("SLAVE_PORTAL_BASE_URL", STAGING)
     set_multiplex_active(True)
 
     _in_fresh_thread(lambda: credentials.plane_token(secondary))
@@ -204,9 +204,9 @@ def test_secondary_never_borrows_the_launch_profiles_env_override(launch_home, m
 def test_single_profile_binds_nothing(launch_home, refreshes, monkeypatch):
     """Not multiplexing: no scope is bound and the process env still routes (unchanged behaviour)."""
     from agent.secret_scope import current_secret_scope
-    from hermes_cli import auth
+    from slave_cli import auth
 
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", OTHER)
+    monkeypatch.setenv("SLAVE_PORTAL_BASE_URL", OTHER)
     real = auth.resolve_nous_access_token
     scopes = []
 

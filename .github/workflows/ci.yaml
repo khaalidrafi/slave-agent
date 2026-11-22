@@ -23,7 +23,7 @@ on:
         type: boolean
         default: false
       strict_acceptance:
-        description: "Acceptance runs only: known_failure owners whose gaps FAIL this run instead of xfailing ('upd-txn', a comma list, or '1' for every gap). Sets HERMES_E2E_STRICT_ACCEPTANCE for the E2E suites (tests/e2e/core/_pending_fixes.py)."
+        description: "Acceptance runs only: known_failure owners whose gaps FAIL this run instead of xfailing ('upd-txn', a comma list, or '1' for every gap). Sets SLAVE_E2E_STRICT_ACCEPTANCE for the E2E suites (tests/e2e/core/_pending_fixes.py)."
         required: false
         type: string
         default: ''
@@ -102,8 +102,8 @@ jobs:
           sparse-checkout: |
             .github/actions/detect-changes
             scripts/ci/classify_changes.py
-            hermes_agent/__init__.py
-            hermes_agent/compat/
+            slave_agent/__init__.py
+            slave_agent/compat/
           sparse-checkout-cone-mode: false
       - name: Detect affected areas
         id: classify
@@ -247,7 +247,7 @@ jobs:
     name: Desktop E2E
     needs: detect
     # python_prod (not python): the Playwright suite exercises the built app
-    # + `hermes serve` backend, which never import anything under tests/.
+    # + `slave serve` backend, which never import anything under tests/.
     # Tests-only PRs (~17% of commits) skip this 5-minute job — the longest
     # single job in the workflow — while still running the full pytest lanes.
     #

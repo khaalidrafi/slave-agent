@@ -16,7 +16,7 @@ SESSION_ID = "switch-session"
 
 def _stored_prompt(model: str, provider: str) -> str:
     return (
-        "You are Hermes Agent.\n\n"
+        "You are slave-agent.\n\n"
         "Conversation started: Thursday, September 24, 2026\n"
         f"Model: {model}\n"
         f"Provider: {provider}"
@@ -25,8 +25,8 @@ def _stored_prompt(model: str, provider: str) -> str:
 
 @pytest.fixture()
 def store(tmp_path, monkeypatch):
-    """A storage interface handle on a temp state.db, isolated from the live HERMES_HOME."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
+    """A storage interface handle on a temp state.db, isolated from the live SLAVE_HOME."""
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "slave-home"))
     handle = open_persistence(profile_scope(home=tmp_path))
     yield handle
     handle.close()
@@ -117,7 +117,7 @@ def _turn_agent(store, model: str, provider: str, prose: str = "") -> MagicMock:
     agent._surface_switch_note = ""
     agent._gateway_turn_context_notes = ""
     agent.enabled_toolsets = agent.disabled_toolsets = None
-    agent._build_system_prompt = MagicMock(side_effect=lambda _sm: f"You are Hermes Agent.\n\n{prose}{_timestamp_line(agent)}")
+    agent._build_system_prompt = MagicMock(side_effect=lambda _sm: f"You are slave-agent.\n\n{prose}{_timestamp_line(agent)}")
     return agent
 
 
@@ -155,7 +155,7 @@ def test_emptied_live_identity_rebuilds_once_then_reuses(store, live_model, live
 
 def test_prompt_without_identity_lines_keeps_reusing(store):
     """Pre-trailer prompts carry no identity lines; they must not rebuild on upgrade."""
-    legacy = "You are Hermes Agent.\n\nConversation started: Thursday, September 24, 2026"
+    legacy = "You are slave-agent.\n\nConversation started: Thursday, September 24, 2026"
     seed_session(store, SESSION_ID, "discord", model="x-ai/grok-4.5")
     store.sessions.update_system_prompt(SESSION_ID, legacy)
 

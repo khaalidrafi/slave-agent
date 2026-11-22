@@ -1,6 +1,6 @@
 # Journey-owned mock and ordinary window close, shared by source and MSIX drivers.
 # Callers supply a checkout-provisioned Node; never resolve tooling from OLD.
-function Start-DesktopJourneyMock([string]$Node, [string]$Assets, [string]$Work, [string]$HermesHome, [string]$Out) {
+function Start-DesktopJourneyMock([string]$Node, [string]$Assets, [string]$Work, [string]$SlaveHome, [string]$Out) {
     New-Item -ItemType Directory -Path $Out -Force | Out-Null
     $urlFile = Join-Path $Work 'chat-mock-url'
     # An earlier step's mock died with that step; the detached gateway did not, and it
@@ -17,10 +17,10 @@ function Start-DesktopJourneyMock([string]$Node, [string]$Assets, [string]$Work,
             if ($mock.HasExited -or (Get-Date) -ge $deadline) { throw 'Desktop mock did not become ready' }
             Start-Sleep -Milliseconds 200
         }
-        $env:HERMES_E2E_MOCK_URL = (Get-Content -LiteralPath $urlFile -Raw).Trim()
-        Invoke-RestMethod -Uri "$env:HERMES_E2E_MOCK_URL/__e2e__/prompts" -TimeoutSec 5 | Out-Null
+        $env:SLAVE_E2E_MOCK_URL = (Get-Content -LiteralPath $urlFile -Raw).Trim()
+        Invoke-RestMethod -Uri "$env:SLAVE_E2E_MOCK_URL/__e2e__/prompts" -TimeoutSec 5 | Out-Null
         $configWriter = [IO.Path]::GetFullPath((Join-Path $Assets '..\..\..\tests-js\scripts\mock-provider-config.ts'))
-        & $Node $configWriter $HermesHome $env:HERMES_E2E_MOCK_URL
+        & $Node $configWriter $SlaveHome $env:SLAVE_E2E_MOCK_URL
         if ($LASTEXITCODE -ne 0) { throw 'Desktop mock configuration failed' }
         return $mock
     } catch {
@@ -31,7 +31,7 @@ function Start-DesktopJourneyMock([string]$Node, [string]$Assets, [string]$Work,
 
 # The Actions runner holds every step process in a job object that refuses
 # CREATE_BREAKAWAY_FROM_JOB (limit flags 0), and so does Task Scheduler for a task's
-# process; Hermes deliberately refuses to start a gateway it cannot detach
+# process; slave-agent deliberately refuses to start a gateway it cannot detach
 # (gateway_runtime_start.py::spawn_unmanaged_gateway), so an app launched from either
 # reports "Gateway inaccessible (windows_breakaway_unavailable)". A user's
 # Explorer/Start-menu launch is in no job, and neither is a Win32_Process.Create child,

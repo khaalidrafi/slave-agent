@@ -1,10 +1,10 @@
 name: modal
-repo: https://github.com/modal-projects/modal-hermes
+repo: https://github.com/modal-projects/modal-slave
 sha: 6458057942b37d9d9220bf1b91f225496e2edc39
 description: Modal Endpoints for OpenAI-compatible APIs
 maintainer: modal-labs
 category: models
-docs_url: https://github.com/modal-projects/modal-hermes#readme
+docs_url: https://github.com/modal-projects/modal-slave#readme
 version: "1.0.0"
 requires_hermes: ">=0.23.0"
 capabilities:

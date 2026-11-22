@@ -1,7 +1,7 @@
 """Bot-to-bot exchanges end (#137027): the messaging gateway's chain rules (``BotLoopGuard.chain_admit``).
 The Bot Mode hop cap is ``tests/agent/test_bot_chain.py``; the tool entry ``tests/tools/test_bot_mode_dm_chain.py``.
 
-Two Hermes gateways DMing each other on Mattermost ran 17 h because every inbound bot message
+Two slave-agent gateways DMing each other on Mattermost ran 17 h because every inbound bot message
 produced an outbound one (runtime notices included) and nothing counted the exchange.
 """
 

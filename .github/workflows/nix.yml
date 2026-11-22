@@ -197,14 +197,14 @@ jobs:
         run: |
           source="path:$RUNNER_TEMP/release-source?rev=$CANDIDATE_COMMIT"
           package="$(nix build "$source#default" --no-link --print-out-paths)"
-          actual="$("$package/bin/hermes" --version)"
+          actual="$("$package/bin/slave" --version)"
           ACTUAL_VERSION="$actual" python3 - <<'PY'
           import os
 
           expected = os.environ["RELEASE_VERSION"]
-          # Line one is "Hermes Agent v<version> (...)"; later lines (Python, OpenAI SDK) carry other versions.
+          # Line one is "slave-agent v<version> (...)"; later lines (Python, OpenAI SDK) carry other versions.
           first = os.environ["ACTUAL_VERSION"].splitlines()[0].split()
-          actual = first[2].removeprefix("v") if first[:2] == ["Hermes", "Agent"] and len(first) > 2 else ""
+          actual = first[2].removeprefix("v") if first[:2] == ["slave-agent", "Agent"] and len(first) > 2 else ""
           if actual != expected:
               raise SystemExit(f"Nix package version mismatch: expected {expected}, got {actual}")
           PY

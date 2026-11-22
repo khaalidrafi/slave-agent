@@ -55,7 +55,7 @@ def test_capped_shell_read_still_returns_files_under_the_cap(tmp_path, monkeypat
     if transport == "od":
         real_fenced = ops._fenced_read
         monkeypatch.setattr(ops, "_fenced_read", lambda body, *more: real_fenced(
-            body.replace("| base64", "| __hermes_no_such_base64"), *more))
+            body.replace("| base64", "| __slave_no_such_base64"), *more))
     assert ops._read_exact_bytes(str(target), max_bytes=64) == (bytes(range(64)), None)
     data, failed = ops._read_exact_bytes(str(target), max_bytes=63)
     assert data is None and "too large" in failed.stdout

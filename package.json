@@ -1,5 +1,5 @@
 {
-  "name": "hermes-agent",
+  "name": "slave-agent",
   "version": "1.0.0",
   "description": "An AI agent with advanced tool-calling capabilities, featuring a flexible toolsets system for organizing and managing tools.",
   "private": true,
@@ -8,27 +8,27 @@
     "postinstall": "echo '✅ Node dependencies installed. Run: python run_agent.py --help'",
     "install:root": "pnpm install --filter .",
     "install:web": "pnpm install --filter web...",
-    "install:tui": "pnpm install --filter hermes-tui...",
-    "install:desktop": "pnpm install --filter hermes...",
+    "install:tui": "pnpm install --filter slave-tui...",
+    "install:desktop": "pnpm install --filter slave...",
     "audit:root": "pnpm audit --filter .",
     "audit:web": "pnpm audit --filter web",
-    "audit:tui": "pnpm audit --filter hermes-tui",
+    "audit:tui": "pnpm audit --filter slave-tui",
     "audit:fix:root": "pnpm audit --fix --filter .",
     "audit:fix:web": "pnpm audit --fix --filter web",
-    "audit:fix:tui": "pnpm audit --fix --filter hermes-tui",
+    "audit:fix:tui": "pnpm audit --fix --filter slave-tui",
     "check": "pnpm -r check",
     "fix": "pnpm -r fix",
     "prepare": "node -e \"const {existsSync}=require('fs');const {spawnSync}=require('child_process');if(existsSync('.git'))spawnSync('lefthook',['install'],{stdio:'inherit',shell:true})\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NousResearch/Hermes-Agent.git"
+    "url": "git+https://github.com/NousResearch/Slave-Agent.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/NousResearch/Hermes-Agent/issues"
+    "url": "https://github.com/NousResearch/Slave-Agent/issues"
   },
-  "homepage": "https://github.com/NousResearch/Hermes-Agent#readme",
+  "homepage": "https://github.com/NousResearch/Slave-Agent#readme",
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "eslint": "10.12.0",

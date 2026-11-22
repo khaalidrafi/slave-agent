@@ -1,4 +1,4 @@
-"""Hermes-specific AST rules (the ``HX`` ids in ``config.RULES``).
+"""Slave-specific AST rules (the ``HX`` ids in ``config.RULES``).
 
 Each checker is a small function ``(tree, ctx) -> iterable of line numbers``; the table at the
 bottom maps rule ids to checkers. Checkers favour precision: a rule that cries wolf gets an
@@ -20,8 +20,8 @@ from scripts.code_health.py_rules_sleep import wall_clock_sleep
 from scripts.code_health.py_rules_sqlite import untracked_state_connect
 
 _CAPTURE_CALLS = {
-    "get_hermes_home",
-    "display_hermes_home",
+    "get_slave_home",
+    "display_slave_home",
     "load_config",
     "load_config_readonly",
     "read_raw_config",
@@ -279,12 +279,12 @@ def _env_write_names(node: ast.AST) -> list[str]:
     return []
 
 
-def _hermes_home_path(text: str, prefix: str = "") -> bool:
-    """``text`` (after ``prefix``) starts with the exact ``.hermes`` path component, so
-    ``.hermes/x`` matches and ``.hermes-profile-exports`` does not."""
+def _slave_home_path(text: str, prefix: str = "") -> bool:
+    """``text`` (after ``prefix``) starts with the exact ``.slave`` path component, so
+    ``.slave/x`` matches and ``.slave-profile-exports`` does not."""
     if not text.startswith(prefix):
         return False
-    return re.split(r"[/\\]", text[len(prefix):].lstrip("/\\"), maxsplit=1)[0] == ".hermes"
+    return re.split(r"[/\\]", text[len(prefix):].lstrip("/\\"), maxsplit=1)[0] == ".slave"
 
 
 def hardcoded_home(tree: ast.Module, ctx: Ctx) -> Iterable[int]:
@@ -296,13 +296,13 @@ def hardcoded_home(tree: ast.Module, ctx: Ctx) -> Iterable[int]:
                 and _call_name(node.left).endswith("Path.home")
                 and isinstance(right, ast.Constant)
                 and isinstance(right.value, str)
-                and _hermes_home_path(right.value)
+                and _slave_home_path(right.value)
             ):
                 yield node.lineno
         elif isinstance(node, ast.Call):
             name = _call_name(node)
             arg = _str_arg(node)
-            if arg and _hermes_home_path(arg, "~/") and name.endswith(("expanduser", "Path")):
+            if arg and _slave_home_path(arg, "~/") and name.endswith(("expanduser", "Path")):
                 yield node.lineno
 
 
@@ -311,7 +311,7 @@ def new_env_var(tree: ast.Module, ctx: Ctx) -> Iterable[int]:
     for node in ast.walk(tree):
         read = _env_read_name(node)
         names = [read] if read else _env_write_names(node)
-        if any(n.startswith("HERMES_") and n not in ctx.known_env for n in names):
+        if any(n.startswith("SLAVE_") and n not in ctx.known_env for n in names):
             yield getattr(node, "lineno", 0)
 
 
@@ -876,7 +876,7 @@ def raw_thread(tree: ast.Module, ctx: Ctx) -> Iterable[int]:
 # profile moves the whole scope; hosted scopes refuse), but new code binds a scope instead. Only a
 # new call blocks: an existing one stays until it is migrated, even when its function changes.
 _LEGACY_PROFILE_SETTERS = frozenset({
-    "hermes_constants.set_hermes_home_override",
+    "slave_constants.set_slave_home_override",
     "agent.secret_scope.set_secret_scope",
     "tools.terminal_scope.set_terminal_scope",
     "tools.terminal_scope.install_profile_terminal_scope",

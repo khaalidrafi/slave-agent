@@ -87,7 +87,7 @@ class GatewayInboundHooksMixin:
         if executing_admission.get():
             return event
         try:
-            from hermes_cli.lifecycle import ainvoke_hook as _ainvoke_hook
+            from slave_cli.lifecycle import ainvoke_hook as _ainvoke_hook
             _hook_results = await _ainvoke_hook(
                 "pre_gateway_dispatch", event=event, gateway=self,
                 # getattr: bare-runner tests build GatewayRunner via object.__new__ without __init__.
@@ -155,7 +155,7 @@ class GatewayInboundHooksMixin:
         raw_args = event.get_command_args().strip()
         platform = source.platform.value if source.platform else ""
         try:
-            from hermes_cli.plugins import fire_pre_command_hook
+            from slave_cli.plugins import fire_pre_command_hook
             fire_pre_command_hook(
                 surface="gateway", command=str(canonical), alias_used=str(command),
                 args_raw=raw_args, session_key=_quick_key, platform=platform,
@@ -268,7 +268,7 @@ class GatewayInboundHooksMixin:
         # plugin commands registered with hyphens.
         if command:
             try:
-                from hermes_cli.plugins import get_plugin_command_handler
+                from slave_cli.plugins import get_plugin_command_handler
                 plugin_handler = get_plugin_command_handler(command.replace("_", "-"))
                 if plugin_handler:
                     return True, await self._hm_run_plugin_handler(plugin_handler, event, source), command
@@ -283,7 +283,7 @@ class GatewayInboundHooksMixin:
         the handler raises (``gateway/session_commands.py`` resolves the exact registered name).
         *args* is the argument as typed (a local session's command); otherwise the message's
         command arguments, with the messaging dash repair of ``get_command_args``."""
-        # The agent-turn path binds HERMES_SESSION_* via _set_session_env; this dispatch
+        # The agent-turn path binds SLAVE_SESSION_* via _set_session_env; this dispatch
         # sits before it, so a handler reading get_session_env() would see an empty or a
         # foreign (cron agent's os.environ) session (#108698). A local session's command
         # passes its live *session_entry* (key and id, as its turns bind them); a messaging
@@ -292,14 +292,14 @@ class GatewayInboundHooksMixin:
         # the liveness watchdog and the process exits 75 mid-handler (#105279).
         if session_entry is None and getattr(self, "session_store", None) is not None:
             # The chat's current session, if it has one (lookup only: a command never creates one), so
-            # HERMES_SESSION_ID / session_id name what a later /new reports as old_session_id (#123245).
+            # SLAVE_SESSION_ID / session_id name what a later /new reports as old_session_id (#123245).
             session_entry = await self.async_session_store.lookup_by_session_key(
                 self._session_key_for_source(source))
         _plugin_context = build_session_context(source, self.config, session_entry)
         if session_entry is None:
             _plugin_context.session_key = self._session_key_for_source(source)
         user_args = event.get_command_args().strip() if args is None else args
-        from hermes_cli.plugin_command_dispatch import invoke_plugin_command
+        from slave_cli.plugin_command_dispatch import invoke_plugin_command
         from gateway.plugin_messages import bind_live_source
         from gateway.plugin_command_choice import chat_choices
         call = functools.partial(

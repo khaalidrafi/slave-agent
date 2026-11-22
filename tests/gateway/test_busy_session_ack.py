@@ -115,7 +115,7 @@ class TestBusySessionAck:
         """Rapid Telegram text follow-ups in queue mode must not merge."""
         from gateway.run import GatewayRunner
 
-        monkeypatch.setenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3.0")
+        monkeypatch.setenv("SLAVE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3.0")
 
         runner, _sentinel = _make_runner()
         runner._busy_input_mode = "queue"
@@ -204,7 +204,7 @@ class TestBusySessionAck:
         """busy_input_mode='steer' injects via agent.steer() and skips queueing."""
         import gateway.run as _gr
 
-        monkeypatch.delenv("HERMES_GATEWAY_BUSY_STEER_ACK_ENABLED", raising=False)
+        monkeypatch.delenv("SLAVE_GATEWAY_BUSY_STEER_ACK_ENABLED", raising=False)
         monkeypatch.setattr(_gr, "_load_gateway_config", dict)
         runner, _sentinel = _make_runner()
         runner._busy_input_mode = "steer"
@@ -243,7 +243,7 @@ class TestBusySessionAck:
         """A busy voice follow-up is transcribed and steered, never queued."""
         import gateway.run as _gr
 
-        monkeypatch.delenv("HERMES_GATEWAY_BUSY_STEER_ACK_ENABLED", raising=False)
+        monkeypatch.delenv("SLAVE_GATEWAY_BUSY_STEER_ACK_ENABLED", raising=False)
         monkeypatch.setattr(_gr, "_load_gateway_config", dict)
         runner, _sentinel = _make_runner()
         runner._busy_input_mode = "steer"
@@ -432,9 +432,9 @@ class TestBusySessionOnboardingHint:
         """First busy-while-running message gets an extra hint about /busy."""
         import gateway.run as _gr
 
-        monkeypatch.setattr(_gr, "_hermes_home", tmp_path)
+        monkeypatch.setattr(_gr, "_slave_home", tmp_path)
         # mark_seen imports utils.atomic_yaml_write; make sure it resolves
-        # against a writable dir by pointing _hermes_home at tmp_path.
+        # against a writable dir by pointing _slave_home at tmp_path.
         monkeypatch.setattr(_gr, "_load_gateway_config", dict)
 
         runner, _sentinel = _make_runner()
@@ -459,7 +459,7 @@ class TestBusySessionOnboardingHint:
         adapter._send_with_retry.assert_called_once()
 
         # The flag is now persisted to tmp_path/config.yaml
-        import hermes_yaml as yaml
+        import slave_yaml as yaml
         cfg = yaml.safe_load((tmp_path / "config.yaml").read_text())
         assert cfg["onboarding"]["seen"]["busy_input_prompt"] is True
 
@@ -493,7 +493,7 @@ class TestLongRunningNotificationOwnership:
         from gateway.run import GatewayRunner
         from gateway.turn_context import TurnContext
 
-        monkeypatch.setenv("HERMES_AGENT_NOTIFY_INTERVAL", "0.01")
+        monkeypatch.setenv("SLAVE_AGENT_NOTIFY_INTERVAL", "0.01")
         runner = object.__new__(GatewayRunner)
         runner._running_agents = {}
         runner._draining = runner._restart_requested = False

@@ -31,7 +31,7 @@ description: >-
   so the file hash and the second trailer /ID change, any earlier incremental-save history is
   dropped and any digital signature no longer validates. Writes only a new .pdf that does not
   exist yet and never touches the input. No network, credentials or subprocesses. Depends on
-  PyMuPDF (AGPL-3.0), which Hermes installs for this plugin. Output files inherit the 0600 mode
+  PyMuPDF (AGPL-3.0), which slave-agent installs for this plugin. Output files inherit the 0600 mode
   of the temporary file they are moved from.
 maintainer: Samuek9
 tier: community

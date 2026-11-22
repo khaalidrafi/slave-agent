@@ -1,4 +1,4 @@
-import { canonicalResult } from '@hermes/shared/gateway-canonical'
+import { canonicalResult } from '@slave-agent/shared/gateway-canonical'
 import { expect, it } from 'vitest'
 
 import { toTranscriptMessages } from '../domain/messages.js'

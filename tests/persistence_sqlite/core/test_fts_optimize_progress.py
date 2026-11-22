@@ -1,4 +1,4 @@
-"""`hermes sessions optimize-storage` runs in the foreground behind the held-store refusal, so it must
+"""`slave sessions optimize-storage` runs in the foreground behind the held-store refusal, so it must
 report real progress in every phase, never idle between chunks, and end (not spin) when a chunk
 cannot succeed."""
 
@@ -10,7 +10,7 @@ from argparse import Namespace
 
 import pytest
 
-from hermes_cli.sessions_cmd import _cmd_optimize_storage, _optimize_progress_line
+from slave_cli.sessions_cmd import _cmd_optimize_storage, _optimize_progress_line
 from persistence.sqlite._holder import StoreHolder
 from persistence.sqlite._schema_ddl import LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL, SCHEMA_SQL
 from persistence.sqlite.admin import _maintenance

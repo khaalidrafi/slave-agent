@@ -15,8 +15,8 @@ def settings_env(tmp_path, monkeypatch):
     from gateway.run import GatewayRunner
     from gateway.session import SessionSource
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setattr(gateway_run, "_slave_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     runner = object.__new__(GatewayRunner)
     runner.config = GatewayConfig()
     adapter = object.__new__(_Adapter)
@@ -27,7 +27,7 @@ def settings_env(tmp_path, monkeypatch):
 
 @pytest.fixture
 def catalog(monkeypatch):
-    from hermes_cli import model_switch_providers
+    from slave_cli import model_switch_providers
 
     calls = []
     rows = [{
@@ -126,9 +126,9 @@ def test_unavailable_route_returns_none_without_catalog(settings_env, catalog, u
 @pytest.mark.asyncio
 async def test_thread_hop_binds_owning_profile_for_catalog(settings_env, catalog, monkeypatch):
     from gateway.session_identity import RoutingIdentity
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from agent.secret_scope import get_secret
-    from hermes_cli import model_switch_providers
+    from slave_cli import model_switch_providers
 
     adapter, runner, source, home = settings_env
     secondary = home / "secondary"
@@ -141,7 +141,7 @@ async def test_thread_hop_binds_owning_profile_for_catalog(settings_env, catalog
     )
 
     def lookup(**kwargs):
-        assert get_hermes_home() == secondary
+        assert get_slave_home() == secondary
         assert get_secret("CATALOG_KEY") == "secondary-secret"
         assert kwargs["current_model"] == "secondary-model"
         assert kwargs["current_provider"] == "secondary-provider"
@@ -149,7 +149,7 @@ async def test_thread_hop_binds_owning_profile_for_catalog(settings_env, catalog
 
     monkeypatch.setattr(model_switch_providers, "list_picker_providers", lookup)
     assert await asyncio.to_thread(adapter.list_session_model_picker_providers, source) == []
-    assert get_hermes_home() == home
+    assert get_slave_home() == home
     assert "_sessions" not in vars(runner)
 
 
@@ -158,8 +158,8 @@ def test_catalog_fetches_stay_in_the_owning_profile_scope(settings_env, monkeypa
     carry the profile scope; cache-only catalogs keep every fetch in the owning profile."""
     from agent.secret_scope import get_secret
     from gateway.session_identity import RoutingIdentity
-    from hermes_cli import models
-    from hermes_constants import get_hermes_home
+    from slave_cli import models
+    from slave_constants import get_slave_home
 
     adapter, _, source, home = settings_env
     secondary = home / "secondary"
@@ -173,7 +173,7 @@ def test_catalog_fetches_stay_in_the_owning_profile_scope(settings_env, monkeypa
     seen = []
 
     def fetch(slug, *args, **kwargs):
-        seen.append((get_hermes_home(), get_secret("DEEPSEEK_API_KEY")))
+        seen.append((get_slave_home(), get_secret("DEEPSEEK_API_KEY")))
         return []
 
     monkeypatch.setattr(models, "cached_provider_model_ids", fetch)

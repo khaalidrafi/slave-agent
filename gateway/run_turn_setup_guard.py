@@ -33,17 +33,17 @@ class PreagentSetupStopped(Exception):
 
 
 class PreagentSetupTimeout(Exception):
-    """Setup outlived ``HERMES_AGENT_TIMEOUT``. Not a ``TimeoutError``: setup's own timeouts (the
+    """Setup outlived ``SLAVE_AGENT_TIMEOUT``. Not a ``TimeoutError``: setup's own timeouts (the
     turn lease's ``TurnLeaseTimeoutError``) must still reach the caller that answers them."""
 
 
 @asynccontextmanager
 async def preagent_setup_guard(runner, session_key: str):
-    """Bound setup by ``HERMES_AGENT_TIMEOUT`` (``agent.gateway_timeout``; ``<= 0`` = unbounded) and
+    """Bound setup by ``SLAVE_AGENT_TIMEOUT`` (``agent.gateway_timeout``; ``<= 0`` = unbounded) and
     publish a stop handle on the turn slot. Raises ``PreagentSetupTimeout`` past the deadline and
     ``PreagentSetupStopped`` after ``cancel_preagent_setup``."""
     from gateway.run import _dump_wedged_turn_stacks, _float_env
-    delay = _float_env("HERMES_AGENT_TIMEOUT", 1800)
+    delay = _float_env("SLAVE_AGENT_TIMEOUT", 1800)
     task = asyncio.current_task()
     turn = runner._session_state(session_key).turn
     reason = None
@@ -62,7 +62,7 @@ async def preagent_setup_guard(runner, session_key: str):
             frames = task.get_stack(limit=25) if task is not None else []
             stack = "".join(traceback.format_stack(frames[-1])) if frames else ""
             logger.error(
-                "Pre-agent setup timed out for %s after %.0fs (HERMES_AGENT_TIMEOUT / "
+                "Pre-agent setup timed out for %s after %.0fs (SLAVE_AGENT_TIMEOUT / "
                 "agent.gateway_timeout); cancelling the wedged turn:\n%s",
                 session_key, delay, stack or "<no asyncio stack>",
             )
@@ -178,10 +178,10 @@ def pending_setup_busy_notice(runner, session_key: str, source) -> Optional[str]
     import time
     from gateway.bot_peer_notices import automatic_notices_allowed
     from gateway.run import _AGENT_PENDING_SENTINEL, _float_env
-    if (os.environ.get("HERMES_GATEWAY_BUSY_ACK_ENABLED", "true").lower() != "true"
+    if (os.environ.get("SLAVE_GATEWAY_BUSY_ACK_ENABLED", "true").lower() != "true"
             or not automatic_notices_allowed(source)):
         return None
-    timeout = _float_env("HERMES_SESSION_STALL_TIMEOUT", 300)
+    timeout = _float_env("SLAVE_SESSION_STALL_TIMEOUT", 300)
     state = runner._peek_session_state(session_key)
     started = float(getattr(getattr(state, "turn", None), "started_ts", 0.0) or 0.0)
     if timeout <= 0 or state is None or not started or state.turn.agent is not _AGENT_PENDING_SENTINEL:

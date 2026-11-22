@@ -101,7 +101,7 @@ remains a configuration of that external plugin (purity law unchanged).
 3. Exodus mechanics ride the established left-core pattern, per plugin:
    the payload lands in the plugins repo; a ~plugin-catalog/<name>.yaml~
    entry pins it (repo + sha + subdir); a
-   ~hermes_cli/left_core_migration.py::LEFT_CORE~ row gives existing
+   ~slave_cli/left_core_migration.py::LEFT_CORE~ row gives existing
    homes the automatic install and the old-surface hints; the core
    removal lands as its own commit. Order: the Owner-named integrations
    first (~shop~, ~whatsapp~, ~whatsapp_cloud~, ~telegram~), the

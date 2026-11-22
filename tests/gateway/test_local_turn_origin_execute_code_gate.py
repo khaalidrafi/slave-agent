@@ -26,9 +26,9 @@ async def test_only_the_viewers_own_turn_skips_the_whole_script_gate(tmp_path, m
     from tools import approval as A
     from tools import approval_context
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")  # start_gateway() sets it process-wide
-    for name in ("HERMES_INTERACTIVE", "HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION"):
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")  # start_gateway() sets it process-wide
+    for name in ("SLAVE_INTERACTIVE", "SLAVE_GATEWAY_SESSION", "SLAVE_CRON_SESSION"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)

@@ -13,7 +13,7 @@ deterministic stubs for:
 * ``_native_tool_result_images`` (the shared policy decision)
 * ``_run_async`` (sync->async bridge)
 * ``vision_analyze_tool`` (the aux LLM call)
-* ``hermes_constants.get_hermes_dir`` (cache path)
+* ``slave_constants.get_slave_dir`` (cache path)
 
 …so the full code path is covered without a live cua-driver, a real
 auxiliary client, or network access.
@@ -47,14 +47,14 @@ _JPEG_B64 = (
 
 @pytest.fixture
 def tmp_cache_dir(tmp_path):
-    """Override get_hermes_dir so cache writes land under tmp_path."""
+    """Override get_slave_dir so cache writes land under tmp_path."""
     cache_dir = tmp_path / "cache_vision"
     cache_dir.mkdir()
 
     def _fake_get(*_args, **_kw):
         return cache_dir
 
-    with patch("hermes_constants.get_hermes_dir", _fake_get):
+    with patch("slave_constants.get_slave_dir", _fake_get):
         yield cache_dir
 
 
@@ -227,7 +227,7 @@ class TestRoutingDecisionWiring:
                    return_value="openrouter"), \
              patch("agent.auxiliary_client._read_main_model",
                    return_value="tencent/hy3-preview"), \
-             patch("hermes_cli.config.load_config_readonly", return_value=cfg):
+             patch("slave_cli.config.load_config_readonly", return_value=cfg):
             assert cu_tool._should_route_through_aux_vision() is True
 
 
@@ -238,7 +238,7 @@ class TestRoutingDecisionWiring:
                    return_value="openrouter"), \
              patch("agent.auxiliary_client._read_main_model",
                    return_value="x"), \
-             patch("hermes_cli.config.load_config_readonly", return_value={}), \
+             patch("slave_cli.config.load_config_readonly", return_value={}), \
              patch("tools.vision_tools._native_tool_result_images",
                    side_effect=ValueError("policy bug")):
             assert cu_tool._should_route_through_aux_vision() is False
@@ -249,7 +249,7 @@ def _route(provider, model, cfg, *, catalog, provider_takes_media, veto=False):
     from tools.computer_use import tool as cu_tool
     with patch("agent.auxiliary_client._read_main_provider", return_value=provider), \
          patch("agent.auxiliary_client._read_main_model", return_value=model), \
-         patch("hermes_cli.config.load_config_readonly", return_value=cfg), \
+         patch("slave_cli.config.load_config_readonly", return_value=cfg), \
          patch("agent.image_routing._lookup_supports_vision", return_value=catalog), \
          patch("tools.vision_tools._supports_media_in_tool_results", return_value=provider_takes_media), \
          patch("tools.vision_tools._profile_rejects_tool_media", return_value=veto):

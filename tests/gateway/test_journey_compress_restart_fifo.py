@@ -94,7 +94,7 @@ def test_followers_survive_compression_and_restart_in_order_exactly_once(tmp_pat
         name: {'id': name, 'name': name, 'limit': {'context': 64000 if name == 'original' else 1000000,
                                                  'output': 1000}}
         for name in ('original', 'summary')}}}))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                              PYTHONPATH=str(root), OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url,
                              PYTHONUNBUFFERED='1')
 

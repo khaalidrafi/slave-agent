@@ -15,7 +15,7 @@ from tools.approval_context import set_current_session_key, reset_current_sessio
 def _mode_manual(monkeypatch):
     """Pin approvals.mode to 'manual' for every test in this file.
 
-    The test conftest redirects HERMES_HOME to an empty tempdir, so the
+    The test conftest redirects SLAVE_HOME to an empty tempdir, so the
     approval config falls back to DEFAULT_CONFIG where mode='smart'. Smart
     mode calls the REAL auxiliary LLM (network SSL round-trip, ~1s) from
     inside every prompting test — slow and flaky. These tests exercise the
@@ -30,7 +30,7 @@ def _clean_state():
     approval_module._session_approved.clear()
     approval_module._permanent_approved.clear()
     saved = {}
-    for k in ("HERMES_INTERACTIVE", "HERMES_GATEWAY_SESSION", "HERMES_EXEC_ASK", "HERMES_YOLO_MODE"):
+    for k in ("SLAVE_INTERACTIVE", "SLAVE_GATEWAY_SESSION", "SLAVE_EXEC_ASK", "SLAVE_YOLO_MODE"):
         if k in os.environ:
             saved[k] = os.environ.pop(k)
     yield
@@ -38,7 +38,7 @@ def _clean_state():
     approval_module._permanent_approved.clear()
     for k, v in saved.items():
         os.environ[k] = v
-    for k in ("HERMES_INTERACTIVE", "HERMES_GATEWAY_SESSION", "HERMES_EXEC_ASK", "HERMES_YOLO_MODE"):
+    for k in ("SLAVE_INTERACTIVE", "SLAVE_GATEWAY_SESSION", "SLAVE_EXEC_ASK", "SLAVE_YOLO_MODE"):
         os.environ.pop(k, None)
 
 
@@ -67,14 +67,14 @@ class TestContainerSkip:
 
 class TestCliPrompt:
     def test_safe_command_runs_without_prompt(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["SLAVE_INTERACTIVE"] = "1"
         cb = MagicMock()
         result = check_all_command_guards("echo hello", "local", approval_callback=cb)
         assert result["approved"] is True
         cb.assert_not_called()
 
     def test_dangerous_command_deny(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["SLAVE_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="deny")
         result = check_all_command_guards("rm -rf /tmp", "local", approval_callback=cb)
         assert result["approved"] is False
@@ -82,7 +82,7 @@ class TestCliPrompt:
         assert cb.call_args[1]["allow_permanent"] is True
 
     def test_session_approval_skips_the_next_prompt(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["SLAVE_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="session")
         session_key = "guard-session"
         token = set_current_session_key(session_key)
@@ -94,7 +94,7 @@ class TestCliPrompt:
         cb.assert_called_once()
 
     def test_pre_approved_session_key_skips_prompt(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["SLAVE_INTERACTIVE"] = "1"
         session_key = "guard-preapproved"
         token = set_current_session_key(session_key)
         try:
@@ -116,7 +116,7 @@ class TestCliPrompt:
 
 class TestCommandAllowlistGlobs:
     def test_glob_allowlist_bypasses_combined_guard(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["SLAVE_INTERACTIVE"] = "1"
         approval_module._permanent_approved.add("podman *")
 
         result = check_all_command_guards(
@@ -174,15 +174,15 @@ class TestGatewayApprovalAllowPermanent:
 
         register_gateway_notify(session_key, notify)
         token = set_current_session_key(session_key)
-        os.environ["HERMES_GATEWAY_SESSION"] = "1"
-        os.environ["HERMES_EXEC_ASK"] = "1"
-        os.environ["HERMES_SESSION_KEY"] = session_key
+        os.environ["SLAVE_GATEWAY_SESSION"] = "1"
+        os.environ["SLAVE_EXEC_ASK"] = "1"
+        os.environ["SLAVE_SESSION_KEY"] = session_key
         try:
             check_all_command_guards(command, "local")
         finally:
-            os.environ.pop("HERMES_GATEWAY_SESSION", None)
-            os.environ.pop("HERMES_EXEC_ASK", None)
-            os.environ.pop("HERMES_SESSION_KEY", None)
+            os.environ.pop("SLAVE_GATEWAY_SESSION", None)
+            os.environ.pop("SLAVE_EXEC_ASK", None)
+            os.environ.pop("SLAVE_SESSION_KEY", None)
             reset_current_session_key(token)
             unregister_gateway_notify(session_key)
 

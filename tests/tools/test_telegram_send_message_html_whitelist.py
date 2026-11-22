@@ -1,4 +1,4 @@
-"""`hermes send --to telegram` must only take the HTML branch for real Telegram tags.
+"""`slave send --to telegram` must only take the HTML branch for real Telegram tags.
 
 The markup heuristic on the standalone sender (`gateway/outbound/senders.py`) matched
 *any* `<...>` run, so prose like `<CoT>`, `List<int>` or `<name>` switched the message to

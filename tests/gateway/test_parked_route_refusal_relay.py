@@ -17,7 +17,7 @@ from gateway.relay.descriptor import CapabilityDescriptor
 
 
 class _Transport:
-    _identities = [('slack', 'hermes')]
+    _identities = [('slack', 'slave')]
 
     def __init__(self):
         self.frames = []

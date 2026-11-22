@@ -427,7 +427,7 @@ def test_repair_stale_btree_index_preserves_rows(tmp_path):
 # Cross-process serialisation of the schema surgery
 # ---------------------------------------------------------------------------
 # A normal host runs several independent processes against one state.db: the
-# gateway service, the Desktop app's own `hermes serve` backend, interactive
+# gateway service, the Desktop app's own `slave serve` backend, interactive
 # CLI sessions and the TUI slash worker. `_repair_attempt_lock` is a
 # threading.Lock and covers none of that, so two of them hitting a malformed
 # DB at once each ran the full writable_schema surgery + VACUUM on a private
@@ -677,11 +677,11 @@ def _mode_of(db_path) -> str:
 
 
 def _configure_journal_mode(monkeypatch, tmp_path, mode) -> None:
-    import hermes_yaml as yaml
+    import slave_yaml as yaml
 
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "slave-home"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     (home / "config.yaml").write_text(
         yaml.safe_dump({"database": {"journal_mode": mode}}), encoding="utf-8",
     )
@@ -717,7 +717,7 @@ def test_repair_restores_configured_wal_after_surgery(
     assert _mode_of(db_path) == "delete"
     _corrupt_duplicate_fts(db_path)
 
-    with caplog.at_level(logging.WARNING, logger="hermes_state"):
+    with caplog.at_level(logging.WARNING, logger="slave_state"):
         report = repair_state_db_schema(db_path)
 
     assert report["repaired"] is True
@@ -773,7 +773,7 @@ def test_repair_reports_mode_change_when_probe_succeeded(
         patch.object(
             repair_module, "_probe_journal_mode_for_repair", return_value="delete"
         ),
-        caplog.at_level(logging.WARNING, logger="hermes_state"),
+        caplog.at_level(logging.WARNING, logger="slave_state"),
     ):
         report = repair_state_db_schema(db_path)
 
@@ -806,7 +806,7 @@ def test_repair_restore_failure_is_nonfatal(
 
     with (
         patch.object(sqlite_support, "apply_wal_with_fallback", _refused),
-        caplog.at_level(logging.WARNING, logger="hermes_state"),
+        caplog.at_level(logging.WARNING, logger="slave_state"),
     ):
         report = repair_state_db_schema(db_path)
 

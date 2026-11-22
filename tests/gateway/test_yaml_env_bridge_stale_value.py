@@ -42,7 +42,7 @@ def test_an_inherited_process_value_loses_to_explicit_yaml(monkeypatch):
 
 def test_a_dotenv_value_still_beats_yaml(tmp_path, monkeypatch):
     """#109032: ``TELEGRAM_REACTIONS=true`` in ``.env`` beats the stock ``reactions: false``."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
 
     for attr in ("_LOADED_DOTENV_KEYS", "_MANAGED_DOTENV_KEYS"):
         monkeypatch.setattr(env_loader, attr, set())
@@ -51,7 +51,7 @@ def test_a_dotenv_value_still_beats_yaml(tmp_path, monkeypatch):
     monkeypatch.delenv("TELEGRAM_REACTIONS")
     monkeypatch.delenv(bridged_env_marker("TELEGRAM_REACTIONS"), raising=False)
     (tmp_path / ".env").write_text("TELEGRAM_REACTIONS=true\n", encoding="utf-8")
-    env_loader.load_hermes_dotenv(hermes_home=tmp_path, load_external_secrets=False)
+    env_loader.load_slave_dotenv(slave_home=tmp_path, load_external_secrets=False)
 
     yaml_env_setter()("TELEGRAM_REACTIONS", "false")
 
@@ -156,8 +156,8 @@ def test_every_authorization_name_is_refreshed_by_the_real_adapter_hooks(monkeyp
 def test_the_restart_child_env_keeps_the_value_and_its_marker(monkeypatch, tmp_path):
     """End-to-end over the real restart builder: the child must inherit both, or nothing refreshes.
 
-    ``hermes_cli/gateway_runtime_start.py`` builds the replacement daemon's environment with
-    ``served_profile_child_env``; if that step dropped or rewrote ``HERMES_BRIDGED_*``, the marker
+    ``slave_cli/gateway_runtime_start.py`` builds the replacement daemon's environment with
+    ``served_profile_child_env``; if that step dropped or rewrote ``SLAVE_BRIDGED_*``, the marker
     scheme would be correct in unit tests and dead in production.
     """
     from tools.environments.local import served_profile_child_env
@@ -165,10 +165,10 @@ def test_the_restart_child_env_keeps_the_value_and_its_marker(monkeypatch, tmp_p
     monkeypatch.setenv("TELEGRAM_REACTIONS", "false")
     monkeypatch.setenv(bridged_env_marker("TELEGRAM_REACTIONS"), bridged_env_digest("false"))
 
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
 
     child = served_profile_child_env(  # the launch profile's own restart: same home
-        base=dict(shared.os.environ), target_home=get_hermes_home(), inherit_credentials=False
+        base=dict(shared.os.environ), target_home=get_slave_home(), inherit_credentials=False
     )
 
     assert child["TELEGRAM_REACTIONS"] == "false"
@@ -184,7 +184,7 @@ def test_the_restart_child_env_keeps_the_value_and_its_marker(monkeypatch, tmp_p
 
 def test_a_dotenv_value_survives_even_when_it_matches_the_bridge(monkeypatch):
     """#109032 holds when .env happens to hold the same string the bridge wrote earlier."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
 
     monkeypatch.setattr(env_loader, "_LOADED_DOTENV_KEYS", {"TELEGRAM_REACTIONS"}, raising=False)
     monkeypatch.setenv("TELEGRAM_REACTIONS", "false")

@@ -1,5 +1,5 @@
-import { sharedControlParams } from '@hermes/shared/gateway-canonical'
-import type { SharedControlRespondResponse } from '@hermes/shared/gateway-types'
+import { sharedControlParams } from '@slave-agent/shared/gateway-canonical'
+import type { SharedControlRespondResponse } from '@slave-agent/shared/gateway-types'
 import { useMemo } from 'react'
 
 import { t } from '../i18n/runtime.js'
@@ -20,13 +20,13 @@ interface ApprovalAnswerDeps {
   sys: (text: string) => void
 }
 
-// An approval answered with "tell Hermes instead" is committed to a deny. While its steer is in flight
+// An approval answered with "tell slave-agent instead" is committed to a deny. While its steer is in flight
 // ('steering') every answer is refused: a repeated Enter would steer twice and an allow would release
 // the command. Once steered ('told') only the promised deny may still be sent (a retry after a failed
 // respond). Keyed by the approval object, so a new prompt starts clean.
 const tellState = new WeakMap<object, 'steering' | 'told'>()
 
-/** The approval prompt's answers: a gateway choice, or "No, and tell Hermes what to do instead". */
+/** The approval prompt's answers: a gateway choice, or "No, and tell slave-agent what to do instead". */
 export function approvalAnswers({ approval, canonical, enqueue, respondWith, rpc, sys }: ApprovalAnswerDeps) {
   const answerApproval = (choice: string) => {
     const fresh = capturePromptResponseGuard('approval', approval)
@@ -60,7 +60,7 @@ export function approvalAnswers({ approval, canonical, enqueue, respondWith, rpc
     respondWith(approval.requestId, { choice }, settle)
   }
 
-  // "No, and tell Hermes what to do instead": the instruction is steered into the held turn FIRST, so it
+  // "No, and tell slave-agent what to do instead": the instruction is steered into the held turn FIRST, so it
   // rides on the blocked tool result; then the command is denied. A refused steer (the turn is
   // ending) keeps the words as the next prompt, the same fallback /steer uses.
   const answerApprovalTell = (text: string) => {

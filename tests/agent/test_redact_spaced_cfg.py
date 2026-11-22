@@ -7,7 +7,7 @@ from agent.redact import redact_for_egress, redact_sensitive_text, redact_termin
 
 @pytest.fixture(autouse=True)
 def _ensure_redaction_enabled(monkeypatch):
-    monkeypatch.delenv("HERMES_REDACT_SECRETS", raising=False)
+    monkeypatch.delenv("SLAVE_REDACT_SECRETS", raising=False)
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
 
@@ -23,7 +23,7 @@ def _ensure_redaction_enabled(monkeypatch):
 ])
 def test_spaced_config_secret_masked(text, secret):
     assert secret not in redact_for_egress(text)
-    assert secret not in redact_terminal_output(text, "cat ~/.hermes/.env")
+    assert secret not in redact_terminal_output(text, "cat ~/.slave/.env")
 
 
 @pytest.mark.parametrize("key", ["password", "db_password", "DB_PASSWORD", "client_secret"])
@@ -52,7 +52,7 @@ def test_spaced_quoted_value_with_space_masked_whole(key):
     "auth = a or b",
     'auth_type = "oauth"',
     'auth = "header"',
-    'no_token_msg = "no Codex OAuth token found (run: hermes model)"',
+    'no_token_msg = "no Codex OAuth token found (run: slave model)"',
     "password => value",
     "password =~ /re/",
     'password = "prefix-" + suffix',

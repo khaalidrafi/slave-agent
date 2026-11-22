@@ -203,7 +203,7 @@ class BindingMarks:
 
 @dataclass(frozen=True, slots=True)
 class LegacyAdoptionScan:
-    """The legacy local rows ``hermes sessions adopt`` walks: ``session_ids`` every row whose source is a legacy local source, by start time then id; ``marked`` every id holding a creation receipt or a legacy binding."""
+    """The legacy local rows ``slave sessions adopt`` walks: ``session_ids`` every row whose source is a legacy local source, by start time then id; ``marked`` every id holding a creation receipt or a legacy binding."""
 
     session_ids: tuple[SessionId, ...]
     marked: frozenset[str]

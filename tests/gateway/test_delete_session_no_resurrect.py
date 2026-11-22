@@ -1,6 +1,6 @@
 """Hard-deleted gateway sessions must not resurrect through the routing index (#42422).
 
-A hard delete (Desktop remote mode -> ``DELETE /api/sessions/<id>``, or ``hermes
+A hard delete (Desktop remote mode -> ``DELETE /api/sessions/<id>``, or ``slave
 sessions delete`` / TUI deletes out of process) removes the state.db rows but used to
 leave the gateway's durable channel->session routing index intact. The next inbound
 Discord/Telegram message then resolved the SAME session id, and run_agent's INSERT OR
@@ -26,7 +26,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import hermes_constants
+import slave_constants
 from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.api_server import APIServerAdapter
 from gateway.session import SessionEntry, SessionSource, SessionStore
@@ -47,8 +47,8 @@ def _source(user_id: str = "user-1") -> SessionSource:
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME so the store, its DB and the mirror all land in tmp."""
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    """Isolated SLAVE_HOME so the store, its DB and the mirror all land in tmp."""
+    monkeypatch.setattr(slave_constants, "get_slave_home", lambda: tmp_path)
     return tmp_path
 
 
@@ -101,7 +101,7 @@ class TestOutOfProcessDeleteSelfHeals:
         db = store._persistence_for_key(key)
         assert session_row(db, entry.session_id) is not None
 
-        # Out-of-process hard delete (CLI `hermes sessions delete`, TUI): only the
+        # Out-of-process hard delete (CLI `slave sessions delete`, TUI): only the
         # durable row goes; the gateway's in-memory index is untouched.
         removed = db.sessions.delete(entry.session_id, media_root=str(native_inputs_root()))
         after_sessions_removed(db, db.scope.profile_dir, removed, reason="delete", primary=entry.session_id,

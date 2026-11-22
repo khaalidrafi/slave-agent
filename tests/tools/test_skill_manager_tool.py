@@ -35,7 +35,7 @@ from agent.skill_utils import (
 @contextmanager
 def _skill_dir(tmp_path):
     """Patch both SKILLS_DIR and get_all_skills_dirs so _find_skill searches
-    only the temp directory — not the real ~/.hermes/skills/."""
+    only the temp directory — not the real ~/.slave/skills/."""
     with patch("tools.skills_tool.SKILLS_DIR", tmp_path), \
          patch("agent.skill_utils.get_all_skills_dirs", return_value=[tmp_path]):
         yield
@@ -896,7 +896,7 @@ class TestSecurityScanGate:
         """If load_config raises, _guard_agent_created_enabled defaults to False (fail-safe off)."""
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
-        with patch("hermes_cli.config.load_config", side_effect=RuntimeError("boom")):
+        with patch("slave_cli.config.load_config", side_effect=RuntimeError("boom")):
             assert _guard_agent_created_enabled() is False
 
     def test_guard_flag_quoted_false_stays_disabled(self):
@@ -904,7 +904,7 @@ class TestSecurityScanGate:
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
         for quoted in ("false", "False", "0", "no", "off"):
-            with patch("hermes_cli.config.load_config",
+            with patch("slave_cli.config.load_config",
                        return_value={"skills": {"guard_agent_created": quoted}}):
                 assert _guard_agent_created_enabled() is False, \
                     f"guard_agent_created={quoted!r} must coerce to False"
@@ -941,7 +941,7 @@ class TestExternalSkillMutations:
 
     Regression for issues #4759 and #4381: the read-only gate used to refuse
     with 'Skill X is in an external directory and cannot be modified', which
-    caused agents to create duplicate copies in ~/.hermes/skills/ as a
+    caused agents to create duplicate copies in ~/.slave/skills/ as a
     workaround.
     """
 
@@ -1051,8 +1051,8 @@ class TestBackgroundOwnershipPolicyConsistency:
 
     def test_repeated_identical_delete_gets_the_same_answer(self, tmp_path, monkeypatch):
         """No stubbing of load_usage: telemetry side effects are live. Both attempts agree."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        (tmp_path / ".hermes" / "skills").mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
+        (tmp_path / ".slave" / "skills").mkdir(parents=True, exist_ok=True)
         with _skill_dir(tmp_path):
             _create_skill("flip-skill", VALID_SKILL_CONTENT)
             first = self._bg_delete("flip-skill")
@@ -1065,7 +1065,7 @@ class TestBackgroundOwnershipPolicyConsistency:
     def test_foreground_write_to_unmanaged_skill_still_allowed(self, tmp_path, monkeypatch):
         """Fail-closed applies to AUTONOMOUS writes only. A user-directed
         foreground edit to their own skill must keep working."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         with _skill_dir(tmp_path):
             _create_skill("no-record", VALID_SKILL_CONTENT)
             with patch("tools.skill_usage.load_usage", return_value={}):
@@ -1077,7 +1077,7 @@ class TestBackgroundOwnershipPolicyConsistency:
 
     def test_adoption_lifts_the_autonomous_delete_refusal(self, tmp_path, monkeypatch):
         """Adoption is the documented path from refused to allowed for archival."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("SLAVE_HOME", str(tmp_path / ".slave"))
         with _skill_dir(tmp_path):
             _create_skill("adopt-me", VALID_SKILL_CONTENT)
             with patch("tools.skill_usage.load_usage", return_value={}):
@@ -1098,7 +1098,7 @@ class TestBackgroundOwnershipPolicyConsistency:
 # ---------------------------------------------------------------------------
 # Pinned-skill guard — skill_manage refuses only `delete` on pinned skills.
 # Patches and edits go through so pinned skills can still evolve as pitfalls
-# come up. The user unpins via `hermes curator unpin <name>` to delete.
+# come up. The user unpins via `slave curator unpin <name>` to delete.
 # ---------------------------------------------------------------------------
 
 class TestPinnedGuard:
@@ -1217,8 +1217,8 @@ class TestDeleteSkillRmtreeGuard:
 def _curator_pass(tmp_path, *, monkeypatch):
     """Run the body as the curator/background-review fork.
 
-    Points HERMES_HOME at ``tmp_path/.hermes`` so skill_usage's archive path
-    (``get_hermes_home()``) resolves into the same tree the skill manager
+    Points SLAVE_HOME at ``tmp_path/.slave`` so skill_usage's archive path
+    (``get_slave_home()``) resolves into the same tree the skill manager
     searches, and flips ``is_background_review()`` → True so the consolidation
     guard fires.
 
@@ -1231,10 +1231,10 @@ def _curator_pass(tmp_path, *, monkeypatch):
     here; tests that specifically exercise the ownership guard set their own
     records instead.
     """
-    hermes_home = tmp_path / ".hermes"
-    skills_root = hermes_home / "skills"
+    slave_home = tmp_path / ".slave"
+    skills_root = slave_home / "skills"
     skills_root.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
     with patch("tools.skills_tool.SKILLS_DIR", skills_root), \
          patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills_root]), \
          patch("tools.skill_usage._is_curator_managed_record", return_value=True), \
@@ -1351,7 +1351,7 @@ class TestCuratorConsolidationDeleteGuard:
         _reset_background_review_read_marks()
         with _curator_pass(tmp_path, monkeypatch=monkeypatch):
             _create_curator_skill("reviewed", _skill_content("reviewed"))
-            ref = tmp_path / ".hermes" / "skills" / "reviewed" / "references"
+            ref = tmp_path / ".slave" / "skills" / "reviewed" / "references"
             ref.mkdir()
             (ref / "workflow.md").write_text("old workflow\n", encoding="utf-8")
 
@@ -1379,7 +1379,7 @@ class TestCuratorConsolidationDeleteGuard:
 
 
 # ---------------------------------------------------------------------------
-# Content lock (#25083, #140332) — `hermes curator lock <name>` makes skill_manage refuse
+# Content lock (#25083, #140332) — `slave curator lock <name>` makes skill_manage refuse
 # AUTONOMOUS mutations (review fork / curator pass) of that one skill: whole directory,
 # single-op and batch paths. Foreground user-directed writes are not gated; unlocked
 # siblings keep learning; an unreadable sidecar fails closed for autonomous writes only.
@@ -1412,11 +1412,11 @@ class TestLockedGuard:
 
     @staticmethod
     def _profile(tmp_path, monkeypatch, name="default"):
-        """Isolated HERMES_HOME whose skills/ dir doubles as the patched SKILLS_DIR, so the lock
+        """Isolated SLAVE_HOME whose skills/ dir doubles as the patched SKILLS_DIR, so the lock
         sidecar (<home>/skills/.usage.json) and the skill files share one profile root."""
-        skills = tmp_path / name / ".hermes" / "skills"
+        skills = tmp_path / name / ".slave" / "skills"
         skills.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(skills.parent))
+        monkeypatch.setenv("SLAVE_HOME", str(skills.parent))
         return skills
 
     @staticmethod
@@ -1454,7 +1454,7 @@ class TestLockedGuard:
         for op, res in zip(self._MUTATIONS, results):
             assert res["success"] is False, (op, res)
             assert "locked" in res["error"], (op, res)
-            assert "hermes curator unlock locked-skill" in res["error"], (op, res)
+            assert "slave curator unlock locked-skill" in res["error"], (op, res)
         assert after == before
 
     def test_unlocked_sibling_keeps_learning_and_unlock_lifts_refusal(self, tmp_path, monkeypatch):
@@ -1485,7 +1485,7 @@ class TestLockedGuard:
             results = [json.loads(skill_manage(name="locked-skill", **op)) for op in self._MUTATIONS]
             after = self._tree(d)
         for op, res in zip(self._MUTATIONS, results):
-            assert res["success"] is False and "hermes curator unlock locked-skill" in res["error"], (op, res)
+            assert res["success"] is False and "slave curator unlock locked-skill" in res["error"], (op, res)
         assert after == before
 
     def test_batch_refuses_before_any_sibling_op_is_applied(self, tmp_path, monkeypatch):

@@ -23,10 +23,10 @@ from tests.waiting import async_wait_until
 
 
 def _homes(tmp_path, monkeypatch):
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.slave'
     root.mkdir(mode=0o700)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('SLAVE_HOME', str(root))
     beta = root / 'profiles' / 'beta'
     beta.mkdir(parents=True, mode=0o700)
     (beta / 'config.yaml').write_text('{}')

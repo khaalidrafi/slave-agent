@@ -9,7 +9,7 @@ the generic file tools (``write_file``/``patch``) do not consult it (#60440
 tracks closing that gap). ``false`` (default) writes freely; ``true`` never
 commits directly: it prompts inline (memory, interactive CLI only) or **stages**
 the write under
-``<HERMES_HOME>/pending/{memory,skills}/<id>.json`` for out-of-band review.
+``<SLAVE_HOME>/pending/{memory,skills}/<id>.json`` for out-of-band review.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ def write_approval_enabled(subsystem: str) -> bool:
     if subsystem not in _SUBSYSTEMS:
         return False
     try:
-        from hermes_cli.config import load_config, cfg_get
+        from slave_cli.config import load_config, cfg_get
         return _normalize_enabled(cfg_get(load_config(), subsystem, CONFIG_KEY, default=False))
     except Exception:
         return False
@@ -66,7 +66,7 @@ def _normalize_enabled(value: Any) -> bool:
 # --- Pending store (file-backed) ---
 
 def _pending_path(subsystem: str, pending_id: str) -> Path:
-    return get_hermes_home() / "pending" / subsystem / f"{pending_id}.json"
+    return get_slave_home() / "pending" / subsystem / f"{pending_id}.json"
 
 
 def _pending_files(subsystem: str) -> list:
@@ -169,7 +169,7 @@ class GateDecision:
 def _slash_review_surface() -> bool:
     """Whether the ACTIVE turn has a human who can type ``/<subsystem> pending``: the interactive
     CLI, TUI/desktop (exec route), and chat-gateway sessions all answer it now. Headless worker
-    contexts — cron (``HERMES_CRON_SESSION``), kanban (``HERMES_KANBAN_TASK``) and the unattended
+    contexts — cron (``SLAVE_CRON_SESSION``), kanban (``SLAVE_KANBAN_TASK``) and the unattended
     programmatic platforms (api_server, webhook delivery) — have nobody at a prompt, so the staged
     hint must not name a command nobody can deliver (#98330); it names the pending dir instead."""
     def _env(name: str) -> str:
@@ -178,15 +178,15 @@ def _slash_review_surface() -> bool:
             return get_session_env(name, "") or ""
         except Exception:  # standalone/tests: process env is the fallback
             return os.environ.get(name, "") or ""
-    if _env("HERMES_KANBAN_TASK").strip():
+    if _env("SLAVE_KANBAN_TASK").strip():
         return False
     try:
         from utils import is_truthy_value
-        if is_truthy_value(_env("HERMES_CRON_SESSION")):
+        if is_truthy_value(_env("SLAVE_CRON_SESSION")):
             return False
     except Exception:
         pass
-    platform = (_env("HERMES_SESSION_PLATFORM") or os.environ.get("HERMES_PLATFORM", "")).strip().lower()
+    platform = (_env("SLAVE_SESSION_PLATFORM") or os.environ.get("SLAVE_PLATFORM", "")).strip().lower()
     return platform not in {"webhook", "msgraph_webhook", "api_server"}
 
 
@@ -226,7 +226,7 @@ def _prompt_inline_memory_approval(summary: str, detail: str) -> Optional[bool]:
     prompt_toolkit; silent deny in gateway sessions) and turns callback errors into a deny, whereas
     here a missing channel or failed prompt must stage instead.
 
-    ``hermes chat -q`` (and so every kanban worker), cron and unattended platforms can register a callback too,
+    ``slave chat -q`` (and so every kanban worker), cron and unattended platforms can register a callback too,
     but nobody answers it: stage at once instead of waiting the approval timeout. See #15216.
     """
     from tools.approval_context import _no_user_can_answer

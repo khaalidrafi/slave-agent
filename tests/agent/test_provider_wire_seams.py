@@ -40,11 +40,11 @@ def wire_profile():
     profile = WireFakeProfile(name="wirefake", base_url=HOST, hostnames=("wirefake.test",))
     providers.register_provider(profile)
     yield profile, seen_keys
-    import hermes_cli.auth
+    import slave_cli.auth
     providers._REGISTRY.pop("wirefake", None)
     providers._SOURCES.pop("wirefake", None)
     providers._PROVIDER_LIST_CACHE = None
-    hermes_cli.auth.PROVIDER_REGISTRY.pop("wirefake", None)
+    slave_cli.auth.PROVIDER_REGISTRY.pop("wirefake", None)
 
 
 def _agent(provider, base_url, model="gpt-4.1"):
@@ -57,7 +57,7 @@ def _agent(provider, base_url, model="gpt-4.1"):
 
 
 def test_api_mode_for_model_decides_responses_routing_per_model(wire_profile):
-    from hermes_cli.model_switch import model_derived_api_mode
+    from slave_cli.model_switch import model_derived_api_mode
     from run_agent import AIAgent
 
     # The profile keeps this gpt-5 id on chat completions; the generic GPT-5 rule would upgrade it.
@@ -131,7 +131,7 @@ def test_user_turn_attribution_is_consumed_by_the_first_call_only(wire_profile):
 
 
 def test_only_the_first_attempt_of_a_user_turn_carries_user_attribution(wire_profile):
-    # A 429/5xx retry (or a fallback activation) rebuilds the payload for the same API call; like Hermes
+    # A 429/5xx retry (or a fallback activation) rebuilds the payload for the same API call; like Slave
     # always has, it goes out with the route's default attribution (billing parity), not the user's.
     agent = _agent("wirefake", HOST)
     agent._is_user_initiated_turn = True

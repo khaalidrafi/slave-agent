@@ -52,7 +52,7 @@ async def probe(peer):
     from gateway.run_api import start_gateway_api, stop_gateway_api
     from gateway.session import SessionSource
     from gateway.session_authority import initialize_session_authority
-    from hermes_cli import web_server
+    from slave_cli import web_server
     from tools import clarify_gateway
 
     class Adapter(BasePlatformAdapter):
@@ -119,7 +119,7 @@ async def probe(peer):
         assert any('green' in json.dumps(m) for m in tools), tools
         assert not any('SHOULD_NOT_REPLACE' in json.dumps(m) for m in tools)
         assert (await rpc(b, 8, 'session.resume'))['result']['prompts'] == []
-        Path(os.environ['HERMES_HOME'], 'clarify-passed').write_text('reply reached real model; stale reply rejected')
+        Path(os.environ['SLAVE_HOME'], 'clarify-passed').write_text('reply reached real model; stale reply rejected')
     finally:
         clarify_gateway.clear_session(authority.sessions[ref.session_id].route)
         task = authority.sessions[ref.session_id].task
@@ -137,7 +137,7 @@ def main():
     threading.Thread(target=peer.serve_forever, daemon=True).start()
     url = f'http://127.0.0.1:{peer.server_port}/v1'
     os.environ.update(OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, TELEGRAM_ALLOWED_USERS='fixture-user')
-    Path(os.environ['HERMES_HOME'], 'config.yaml').write_text(
+    Path(os.environ['SLAVE_HOME'], 'config.yaml').write_text(
         f'model:\n  default: local\n  provider: custom\n  base_url: {url}\n'
         'agent:\n  clarify_timeout: 25\nauxiliary:\n  title_generation:\n    enabled: false\n')
     try:

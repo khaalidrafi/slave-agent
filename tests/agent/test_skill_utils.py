@@ -30,11 +30,11 @@ def test_skill_config_helpers_share_raw_config_parse_cache(tmp_path, monkeypatch
     """Repeated skill config helpers should parse config.yaml only once."""
     from agent import skill_utils
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
+    slave_home = tmp_path / ".slave"
+    slave_home.mkdir()
     external = tmp_path / "external-skills"
     external.mkdir()
-    config_path = hermes_home / "config.yaml"
+    config_path = slave_home / "config.yaml"
     config_path.write_text(
         f"""
 skills:
@@ -57,7 +57,7 @@ skills:
         parse_count += 1
         return real_load(stream)
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
     skill_utils._external_dirs_cache_clear()
     getattr(skill_utils, "_raw_config_cache_clear", lambda: None)()
     # The file config backend parses through utils.fast_safe_load.
@@ -95,16 +95,16 @@ class TestMultiprofileRawConfigCache:
     @staticmethod
     def _load_under(home) -> list:
         from agent import skill_utils
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from slave_constants import (
+            reset_slave_home_override,
+            set_slave_home_override,
         )
 
-        token = set_hermes_home_override(str(home))
+        token = set_slave_home_override(str(home))
         try:
             return skill_utils._load_raw_config()["skills"]["disabled"]
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
 
     def test_watcher_rotation_reparses_no_unchanged_config(self, tmp_path, monkeypatch):
         from agent import skill_utils
@@ -224,7 +224,7 @@ class TestMultiprofileRawConfigCache:
 
 
 class TestParseConfigStringList:
-    """#86661: `hermes config set` and JSON-mode editor saves store lists as
+    """#86661: `slave config set` and JSON-mode editor saves store lists as
     quoted strings (e.g. '["a","b"]'). Treating such a string as a single name
     made curated disabled lists silently filter nothing."""
 
@@ -235,7 +235,7 @@ class TestParseConfigStringList:
         ]
 
     def test_python_literal_array_string_parses(self):
-        # `hermes config set` can persist single-quoted Python-literal forms.
+        # `slave config set` can persist single-quoted Python-literal forms.
         assert parse_config_string_list("['skill-a']") == ["skill-a"]
 
     def test_scalar_string_means_one_name(self):
@@ -266,13 +266,13 @@ class TestDisabledSkillsJsonArrayString:
     def test_get_disabled_skill_names_parses_json_array_string(
         self, tmp_path, monkeypatch
     ):
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        slave_home = tmp_path / ".slave"
+        slave_home.mkdir()
+        (slave_home / "config.yaml").write_text(
             "skills:\n  disabled: '[\"skill-a\",\"skill-b\"]'\n",
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("SLAVE_HOME", str(slave_home))
         from agent import skill_utils
 
         getattr(skill_utils, "_raw_config_cache_clear", lambda: None)()
@@ -287,12 +287,12 @@ def test_skill_config_home_vars_use_subprocess_home(tmp_path, monkeypatch):
     from agent import skill_utils
 
     # A backslash in the home path must not be read as a regex-replacement escape.
-    hermes_home = tmp_path / "da\\ta"
-    subprocess_home = hermes_home / "home"
+    slave_home = tmp_path / "da\\ta"
+    subprocess_home = slave_home / "home"
     subprocess_home.mkdir(parents=True)
-    (hermes_home / "config.yaml").write_text("", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("HOME", str(hermes_home))
+    (slave_home / "config.yaml").write_text("", encoding="utf-8")
+    monkeypatch.setenv("SLAVE_HOME", str(slave_home))
+    monkeypatch.setenv("HOME", str(slave_home))
     monkeypatch.setenv("TERMINAL_HOME_MODE", "profile")
     monkeypatch.setenv("PROJECT_ROOT", "/proj")
     monkeypatch.setenv("LEAF", "leaf")
@@ -428,7 +428,7 @@ class TestParseFrontmatterBOM:
         "description: Does a thing.\n"
         "platforms: [macos]\n"
         "metadata:\n"
-        "  hermes:\n"
+        "  slave:\n"
         "    config:\n"
         "      - key: my.key\n"
         "        description: A configured value\n"

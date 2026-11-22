@@ -1,7 +1,7 @@
 """Child-process roles for the SQLite torture chamber.
 
 Run as ``python _roles.py <role> <json-args>``. Every role is a real OS process that opens the shared
-``state.db`` through the production store opened with ``open_persistence`` (or, for the non-hermes opener, a bare ``sqlite3``
+``state.db`` through the production store opened with ``open_persistence`` (or, for the non-slave opener, a bare ``sqlite3``
 connection) and reports through append-only files, so a ``kill -9`` loses nothing it already reported:
 
 * ``<name>.journal`` — writers: ``I <tok> <sid> <nrows>`` before an append, ``A <tok>`` once it returned.
@@ -10,7 +10,7 @@ connection) and reports through append-only files, so a ``kill -9`` loses nothin
 Tokens are single FTS words (``TK`` + alnum) so the test can look every acknowledged append up by content,
 through ``messages`` and through the FTS indexes.
 
-Journal-mode seam: with ``HERMES_E2E_SQLITE_VERSION_PIN`` set, the production version probe
+Journal-mode seam: with ``SLAVE_E2E_SQLITE_VERSION_PIN`` set, the production version probe
 ``sqlite_support.is_sqlite_wal_reset_vulnerable()`` reports that SQLite version instead of the linked one;
 the real range predicate and ``apply_wal_with_fallback`` then decide the journal mode as they would there.
 """
@@ -57,7 +57,7 @@ class Out:
 
 
 def _apply_sqlite_version_pin() -> None:
-    pin = os.environ.get("HERMES_E2E_SQLITE_VERSION_PIN")
+    pin = os.environ.get("SLAVE_E2E_SQLITE_VERSION_PIN")
     if not pin:
         return
     import sqlite_support
@@ -122,7 +122,7 @@ def _fd_count() -> int:
 
 
 def _stray_close(db_path: Path) -> None:
-    """What a plugin, a tool read of ~/.hermes or a header probe does: open + close the live files in THIS
+    """What a plugin, a tool read of ~/.slave or a header probe does: open + close the live files in THIS
     process. POSIX drops every lock this process holds on the inode (sqlite.org/howtocorrupt.html §2.2)."""
     for suffix in ("", "-shm", "-wal"):
         try:
@@ -223,14 +223,14 @@ def role_reader(a: dict, out: Out) -> int:
 
 
 def role_churn(a: dict, out: Out) -> int:
-    """`hermes sessions list` / doctor / cron-guard shape: open, read, close — ``iterations`` times in one
+    """`slave sessions list` / doctor / cron-guard shape: open, read, close — ``iterations`` times in one
     process, alternating the production store with a bare sqlite3 opener (sqlite3 shell, backup tool).
     The fd count must not grow with the number of cycles."""
     db_path = Path(a["db"])
     start_fds = _fd_count()
     fds_after_warmup = None
 
-    def _hermes_cycle() -> None:
+    def _slave_cycle() -> None:
         db = _open(db_path, eager=True)
         try:
             _message_count(db)
@@ -246,7 +246,7 @@ def role_churn(a: dict, out: Out) -> int:
 
     try:
         for i in range(int(a["iterations"])):
-            _patient(a, out, "churn", _raw_cycle if i % 2 else _hermes_cycle)
+            _patient(a, out, "churn", _raw_cycle if i % 2 else _slave_cycle)
             if i == 3:
                 fds_after_warmup = _fd_count()
     except BaseException as exc:
@@ -380,12 +380,12 @@ def role_agent(a: dict, out: Out) -> int:
 
 
 def role_cli(a: dict, out: Out) -> int:
-    """``hermes <argv>``: ``hermes_cli.main`` run as ``__main__``, i.e. ``python -m hermes_cli.main <argv>``."""
+    """``slave <argv>``: ``slave_cli.main`` run as ``__main__``, i.e. ``python -m slave_cli.main <argv>``."""
     import runpy
 
-    sys.argv = ["hermes", *a["argv"]]
+    sys.argv = ["slave", *a["argv"]]
     try:
-        runpy.run_module("hermes_cli.main", run_name="__main__", alter_sys=True)
+        runpy.run_module("slave_cli.main", run_name="__main__", alter_sys=True)
     except SystemExit as exc:
         return exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
     return 0

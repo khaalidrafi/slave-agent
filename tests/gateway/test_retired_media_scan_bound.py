@@ -32,7 +32,7 @@ def _trace_messages_scans(holder):
 def test_candidates_share_one_messages_pass(owner, tmp_path, monkeypatch):
     from gateway.session_ingress_media import _media_root
     from session_retention import collect_retired_media
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store, root = owner.persistence, _media_root()
     seed_session(store, 'keep', 'api_server')
     references = []

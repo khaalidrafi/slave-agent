@@ -28,16 +28,16 @@
 # state. Each rename is one rename(2) on one volume, so there is no mid-rename
 # state to kill into.
 
-SWAP_ST_FILES="${HERMES_SELFTEST_SWAP_FILES:-1500}"
+SWAP_ST_FILES="${SLAVE_SELFTEST_SWAP_FILES:-1500}"
 SWAP_ST_FAILED="" SWAP_ST_CELL=""
 
 swap_st_fail() { echo "FAIL [$SWAP_ST_CELL] $*"; SWAP_ST_FAILED="$SWAP_ST_FAILED $SWAP_ST_CELL"; }
 
-swap_st_bundle() { # dir version -- a fixture Hermes.app; every file carries the version
+swap_st_bundle() { # dir version -- a fixture Slave.app; every file carries the version
   local d="$1" v="$2" i=0
   mkdir -p "$d/Contents/MacOS" "$d/Contents/Resources/payload" || return 1
-  printf '%s\n' "$v" > "$d/Contents/Resources/hermes-version"
-  printf '#!/bin/sh\necho %s\n' "$v" > "$d/Contents/MacOS/Hermes" && chmod +x "$d/Contents/MacOS/Hermes"
+  printf '%s\n' "$v" > "$d/Contents/Resources/slave-version"
+  printf '#!/bin/sh\necho %s\n' "$v" > "$d/Contents/MacOS/Slave" && chmod +x "$d/Contents/MacOS/Slave"
   # Enough files that a kill lands inside the copy / the cleanup.
   while [ "$i" -lt "$SWAP_ST_FILES" ]; do
     printf '%s %s\n' "$v" "$i" > "$d/Contents/Resources/payload/f$i"; i=$((i + 1))
@@ -64,10 +64,10 @@ swap_st_stopped() { # pid -> 0 iff the process is stopped (job-control stop)
 swap_st_interrupt() { # root pause-at mode
   local root="$1" pause="$2" mode="$3" t pid i deadline s sentinels
   rm -rf "$root"
-  mkdir -p "$root/Applications" "$root/hermes-agent/apps/desktop/release/mac-arm64" || return 2
-  cp -R "$SWAP_ST_ROOT/old.app" "$root/Applications/Hermes.app" || return 2
-  cp -R "$SWAP_ST_ROOT/new.app" "$root/hermes-agent/apps/desktop/release/mac-arm64/Hermes.app" || return 2
-  INSTALL_ROOT="$root/hermes-agent" RELAUNCH_TARGET="$root/Applications/Hermes.app"
+  mkdir -p "$root/Applications" "$root/slave-agent/apps/desktop/release/mac-arm64" || return 2
+  cp -R "$SWAP_ST_ROOT/old.app" "$root/Applications/Slave.app" || return 2
+  cp -R "$SWAP_ST_ROOT/new.app" "$root/slave-agent/apps/desktop/release/mac-arm64/Slave.app" || return 2
+  INSTALL_ROOT="$root/slave-agent" RELAUNCH_TARGET="$root/Applications/Slave.app"
   t="$RELAUNCH_TARGET"
   if [ "$mode" = none ]; then
     ( FINAL_CODE=0 APP_REBUILD_FAILED=0; mac_swap ) </dev/null >/dev/null 2>&1
@@ -96,7 +96,7 @@ swap_st_interrupt() { # root pause-at mode
     mid-cleanup)  # resume into `rm -rf .old`; kill once it has deleted anything
       # Builtin tests only (no fork per poll): a dozen files spread over the
       # tree, whichever the rm reaches first.
-      sentinels=("$t.old/Contents/Resources/hermes-version" "$t.old/Contents/MacOS/Hermes")
+      sentinels=("$t.old/Contents/Resources/slave-version" "$t.old/Contents/MacOS/Slave")
       for ((i = 0; i < SWAP_ST_FILES; i += SWAP_ST_FILES / 10 + 1)); do
         sentinels+=("$t.old/Contents/Resources/payload/f$i")
       done
@@ -134,7 +134,7 @@ swap_st_cell() { # cell pause-at mode expected-wreck expected-bundle
   local cell="$1" pause="$2" mode="$3" want_state="$4" want="$5"
   local root="$SWAP_ST_ROOT/$1" t attempt rc state got leftover r before log_lines
   SWAP_ST_CELL="$cell"
-  t="$root/Applications/Hermes.app"
+  t="$root/Applications/Slave.app"
   for attempt in 1 2 3 4 5; do
     swap_st_interrupt "$root" "$pause" "$mode"; rc=$?
     [ "$rc" -eq 1 ] || break
@@ -156,7 +156,7 @@ swap_st_cell() { # cell pause-at mode expected-wreck expected-bundle
   esac
   [ "$got" = "$want" ] || { swap_st_fail "recovered to the $got bundle, expected $want ($state)"; return; }
   leftover=""
-  for r in .old .new .hermes-update-old .hermes-update-new; do
+  for r in .old .new .slave-update-old .slave-update-new; do
     [ ! -e "$t$r" ] || leftover="$leftover $t$r"
   done
   [ -z "$leftover" ] || { swap_st_fail "left after recovery:$leftover"; return; }
@@ -173,7 +173,7 @@ swap_st_cell() { # cell pause-at mode expected-wreck expected-bundle
 }
 
 swap_selftest() {
-  SWAP_ST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/hermes-swap-selftest.XXXXXX")" || return 1
+  SWAP_ST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slave-swap-selftest.XXXXXX")" || return 1
   LOG="$SWAP_ST_ROOT/handoff.log" STATUS="$SWAP_ST_ROOT/status"
   : > "$LOG"
   if [ ! -x "$MAC_DITTO" ]; then

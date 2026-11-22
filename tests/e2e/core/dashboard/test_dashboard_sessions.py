@@ -2,7 +2,7 @@
 
 Users hit this as "the Sessions page 500s / shows 'database is locked' while a chat is running" or
 "the session count jumps backwards / double-counts" (the dashboard reads the same SQLite file the
-agent, gateway and cron write). Harness: the real ``hermes dashboard`` process and a real writer
+agent, gateway and cron write). Harness: the real ``slave dashboard`` process and a real writer
 process (the store through ``open_persistence``, the agent's own persistence layer) appending sessions and
 messages as fast as it can. Readers hammer the list, stats, detail and messages routes in parallel.
 
@@ -55,7 +55,7 @@ print("DONE", n, flush=True)
 class Writer:
     def __init__(self, sb: H.Sandbox, p: H.Profile) -> None:
         self.proc = subprocess.Popen(
-            [sys.executable, "-c", _WRITER, str(WRITE_SECONDS)], env=sb.env({"HERMES_HOME": str(p.home)}),
+            [sys.executable, "-c", _WRITER, str(WRITE_SECONDS)], env=sb.env({"SLAVE_HOME": str(p.home)}),
             cwd=str(sb.home), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, start_new_session=True)
         self.committed = 0

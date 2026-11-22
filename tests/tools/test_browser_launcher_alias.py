@@ -1,6 +1,6 @@
 """A shared profile reached through a symlink is the same browser launch: adopting it keeps its launch identity.
 
-A Hermes process attaching through another spelling of the profile (``/alias -> /profile``) after the owner
+A slave-agent process attaching through another spelling of the profile (``/alias -> /profile``) after the owner
 crashed takes the launch record over. The record must still describe the browser as launched (the
 ``--user-data-dir`` its argv carries), or the reaper cannot verify it once this process crashes too: it would
 leave Chromium running and delete its only record (``tools/browser_launcher.py``). Runs the real launcher against a
@@ -26,7 +26,7 @@ pytestmark = [pytest.mark.platforms("linux"),
 
 _REPO = Path(__file__).resolve().parents[2]
 
-# A Hermes process on a persistent profile: launches (or attaches), prints "<pid> <owned>", then waits to be killed.
+# A Slave process on a persistent profile: launches (or attaches), prints "<pid> <owned>", then waits to be killed.
 _HOLDER = textwrap.dedent("""\
     import os, sys
     import tools.browser_session  # registers the exit teardown

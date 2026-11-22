@@ -1,18 +1,18 @@
 name: delivery-shelf
 title: Delivery Shelf
-repo: https://github.com/mechkw/hermes-delivery-shelf
+repo: https://github.com/mechkw/slave-delivery-shelf
 sha: 8510a9a81bae33da1bc232e828a02834bdfe11a4
-description: "Save delivered files together, preserve versions, and find finished work again in Hermes. Disclosure — Stores copies of the files you save (with version history) under this profile's plugin-data, reads this profile's Hermes session database (state.db) read-only to find files the agent delivered and a bounded slice of recent conversation, and sends that slice plus the chosen file's content to your configured auxiliary model to draft titles, tags and descriptions; renders PDF previews with the local `pdftoppm`; Telegram panels work only for user IDs you list in `plugin-data/delivery-shelf/telegram-owners.json`, and an \"always\" answer lets later versions of that one entry be saved without asking until you revoke it."
+description: "Save delivered files together, preserve versions, and find finished work again in Slave. Disclosure — Stores copies of the files you save (with version history) under this profile's plugin-data, reads this profile's slave-agent session database (state.db) read-only to find files the agent delivered and a bounded slice of recent conversation, and sends that slice plus the chosen file's content to your configured auxiliary model to draft titles, tags and descriptions; renders PDF previews with the local `pdftoppm`; Telegram panels work only for user IDs you list in `plugin-data/delivery-shelf/telegram-owners.json`, and an \"always\" answer lets later versions of that one entry be saved without asking until you revoke it."
 maintainer: mechkw
 tier: community
 category: desktop
 requires_hermes: ">=0.22.5"
 version: "0.1.0"
-docs_url: https://github.com/mechkw/hermes-delivery-shelf/blob/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/USAGE.md
-image: https://raw.githubusercontent.com/mechkw/hermes-delivery-shelf/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/assets/hero.webp
+docs_url: https://github.com/mechkw/slave-delivery-shelf/blob/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/USAGE.md
+image: https://raw.githubusercontent.com/mechkw/slave-delivery-shelf/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/assets/hero.webp
 screenshots:
-  - https://raw.githubusercontent.com/mechkw/hermes-delivery-shelf/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/assets/dark-together.png
-  - https://raw.githubusercontent.com/mechkw/hermes-delivery-shelf/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/assets/dark-library.png
+  - https://raw.githubusercontent.com/mechkw/slave-delivery-shelf/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/assets/dark-together.png
+  - https://raw.githubusercontent.com/mechkw/slave-delivery-shelf/8510a9a81bae33da1bc232e828a02834bdfe11a4/docs/assets/dark-library.png
 readme: true
 platforms: []
 known_issues:

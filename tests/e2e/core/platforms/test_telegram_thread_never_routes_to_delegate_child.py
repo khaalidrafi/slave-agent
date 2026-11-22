@@ -27,7 +27,7 @@ THREAD = "54287"
 PARENT, CHILD = "20261014_020931_3881b279", "20261014_040222_5d0bcc"
 
 
-def _seed(db_path, uid: str, key: str, leg: str, hermes_home) -> None:
+def _seed(db_path, uid: str, key: str, leg: str, slave_home) -> None:
     with open_persistence(profile_scope(home=db_path.parent)) as db:
         seed_session(db, PARENT, "telegram", user_id=uid, session_key=key, chat_id=uid, chat_type="dm",
                      thread_id=THREAD)
@@ -46,8 +46,8 @@ def _seed(db_path, uid: str, key: str, leg: str, hermes_home) -> None:
                      "origin": {"platform": "telegram", "chat_id": uid, "chat_type": "dm", "user_id": uid,
                                 "thread_id": THREAD}}
             db.routing.upsert_routing_entry(key, json.dumps(entry))
-            (hermes_home / "sessions").mkdir(parents=True, exist_ok=True)
-            (hermes_home / "sessions" / "sessions.json").write_text(json.dumps({key: entry}))
+            (slave_home / "sessions").mkdir(parents=True, exist_ok=True)
+            (slave_home / "sessions" / "sessions.json").write_text(json.dumps({key: entry}))
 
 
 @pytest.mark.parametrize("leg", ["peer", "binding", "route"])
@@ -59,8 +59,8 @@ def test_a_thread_left_naming_a_delegate_child_answers_in_its_own_conversation(t
     gw = GatewayUnderTest(tmp_path / "rig", llm_base_url=llm.base_url, config=drv.gateway_config(),
                           env=drv.gateway_env(), ready=drv.connected)
     uid = drv.user_id
-    gw.hermes_home.mkdir(parents=True, exist_ok=True)
-    _seed(gw.db_path, uid, f"agent:main:telegram:dm:{uid}:{THREAD}", leg, gw.hermes_home)
+    gw.slave_home.mkdir(parents=True, exist_ok=True)
+    _seed(gw.db_path, uid, f"agent:main:telegram:dm:{uid}:{THREAD}", leg, gw.slave_home)
     chat = {"id": int(uid), "type": "private", "first_name": "Tester", "username": f"user{uid}"}
     try:
         gw.start()

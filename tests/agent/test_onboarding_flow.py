@@ -317,7 +317,7 @@ def test_results_that_pick_nothing_settle_nothing(tool, args, result):
 
 @pytest.mark.parametrize("options", [
     None, [], [{"id": "games", "label": "Games"}], [{"id": "scan", "label": "Scan"}],
-    [{"id": "hermes", "label": "Explain how Hermes works"}], [{"id": x, "label": x} for x in ("notes", "site", "repo", "watch", "explain")],
+    [{"id": "slave", "label": "Explain how slave-agent works"}], [{"id": x, "label": x} for x in ("notes", "site", "repo", "watch", "explain")],
     [{"id": "notes", "label": "A"}, {"id": "notes", "label": "B"}], [{"id": "notes", "label": "x" * 33}],
     [{"id": "notes", "label": " "}], ["notes"],
 ])
@@ -328,16 +328,16 @@ def test_build_picks_are_refused_with_the_eligible_ids_and_no_card(options):
     assert step.record["beats"]["build"] == PENDING and step.record["waiting"] is None
 
 
-def test_valid_picks_are_the_card_with_how_hermes_works_last_and_any_card_id_answers_it():
+def test_valid_picks_are_the_card_with_how_slave_works_last_and_any_card_id_answers_it():
     facts = MACHINES["mac"]
     picks = [{"id": "mac", "label": "Your Mac, sorted"}, {"id": "repo", "label": "Map your repo"}]
     shown = run(facts, Shown("build", "call_b", picks))[-1]
     card = flow.BEAT_BY_ID["build"].card(facts, shown.record["picks"])
 
-    assert card == {"options": [*picks, {"id": "hermes", "label": "Explain how Hermes works"}]}
+    assert card == {"options": [*picks, {"id": "slave", "label": "Explain how slave-agent works"}]}
     # Brought back without picks, the same card returns.
     assert apply(shown.record, Shown("build", "call_c"), facts).result == {}
-    for value in ("repo", "hermes", "own"):
+    for value in ("repo", "slave", "own"):
         assert apply(shown.record, Recorded("build", value), facts).record["picks"]["build"] == value
     assert "error" in apply(shown.record, Recorded("build", "notes"), facts).result
 

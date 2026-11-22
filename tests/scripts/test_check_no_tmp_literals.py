@@ -35,7 +35,7 @@ def test_literal_tmp_paths_are_flagged(line):
 @pytest.mark.parametrize(
     "line",
     [
-        'SOCKET_DIR="${TMPDIR:-/tmp}/hermes"',  # shell fallback idiom
+        'SOCKET_DIR="${TMPDIR:-/tmp}/slave"',  # shell fallback idiom
         'Path("/var/tmp")',
         'Path("/private/tmp")',
         "mounted as tmpfs",

@@ -25,15 +25,15 @@ ADDRESS = 'process://proc-provider'
 def home(monkeypatch):
     import providers
     from gateway import run
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from providers.base import ProviderProfile
     profile = ProviderProfile(name=PROVIDER, auth_type='external_process', base_url=ADDRESS,
                               api_mode='chat_completions')
     real = providers.get_provider_profile
     monkeypatch.setattr(providers, 'get_provider_profile', lambda name: profile if name == PROVIDER else real(name))
-    home = get_hermes_home()
+    home = get_slave_home()
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(run, '_hermes_home', home)
+    monkeypatch.setattr(run, '_slave_home', home)
     return home
 
 

@@ -74,7 +74,7 @@ export const slashCmdCoreEn = {
     copy: {
       copiedCharsOne: (count: string) => `copied ${count} character`,
       copiedCharsOther: (count: string) => `copied ${count} characters`,
-      clipboardFailed: 'clipboard copy failed — try HERMES_TUI_FORCE_OSC52=1 to force the escape sequence',
+      clipboardFailed: 'clipboard copy failed — try SLAVE_TUI_FORCE_OSC52=1 to force the escape sequence',
       usage: 'usage: /copy [number]',
       nothingToCopy: 'nothing to copy — start a conversation first',
       sentOsc52: 'sent OSC52 copy sequence (terminal support required)',
@@ -99,7 +99,7 @@ export const slashCmdCoreEn = {
     history: {
       noConversation: 'no conversation yet',
       youTag: (index: string) => `You #${index}`,
-      hermesTag: (index: string) => `Hermes #${index}`,
+      slaveTag: (index: string) => `slave-agent #${index}`,
       toolCallsOne: (count: string) => `(${count} tool call)`,
       toolCallsOther: (count: string) => `(${count} tool calls)`,
       empty: '(empty)',
@@ -178,14 +178,14 @@ export const slashCmdCoreEn = {
       cancelled: '↺ Rewind cancelled; nothing was removed.',
       imagesKeptAsNotes: (count: number) =>
         `${count} image${count === 1 ? '' : 's'} could not be re-attached: the gateway's files are not readable on this machine, so the image notes stay in the text`,
-      unsupported: '/rewind needs the shared gateway (hermes serve)',
+      unsupported: '/rewind needs the shared gateway (slave serve)',
       done: (turn: string, count: string) => `rewound to prompt ${turn} (${count} messages removed)`,
       forked: (turn: string) => `forked from before prompt ${turn} — edit the prompt and press Enter to send`
     },
     // A refused /undo or /retry: main's busy text (tui_gateway/user_messages.py::busy_message).
     busy: {
       replying: (command: string) =>
-        `session busy — Hermes is still replying. Stop the current reply first (Stop button, or Ctrl+C in a terminal), then run /${command}.`,
+        `session busy — slave-agent is still replying. Stop the current reply first (Stop button, or Ctrl+C in a terminal), then run /${command}.`,
       compressing: (command: string) => `session busy — a /compress is running; run /${command} when it finishes.`
     }
   },

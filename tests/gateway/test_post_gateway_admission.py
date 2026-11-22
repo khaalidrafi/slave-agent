@@ -13,7 +13,7 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent
 from gateway.run import _profile_runtime_scope
 from gateway.session import SessionSource
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 from tests.fixtures.storage_holder import raw_holder
 
 HOOK = "post_gateway_admission"
@@ -21,7 +21,7 @@ HOOK = "post_gateway_admission"
 
 def _register(callback) -> None:
     """Register *callback* on the ACTIVE home's plugin manager (what a loaded plugin does)."""
-    from hermes_cli.plugins import get_plugin_manager
+    from slave_cli.plugins import get_plugin_manager
 
     manager = get_plugin_manager()
     manager._discovered = True  # no on-disk plugins in the test home; skip discovery
@@ -110,16 +110,16 @@ async def test_consumer_fires_in_the_routed_profile_scope_only(tmp_path):
     fired = []
 
     with _profile_runtime_scope(launch):
-        _register(lambda **_k: fired.append(("launch", get_hermes_home())))
+        _register(lambda **_k: fired.append(("launch", get_slave_home())))
     with _profile_runtime_scope(routed):
-        _register(lambda **_k: fired.append(("beta", get_hermes_home())) or {"action": "handled"})
+        _register(lambda **_k: fired.append(("beta", get_slave_home())) or {"action": "handled"})
 
     runner = _runner(multiplex=True)
     runner._resolve_profile_home_for_source = lambda _source: routed
     # The receiving bot's handler binds ITS home (auth reads its .env); this chat routes to beta.
     with _profile_runtime_scope(launch):
         assert await runner._handle_message(_event(profile="beta")) is None
-        assert get_hermes_home() == launch  # scope restored after the hook
+        assert get_slave_home() == launch  # scope restored after the hook
 
     assert fired == [("beta", routed)]
     runner._handle_message_with_agent.assert_not_awaited()

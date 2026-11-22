@@ -28,7 +28,7 @@ def write_wedged(job: dict[str, Any]) -> None:
     due, but a silent removal leaves the user with no output, no error, and no job record. Write a small
     diagnostic file into the job's output directory so the removal is observable and debuggable.
     """
-    from cron.jobs import _hermes_now
+    from cron.jobs import _slave_now
 
     if job.get("last_run_at") is not None:
         return  # a prior run was recorded — normal completion race, not a wedge
@@ -41,7 +41,7 @@ def write_wedged(job: dict[str, Any]) -> None:
         f"- name: {job.get('name')}\n"
         f"- dispatch claimed: {repeat.get('completed', '?')}/{repeat.get('times', '?')}\n"
         f"- run claimed at: {claim.get('at', 'unknown')} by {claim.get('by', 'unknown')}\n"
-        f"- removed at: {_hermes_now().isoformat()}\n\n"
+        f"- removed at: {_slave_now().isoformat()}\n\n"
         "This one-shot job's dispatch was claimed, but the run never "
         "completed (`last_run_at` was never written) — the scheduler "
         "process was most likely killed or restarted mid-execution. The "
@@ -58,7 +58,7 @@ def write_wedged(job: dict[str, Any]) -> None:
 def write_missed(job: dict[str, Any], next_run: str) -> None:
     """Trace for a never-ran one-shot retired outside the grace window (else it would just vanish).
     """
-    from cron.jobs import ONESHOT_GRACE_SECONDS, _hermes_now
+    from cron.jobs import ONESHOT_GRACE_SECONDS, _slave_now
 
     _write(
         job,
@@ -67,7 +67,7 @@ def write_missed(job: dict[str, Any], next_run: str) -> None:
         f"- name: {job.get('name')}\n"
         f"- scheduled run time: {next_run}\n"
         f"- grace window: {ONESHOT_GRACE_SECONDS}s\n"
-        f"- removed at: {_hermes_now().isoformat()}\n\n"
+        f"- removed at: {_slave_now().isoformat()}\n\n"
         "This one-shot's run time is more than the grace window in the "
         "past (scheduler down past the window, host asleep, or jobs.json "
         "edited), which is outside the 'will never fire' contract "

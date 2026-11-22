@@ -16,7 +16,7 @@ from gateway.config import GatewayConfig
 from gateway.session import SessionStore
 from gateway.session_authority import initialize_session_authority
 from gateway.session_controls import AuthorityConnection
-from hermes_cli.gateway_client import GatewayClientError
+from slave_cli.gateway_client import GatewayClientError
 from tests.acp_adapter.test_gateway_unacked_slash import SlashWire
 from tests.fixtures.storage_read import transcript_rows
 from tests.fixtures.storage_seed import seed_messages
@@ -42,7 +42,7 @@ class LossyResume(SlashWire):
 
 @contextlib.asynccontextmanager
 async def _editor(tmp_path, monkeypatch, wire_class=SlashWire):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     executed = []
 

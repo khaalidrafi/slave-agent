@@ -50,7 +50,7 @@ def test_stop_before_hello_terminates_child_and_settles_interrupted(monkeypatch)
 
 
 CHILD = """import json, os, sys, psutil
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 me = psutil.Process()
 out = os.fdopen(os.dup(sys.stdout.fileno()), 'wb', buffering=0)
 def send(frame):
@@ -82,7 +82,7 @@ def test_stop_acknowledged_during_spawn_never_bootstraps_the_worker(tmp_path, mo
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_session
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = open_persistence(profile_scope(home=tmp_path))
     seed_session(db, 's', 'test')
     runner = SimpleNamespace(_draining=False, _cached_agent_for=lambda route: None,

@@ -2,7 +2,7 @@
 ``docs_url`` fields register() spreads in. Kept apart from adapter.py, which is over its size cap."""
 
 DASHBOARD_CARD = dict(
-    dashboard_description="Use Hermes in Matrix rooms and direct messages.",
+    dashboard_description="Use slave-agent in Matrix rooms and direct messages.",
     docs_url="https://matrix.org/ecosystem/servers/",
     dashboard_env_vars=(
         "MATRIX_HOMESERVER", "MATRIX_ACCESS_TOKEN", "MATRIX_USER_ID", "MATRIX_ALLOWED_USERS",

@@ -2,7 +2,7 @@
 
 When ``auxiliary.compression`` points at a dead endpoint, ``call_llm``'s recovery ladder answers the summary
 with the main model. The compressor saw a plain success: no user warning, and telemetry
-``method=llm_summary fallback_used=false``. Real HTTP path (closed port + loopback main model, temp ``HERMES_HOME``).
+``method=llm_summary fallback_used=false``. Real HTTP path (closed port + loopback main model, temp ``SLAVE_HOME``).
 """
 
 import json
@@ -90,7 +90,7 @@ def _history():
 
 def test_summary_recovered_on_the_main_model_by_call_llm_is_reported(tmp_path, monkeypatch, main_model_endpoint):
     main_url, seen = main_model_endpoint
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
     _write_config(tmp_path, {
         "model": {"provider": "custom", "base_url": main_url, "api_key": "dummy", "default": "main-fake",

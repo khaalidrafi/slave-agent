@@ -218,7 +218,7 @@ async def test_failed_hot_serve_with_a_live_writer_parks_without_aborting_or_re_
     monkeypatch.setattr("gateway.session_local_recovery.recover_local_sessions", lambda a, schedule: None)
     monkeypatch.setattr("gateway.platforms.webhook_ingress.recover_webhook_finalizations", no_webhooks)
     monkeypatch.setattr("gateway.session_cron.unbind_owner", lambda authority: None)
-    monkeypatch.setattr("hermes_cli.profiles.profiles_to_serve", lambda **kw: list(homes.items()))
+    monkeypatch.setattr("slave_cli.profiles.profiles_to_serve", lambda **kw: list(homes.items()))
     try:
         for attempt in range(2):
             result = await GatewayProfileReconcileMixin._apply_profile_changes(

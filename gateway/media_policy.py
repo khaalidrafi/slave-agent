@@ -1,12 +1,12 @@
 """Shared config→env bridge for media-delivery policy.
 
-``validate_media_delivery_path`` reads ``HERMES_MEDIA_DELIVERY_STRICT`` (gateway.strict),
-``HERMES_MEDIA_ALLOW_DIRS`` (gateway.media_delivery_allow_dirs) and
-``HERMES_MEDIA_TRUST_RECENT_FILES`` (gateway.trust_recent_files).  Every delivery
-entrypoint (gateway startup, ``hermes cron run``, ``hermes send``) calls
+``validate_media_delivery_path`` reads ``SLAVE_MEDIA_DELIVERY_STRICT`` (gateway.strict),
+``SLAVE_MEDIA_ALLOW_DIRS`` (gateway.media_delivery_allow_dirs) and
+``SLAVE_MEDIA_TRUST_RECENT_FILES`` (gateway.trust_recent_files).  Every delivery
+entrypoint (gateway startup, ``slave cron run``, ``slave send``) calls
 :func:`apply_media_policy_env` first so standalone paths filter under the gateway's
 policy instead of silently dropping attachments in strict/allowlisted deployments.
-An explicitly-set env var WINS over config.yaml, so shell overrides survive. Under a HERMES_HOME
+An explicitly-set env var WINS over config.yaml, so shell overrides survive. Under a SLAVE_HOME
 override (a served profile's turn or cron fire) nothing is bridged: readers load that profile's config.
 """
 
@@ -19,11 +19,11 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 _FLAG_ENVS = (
-    ("strict", "HERMES_MEDIA_DELIVERY_STRICT"),
-    ("trust_recent_files", "HERMES_MEDIA_TRUST_RECENT_FILES"),
+    ("strict", "SLAVE_MEDIA_DELIVERY_STRICT"),
+    ("trust_recent_files", "SLAVE_MEDIA_TRUST_RECENT_FILES"),
 )
-_ALLOW_DIRS_ENV = "HERMES_MEDIA_ALLOW_DIRS"
-_TRUST_RECENT_SECONDS_ENV = "HERMES_MEDIA_TRUST_RECENT_SECONDS"
+_ALLOW_DIRS_ENV = "SLAVE_MEDIA_ALLOW_DIRS"
+_TRUST_RECENT_SECONDS_ENV = "SLAVE_MEDIA_TRUST_RECENT_SECONDS"
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 _FALSY = frozenset({"0", "false", "no", "off", ""})
 # strict is opt-in (off unless a known truthy value turns it on); trust_recent_files is
@@ -40,7 +40,7 @@ def _flag_value(value: Any, *, default: bool) -> bool:
     truthy value is on, a known falsy one is off, anything else returns ``default``. A
     hand-edited config.yaml spells flags as strings (``strict: "false"``), where ``bool()``
     would read the quoted "false" as True. Leading and trailing quotes are dropped: before the CLI
-    coerced them, ``hermes config set gateway.strict '"true"'`` stored ``'"true"'``."""
+    coerced them, ``slave config set gateway.strict '"true"'`` stored ``'"true"'``."""
     if value is None:
         return default
     if isinstance(value, bool):
@@ -63,15 +63,15 @@ def _config_flag(cfg: dict[str, Any], key: str) -> bool:
 
 
 def _routed_gateway_cfg() -> Optional[dict[str, Any]]:
-    """``gateway`` section of the ROUTED profile's config when a HERMES_HOME override is active
+    """``gateway`` section of the ROUTED profile's config when a SLAVE_HOME override is active
     (multiplexed turn), else None. The env bridge is one process-wide copy of the launch profile's
     policy, so a secondary's deliveries must read their own config instead of ``os.environ``."""
-    from hermes_constants import get_hermes_home_override
+    from slave_constants import get_slave_home_override
 
-    if not get_hermes_home_override():
+    if not get_slave_home_override():
         return None
     try:
-        from hermes_cli.config import load_config_readonly
+        from slave_cli.config import load_config_readonly
 
         gateway_cfg = load_config_readonly().get("gateway")
     except Exception:
@@ -117,7 +117,7 @@ def media_delivery_trust_recent_seconds() -> str:
 def _load_gateway_cfg(config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     if config is None:
         try:
-            from hermes_cli.config import load_config
+            from slave_cli.config import load_config
 
             config = load_config() or {}
         except Exception:
@@ -142,13 +142,13 @@ def apply_media_policy_env(config: Optional[dict[str, Any]] = None) -> None:
     """Bridge gateway media-policy settings from config.yaml into the env.  Idempotent,
     env-wins, never raises — a bridge failure must not break delivery (validator defaults apply).
 
-    No-op under a HERMES_HOME override, the same gate the readers use: there they take the
+    No-op under a SLAVE_HOME override, the same gate the readers use: there they take the
     profile's own config (``_routed_gateway_cfg``), and ``os.environ`` is shared — a routed cron
     fire would hand its allowlist and strictness to the launch profile and its children."""
     try:
-        from hermes_constants import get_hermes_home_override
+        from slave_constants import get_slave_home_override
 
-        if get_hermes_home_override():
+        if get_slave_home_override():
             return
         gateway_cfg = _load_gateway_cfg(config)
         if not gateway_cfg:

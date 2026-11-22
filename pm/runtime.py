@@ -21,14 +21,14 @@ from pm.package import InstallError
 
 def runtime_environment() -> dict[str, str]:
     """Do not let an activated application or a uv caller select PM's imports."""
-    from hermes_constants import get_hermes_home
+    from slave_constants import get_slave_home
     from pm.paths import store_root
 
     from pm.environment import _base_environment  # noqa: TID251
 
     env = _base_environment()
-    env["HERMES_HOME"] = str(get_hermes_home())
-    env["HERMES_RUNTIME_DIR"] = native(store_root())
+    env["SLAVE_HOME"] = str(get_slave_home())
+    env["SLAVE_RUNTIME_DIR"] = native(store_root())
     return env
 
 
@@ -44,7 +44,7 @@ def _inputs(project: Path, python: Path, *, as_spelled: bool = False) -> str:
         digest.update((project / name).read_bytes())
         digest.update(b"\0")
     # A different interpreter must not reuse a venv pointing at the old one, but
-    # the same one reached through a symlinked store (a per-task HERMES_HOME whose
+    # the same one reached through a symlinked store (a per-task SLAVE_HOME whose
     # tools/ links back) must. Only the directories resolve: the pinned
     # bin/python3 is itself a symlink, so resolving it would re-key every install.
     # A store spells its root extended-length on Windows; the identity must not.
@@ -61,7 +61,7 @@ def is_runtime() -> bool:
 
 
 def _resident_runtime() -> tuple[Path, Path] | None:
-    from hermes_constants import PACKAGED_RUNTIMES
+    from slave_constants import PACKAGED_RUNTIMES
     from pm.paths import repo_root
 
     project = repo_root()
@@ -121,7 +121,7 @@ _HELD: dict[Path, Callable[[], None]] = {}
 
 
 def _hold_for_children(environment: Path) -> None:
-    from hermes_cli.runtime_state import lease_directory
+    from slave_cli.runtime_state import lease_directory
 
     if environment not in _HELD:
         _HELD[environment] = lease_directory(environment)
@@ -159,11 +159,11 @@ def prepare_runtime(uv: Path, python: Path, root: Path, *, offline: bool = False
                 return _python(environment)
         if not bootstrap:
             raise InstallError("pm-runtime", "not installed or outdated and lazy installs are disabled",
-                               "run `hermes pm install` to prepare the independent PM runtime")
+                               "run `slave pm install` to prepare the independent PM runtime")
         generation = Path("generations") / uuid.uuid4().hex
         environment = root / generation
         try:
-            print("Preparing the isolated Hermes runtime…", file=sys.stderr, flush=True)
+            print("Preparing the isolated slave-agent runtime…", file=sys.stderr, flush=True)
             executable = stage_runtime(uv, python, environment, project=project, offline=offline, cache=cache)
             (environment / ".lease-managed").touch()
             _write(environment / "pm-runtime.json", {"inputs": identity})
@@ -178,7 +178,7 @@ def prepare_runtime(uv: Path, python: Path, root: Path, *, offline: bool = False
 def lease_current_runtime() -> None:
     """Pin the PM runtime this process runs from so the collector leaves it alone."""
     if (Path(sys.prefix) / "pm-runtime.json").is_file():
-        from hermes_cli.runtime_state import lease_directory
+        from slave_cli.runtime_state import lease_directory
 
         lease_directory(Path(sys.prefix))
 
@@ -192,7 +192,7 @@ def collect_runtime_generations(root: Path) -> list[Path]:
     existed stay, as the application collector keeps its own.
     """
     from pm.filesystem import lock_fd
-    from hermes_cli.runtime_state import leases_held
+    from slave_cli.runtime_state import leases_held
 
     generations = root / "generations"
     removed: list[Path] = []
@@ -233,7 +233,7 @@ def runtime_python(*, bootstrap: bool = True, cache: Path | None = None) -> Path
     if tools is None:
         if not bootstrap:
             raise InstallError("pm-runtime", "not installed and lazy installs are disabled",
-                               "run `hermes pm install` to prepare the independent PM runtime")
+                               "run `slave pm install` to prepare the independent PM runtime")
         from pm.lock import Lockfile
         from pm.paths import lockfile_path, store_root
         from pm.registry import get_package

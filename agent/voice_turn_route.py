@@ -56,7 +56,7 @@ def _route_target(agent: Any, cfg: dict[str, Any]) -> Optional[dict[str, Any]]:
     if not base_url and provider == str(agent.provider or "").lower() and model == agent.model:
         return None
     # ``provider: openai`` means the user's OpenAI endpoint, as on every other auxiliary task.
-    from hermes_cli.runtime_provider_custom import expand_direct_api_alias
+    from slave_cli.runtime_provider_custom import expand_direct_api_alias
     provider, base_url = expand_direct_api_alias(provider, base_url or None)
     return {**cfg, "provider": provider, "model": model, "base_url": base_url or ""}
 
@@ -138,7 +138,7 @@ def begin_voice_turn_route(agent: Any, messages: list[dict[str, Any]], system_pr
         return system_prompt
     agent._voice_turn_pending = False
     from agent.auxiliary_task_config import _get_auxiliary_task_config
-    from hermes_constants import parse_reasoning_effort
+    from slave_constants import parse_reasoning_effort
     cfg = _get_auxiliary_task_config(TASK)
     effort = parse_reasoning_effort(cfg.get("reasoning_effort"))
     target = _route_target(agent, cfg)

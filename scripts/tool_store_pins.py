@@ -11,7 +11,7 @@ So share only when every tool `pm install` would provision here (cmd_install's
 roots, developer tools, defaults and the venv's deps) passes PM's own installed-at-the-pin lookup
 without an exec-bit heal, and records the env this checkout's package code
 would record: a stale env makes `pm install` re-record the shared facts.json,
-and a missing or non-executable binary (setup-hermes.sh's uv copy included)
+and a missing or non-executable binary (setup-slave.sh's uv copy included)
 sends setup or `pm install` into a re-stage whose unlocked remove + publish
 races other runs on the shared store. Read-only: no lock, no install, no
 bytecode; any unreadable record or error means "do not share".
@@ -22,7 +22,7 @@ from pathlib import Path
 
 
 def _setup_uv(store: Path, target: str, version: str) -> Path:
-    """setup-hermes.sh's exact uv path: $store/uv-$uv_version-$os-$arch/uv[.exe]."""
+    """setup-slave.sh's exact uv path: $store/uv-$uv_version-$os-$arch/uv[.exe]."""
     os_arch = "-".join(target.split("-")[:2])
     return store / f"uv-{version}-{os_arch}" / ("uv.exe" if os_arch.startswith("win32") else "uv")
 

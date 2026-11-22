@@ -50,7 +50,7 @@ export const af: Translations = {
   },
 
   app: {
-    brand: "Hermes Agent",
+    brand: "slave-agent",
     brandShort: "HA",
     closeNavigation: "Maak navigasie toe",
     closeModelTools: "Maak model en gereedskap toe",
@@ -97,13 +97,13 @@ export const af: Translations = {
     activeProvider: "Aktiewe geheueverskaffer",
     noProvider: "geen — slegs ingebou",
     builtinLayer: "Ingeboude laag",
-    builtinNote: "MEMORY.md en USER.md is Hermes se eie geheue, apart van enige eksterne verskaffer. Albei word by verstek in sessies gelaai; die konfigurasieskakelaars (memory.memory_enabled / memory.user_profile_enabled) skakel elkeen af. 'n Verskaffer voeg daarby; dit vervang hulle nooit.",
+    builtinNote: "MEMORY.md en USER.md is slave-agent se eie geheue, apart van enige eksterne verskaffer. Albei word by verstek in sessies gelaai; die konfigurasieskakelaars (memory.memory_enabled / memory.user_profile_enabled) skakel elkeen af. 'n Verskaffer voeg daarby; dit vervang hulle nooit.",
   },
 
   status: {
     actionFailed: "Aksie het misluk",
     actionFinished: "Voltooi",
-    actionFinishedOwed: "Bygewerk, maar nog uitstaande (voer `hermes update` weer uit om klaar te maak)",
+    actionFinishedOwed: "Bygewerk, maar nog uitstaande (voer `slave update` weer uit om klaar te maak)",
     actions: "Aksies",
     agent: "Agent",
     activeSessions: "Aktiewe Sessies",
@@ -129,8 +129,8 @@ export const af: Translations = {
     starting: "Begin",
     startedInBackground: "Begin in agtergrond — kyk logs vir vordering",
     stopped: "Gestop",
-    updateHermes: "Werk Hermes op",
-    updatingHermes: "Besig om Hermes op te werk…",
+    updateSlave: "Werk slave-agent op",
+    updatingSlave: "Besig om slave-agent op te werk…",
     waitingForOutput: "Wag vir uitset…",
   },
 
@@ -342,7 +342,7 @@ export const af: Translations = {
       "Gestoor — herbegin die gateway om die verandering toe te pas.",
     forceReinstall: "Forseer herinstallasie (skrap eers bestaande gids)",
     headline:
-      "Ontdek, installeer, aktiveer en werk Hermes-inproppe op (`hermes plugins` ekwivalent).",
+      "Ontdek, installeer, aktiveer en werk Slave-inproppe op (`slave plugins` ekwivalent).",
     identifierLabel: "Git-URL of owner/repo",
     inactive: "onaktief",
     installBtn: "Installeer",
@@ -359,8 +359,8 @@ export const af: Translations = {
     providersHint:
       "Skryf memory.provider (leeg = ingebou) en context.engine na config.yaml. Tree volgende sessie in werking.",
     refreshDashboard: "Herskandeer dashboard-uitbreidings",
-    removeConfirm: "Verwyder hierdie inprop uit ~/.hermes/plugins/?",
-    removeHint: "Slegs gebruiker-geïnstalleerde inproppe onder ~/.hermes/plugins kan verwyder word.",
+    removeConfirm: "Verwyder hierdie inprop uit ~/.slave/plugins/?",
+    removeHint: "Slegs gebruiker-geïnstalleerde inproppe onder ~/.slave/plugins kan verwyder word.",
     rescanHeading: "SPA-inprop-register",
     rescanHint: "Herskandeer ná die byvoeg van lêers op skyf sodat die dashboard-sybalk nuwe manifeste optel.",
     runtimeHeading: "Gateway-looptyd (YAML-inproppe)",
@@ -389,7 +389,7 @@ export const af: Translations = {
     all: "Alles",
     categories: "Kategorieë",
     filters: "Filters",
-    noSkills: "Geen vaardighede gevind nie. Vaardighede word gelaai uit ~/.hermes/skills/",
+    noSkills: "Geen vaardighede gevind nie. Vaardighede word gelaai uit ~/.slave/skills/",
     noSkillsMatch: "Geen vaardighede stem ooreen met jou soektog of filter nie.",
     skillCount: "{count} vaardighe{s}id",
     resultCount: "{count} resulta{s}at",
@@ -403,7 +403,7 @@ export const af: Translations = {
   },
 
   config: {
-    configPath: "~/.hermes/config.yaml",
+    configPath: "~/.slave/config.yaml",
     filters: "Filters",
     sections: "Afdelings",
     exportConfig: "Voer konfigurasie uit as JSON",
@@ -463,7 +463,7 @@ export const af: Translations = {
     showValue: "Wys werklike waarde",
     hideValue: "Versteek waarde",
     customTitle: "Pasgemaakte sleutels",
-    customHint: "Arbitrêre omgewingsveranderlikes wat in jou .env gestoor is en wat Hermes nie herken nie. Gebruik dit om omgewingsveranderlikes vir vaardighede, MCP-bedieners of jou eie gereedskap in te spuit.",
+    customHint: "Arbitrêre omgewingsveranderlikes wat in jou .env gestoor is en wat slave-agent nie herken nie. Gebruik dit om omgewingsveranderlikes vir vaardighede, MCP-bedieners of jou eie gereedskap in te spuit.",
     customConfigured: "{count} pasgemaakte sleutel(s) gestel",
     addCustomKey: "Voeg 'n pasgemaakte sleutel by",
     customKeyName: "Veranderlike naam",
@@ -528,11 +528,11 @@ export const af: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Hermes Achievements",
+      title: "slave-agent Achievements",
       subtitle:
-        "Versamelbare Hermes-kentekens wat verdien word uit werklike sessiegeskiedenis. Bekende, onvoltooide prestasies word as Ontdek vertoon; Geheime prestasies bly verborge totdat die eerste ooreenstemmende gedrag verskyn.",
+        "Versamelbare Slave-kentekens wat verdien word uit werklike sessiegeskiedenis. Bekende, onvoltooide prestasies word as Ontdek vertoon; Geheime prestasies bly verborge totdat die eerste ooreenstemmende gedrag verskyn.",
       scan_subtitle:
-        "Hermes-sessiegeskiedenis word geskandeer. Die eerste skandering kan 5–10 sekondes neem op groot geskiedenisse.",
+        "Slave-sessiegeskiedenis word geskandeer. Die eerste skandering kan 5–10 sekondes neem op groot geskiedenisse.",
     },
     actions: {
       rescan: "Herskandeer",
@@ -547,7 +547,7 @@ export const af: Translations = {
       highest_tier: "Hoogste vlak",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Jongste",
-      latest_hint_empty: "gebruik Hermes meer",
+      latest_hint_empty: "gebruik slave-agent meer",
       none_yet: "Nog geen",
     },
     state: {
@@ -578,10 +578,10 @@ export const af: Translations = {
       tiers_header: "Vlakke",
       secret_header: "Geheime prestasies",
       secret_body:
-        "Geheime hou hul presiese sneller verborge. Sodra Hermes 'n verwante sein sien, word die kaart Ontdek en wys sy vereiste.",
+        "Geheime hou hul presiese sneller verborge. Sodra slave-agent 'n verwante sein sien, word die kaart Ontdek en wys sy vereiste.",
       scan_status_header: "Skanderingstatus",
       scan_status_body:
-        "Hermes skandeer plaaslike geskiedenis een keer, daarna verskyn kaarte outomaties. Niks is vasgevang as dit 'n paar sekondes neem nie.",
+        "slave-agent skandeer plaaslike geskiedenis een keer, daarna verskyn kaarte outomaties. Niks is vasgevang as dit 'n paar sekondes neem nie.",
       what_scanned_header: "Wat geskandeer word",
       what_scanned_body:
         "Sessies, gereedskaproepe, modelmetadata, foute, prestasies en plaaslike ontsluitstatus.",
@@ -628,7 +628,7 @@ export const af: Translations = {
         "Deel op X maak 'n vooraf-ingevulde plasing in 'n nuwe oortjie oop. Klik eers op Kopieer beeld as jy die 1200×630-kenteken aangeheg wil hê — X laat jou dit direk in die tweet-skrywer plak. Laai PNG af stoor die lêer om enige plek te gebruik.",
       clipboard_unsupported:
         "Beeldkopiëring na knipbord word nie in hierdie blaaier ondersteun nie — gebruik eerder Aflaai.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Hermes Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in slave-agent ☤",
     },
   },
   kanban: {

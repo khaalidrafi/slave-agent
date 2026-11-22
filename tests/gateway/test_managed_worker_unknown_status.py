@@ -12,7 +12,7 @@ from tests.gateway.fixtures.storage_handles import close_storage_handles, storag
 from gateway.session_contract import SessionActor, SessionRef
 
 CHILD = """import json, os, sys, psutil
-from hermes_cli.process_identity import worker_birth
+from slave_cli.process_identity import worker_birth
 me = psutil.Process()
 out = os.fdopen(os.dup(sys.stdout.fileno()), 'wb', buffering=0)
 out.write((json.dumps({'type': 'hello', 'pid': me.pid, 'birth': worker_birth(me),
@@ -30,7 +30,7 @@ def _authority_with_a_lost_worker(tmp_path, monkeypatch):
     from gateway.session_contract import Submission
     from gateway.session_policy import build_policy
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     db = storage_handle(tmp_path)
     seed_session(db, 's', 'test')
     runner = SimpleNamespace(_draining=False, _cached_agent_for=lambda route: None,

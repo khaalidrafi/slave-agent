@@ -6,7 +6,7 @@ import path from 'node:path'
 import { z } from 'zod'
 
 import { parseSpawnLedger, SPAWN_LEDGER_FILENAME } from '../../apps/desktop/electron/backend-discovery.ts'
-import { resolveDesktopHermesHome } from '../../apps/desktop/electron/data-paths.mjs'
+import { resolveDesktopSlaveHome } from '../../apps/desktop/electron/data-paths.mjs'
 import { within } from '../../tests/install/e2e-assets/smoke-env.mjs'
 
 export interface NativeProcess {
@@ -53,7 +53,7 @@ export function readInstallationCommit(root: string, origin: 'source' | 'bundled
   // The install drivers export their real git: a fresh-machine leg takes every
   // git off PATH so the product must provision its own, which this observer
   // must not depend on.
-  const git: string = process.env.HERMES_E2E_REAL_GIT || 'git'
+  const git: string = process.env.SLAVE_E2E_REAL_GIT || 'git'
 
   const commit = origin === 'source' ? nativeText(git, ['-C', root, 'rev-parse', 'HEAD'])
     : z.object({ payload: z.literal('bundled'), commit: z.string() }).parse(
@@ -65,12 +65,12 @@ export function readInstallationCommit(root: string, origin: 'source' | 'bundled
 
 /** The file the HEAD -> NEXT legs' synthetic commit adds (installer-common.sh::resolve_update_ref,
  * windows-e2e.ps1::New-NextCommit). */
-const SYNTHETIC_NEXT_MARKER = '.hermes-e2e-next'
+const SYNTHETIC_NEXT_MARKER = '.slave-e2e-next'
 
 /** The commit a reused packaged app may still report for an installed source checkout.
  *
- * `hermes update` keeps the packaged app when no desktop build input changed, and that app keeps
- * naming the commit it was built from (hermes_cli/desktop_build_reuse.py). The harness can prove
+ * `slave update` keeps the packaged app when no desktop build input changed, and that app keeps
+ * naming the commit it was built from (slave_cli/desktop_build_reuse.py). The harness can prove
  * that case only for the synthetic NEXT commit, whose sole change is one marker file: there the
  * parent is the commit the app may report. Any other installed commit, and any bundled install,
  * returns undefined. */
@@ -79,7 +79,7 @@ export function reusedDesktopBuildCommit(root: string, origin: 'source' | 'bundl
     return undefined
   }
 
-  const git: string = process.env.HERMES_E2E_REAL_GIT || 'git'
+  const git: string = process.env.SLAVE_E2E_REAL_GIT || 'git'
   const parents = nativeText(git, ['-C', root, 'rev-list', '--parents', '-n', '1', installed]).split(/\s+/).slice(1)
 
   if (parents.length !== 1) {
@@ -94,7 +94,7 @@ export function reusedDesktopBuildCommit(root: string, origin: 'source' | 'bundl
 const bundleEnvSchema = z.record(z.string(), z.string().nullable())
 
 /** The baked runtime defaults/clears of a bundled artifact, recorded in the
- * install stamp so the smoke driver can predict the app's resolved Hermes home
+ * install stamp so the smoke driver can predict the app's resolved Slave home
  * without reimplementing the banner. Absent for artifacts built before the
  * stamp carried it, and for source checkpoints. */
 export function readBundledBundleEnv(root: string): Record<string, string | null> | undefined {
@@ -213,7 +213,7 @@ function processStartTime(pid: number): number | null {
 }
 
 const gatewayStateSchema = z.object({
-  pid: z.number().int().positive(), kind: z.literal('hermes-gateway'),
+  pid: z.number().int().positive(), kind: z.literal('slave-gateway'),
   gateway_state: z.string(), start_time: z.number().nullable().optional(),
   code_sha: z.string().nullable().optional(),
 }).passthrough()
@@ -239,8 +239,8 @@ function gatewayIncarnationMatches(pid: number, recorded: number | null | undefi
   return started !== null && Math.abs(started - recorded / 100) < 2
 }
 
-/** The running canonical gateway (`hermes gateway run`) recorded for `homes`. Desktop reaches a
- * local backend through `hermes gateway ensure`, which attaches to that daemon or starts it
+/** The running canonical gateway (`slave gateway run`) recorded for `homes`. Desktop reaches a
+ * local backend through `slave gateway ensure`, which attaches to that daemon or starts it
  * detached, so it is neither an Electron descendant nor a `serve` spawn-ledger record. */
 function canonicalGateways(homes: string[], processes: NativeProcess[]): Map<number, string | undefined> {
   return new Map([...new Set(homes)].flatMap((home: string): Array<[number, string | undefined]> => {
@@ -257,7 +257,7 @@ function canonicalGateways(homes: string[], processes: NativeProcess[]): Map<num
 }
 
 /** Identify the actual listener, not a healthy helper or a command recorded before spawn. */
-export function localBackendProcess(port: number, electronPid: number, hermesHome?: string): BackendProcess {
+export function localBackendProcess(port: number, electronPid: number, slaveHome?: string): BackendProcess {
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
     throw new Error('Invalid backend port')
   }
@@ -271,13 +271,13 @@ export function localBackendProcess(port: number, electronPid: number, hermesHom
   let registered: number[] = []
   let gateways = new Map<number, string | undefined>()
 
-  if (hermesHome) {
+  if (slaveHome) {
     // The product writes one machine-root ledger for every profile, and the app
-    // reads it at its own resolved root (`main.ts` -> `spawnLedgerPath(HERMES_HOME)`,
+    // reads it at its own resolved root (`main.ts` -> `spawnLedgerPath(SLAVE_HOME)`,
     // where a `<root>/profiles/<name>` home resolves to `<root>`).
-    const ledgerRoot = resolveDesktopHermesHome({ home: os.homedir(), env: { HERMES_HOME: hermesHome } })
+    const ledgerRoot = resolveDesktopSlaveHome({ home: os.homedir(), env: { SLAVE_HOME: slaveHome } })
     // A named profile is served by the root's multiplexer; a standalone one by its own gateway.
-    gateways = canonicalGateways([hermesHome, ledgerRoot], processes)
+    gateways = canonicalGateways([slaveHome, ledgerRoot], processes)
 
     try {
       registered = parseSpawnLedger(fs.readFileSync(path.join(ledgerRoot, SPAWN_LEDGER_FILENAME), 'utf8'))
@@ -331,13 +331,13 @@ export function localBackendProcess(port: number, electronPid: number, hermesHom
     backend.cwd = fs.readlinkSync(`/proc/${backend.pid}/cwd`)
     backend.command = fs.readFileSync(`/proc/${backend.pid}/cmdline`, 'utf8').split('\0').filter(Boolean).map((arg: string): string => JSON.stringify(arg)).join(' ')
     backend.sourceRoot = fs.readFileSync(`/proc/${backend.pid}/environ`, 'utf8').split('\0')
-      .find((entry: string): boolean => entry.startsWith('HERMES_PYTHON_SRC_ROOT='))?.slice('HERMES_PYTHON_SRC_ROOT='.length)
+      .find((entry: string): boolean => entry.startsWith('SLAVE_PYTHON_SRC_ROOT='))?.slice('SLAVE_PYTHON_SRC_ROOT='.length)
   } else if (process.platform === 'darwin') {
     backend.command = nativeText('ps', ['-p', String(backend.pid), '-o', 'args='])
     backend.cwd = nativeText('/usr/sbin/lsof', ['-a', '-p', String(backend.pid), '-d', 'cwd', '-Fn'])
       .split('\n').find((line: string): boolean => line.startsWith('n'))?.slice(1)
     const environment = nativeText('ps', ['eww', '-p', String(backend.pid), '-o', 'args='])
-    backend.sourceRoot = psEnvValue(environment, 'HERMES_PYTHON_SRC_ROOT')
+    backend.sourceRoot = psEnvValue(environment, 'SLAVE_PYTHON_SRC_ROOT')
     backend.pythonPath = psEnvValue(environment, 'PYTHONPATH')
     backend.virtualEnv = psEnvValue(environment, 'VIRTUAL_ENV')
   }
@@ -406,7 +406,7 @@ export function assertBackendOrigin(backend: BackendProcess, root: string, origi
 
   // A Python -m entry has no source path in argv. Its live import root is
   // either the captured editable root (Nix) or the process's working directory.
-  const moduleLaunch = /(?:^|\s)"?-m"?\s+"?hermes_cli\.main"?(?:\s|$)/.test(command)
+  const moduleLaunch = /(?:^|\s)"?-m"?\s+"?slave_cli\.main"?(?:\s|$)/.test(command)
     && /^python(?:w|\d+(?:\.\d+)*)?(?:\.exe)?$/i.test(path.basename(backend.executable))
 
   if (moduleLaunch) {
@@ -414,7 +414,7 @@ export function assertBackendOrigin(backend: BackendProcess, root: string, origi
     if (backend.sourceRoot !== undefined) {
       if (!sameTree(backend.sourceRoot)) {
         throw new Error('Source backend listener imports a different source tree'
-          + ` (HERMES_PYTHON_SRC_ROOT=${backend.sourceRoot}, expected=${root}, command=${backend.command})`)
+          + ` (SLAVE_PYTHON_SRC_ROOT=${backend.sourceRoot}, expected=${root}, command=${backend.command})`)
       }
 
       return
@@ -424,10 +424,10 @@ export function assertBackendOrigin(backend: BackendProcess, root: string, origi
     // the app hands the backend ITS OWN directory (the smoke's home), so a
     // cwd-only inference calls a backend running the installation's own venv
     // interpreter "a different source tree". Accept the launcher cd'ing into the
-    // tree, or a command that names it (`<root>/venv/bin/python -m hermes_cli.main`).
+    // tree, or a command that names it (`<root>/venv/bin/python -m slave_cli.main`).
     // The app binds the backend to the tree by environment as well as argv:
     // `main.ts` puts the installation root first on the backend's PYTHONPATH and
-    // VIRTUAL_ENV names its venv, which is how `import hermes_cli` resolves from
+    // VIRTUAL_ENV names its venv, which is how `import slave_cli` resolves from
     // the installation. A platform that can read that environment needs no
     // spelling in argv (macOS resolves the venv symlink before spawning); a
     // platform that cannot (Windows) stays strict.
@@ -442,7 +442,7 @@ export function assertBackendOrigin(backend: BackendProcess, root: string, origi
 
     if (!sameTree(backend.cwd) && !namesInstallRoot && !usesInstallEnvironment && !appOwnsBackend) {
       throw new Error('Source backend listener imports a different source tree'
-        + ` (cwd=${backend.cwd ?? '(unreadable)'}, HERMES_PYTHON_SRC_ROOT=(unset),`
+        + ` (cwd=${backend.cwd ?? '(unreadable)'}, SLAVE_PYTHON_SRC_ROOT=(unset),`
         + ` executable=${backend.executable}, expected=${root},`
         + ` appReportedRoot=${evidence.appReportedRoot ?? '(unreported)'}, command=${backend.command})`)
     }

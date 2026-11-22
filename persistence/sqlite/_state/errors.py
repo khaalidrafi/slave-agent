@@ -128,11 +128,11 @@ STORAGE_RECOVERY_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/user-gui
 # happened, nothing is lost, the one thing to do); the rest is the operator detail. The phrase
 # "deleted state.db-wal or state.db-shm" is the classifier's RPC-wrapped fingerprint — keep it.
 _DELETED_WAL_GENERATION_MSG = (
-    "FATAL: session storage stopped writing because another Hermes process still holds a deleted "
+    "FATAL: session storage stopped writing because another slave-agent process still holds a deleted "
     "state.db-wal or state.db-shm inode (an old copy of the write-ahead log). Nothing is lost: quit "
-    "every Hermes process on this profile (Desktop app, gateway, dashboard, cron), run `hermes doctor` "
-    "(it names the processes still holding the log), then start Hermes again. Do not delete the WAL "
-    "yourself and do not run `hermes doctor --fix` while they are running. "
+    "every slave-agent process on this profile (Desktop app, gateway, dashboard, cron), run `slave doctor` "
+    "(it names the processes still holding the log), then start slave-agent again. Do not delete the WAL "
+    "yourself and do not run `slave doctor --fix` while they are running. "
     f"Guide: {STORAGE_RECOVERY_DOCS_URL} "
     "Detail: the path names a different (or missing) generation than the one this process holds "
     "open; opening or writing through it would mint a second WAL (split-brain). "
@@ -162,7 +162,7 @@ _STATE_DB_CORRUPT_MSG = (
     "FATAL: state.db reported structural corruption (database disk image is "
     "malformed outside the FTS shadow tables) on a live handle; refusing further "
     "writes, automatic reopen, and the close-time WAL checkpoint on this file. "
-    "Stop the gateway, then run `hermes sessions recover --source <state.db> "
+    "Stop the gateway, then run `slave sessions recover --source <state.db> "
     "--inspect-only` or restore a snapshot. Unwritten transcripts are diverted to "
     "sessions/<id>.jsonl (and the gateway pending_messages spool)."
 )

@@ -11,7 +11,7 @@ description: >-
   HTTP). verifyum-local runs npx -y verifyum-mcp@0.1.1, which downloads that exact npm release (MIT,
   JavaScript source, published by aisenseapi) on first start and needs Node.js 20 or later.
   verifyum_anchor_commitment and verifyum_create_proof_from_file write a real, public and permanent
-  Solana Mainnet transaction, so plugin.json marks both servers untrusted and Hermes asks first.
+  Solana Mainnet transaction, so plugin.json marks both servers untrusted and slave-agent asks first.
   The file tool reads only regular files inside the directories listed in VERIFYUM_MCP_ALLOWED_DIRS,
   which the package does not set, so it refuses every path until the user sets it. It writes a
   private draft the user must keep. Verifyum receives only the commitment, the idempotency key and

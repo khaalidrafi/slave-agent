@@ -9,7 +9,7 @@ from gateway.session_policy import build_policy, policy_scope, restore_policy
 
 
 def test_acp_policy_uses_its_own_tools_and_restores_frozen_cwd(tmp_path):
-    from hermes_cli.tools_config import _get_platform_tools
+    from slave_cli.tools_config import _get_platform_tools
     cfg = {'platform_toolsets': {'cli': ['terminal'], 'acp': ['file']}}
     params = {'source': 'acp', 'cwd': str(tmp_path), 'model': 'fixture',
               'editor': {'mcp_servers': [], 'edit_approval_policy': 'ask'}}

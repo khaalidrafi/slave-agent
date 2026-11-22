@@ -1,4 +1,4 @@
-# pm/ — dependencies and Hermes environments
+# pm/ — dependencies and slave-agent environments
 
 Applies on top of the root `AGENTS.md` (which carries the short form of the pinning rule).
 
@@ -8,12 +8,12 @@ All dependencies carry upper bounds (litellm compromise #2796/#2810; Mini Shai-H
 May 2026). PyPI: `>=floor,<next_major` (`"httpx>=0.28.1,<1"`); pre-1.0: `<0.(minor+2)`
 (`>=0.29,<0.32`). Git URLs: 40-char commit SHA. GitHub Actions: SHA + `# vN` comment. CI-only
 Python requirements: `==exact`. A bare `>=X.Y.Z` is rejected by CI and reviewers.
-After changing `pyproject.toml`, run `hermes pm lock`, re-source `./activate`, and commit
+After changing `pyproject.toml`, run `slave pm lock`, re-source `./activate`, and commit
 `pyproject.toml` with `uv.lock`. Reference: #2810 (bounds), #9801 (SHA pinning + audit CI).
 
-PM owns Hermes Python dependency changes. Use `pm.sync_venv(['extra'], explicit=True)`
-for declared runtime extras, `hermes pm install` for setup/sync, and `hermes pm repair`
-for damaged dependencies. Do not mutate Hermes environments with raw pip or uv.
+PM owns slave-agent Python dependency changes. Use `pm.sync_venv(['extra'], explicit=True)`
+for declared runtime extras, `slave pm install` for setup/sync, and `slave pm repair`
+for damaged dependencies. Do not mutate slave-agent environments with raw pip or uv.
 Developer-only tools (`just`) are optional packages in `pm.testenv.DEVELOPER_TOOLS`: the
 `--test-environment` install provisions those the lockfile pins; a user install or desktop bundle
 never does.
@@ -21,17 +21,17 @@ Use `pm.build_environment` for fresh build outputs and `pm.ensure_environment` f
 isolated tool environments. Callers receive an interpreter or tool path, not uv.
 Nix's declarative uv2nix builds and unrelated user projects remain independently owned.
 
-The `[tool.uv] exclude-newer = "3 days"` release-age check covers **Hermes's own dependencies
+The `[tool.uv] exclude-newer = "3 days"` release-age check covers **slave-agent’s own dependencies
 only**, exact pins included, with one per-package exemption class: CA trust stores (`certifi`),
 whose revocation releases must reach the lock the day they ship (`exclude-newer-package`; nothing
-else goes there). It runs when Hermes LOCKS
-(`hermes pm lock`, CI's lock check), never on users' machines: every generated workspace drops the
+else goes there). It runs when slave-agent LOCKS
+(`slave pm lock`, CI's lock check), never on users' machines: every generated workspace drops the
 cutoff (`pm/workspace.py::_without_release_age`), so a mirror without upload times cannot break an
 install (#135589). Plugin resolution is unchanged by this: core's exact pins stay put, and a plugin
 may move a transitive core package within core's declared ranges
 (`tests/pm/test_workspace_build_inputs.py::test_plugin_can_move_compatible_transitive_but_not_exact_requirement`).
-Plugin `python_dependencies` follow the plugin's own policy. Teknium's rulings: "plugins dont have to abide by our 14 day rule … Only hermes'
+Plugin `python_dependencies` follow the plugin's own policy. Teknium's rulings: "plugins dont have to abide by our 14 day rule … Only slave'
 dependencies themselves have to"; dates are checked by us, not users; pinned deps need >3 days.
 JS: `minimumReleaseAge` (14 days) in `pnpm-workspace.yaml`; an exemption is one exact
-`- name@1.2.3  # why` line in `minimumReleaseAgeExclude`, which `hermes pm update --pnpm` names
+`- name@1.2.3  # why` line in `minimumReleaseAgeExclude`, which `slave pm update --pnpm` names
 and later drops (`website/docs/reference/package-management.md` § Release age and package mirrors).

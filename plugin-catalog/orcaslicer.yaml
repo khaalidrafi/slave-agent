@@ -1,8 +1,8 @@
 name: orcaslicer
-repo: https://github.com/mazzanfar/hermes-orcaslicer
+repo: https://github.com/mazzanfar/slave-orcaslicer
 sha: 8fc3a5a40ef4e0c639b76cefd90ad9a48a1a51ec
 version: "0.5.1"
-title: OrcaSlicer for Hermes
+title: OrcaSlicer for slave-agent
 description: >-
   Prepare, slice, preflight and export 3D prints with stock OrcaSlicer profiles.
   Includes explicit printer upload/control, camera snapshots and monitoring
@@ -10,13 +10,13 @@ description: >-
   Independent of OrcaSlicer and Nous Research.
   Disclosure — executes the installed local slicer and exposes printer upload,
   start, pause, resume and cancel; agent-supplied confirmation is not independent
-  human authentication. Printer/camera credentials are read from ORCA_*/HERMES_ORCA_*
+  human authentication. Printer/camera credentials are read from ORCA_*/SLAVE_ORCA_*
   environment variables named in tool arguments (HTTPS required unless allow_plaintext_credentials
-  is set); plugin state lives in ~/.hermes-orca (HERMES_ORCA_HOME), outside HERMES_HOME.
+  is set); plugin state lives in ~/.slave-orca (SLAVE_ORCA_HOME), outside SLAVE_HOME.
 maintainer: mazzanfar
 tier: community
 category: tools
-docs_url: https://github.com/mazzanfar/hermes-orcaslicer#readme
+docs_url: https://github.com/mazzanfar/slave-orcaslicer#readme
 platforms: [linux, macos, windows]
 capabilities:
   provides_tools:

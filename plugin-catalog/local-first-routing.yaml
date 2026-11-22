@@ -1,5 +1,5 @@
 name: local-first-routing
-repo: https://github.com/1anter/hermes-research-plugins
+repo: https://github.com/1anter/slave-research-plugins
 sha: 48befeaf71f0bfed7916553d1a511c81a37a9c4b
 subdir: plugins/local-first-routing
 description: Pinned local delegation with explicit manual escalation and no fallback.

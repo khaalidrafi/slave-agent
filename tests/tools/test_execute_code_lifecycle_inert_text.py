@@ -8,7 +8,7 @@ import pytest
 
 import tools.code_execution_tool as cet
 
-_CMD = "sudo systemctl restart hermes-gateway.service"
+_CMD = "sudo systemctl restart slave-gateway.service"
 
 
 @pytest.fixture
@@ -41,11 +41,11 @@ def test_documentation_only_cell_is_not_refused(code):
     f'os.system("{_CMD}")',
     f'sh("{_CMD}")',
     f'sh = sh\nsh("{_CMD}")',  # the right-hand side still reads the earlier cell's helper
-    f'from hermes_tools import terminal\nterminal("{_CMD}")',
+    f'from slave_tools import terminal\nterminal("{_CMD}")',
     f'exec("import os; os.system(\'{_CMD}\')")',
     f'import pathlib\npathlib.os.system("{_CMD}")',
     f'print("{_CMD}"',  # unparsable -> scanned as before
-    f'import hermes_tools\nhermes_tools.terminal("{_CMD}")',  # only the import allowlist sees this
+    f'import slave_tools\nslave_tools.terminal("{_CMD}")',  # only the import allowlist sees this
     f'with sh("{_CMD}"):\n    pass',  # the with-item expression runs
     f'with open("notes.md") as fh:\n    sh = sh\n    sh("{_CMD}")',  # with-body reads see earlier lines only
     f'p = ().__class__.__base__.__subclasses__()\nprint("{_CMD}")',  # dunder walk to any loaded class
@@ -57,7 +57,7 @@ def test_cell_that_can_reach_a_process_is_still_refused(code):
 def test_rejection_names_the_matched_command(in_gateway):
     result = json.loads(cet.execute_code(f'import os\nos.system("{_CMD}")'))
     assert "cannot restart or stop the gateway" in result["error"]
-    assert "systemctl restart hermes-gateway" in result["error"]
+    assert "systemctl restart slave-gateway" in result["error"]
 
 
 # Only straight-line top-level code is judged inert: a binding inside a nested scope, a branch or a

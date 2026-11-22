@@ -10,7 +10,7 @@ refreshes it periodically.  This file verifies:
   existing orphan-sweep wiring pattern).
 * Failure to start the refresher is swallowed so a malformed DB
   never breaks gateway startup.
-* ``HERMES_GATEWAY_HEARTBEAT_REFRESH_S=0`` disables the refresher.
+* ``SLAVE_GATEWAY_HEARTBEAT_REFRESH_S=0`` disables the refresher.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import io
 
 import pytest
 
-from hermes_cli import model_switch_providers
+from slave_cli import model_switch_providers
 from tests.fixtures.storage_holder import raw_holder
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
 

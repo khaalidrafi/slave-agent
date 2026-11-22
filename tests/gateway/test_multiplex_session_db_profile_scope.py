@@ -4,7 +4,7 @@ A multiplexed gateway serves every profile from one process.  ``SessionStore``
 used to bind a single store handle during ``__init__``, freezing it to the
 process's own root home, so a named profile's sessions were physically written
 to the root ``state.db`` even though ``_profile_runtime_scope`` had already
-redirected ``get_hermes_home()`` for that turn.  The rows carried the correct
+redirected ``get_slave_home()`` for that turn.  The rows carried the correct
 ``profile_name``, which is why the only visible symptom was the desktop listing
 a profile's session under the default bot: the desktop reads
 ``profiles/<name>/state.db``, which never received the write.
@@ -38,10 +38,10 @@ from gateway.config import GatewayConfig
 from gateway.platforms.base import Platform, SessionSource
 from gateway.platforms.event import MessageEvent
 from gateway.session import SessionEntry, SessionStore
-from hermes_constants import (
-    get_hermes_home,
-    reset_hermes_home_override,
-    set_hermes_home_override,
+from slave_constants import (
+    get_slave_home,
+    reset_slave_home_override,
+    set_slave_home_override,
 )
 from tests.fixtures.storage_read import transcript_rows
 from tests.fixtures.storage_seed import seed_messages, seed_session
@@ -49,20 +49,20 @@ from tests.fixtures.storage_seed import seed_messages, seed_session
 
 @pytest.fixture
 def multiplex_homes(tmp_path, monkeypatch):
-    """A root home plus a named profile home, with HERMES_HOME on the root.
+    """A root home plus a named profile home, with SLAVE_HOME on the root.
 
     Mirrors the reported layout: one gateway process launched under the root
     home, serving a ``fitness`` profile whose store lives under
     ``profiles/fitness``.
     """
-    root = tmp_path / "hermes"
+    root = tmp_path / "slave"
     profile = root / "profiles" / "fitness"
     root.mkdir(parents=True)
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker: a bare dir is not a profile
-    # Resolution goes through ``get_hermes_home()``, which is what production does;
-    # ``HERMES_HOME`` keeps it inside ``tmp_path``, so no real store is ever opened.
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    # Resolution goes through ``get_slave_home()``, which is what production does;
+    # ``SLAVE_HOME`` keeps it inside ``tmp_path``, so no real store is ever opened.
+    monkeypatch.setenv("SLAVE_HOME", str(root))
     return root, profile
 
 
@@ -113,7 +113,7 @@ def test_primary_handler_enters_routed_profile_scope_before_dispatch(multiplex_h
     seen = []
 
     async def capture_scope(event):
-        seen.append(Path(get_hermes_home()))
+        seen.append(Path(get_slave_home()))
 
     runner._handle_message = capture_scope
     event = MessageEvent(
@@ -129,7 +129,7 @@ def test_primary_handler_enters_routed_profile_scope_before_dispatch(multiplex_h
     asyncio.run(runner._primary_message_handler()(event))
 
     assert seen == [profile]
-    assert Path(get_hermes_home()) == root
+    assert Path(get_slave_home()) == root
 
 
 def test_primary_handler_rejected_route_falls_back_and_marks_sentinel(multiplex_homes):
@@ -157,7 +157,7 @@ def test_primary_handler_rejected_route_falls_back_and_marks_sentinel(multiplex_
     seen = []
 
     async def capture_scope(event):
-        seen.append((Path(get_hermes_home()), event.source.profile_route_rejected))
+        seen.append((Path(get_slave_home()), event.source.profile_route_rejected))
 
     runner._handle_message = capture_scope
     source = SessionSource(
@@ -206,7 +206,7 @@ def test_primary_route_keeps_transport_authorization_scope(multiplex_homes):
     async def capture_scope_and_auth(event):
         seen.append(
             (
-                Path(get_hermes_home()),
+                Path(get_slave_home()),
                 runner._is_user_authorized_for_source(event.source),
             )
         )
@@ -231,7 +231,7 @@ def test_primary_route_keeps_transport_authorization_scope(multiplex_homes):
         set_multiplex_active(previous_multiplex)
 
     assert seen == [(profile, True)]
-    assert Path(get_hermes_home()) == root
+    assert Path(get_slave_home()) == root
 
 
 def test_two_primary_routed_turns_reload_profile_transcript(multiplex_homes):
@@ -303,11 +303,11 @@ def test_db_handle_follows_the_active_profile_scope(multiplex_homes):
     # Constructed outside any scope, exactly as the gateway constructs it.
     assert Path(persistence_assembly.store_location(store.persistence.scope)) == root / "state.db"
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         assert Path(persistence_assembly.store_location(store.persistence.scope)) == profile / "state.db"
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     # And the scope is restored once the turn's scope exits.
     assert Path(persistence_assembly.store_location(store.persistence.scope)) == root / "state.db"
@@ -323,11 +323,11 @@ def test_write_under_profile_scope_lands_in_profile_store(multiplex_homes):
     root, profile = multiplex_homes
     store = _make_store(root)
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         seed_session(store.persistence, "20260817_233028_542fda58", "feishu")
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     assert _session_ids(profile / "state.db") == {"20260817_233028_542fda58"}
     assert _session_ids(root / "state.db") == set()
@@ -342,12 +342,12 @@ def test_handles_are_cached_per_path(multiplex_homes):
     root_second = store.persistence
     assert root_first is root_second
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         profile_first = store.persistence
         profile_second = store.persistence
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     assert profile_first is profile_second
     assert profile_first is not root_first
@@ -365,19 +365,19 @@ def test_explicitly_pinned_handle_still_wins(multiplex_homes):
 
     sentinel = object()
     store._db = sentinel
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         assert store._db is sentinel
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     # Disabling the DB (the JSONL-fallback path) must survive scope changes.
     store._db = None
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         assert store._db is None
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_close_all_db_handles_sweeps_every_profile_handle(multiplex_homes):
@@ -393,11 +393,11 @@ def test_close_all_db_handles_sweeps_every_profile_handle(multiplex_homes):
     store = _make_store(root)
 
     root_db = store.persistence
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         profile_db = store.persistence
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert root_db is not profile_db
 
     store.close_all_db_handles()
@@ -439,24 +439,24 @@ def test_runner_session_db_follows_the_active_profile_scope(multiplex_homes):
     root_db = runner._session_db
     assert Path(persistence_assembly.store_location(root_db.scope)) == root / "state.db"
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         profile_db = runner._session_db
         assert Path(persistence_assembly.store_location(profile_db.scope)) == profile / "state.db"
         # Cached per path: same wrapper identity on re-access.
         assert runner._session_db is profile_db
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     assert runner._session_db is root_db
 
     # Pinning (how suites install fakes / disable the DB) wins across scopes.
     runner._session_db = None
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         assert runner._session_db is None
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     runner._session_db_pinned = _SESSION_DB_UNPINNED
 
     runner.close_all_session_db_handles()
@@ -515,11 +515,11 @@ def test_scoped_inbound_turn_lands_in_profile_store(multiplex_homes):
     root, profile = multiplex_homes
     store = _multiplex_store(root)
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         entry = store.get_or_create_session(_profile_source())
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     assert entry.session_key.startswith("agent:fitness:")
     assert _session_ids(profile / "state.db") == {entry.session_id}
@@ -531,11 +531,11 @@ def test_unscoped_explicit_reset_reaches_the_key_owner_store(multiplex_homes):
     root, profile = multiplex_homes
     store = _multiplex_store(root)
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         entry = store.get_or_create_session(_profile_source())
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     # No ambient profile scope: the key must still own both sides of the reset.
     replacement = store.reset_session(entry.session_key)
@@ -556,20 +556,20 @@ def test_unscoped_staleness_check_reads_the_key_owner_store(multiplex_homes):
     root, profile = multiplex_homes
     store = _multiplex_store(root)
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         entry = store.get_or_create_session(_profile_source())
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     # Alive in the profile store, and the root store has never heard of it.
     assert store._is_session_ended_in_db(entry.session_id) is False
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         store.persistence.sessions.end(entry.session_id, "agent_close")
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     assert store._is_session_ended_in_db(entry.session_id) is True
 
@@ -611,7 +611,7 @@ def test_cached_agent_dead_check_reads_the_routed_profile_store(multiplex_homes)
         # B: the routed profile's row lives only in profiles/fitness/state.db. Routing has moved
         # the key on while this process's cached agent still holds the old id: that id is in no
         # index, so only the key names its store (the launch store has never heard of it).
-        token = set_hermes_home_override(str(profile))
+        token = set_slave_home_override(str(profile))
         try:
             b_entry = store.get_or_create_session(_profile_source())
             with store._lock:
@@ -621,7 +621,7 @@ def test_cached_agent_dead_check_reads_the_routed_profile_store(multiplex_homes)
             store.persistence.sessions.end(b_entry.session_id, "session_reset")  # ended outside the gateway
             assert guard(b_entry, "some-other-live-session") == (b_entry.session_id, True)
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
 
         # A again: B's scope and B's ended row change nothing for the default profile.
         assert guard(a_entry, "some-other-live-session") == (a_entry.session_id, False)
@@ -714,7 +714,7 @@ def test_profile_resolution_failure_fails_closed(multiplex_homes, monkeypatch):
     ownership check the failure would be indistinguishable from "no named
     owner" and silently route the row to root.
     """
-    import hermes_cli.profiles as profiles_mod
+    import slave_cli.profiles as profiles_mod
 
     root, _profile = multiplex_homes
     store = _multiplex_store(root)
@@ -752,14 +752,14 @@ def test_compression_child_write_stays_in_the_parents_profile_store(multiplex_ho
     parent_id = "20260830_100000_parent01"
     child_id = "20260830_100500_child001"
 
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         db = store.persistence
         seed_session(db, parent_id, "telegram")
         seed_session(db, child_id, "telegram", parent_session_id=parent_id)
         db.sessions.end(parent_id, "compression")
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
     entry = SessionEntry(
         session_key=key,
@@ -773,11 +773,11 @@ def test_compression_child_write_stays_in_the_parents_profile_store(multiplex_ho
     store.append_to_transcript(parent_id, {"role": "user", "content": "after-compaction"})
 
     # 1. the row landed on the child, in the profile store
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         rows = transcript_rows(store.persistence, child_id)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
     assert [r["content"] for r in rows] == ["after-compaction"]
 
     # 2. the pending queue drained
@@ -814,12 +814,12 @@ def test_crash_marker_from_a_secondary_profile_survives_restart(multiplex_homes)
     root, profile = multiplex_homes
     store = _multiplex_store(root)
 
-    scope = set_hermes_home_override(str(profile))
+    scope = set_slave_home_override(str(profile))
     try:
         entry = store.get_or_create_session(_profile_source())
         assert store.mark_turn_active(entry.session_key) is not None
     finally:
-        reset_hermes_home_override(scope)
+        reset_slave_home_override(scope)
 
     # Restart: fresh store, fresh index, no profile scope anywhere.
     restarted = _restarted_store(root)
@@ -840,11 +840,11 @@ def test_default_namespace_rows_stay_in_launch_store_under_secondary_scope(multi
     root, profile = multiplex_homes
     store = _multiplex_store(root)
 
-    scope = set_hermes_home_override(str(profile))
+    scope = set_slave_home_override(str(profile))
     try:
         db = store._persistence_for_key("agent:main:telegram:dm:1")
     finally:
-        reset_hermes_home_override(scope)
+        reset_slave_home_override(scope)
 
     assert Path(persistence_assembly.store_location(db.scope)) == root / "state.db"
 
@@ -872,13 +872,13 @@ def test_profile_named_main_keeps_its_own_namespace_and_store(multiplex_homes):
     assert _parse_session_key(main_key)["profile"] == "main"
     assert "profile" not in _parse_session_key(default_key)
 
-    scope = set_hermes_home_override(str(main_home))
+    scope = set_slave_home_override(str(main_home))
     try:
         main_db, default_db = store._persistence_for_key(main_key), store._persistence_for_key(default_key)
         assert Path(persistence_assembly.store_location(main_db.scope)) == main_home / "state.db"
         assert Path(persistence_assembly.store_location(default_db.scope)) == root / "state.db"
     finally:
-        reset_hermes_home_override(scope)
+        reset_slave_home_override(scope)
 
 
 def test_a_conversation_its_chat_moved_past_keeps_its_profile_history(multiplex_homes):
@@ -886,10 +886,10 @@ def test_a_conversation_its_chat_moved_past_keeps_its_profile_history(multiplex_
     that profile's store, so its turn loads its history and writes its transcript there."""
     from gateway.session_detached import detached_key
     from gateway.session_identity import replace_source
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from slave_constants import reset_slave_home_override, set_slave_home_override
     root, profile = multiplex_homes
     store = _multiplex_store(root)
-    token = set_hermes_home_override(str(profile))
+    token = set_slave_home_override(str(profile))
     try:
         entry = store.get_or_create_session(_profile_source())
         a = entry.session_id
@@ -901,4 +901,4 @@ def test_a_conversation_its_chat_moved_past_keeps_its_profile_history(multiplex_
         by_id, by_route = store._persistence_for_session_id(a), store._persistence_for_key(detached.detached_route)
         assert persistence_assembly.store_location(by_id.scope) == persistence_assembly.store_location(by_route.scope)
     finally:
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)

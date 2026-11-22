@@ -32,7 +32,7 @@ def test_allowed_topic_is_answered_and_a_dropped_topic_is_logged_once(tmp_path) 
         "require_mention": False, "allowed_topics": ["846"]}}}})
     gw = GatewayUnderTest(tmp_path / "rig", llm_base_url=llm.base_url, config=cfg,
                           env=drv.gateway_env(), ready=drv.connected)
-    log_path = gw.hermes_home / "logs" / "gateway.log"
+    log_path = gw.slave_home / "logs" / "gateway.log"
     drop = f"Ignoring messages in chat {FORUM['id']} topic 1: not in allowed_topics"
     # A reply-anchor thread id is not a topic message, so it rides the chat's admission lane behind
     # both General messages: its own drop line proves they were both gated.

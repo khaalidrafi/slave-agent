@@ -1,4 +1,4 @@
-"""Sandbox RPC authorization: drive the real generated ``hermes_tools._call()``
+"""Sandbox RPC authorization: drive the real generated ``slave_tools._call()``
 against the UDS server loop and the remote file-RPC poller, and check that only
 the authenticated grant intersection is ever dispatched (#84271)."""
 
@@ -15,7 +15,7 @@ import unittest
 from typing import Any, Callable, cast
 from unittest.mock import MagicMock, patch
 
-from tools.code_execution_tool import _sandbox_tools_for, generate_hermes_tools_module
+from tools.code_execution_tool import _sandbox_tools_for, generate_slave_tools_module
 
 
 def _mock_handle_function_call(function_name, function_args, task_id=None, user_task=None):
@@ -125,16 +125,16 @@ class TestSandboxRpcAuthorization(unittest.TestCase):
 
             server_thread = threading.Thread(target=run_server, daemon=True)
             server_thread.start()
-            namespace: dict[str, object] = {"__name__": "hermes_tools"}
+            namespace: dict[str, object] = {"__name__": "slave_tools"}
             try:
                 with patch.dict(
                     os.environ,
                     {
-                        "HERMES_RPC_TOKEN": self._RPC_TOKEN,
+                        "SLAVE_RPC_TOKEN": self._RPC_TOKEN,
                     },
                 ):
                     exec(
-                        generate_hermes_tools_module(
+                        generate_slave_tools_module(
                             list(allowed_tools),
                             transport="uds",
                         ),
@@ -169,7 +169,7 @@ class TestSandboxRpcAuthorization(unittest.TestCase):
         tool_call_counter = [0]
         stop_event = threading.Event()
 
-        with tempfile.TemporaryDirectory(prefix="hermes-rpc-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="slave-rpc-") as temp_dir:
             rpc_dir = os.path.join(temp_dir, "rpc")
             os.mkdir(rpc_dir)
             env = _FakeFileRpcEnvironment(rpc_dir)
@@ -193,17 +193,17 @@ class TestSandboxRpcAuthorization(unittest.TestCase):
 
             poller_thread = threading.Thread(target=run_poller, daemon=True)
             poller_thread.start()
-            namespace = {"__name__": "hermes_tools"}
+            namespace = {"__name__": "slave_tools"}
             try:
                 with patch.dict(
                     os.environ,
                     {
-                        "HERMES_RPC_DIR": rpc_dir,
-                        "HERMES_RPC_TOKEN": self._RPC_TOKEN,
+                        "SLAVE_RPC_DIR": rpc_dir,
+                        "SLAVE_RPC_TOKEN": self._RPC_TOKEN,
                     },
                 ):
                     exec(
-                        generate_hermes_tools_module(
+                        generate_slave_tools_module(
                             list(allowed_tools),
                             transport="file",
                         ),

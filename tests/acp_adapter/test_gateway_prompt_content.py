@@ -25,7 +25,7 @@ class _Client:
 
 @pytest.mark.asyncio
 async def test_image_prompt_is_staged_in_profile_cache_and_submitted_as_attachment(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     from gateway.platforms.base import get_image_cache_dir
     agent = GatewayACPAgent()
     agent._gateway = _Client(agent)
@@ -47,7 +47,7 @@ async def test_image_prompt_is_staged_in_profile_cache_and_submitted_as_attachme
 
 @pytest.mark.asyncio
 async def test_text_only_prompt_keeps_plain_submit(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     agent = GatewayACPAgent()
     agent._gateway = _Client(agent)
     agent._snapshots['s'] = {}
@@ -86,7 +86,7 @@ def image_host():
 
 def _allow_loopback(monkeypatch, allowed):
     from tools import url_safety
-    monkeypatch.setenv('HERMES_ALLOW_PRIVATE_URLS', 'true' if allowed else 'false')
+    monkeypatch.setenv('SLAVE_ALLOW_PRIVATE_URLS', 'true' if allowed else 'false')
     url_safety._reset_allow_private_cache()
 
 
@@ -94,7 +94,7 @@ def _allow_loopback(monkeypatch, allowed):
 async def test_remote_image_url_reaches_admission_as_an_image_attachment(tmp_path, monkeypatch, image_host):
     """#134889 ACP-16: main's in-process server handed the model a remote image as an image part; the
     gateway path admits only staged bytes, so the adapter fetches it (SSRF-guarded) and stages it."""
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     _allow_loopback(monkeypatch, True)
     agent = GatewayACPAgent()
     agent._gateway = _Client(agent)
@@ -114,7 +114,7 @@ async def test_remote_image_url_reaches_admission_as_an_image_attachment(tmp_pat
 async def test_a_remote_image_that_cannot_be_fetched_stays_a_text_note(tmp_path, monkeypatch, image_host, path, allowed):
     """A private address (SSRF guard) or a failed download never fails the prompt: the model still gets
     the URL as text, as before."""
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     _allow_loopback(monkeypatch, allowed)
     agent = GatewayACPAgent()
     agent._gateway = _Client(agent)

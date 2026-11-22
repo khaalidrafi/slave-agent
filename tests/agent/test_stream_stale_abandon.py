@@ -69,8 +69,8 @@ def _log_count(caplog, needle):
 def wedged(monkeypatch):
     """An Anthropic stream whose worker blocks on an Event that neither the client abort
     nor the socket shutdown can set: a worker parked outside the socket read."""
-    monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "0.3")
-    monkeypatch.setenv("HERMES_STREAM_STALE_GIVEUP", "5")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_TIMEOUT", "0.3")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_GIVEUP", "5")
     agent = _anthropic_agent()
     agent._abort_request_anthropic_client = lambda client, reason=None: None
     release = threading.Event()
@@ -107,9 +107,9 @@ def test_worker_that_unwinds_after_a_kill_still_retries(monkeypatch, caplog):
     only when the worker STARTS its next attempt, so with this 0.3 s stale window kills
     landing in a real 1-4 s retry backoff would count as the same attempt. In production
     the stale window (180 s or more) dwarfs that backoff."""
-    monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "0.3")
-    monkeypatch.setenv("HERMES_STREAM_STALE_GIVEUP", "5")
-    monkeypatch.setenv("HERMES_STREAM_RETRIES", "2")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_TIMEOUT", "0.3")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_GIVEUP", "5")
+    monkeypatch.setenv("SLAVE_STREAM_RETRIES", "2")
     agent = _anthropic_agent()
     unblock = threading.Event()
     agent._abort_request_anthropic_client = lambda client, reason=None: unblock.set()
@@ -151,8 +151,8 @@ def test_abandon_limit_of_one_abandons_on_the_first_kill(wedged, monkeypatch, ca
 def test_abandon_after_invisible_deltas_retries_instead_of_an_empty_stub(monkeypatch):
     """Whitespace-only text reached no consumer before the worker wedged: nothing was
     delivered, so the abandon must surface as a retryable error, not an empty partial stub."""
-    monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "0.3")
-    monkeypatch.setenv("HERMES_STREAM_STALE_GIVEUP", "5")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_TIMEOUT", "0.3")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_GIVEUP", "5")
     agent = _anthropic_agent()
     agent._abort_request_anthropic_client = lambda client, reason=None: None
     release = threading.Event()
@@ -228,8 +228,8 @@ def test_wedged_inline_call_stops_reporting_activity(wedged, monkeypatch, caplog
 def test_abandon_after_visible_text_returns_a_stub_classified_as_the_abandon(monkeypatch):
     """Visible text already reached the user: the abandon ends in the partial-delivery stub,
     and the stub is classified from the abandon error, not from whatever the worker left."""
-    monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "0.3")
-    monkeypatch.setenv("HERMES_STREAM_STALE_GIVEUP", "5")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_TIMEOUT", "0.3")
+    monkeypatch.setenv("SLAVE_STREAM_STALE_GIVEUP", "5")
     agent = _anthropic_agent()
     agent._abort_request_anthropic_client = lambda client, reason=None: None
     agent._current_streamed_assistant_text = "Hello there"
@@ -285,9 +285,9 @@ def test_wedged_worker_under_the_lifetime_cap_is_abandoned_once(wedged, monkeypa
     and the call is abandoned once, with the stale error (no chunk ever arrived)."""
     from agent.stream_max_lifetime import StreamLifetimeExceeded
 
-    monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", stale)
+    monkeypatch.setenv("SLAVE_STREAM_STALE_TIMEOUT", stale)
     (tmp_path / "config.yaml").write_text(f"agent:\n  stream_max_lifetime: {cap}\n")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     with caplog.at_level("WARNING"):
         caller, outcome = _call_in_thread(wedged)
         caller.join(timeout=10.0)

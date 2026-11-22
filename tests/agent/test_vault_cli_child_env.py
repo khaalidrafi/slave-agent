@@ -8,8 +8,8 @@ from unittest import mock
 import pytest
 
 from agent.secret_sources import base, bitwarden as bw
-from hermes_cli import onepassword_secrets_cli as op_cli
-from hermes_cli import secrets_cli as bw_cli
+from slave_cli import onepassword_secrets_cli as op_cli
+from slave_cli import secrets_cli as bw_cli
 
 PROVIDER_KEYS = ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GH_TOKEN")
 
@@ -128,7 +128,7 @@ def test_op_whoami_probe_gets_only_allowlisted_env(monkeypatch):
 def test_version_probes_get_no_credentials(monkeypatch):
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.ambient")
     monkeypatch.setenv("OP_SERVICE_ACCOUNT_TOKEN", "ops.ambient")
-    from hermes_cli import _secrets_common
+    from slave_cli import _secrets_common
 
     seen = _capture(monkeypatch, _secrets_common, stdout="tool 1.0")
     bw_cli._bws_version(Path("/fake/bws"))

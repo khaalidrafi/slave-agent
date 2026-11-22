@@ -55,8 +55,8 @@ def request_target_profile(_api_request_profile) -> str:
     """The served profile this request runs as: its ``/p/<profile>/`` prefix, else the listener's
     own profile (``default`` on a multiplexed host, the launch profile of a single-profile one)."""
     from gateway.session_authorities import served_profile_name
-    from hermes_constants import get_hermes_home
-    return _api_request_profile.get() or served_profile_name(get_hermes_home())
+    from slave_constants import get_slave_home
+    return _api_request_profile.get() or served_profile_name(get_slave_home())
 
 
 def _local_target(claims: dict[str, Any] | None, _api_request_profile) -> tuple[str, str]:
@@ -99,7 +99,7 @@ def _run_close_route(self):
 
 def _room_grant_token(request: web.Request) -> str:
     scheme, separator, token = str(request.headers.get("Authorization") or "").partition(" ")
-    return token.strip() if separator and scheme.lower() == "hermesroom" else ""
+    return token.strip() if separator and scheme.lower() == "slaveroom" else ""
 
 
 def _room_grant_secret(self) -> bytes:
@@ -162,7 +162,7 @@ async def _handle_room_member_invitation(
         invitation = _issue_invitation(self, body, profile)
     except (OSError, RuntimeError, sqlite3.Error, *STORE_FAILURES, TypeError, ValueError) as exc:
         return _json_error(_openai_error, str(exc), code="invalid_room_invitation", status=400)
-    return web.json_response({"object": "hermes.room_member.invitation", **invitation}, status=201)
+    return web.json_response({"object": "slave.room_member.invitation", **invitation}, status=201)
 
 
 def _issue_invitation(self, body: dict[str, Any], profile: str) -> dict[str, Any]:
@@ -201,7 +201,7 @@ async def _handle_room_member_capabilities(
     except Exception as exc:
         return _room_grant_error_response(exc, _openai_error=_openai_error)
     return web.json_response({
-        "object": "hermes.room_member.capabilities", **{k: claims[k] for k in _ROOM_IDENTITY_FIELDS},
+        "object": "slave.room_member.capabilities", **{k: claims[k] for k in _ROOM_IDENTITY_FIELDS},
         "target_profile": profile, "catalog": catalog})
 
 
@@ -240,7 +240,7 @@ async def _handle_room_member_grant_refresh(
     except Exception as exc:
         return _room_grant_error_response(exc, _openai_error=_openai_error)
     return web.json_response({
-        "object": "hermes.room_member.grant", "grant": token, "expires_at": now + dispatch_ttl,
+        "object": "slave.room_member.grant", "grant": token, "expires_at": now + dispatch_ttl,
         "status_expires_at": hard_expiry, "execution_policy": execution_policy})
 
 
@@ -271,7 +271,7 @@ async def _handle_room_member_grant_revoke(
             code="room_grant_store_unavailable", status=503)
     except (ValueError, KeyError, TypeError):  # this grant cannot pass here: unsigned, expired, not ours
         return _room_grant_error_response(_openai_error=_openai_error)
-    return web.json_response({"object": "hermes.room_member.grant.revocation", "revoked": True})
+    return web.json_response({"object": "slave.room_member.grant.revocation", "revoked": True})
 
 
 async def _handle_room_member_run_close(self, request: web.Request) -> web.Response:
@@ -304,6 +304,6 @@ async def _handle_room_member_run_close(self, request: web.Request) -> web.Respo
             _openai_error, "Run store is unavailable.", err_type="server_error",
             code="run_store_unavailable", status=503)
     if outcome == "closed":
-        return web.json_response({"object": "hermes.room_member.run_close", "closed": True})
-    return web.json_response({"object": "hermes.room_member.run_close", "closed": False,
+        return web.json_response({"object": "slave.room_member.run_close", "closed": True})
+    return web.json_response({"object": "slave.room_member.run_close", "closed": False,
                               "run_id": record["run_id"]})

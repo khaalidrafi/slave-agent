@@ -1,4 +1,4 @@
-"""Tests for state.db health/stats collection (hermes doctor section).
+"""Tests for state.db health/stats collection (slave doctor section).
 
 Covers:
 - ``_state.dbfile.collect_state_db_stats``: read-only, best-effort stats
@@ -6,7 +6,7 @@ Covers:
   pending v23 FTS-rebuild bookkeeping).
 - ``_state.dbfile.count_db_holders``: best-effort probe for how many processes
   hold the DB file open (/proc on Linux, libproc on macOS; None elsewhere/on error).
-- ``hermes_cli.doctor_state._render_state_db_stats``: formatting/threshold helper
+- ``slave_cli.doctor_state._render_state_db_stats``: formatting/threshold helper
   the doctor state.db section prints from.
 """
 
@@ -95,7 +95,7 @@ def test_collect_and_render_stale_fts_holder_deferral(populated_db):
     assert stats["fts_rebuild_deferral"]["attempts"] == 4
     assert stats["fts_rebuild_deferral"]["holder_pids"] == [4242]
 
-    from hermes_cli.doctor_state import _render_state_db_stats
+    from slave_cli.doctor_state import _render_state_db_stats
 
     rendered = _render_state_db_stats(stats)
     warnings = [
@@ -152,7 +152,7 @@ def test_count_db_holders_sees_open_connection_linux(populated_db):
 
 @pytest.mark.platforms("macos")
 def test_count_db_holders_sees_open_connection_macos(populated_db):
-    # #109641: the doctor's holder count was Linux-only, so `hermes doctor` on the platform with
+    # #109641: the doctor's holder count was Linux-only, so `slave doctor` on the platform with
     # every reporter in the deleted-WAL cluster printed no holder row at all.
     _assert_sees_own_open_connection(populated_db)
 
@@ -190,7 +190,7 @@ def _base_stats(**overrides):
 
 
 def test_render_healthy_stats_no_warnings():
-    from hermes_cli.doctor_state import _render_state_db_stats
+    from slave_cli.doctor_state import _render_state_db_stats
 
     lines = _render_state_db_stats(_base_stats(), holders=2)
     kinds = [k for k, *_ in lines]
@@ -203,7 +203,7 @@ def test_render_healthy_stats_no_warnings():
 
 
 def test_render_warns_on_large_db():
-    from hermes_cli.doctor_state import STATE_DB_SIZE_WARN_BYTES, _render_state_db_stats
+    from slave_cli.doctor_state import STATE_DB_SIZE_WARN_BYTES, _render_state_db_stats
 
     big = STATE_DB_SIZE_WARN_BYTES + 1
     lines = _render_state_db_stats(
@@ -217,7 +217,7 @@ def test_render_warns_on_large_db():
 
 
 def test_render_large_db_with_pending_rebuild_suggests_optimize():
-    from hermes_cli.doctor_state import STATE_DB_SIZE_WARN_BYTES, _render_state_db_stats
+    from slave_cli.doctor_state import STATE_DB_SIZE_WARN_BYTES, _render_state_db_stats
 
     big = STATE_DB_SIZE_WARN_BYTES + 1
     lines = _render_state_db_stats(
@@ -229,7 +229,7 @@ def test_render_large_db_with_pending_rebuild_suggests_optimize():
 
 
 def test_render_large_db_legacy_trigram_suggests_optimize():
-    from hermes_cli.doctor_state import STATE_DB_SIZE_WARN_BYTES, _render_state_db_stats
+    from slave_cli.doctor_state import STATE_DB_SIZE_WARN_BYTES, _render_state_db_stats
 
     big = STATE_DB_SIZE_WARN_BYTES + 1
     lines = _render_state_db_stats(
@@ -245,7 +245,7 @@ def test_render_large_db_legacy_trigram_suggests_optimize():
 
 
 def test_render_handles_all_none_stats():
-    from hermes_cli.doctor_state import _render_state_db_stats
+    from slave_cli.doctor_state import _render_state_db_stats
 
     empty = {k: None for k in _base_stats()}
     empty["fts_tables"] = None

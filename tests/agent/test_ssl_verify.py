@@ -164,7 +164,7 @@ def _child_env(tmp_path: Path) -> dict[str, str]:
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     env = os.environ.copy()
-    env.update(HOME=str(tmp_path), HERMES_HOME=str(home), NO_PROXY="127.0.0.1")
+    env.update(HOME=str(tmp_path), SLAVE_HOME=str(home), NO_PROXY="127.0.0.1")
     for key in ("SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
         env.pop(key, None)
     return env
@@ -481,7 +481,7 @@ def test_requests_verify_hands_over_the_platform_store_without_openssl_files(tmp
 
     from agent import ssl_verify
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path / "home"))
     monkeypatch.delenv("REQUESTS_CA_BUNDLE", raising=False)
     monkeypatch.delenv("CURL_CA_BUNDLE", raising=False)
     monkeypatch.setattr(ssl_verify, "_PLATFORM_STORE_BUNDLE", None)
@@ -510,7 +510,7 @@ def test_requests_verify_hands_over_the_platform_store_without_openssl_files(tmp
 
 
 def test_platform_store_bundle_survives_an_unwritable_home(tmp_path, monkeypatch):
-    """A full or read-only HERMES_HOME leaves requests_verify on its ``True`` fallback
+    """A full or read-only SLAVE_HOME leaves requests_verify on its ``True`` fallback
     instead of raising the disk error out of the requests call site."""
     from agent import ssl_verify
 
@@ -524,7 +524,7 @@ def test_platform_store_bundle_survives_an_unwritable_home(tmp_path, monkeypatch
 
     blocker = tmp_path / "home"
     blocker.write_text("not a directory")  # mkdir(cache) under a file raises OSError
-    monkeypatch.setenv("HERMES_HOME", str(blocker))
+    monkeypatch.setenv("SLAVE_HOME", str(blocker))
     monkeypatch.setattr(ssl_verify, "_PLATFORM_STORE_BUNDLE", None)
     monkeypatch.setattr(ssl_verify, "_stdlib_ssl_context_class", lambda: _StoreWithACert)
     assert ssl_verify._platform_store_bundle() is None

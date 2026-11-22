@@ -1,8 +1,8 @@
 """Gateway control socket — the gateway-owned local coordination surface: a local-only socket answering
 versioned JSON verbs (``identify``, ``status``, ``resolve-profile``, ``session-ticket``, ...). A connectable socket with a well-formed ``identify``
 answer IS liveness — no PID-reuse heuristics. Never a TCP port: filesystem/pipe ACLs are the auth
-boundary. POSIX: ``$HERMES_HOME/gateway.sock`` (or a temp-dir socket + ``gateway.sock.path`` pointer
-file when the home path exceeds ``sun_path`` or its filesystem refuses sockets); Windows: named pipe ``\\\\.\\pipe\\hermes-gateway-<hash>``.
+boundary. POSIX: ``$SLAVE_HOME/gateway.sock`` (or a temp-dir socket + ``gateway.sock.path`` pointer
+file when the home path exceeds ``sun_path`` or its filesystem refuses sockets); Windows: named pipe ``\\\\.\\pipe\\slave-gateway-<hash>``.
 Wire contract: ONE request per connection — one JSON line in, one out, then the server closes.
 Consumers PREFER the socket and fall back to the state-file/scan layer when it doesn't answer.
 """
@@ -49,8 +49,8 @@ def _home_hash(home: Path) -> str:
 
 
 def windows_pipe_name(home: Path) -> str:
-    """Per-HERMES_HOME named pipe path (Windows transport)."""
-    return rf"\\.\pipe\hermes-gateway-{_home_hash(home)}"
+    """Per-SLAVE_HOME named pipe path (Windows transport)."""
+    return rf"\\.\pipe\slave-gateway-{_home_hash(home)}"
 
 
 def _fits_sun_path(path: Path) -> bool:
@@ -74,7 +74,7 @@ def _fallback_socket_path(home: Path) -> Path:
     ``$XDG_RUNTIME_DIR`` first, then ``tempfile.gettempdir()`` and ``/tmp`` (POSIX); if nothing fits
     the first candidate is returned anyway. A squatted shared-temp name is handled at bind time
     (``_squat_proof_fallback``)."""
-    name = f"hermes-gw-{_home_hash(home)}/control.sock"
+    name = f"slave-gw-{_home_hash(home)}/control.sock"
     runtime = _private_runtime_dir()
     candidates = ([runtime / name] if runtime else []) + [Path(tempfile.gettempdir()) / name] + (
         [] if _IS_WINDOWS else [Path("/tmp") / name])  # no-tmp: ok — AF_UNIX 104-byte path limit needs the short /tmp candidate
@@ -87,7 +87,7 @@ def _private_directory(path: Path) -> bool:
 
 
 def _squat_proof_fallback(bind_path: Path) -> Path:
-    """Same ``hermes-gw-<hash>/control.sock`` leaf (what clients authenticate through the private
+    """Same ``slave-gw-<hash>/control.sock`` leaf (what clients authenticate through the private
     pointer), under a fresh ``mkdtemp`` root no other user can predict or pre-create."""
     root = Path(tempfile.mkdtemp(prefix="hgw-", dir=bind_path.parent.parent))
     path = root / bind_path.parent.name / bind_path.name
@@ -148,7 +148,7 @@ def _detect_supervisor() -> str:
     from gateway.restart import launchd_job_label
     if sys.platform == "darwin" and (launchd_job_label(env) or env.get("LAUNCHD_SOCKET")):
         return "launchd"
-    if env.get("HERMES_DESKTOP_MANAGED"):
+    if env.get("SLAVE_DESKTOP_MANAGED"):
         return "desktop"
     return "external" if "--external-supervisor" in sys.argv else "manual"
 
@@ -183,8 +183,8 @@ def build_identify_payload() -> dict[str, Any]:
     supervisor = _detect_supervisor()
     payload: dict[str, Any] = {
         "protocol": CONTROL_PROTOCOL_VERSION,
-        **{k: record.get(k) for k in ("kind", "pid", "start_time", "hermes_home")},
-        "profile": _profile_label_for_home(record.get("hermes_home") or ""),
+        **{k: record.get(k) for k in ("kind", "pid", "start_time", "slave_home")},
+        "profile": _profile_label_for_home(record.get("slave_home") or ""),
         "supervisor": supervisor, "launch_supervisor": supervisor, **_get_code_identity_fields()}
     with contextlib.suppress(Exception):
         # served_profiles (multiplex mode) is stamped into runtime status by the runner.
@@ -209,10 +209,10 @@ class GatewayControlServer:
     def __init__(self, home: Optional[Path] = None, *,
                  verb_handlers: Optional[dict[str, Callable[..., dict[str, Any]]]] = None) -> None:
         if home is None:
-            from gateway.status import _get_process_hermes_home
-            home = _get_process_hermes_home()
+            from gateway.status import _get_process_slave_home
+            home = _get_process_slave_home()
         # The real directory, as clients canonicalize it: the peer check below refuses any
-        # symlinked component, so an unresolved symlinked ~/.hermes would never mint tickets.
+        # symlinked component, so an unresolved symlinked ~/.slave would never mint tickets.
         self._home = Path(home).resolve()
         self.ticket_store = None
         # ``resolve-profile`` (gateway.control_resolve); None keeps the unknown-verb answer.
@@ -326,7 +326,7 @@ class GatewayControlServer:
         self._file_identities.clear()
         if self._fallback_root is not None:
             with contextlib.suppress(OSError):
-                (self._fallback_root / f"hermes-gw-{_home_hash(self._home)}").rmdir()
+                (self._fallback_root / f"slave-gw-{_home_hash(self._home)}").rmdir()
                 self._fallback_root.rmdir()
             self._fallback_root = None
 
@@ -414,7 +414,7 @@ class GatewayControlServer:
         if os.name == "nt":
             return None
         try:
-            from hermes_cli.gateway_runtime_discovery import home_mode_unsafe, socket_peer_uid
+            from slave_cli.gateway_runtime_discovery import home_mode_unsafe, socket_peer_uid
             home = self._home
             info = home.lstat()
             if (home.absolute() != home.resolve() or not stat.S_ISDIR(info.st_mode)

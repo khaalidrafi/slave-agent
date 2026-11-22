@@ -26,8 +26,8 @@ def connects(monkeypatch):
 def launch(monkeypatch, tmp_path):
     home = tmp_path / "launch"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", str(home))
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr(server, "_db_error", None)
     try:
@@ -94,7 +94,7 @@ def test_agent_builds_get_the_handle_beside_their_store(launch, monkeypatch):
     monkeypatch.setattr("run_agent.AIAgent", lambda **kwargs: captured.append(kwargs) or types.SimpleNamespace())
     monkeypatch.setattr(server, "_load_enabled_toolsets", lambda platform=None: ["file"])
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"default": "m", "provider": "openai-codex"}})
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **kw: {
+    monkeypatch.setattr("slave_cli.runtime_provider.resolve_runtime_provider", lambda **kw: {
         "provider": "openai-codex", "base_url": "http://127.0.0.1:9/v1", "api_key": "k", "api_mode": "chat_completions",
         "credential_pool": None})
     server._make_agent("sid", "launch-key")
@@ -111,7 +111,7 @@ def test_agent_builds_get_the_handle_beside_their_store(launch, monkeypatch):
 
 def test_rpc_helpers_hand_the_handle_to_cross_area_callees(launch, tmp_path, monkeypatch):
     seen = []
-    monkeypatch.setattr("hermes_cli.foreign_sessions_browser.preview_foreign_session",
+    monkeypatch.setattr("slave_cli.foreign_sessions_browser.preview_foreign_session",
                         lambda handle, db, *, persistence=None: seen.append((db, persistence)) or {"ok": True})
     db = server._get_db()
     reply = server._methods["session.foreign.preview"](1, {"id": "x"})
@@ -119,7 +119,7 @@ def test_rpc_helpers_hand_the_handle_to_cross_area_callees(launch, tmp_path, mon
     assert seen == [(db, server._launch_persistence())]
 
     refusals = []
-    monkeypatch.setattr("hermes_cli.kanban_resume_guard.kanban_resume_refusal",
+    monkeypatch.setattr("slave_cli.kanban_resume_guard.kanban_resume_refusal",
                         lambda db, target, *, persistence=None: refusals.append(persistence) or "refused")
     ctx = server._Resume(1, {}, "stored")
     ctx.db, ctx.persistence = db, server._launch_persistence()

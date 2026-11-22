@@ -29,7 +29,7 @@ def _volume_headroom(monkeypatch):
 def _store_lagging(path: Path) -> Path:
     """A store with one session's history written through the backend's store, its four declared tables and three declared columns removed again."""
     scope = ProfileScope(profile_dir=path.parent, name="default")
-    backend = SQLiteBackend({scope.hermes_home_key: path})
+    backend = SQLiteBackend({scope.slave_home_key: path})
     try:
         store = backend.open(scope)
         seed_session(store, "kept", "cli")

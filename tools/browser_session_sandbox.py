@@ -252,7 +252,7 @@ def _stop_launched(key: str) -> None:
         logger.warning("browser: leaving sandbox Chromium pid %s running: its start time could not be read at "
                        "launch, so the pid cannot be proven to still be that browser", pid)
         return
-    argv = ["bash", "-c", _STOP_SCRIPT, "hermes-sandbox-browser-stop", str(int(pid)), start, f"--user-data-dir={udd}"]
+    argv = ["bash", "-c", _STOP_SCRIPT, "slave-sandbox-browser-stop", str(int(pid)), start, f"--user-data-dir={udd}"]
     try:
         proc = streams.run_in(env, argv, user=sandbox_host._user_for(env), timeout=15)
     except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:

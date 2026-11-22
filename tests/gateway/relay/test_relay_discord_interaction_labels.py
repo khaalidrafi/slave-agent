@@ -39,7 +39,7 @@ def _pinned_prompt(source):
     return runner._pinned_session_context_prompt(build_session_context(source, config), False, "k")
 
 
-def _message(chat, user="u1", chat_name="Hermes Server / #ops", chat_topic="Incident triage"):
+def _message(chat, user="u1", chat_name="slave-agent Server / #ops", chat_topic="Incident triage"):
     message_id = f"{user}:{chat_name}"
     return _event_from_wire({"text": "hi", "message_type": "text", "message_id": message_id, "source": {
         "platform": "discord", **chat, "scope_id": "g1",
@@ -85,7 +85,7 @@ async def test_slash_between_messages_keeps_one_pinned_prompt(tmp_path, monkeypa
     adapter.handle_message = AsyncMock()
     chat = ({"chat_id": "th1", "chat_type": "thread", "thread_id": "th1", "parent_chat_id": "ch1"}
             if case == "thread" else {"chat_id": "ch1", "chat_type": "group"})
-    renamed = {"chat_name": "Hermes Server / #triage", "chat_topic": "Renamed"}
+    renamed = {"chat_name": "slave-agent Server / #triage", "chat_topic": "Renamed"}
     calls, held, entered = [], threading.Event(), threading.Event()
 
     def watch(store):

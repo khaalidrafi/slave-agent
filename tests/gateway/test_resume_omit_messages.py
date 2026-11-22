@@ -116,7 +116,7 @@ async def test_omitted_resume_reply_passes_the_wire_contract(tmp_path, monkeypat
     from gateway.session_controls import AuthorityConnection
     from gateway import session_local
     authority, actor, ref, physical = await _local_session(tmp_path, monkeypatch)
-    monkeypatch.setattr(session_local, 'local_session_info', lambda *a: {'desktop_protocol': 'hermes-gateway-v1'})
+    monkeypatch.setattr(session_local, 'local_session_info', lambda *a: {'desktop_protocol': 'slave-gateway-v1'})
     _seed_compacted(authority.persistence, physical)
     conn = AuthorityConnection(authority, object(), {'user_id': 'owner'})
     conn.actor = actor

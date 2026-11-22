@@ -131,13 +131,13 @@ def scenario(tmp_path_factory: pytest.TempPathFactory) -> Iterator[dict[str, Any
     gw = None
     facts: dict[str, Any] = {}
     try:
-        gw = GatewayApiServer(sb, sb.hermes_home, root / "gateway.log")
+        gw = GatewayApiServer(sb, sb.slave_home, root / "gateway.log")
         auth = {"Authorization": "Bearer " + gw.key}
         timeout = httpx.Timeout(TURN_TIMEOUT)
         with httpx.Client(base_url=gw.base, timeout=timeout, trust_env=False) as streamer, \
                 httpx.Client(base_url=gw.base, timeout=timeout, trust_env=False) as viewer:
             stream = _SseReader(streamer, "/v1/chat/completions", headers=auth, json={
-                "model": "hermes-agent", "stream": True,
+                "model": "slave-agent", "stream": True,
                 "messages": [{"role": "user", "content": "clean up the scratch directory"}]})
             event = stream.wait_for("approval.request", TURN_TIMEOUT)
             run_id = event["run_id"]

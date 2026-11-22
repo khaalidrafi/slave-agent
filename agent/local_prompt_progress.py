@@ -1,7 +1,7 @@
 """Prompt-reading progress from llama-server.
 
 llama-server reads a long prompt for minutes before it writes the first token. Asked with
-``return_progress``, it streams a progress chunk after each batch it reads. Hermes uses those
+``return_progress``, it streams a progress chunk after each batch it reads. slave-agent uses those
 chunks as signs of life: the stall timers stay quiet while the server works, and the router
 notices a client hang-up within seconds (it only checks the client socket when it writes).
 

@@ -18,7 +18,7 @@ description: >-
   Write-capable tools: fix_scan and create_upload_link (start a book), cancel_scan and delete_scan
   (stop or delete one of the user's books). Tool results enter the session context and so reach the
   user's model provider. The package marks the server untrusted. OAuth must be enabled with
-  `hermes mcp add fixmyscan --url https://mcp.fixmyscan.com/mcp --auth oauth`; the bundled mcp.json
+  `slave mcp add fixmyscan --url https://mcp.fixmyscan.com/mcp --auth oauth`; the bundled mcp.json
   alone yields 401 on tool calls.
 maintainer: FixMyScan
 tier: community
@@ -27,7 +27,7 @@ requires_hermes: ">=0.22.0"
 docs_url: https://fixmyscan.com/ai
 platforms: []
 known_issues:
-  - "Sign in once after installing: hermes mcp add fixmyscan --url https://mcp.fixmyscan.com/mcp --auth oauth"
+  - "Sign in once after installing: slave mcp add fixmyscan --url https://mcp.fixmyscan.com/mcp --auth oauth"
 capabilities:
   provides_tools: []
   provides_hooks: []

@@ -20,35 +20,35 @@ except ImportError:  # pragma: no cover - stripped/scaffold installs only
 
 #: Env twin of ``_STATE_DB_GUARD_BYPASS`` for child processes (a module global
 #: cannot cross a process boundary, and ancestry arms the guard there).
-_STATE_DB_GUARD_BYPASS_ENV = "HERMES_STATE_DB_GUARD_BYPASS"
+_STATE_DB_GUARD_BYPASS_ENV = "SLAVE_STATE_DB_GUARD_BYPASS"
 
 
 def _real_platform_state_root() -> Optional[Path]:
-    """The REAL platform-default Hermes root. Avoids ``Path.home()`` /
-    ``hermes_constants`` (tests monkeypatch Path.home to a tempdir); ``expanduser``
+    """The REAL platform-default slave-agent root. Avoids ``Path.home()`` /
+    ``slave_constants`` (tests monkeypatch Path.home to a tempdir); ``expanduser``
     reads HOME/passwd, which the conftest never rewrites."""
     try:
         home = Path(os.path.expanduser("~"))
         if sys.platform == "win32":
             base = os.environ.get("LOCALAPPDATA", "").strip()
-            root = Path(base) / "hermes" if base else home / "AppData" / "Local" / "hermes"
+            root = Path(base) / "slave" if base else home / "AppData" / "Local" / "slave"
         else:
-            root = home / ".hermes"
+            root = home / ".slave"
         return root.resolve()
     except Exception:
         return None
 
 
-#: Exported by the hermetic conftest alongside the HERMES_HOME redirect. Unlike
+#: Exported by the hermetic conftest alongside the SLAVE_HOME redirect. Unlike
 #: PYTEST_* it is OURS and inherits by default, so a child carrying it that
 #: resolves a production DB is by definition an isolation escape.
-# : Env marker exported by the hermetic test conftest at the same moment it : redirects ``HERMES_HOME`` to
+# : Env marker exported by the hermetic test conftest at the same moment it : redirects ``SLAVE_HOME`` to
 # the per-session tmp isolation root. Unlike ``PYTEST_*`` (owned by pytest, and : routinely scrubbed by
 # tests that rebuild a child environment), this marker : is OURS: it declares "this process tree is running
-# under Hermes test : isolation", and it inherits into subprocess children by default — so a : child that
-# received the patched ``HERMES_HOME`` also received the marker, : and a child that resolves a production DB
+# under Slave test : isolation", and it inherits into subprocess children by default — so a : child that
+# received the patched ``SLAVE_HOME`` also received the marker, : and a child that resolves a production DB
 # while carrying it is, by : definition, an isolation escape (#82770).
-_TEST_ISOLATION_MARKER_ENV = "HERMES_TEST_ISOLATION"
+_TEST_ISOLATION_MARKER_ENV = "SLAVE_TEST_ISOLATION"
 
 
 def _running_under_pytest() -> bool:
@@ -63,10 +63,10 @@ def _running_under_pytest() -> bool:
 #: pytest launcher names, matched against each argv token's *basename* so
 #: ``/tmp/pytest-of-dev/...`` paths cannot false-positive.
 _PYTEST_LAUNCHER_NAMES = frozenset({"pytest", "py.test", "pytest.exe", "py.test.exe"})
-#: The repo's test runner: under its fork server (HERMES_TEST_FORKSERVER) a test
+#: The repo's test runner: under its fork server (SLAVE_TEST_FORKSERVER) a test
 #: process has no ``python -m pytest`` ancestor, only ``python .../run_tests_parallel.py``.
 #: It counts only as the script a Python interpreter runs: a prompt or an editor
-#: naming the file (``hermes chat -q "fix scripts/run_tests_parallel.py"``) is no test.
+#: naming the file (``slave chat -q "fix scripts/run_tests_parallel.py"``) is no test.
 _TEST_RUNNER_SCRIPT = "run_tests_parallel.py"
 
 #: Memoised ancestry answer: the tree above us doesn't change; keep the hot path free.
@@ -97,11 +97,11 @@ def _process_looks_like_pytest(proc: Any) -> bool:
 
 def _has_pytest_ancestor() -> bool:
     """True when an ancestor process is a pytest run: a child spawned with a
-    rebuilt env loses PYTEST_* and the HERMES_HOME redirect together, ancestry
+    rebuilt env loses PYTEST_* and the SLAVE_HOME redirect together, ancestry
     survives that. Fails open without psutil / on walk errors.
 
     ``_running_under_pytest`` reads ``PYTEST_*`` env vars, which a child spawned with a rebuilt environment
-    loses at the same moment it loses the ``HERMES_HOME`` redirect: that child aims at the production DB
+    loses at the same moment it loses the ``SLAVE_HOME`` redirect: that child aims at the production DB
     *and* disarms the guard in one step (#82770). Ancestry is the one test-context signal that survives an
     env rebuild, so it backs the env check up.
     """
@@ -140,7 +140,7 @@ def _is_production_state_db(resolved: Path, root: Path) -> bool:
 # teardown in tests/conftest.py (_close_leaked_session_dbs) can close whatever
 # a test forgot to close. Dozens of tests open a store directly and never
 # close it; each instance holds a writer connection plus pooled readers, and a
-# single-process run over tests/hermes_cli/ accumulated 16-25 GB RSS (OOM
+# single-process run over tests/slave_cli/ accumulated 16-25 GB RSS (OOM
 # incident 20260816). The per-file runner masks this in CI; the registry fixes
 # the class at the source instead of patching ~40 test files.
 #

@@ -11,7 +11,7 @@ from gateway.message_timestamps import (
     format_message_timestamp,
     render_user_content_with_timestamp,
 )
-from hermes_time import safe_strftime
+from slave_time import safe_strftime
 
 
 BERLIN = ZoneInfo("Europe/Berlin")
@@ -236,7 +236,7 @@ def test_compactor_restatement_replays_unstamped_through_session_db(tmp_path):
     from gateway.config import GatewayConfig
     from gateway.run import _build_gateway_agent_history
     from gateway.session import SessionStore
-    from hermes_time import get_timezone
+    from slave_time import get_timezone
     from persistence.conversation.messages import NewMessage
     from tests.fixtures.storage_seed import seed_session
 

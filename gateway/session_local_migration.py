@@ -102,7 +102,7 @@ def legacy_launch_params(row):
     if isinstance(reasoning, dict):
         reasoning = 'none' if reasoning.get('enabled') is False else reasoning.get('effort')
     if isinstance(reasoning, str):
-        from hermes_constants import parse_reasoning_effort
+        from slave_constants import parse_reasoning_effort
         if parse_reasoning_effort(reasoning) is not None:
             params['reasoning'] = reasoning
     tier = saved.get('service_tier')
@@ -270,7 +270,7 @@ def adopt_legacy_session(authority, actor, row):
     from gateway.session_local import commit_local_session
     from gateway.session_policy import build_policy, bind_launch_key
     from gateway.session_local_recovery import restore_local_session
-    from hermes_cli.active_sessions import active_session_liveness_guard, ActiveSessionRegistryError
+    from slave_cli.active_sessions import active_session_liveness_guard, ActiveSessionRegistryError
 
     request_id = 'legacy:' + row.session_id
     sid = row.session_id
@@ -284,7 +284,7 @@ def adopt_legacy_session(authority, actor, row):
     if 'provider' not in params and params.get('model') and params['model'] != _profile_default(model_cfg):
         # A row with a model but no provider would run on the profile's slot, which serves another model
         # (#132648); its saved URL/wire may be stamps of exactly those misrouted turns.
-        from hermes_cli.runtime_provider_custom import empty_provider_identity
+        from slave_cli.runtime_provider_custom import empty_provider_identity
         if healed := empty_provider_identity(params.get('base_url'), params['model']):
             params['provider'] = healed
             params.pop('base_url', None)

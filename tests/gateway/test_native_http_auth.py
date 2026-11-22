@@ -35,9 +35,9 @@ def daemon(tmp_path):
     }))
     root = Path(__file__).resolve().parents[2]
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED='1',
-               HERMES_DASHBOARD_SESSION_TOKEN='normal-http-owner')
+               SLAVE_DASHBOARD_SESSION_TOKEN='normal-http-owner')
     with (tmp_path / 'gateway.log').open('w+') as log:
         process = subprocess.Popen([sys.executable, '-m', 'gateway.run'], cwd=root, env=env,
                                    stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
@@ -73,13 +73,13 @@ def ticket(home, descriptor, purpose='native-http', **overrides):
 
 
 def headers(token):
-    return {'X-Hermes-Gateway-Ticket': token}
+    return {'X-Slave-Gateway-Ticket': token}
 
 
 async def reject_ws(origin, token):
     with pytest.raises(InvalidStatus):
         async with connect(origin.replace('http:', 'ws:') + '/api/ws', subprotocols=[
-                'hermes-gateway-v1', 'hermes-gateway-ticket.' + token]):
+                'slave-gateway-v1', 'slave-gateway-ticket.' + token]):
             pass
 
 
@@ -103,8 +103,8 @@ def test_native_http_grants_are_single_use_and_bound_to_daemon(tmp_path):
             assert client.get('/api/config', headers={**headers(ticket(home, descriptor)),
                                                      'Origin': origin}).status_code == 401
         assert client.get('/api/config', headers=[
-            ('X-Hermes-Gateway-Ticket', ticket(home, descriptor)),
-            ('X-Hermes-Gateway-Ticket', ticket(home, descriptor)),
+            ('X-Slave-Gateway-Ticket', ticket(home, descriptor)),
+            ('X-Slave-Gateway-Ticket', ticket(home, descriptor)),
         ]).status_code == 401
         for purpose in ('interactive', 'exposure', 'worker-adoption'):
             assert client.get('/api/config', headers=headers(ticket(home, descriptor, purpose))).status_code == 401
@@ -146,11 +146,11 @@ def test_native_http_grants_are_single_use_and_bound_to_daemon(tmp_path):
             'display': {'skin': 'ares'}}}, headers=headers(ticket(home, descriptor)))
         assert updated.status_code == 200, updated.text
         assert client.get('/api/config', headers=headers(ticket(home, descriptor))).json()['display']['skin'] == 'ares'
-        import hermes_yaml as yaml
+        import slave_yaml as yaml
         assert yaml.safe_load((home / 'config.yaml').read_text())['display']['skin'] == 'ares'
         query_ticket = ticket(home, descriptor)
         assert client.get('/api/config', params={'ticket': query_ticket}).status_code == 401
-        assert client.get('/api/config', headers={'Cookie': 'X-Hermes-Gateway-Ticket=' + query_ticket}).status_code == 401
+        assert client.get('/api/config', headers={'Cookie': 'X-Slave-Gateway-Ticket=' + query_ticket}).status_code == 401
         # Expiry is TicketStore.redeem's ``expires <= monotonic()`` rule, which the native-HTTP gate
         # maps to 401 like every other redeem refusal: covered at the exact 30 s boundary with a
         # patched clock in test_runtime_bootstrap, not by a 31 s wall-clock wait in the default lane.
@@ -174,19 +174,19 @@ async def test_native_http_preserves_gated_auth_and_actual_socket_boundary(tmp_p
     from gateway.run_api import start_gateway_api
     from gateway.run_runtime import initialize_gateway_runtime, publish_gateway_runtime_ready
     from gateway.runtime_ownership import process_ownership
-    from hermes_cli import web_server as web
-    from hermes_cli.dashboard_auth import register_provider, clear_providers
-    from hermes_cli.dashboard_auth.cookies import SESSION_AT_COOKIE
-    from hermes_constants import get_hermes_home
-    from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+    from slave_cli import web_server as web
+    from slave_cli.dashboard_auth import register_provider, clear_providers
+    from slave_cli.dashboard_auth.cookies import SESSION_AT_COOKIE
+    from slave_constants import get_slave_home
+    from tests.slave_cli.conftest_dashboard_auth import StubAuthProvider
 
-    home = get_hermes_home()
+    home = get_slave_home()
     (home / 'config.yaml').write_text('dashboard:\n  public_url: https://gateway.example.test\n')
     provider = StubAuthProvider()
     register_provider(provider)
     login = provider.start_login(redirect_uri='http://127.0.0.1/callback')
     from urllib.parse import parse_qs
-    pkce = parse_qs(login.cookie_payload['hermes_session_pkce'].replace(';', '&'))
+    pkce = parse_qs(login.cookie_payload['slave_session_pkce'].replace(';', '&'))
     session = provider.complete_login(code='stub_code', state=pkce['state'][0],
                                       code_verifier=pkce['verifier'][0],
                                       redirect_uri='http://127.0.0.1/callback')

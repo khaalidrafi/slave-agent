@@ -1,0 +1,16 @@
+name: slave-ledgerline
+repo: https://github.com/Adolanium/slave-ledgerline
+sha: 22796ae96e4149fc8d9ba5c8fa16c235bf76b88b
+version: "0.1.10"
+image: https://raw.githubusercontent.com/Adolanium/slave-ledgerline/22796ae96e4149fc8d9ba5c8fa16c235bf76b88b/assets/catalog-banner.png
+description: "Inspect session costs and usage in slave-agent Desktop. Disclosure — reads session lists, session detail, search, usage analytics and cron targets from the gateway's core REST API through the raw window.slaveDesktop.api bridge (the plugin SDK has no route to those endpoints), and runs slave version, slave insights and slave send --list through the gateway's cli.exec. Only when you start them: explain and audit send the selected session's digest (tool arguments only if you tick that box) to your configured model, as a new slave-agent session or a background prompt on the focused one; alerts and test messages are sent with slave send to a messaging target you pick; scheduled reports create a slave-agent cron job (one agent turn per run on the default model, delivered to the target you pick) and are paused, resumed or removed through cron.manage. Budgets, dismissed tips, scans and saved answers are kept in slave-agent plugin storage on the desktop. Nothing is sent elsewhere and it exposes no tools to the model."
+maintainer: Adolanium
+tier: community
+category: desktop
+docs_url: https://github.com/Adolanium/slave-ledgerline#readme
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []
+subdir: catalog

@@ -1,15 +1,15 @@
 name: detonator
 title: "Plugin Detonator"
-repo: https://github.com/shreyasudupi/hermes-plugin-detonator
+repo: https://github.com/shreyasudupi/slave-plugin-detonator
 sha: "e1272c7201a7cf1f89b37dc00de18b8cc6435e3a"
 description: >-
-  Security testing sandbox for Hermes plugins: detonate a plugin you did not write before
+  Security testing sandbox for slave-agent plugins: detonate a plugin you did not write before
   you install it, and see whether it steals keys, phones home, runs shell commands or plants
   persistence. Test any catalog plugin by name (/detonate <name>, no commit SHA needed), any
   GitHub plugin by its link, or an update before you apply it (/detonate update <name>).
   After you approve the run, Detonator fetches the plugin at an exact commit and
   loads it inside a disposable Docker container (no network, read-only, non-root, all
-  capabilities dropped) with a throwaway Hermes home full of decoy keys, drives its hooks and
+  capabilities dropped) with a throwaway slave-agent home full of decoy keys, drives its hooks and
   tools, jumps the clock to wake time bombs, and reports what it actually did: credential
   theft (even disguised or split up), network attempts, shell commands, persistence, prompt
   injection, tool poisoning, monkeypatching. A full test also watches from outside the
@@ -25,20 +25,20 @@ description: >-
   A full test starts two extra short-lived monitor containers next to the sandbox: the
   tracer gets the SYS_PTRACE capability, the fake internet NET_ADMIN and NET_BIND_SERVICE;
   the plugin's own container keeps all capabilities dropped and reaches only the fake internet, never the real one. It refuses to run unattended; writes reports under its
-  own plugin-data folder; never reads your real keys or Hermes credentials.
+  own plugin-data folder; never reads your real keys or slave-agent credentials.
 maintainer: shreyasudupi
 tier: community
 category: tools
 requires_hermes: ">=0.23.0"
-docs_url: https://github.com/shreyasudupi/hermes-plugin-detonator#readme
+docs_url: https://github.com/shreyasudupi/slave-plugin-detonator#readme
 version: "0.3.1"
-image: "https://raw.githubusercontent.com/shreyasudupi/hermes-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/cover.png"
+image: "https://raw.githubusercontent.com/shreyasudupi/slave-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/cover.png"
 screenshots:
-  - "https://raw.githubusercontent.com/shreyasudupi/hermes-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/1-key-stealer.png"
-  - "https://raw.githubusercontent.com/shreyasudupi/hermes-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/2-persistence-planter.png"
-  - "https://raw.githubusercontent.com/shreyasudupi/hermes-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/3-tool-poisoner.png"
-  - "https://raw.githubusercontent.com/shreyasudupi/hermes-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/4-clean-notes.png"
-  - "https://raw.githubusercontent.com/shreyasudupi/hermes-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/5-approve.png"
+  - "https://raw.githubusercontent.com/shreyasudupi/slave-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/1-key-stealer.png"
+  - "https://raw.githubusercontent.com/shreyasudupi/slave-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/2-persistence-planter.png"
+  - "https://raw.githubusercontent.com/shreyasudupi/slave-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/3-tool-poisoner.png"
+  - "https://raw.githubusercontent.com/shreyasudupi/slave-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/4-clean-notes.png"
+  - "https://raw.githubusercontent.com/shreyasudupi/slave-plugin-detonator/e1272c7201a7cf1f89b37dc00de18b8cc6435e3a/docs/store/5-approve.png"
 platforms: [linux, macos, windows]
 capabilities:
   provides_tools: [detonate_plugin, detonator_report]

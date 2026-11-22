@@ -23,7 +23,7 @@ def receipt(tmp_path_factory):
     home.mkdir()
     user.mkdir()
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED='1')
     result = subprocess.run([sys.executable, str(root / 'tests/gateway/fixtures/subagent_live_peer.py')],
                             cwd=tmp_path, env=env, capture_output=True, text=True, timeout=150, check=False)

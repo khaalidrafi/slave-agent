@@ -7,7 +7,7 @@ description: "Check whether AI crawlers and search bots can reach a web page: GP
 maintainer: Mantas Tamošaitis (seopaslaugos.io)
 tier: community
 category: tools
-docs_url: https://github.com/seopaslaugos-io/ai-bot-access-checker#hermes-agent
+docs_url: https://github.com/seopaslaugos-io/ai-bot-access-checker#slave-agent
 requires_hermes: ">=0.21.6"
 readme: true
 platforms: []

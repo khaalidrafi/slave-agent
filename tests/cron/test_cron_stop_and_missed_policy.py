@@ -1,6 +1,6 @@
 """Stopping a live cron run (cancel / remove) and the per-job missed-run policy.
 
-Real store, real execution ledger, real cancel markers under a temp HERMES_HOME.
+Real store, real execution ledger, real cancel markers under a temp SLAVE_HOME.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from cron import jobs
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     with jobs.use_cron_store(tmp_path / "cron"):
         yield tmp_path
 
@@ -23,7 +23,7 @@ def home(tmp_path, monkeypatch):
 def _park(job_id: str, seconds_ago: float) -> None:
     stored = jobs.load_jobs()
     row = next(r for r in stored if r["id"] == job_id)
-    row["next_run_at"] = (jobs._hermes_now() - timedelta(seconds=seconds_ago)).isoformat()
+    row["next_run_at"] = (jobs._slave_now() - timedelta(seconds=seconds_ago)).isoformat()
     jobs.save_jobs(stored)
 
 
@@ -79,7 +79,7 @@ def test_explicit_grace_skips_past_it_unless_the_job_opts_into_catch_up(home):
     capped = jobs.create_job(prompt="brief", schedule="* * * * *", deliver="local", grace_minutes=5)
     opted = jobs.create_job(prompt="scan", schedule="* * * * *", deliver="local",
                             grace_minutes=5, catch_up=True)
-    slot = (jobs._hermes_now() - timedelta(minutes=20)).replace(second=0, microsecond=0)
+    slot = (jobs._slave_now() - timedelta(minutes=20)).replace(second=0, microsecond=0)
     stored = jobs.load_jobs()
     for row in stored:
         row["next_run_at"] = slot.isoformat()
@@ -116,7 +116,7 @@ def test_a_profile_distribution_carries_the_jobs_missed_run_policy(home):
 
 
 def test_one_shot_past_grace_skips_by_default_and_fires_once_when_opted_in(home):
-    run_at = (jobs._hermes_now() + timedelta(hours=1)).isoformat()
+    run_at = (jobs._slave_now() + timedelta(hours=1)).isoformat()
     skipped = jobs.create_job(prompt="stale reminder", schedule=run_at, deliver="local")
     kept = jobs.create_job(prompt="late reminder", schedule=run_at, deliver="local", catch_up=True)
     for job in (skipped, kept):

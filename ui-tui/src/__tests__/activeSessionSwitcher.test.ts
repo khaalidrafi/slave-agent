@@ -1,5 +1,5 @@
-import type { SessionListRow } from '@hermes/shared/gateway-events'
-import type { SessionActiveItem } from '@hermes/shared/gateway-types'
+import type { SessionListRow } from '@slave-agent/shared/gateway-events'
+import type { SessionActiveItem } from '@slave-agent/shared/gateway-types'
 import { describe, expect, it } from 'vitest'
 
 import {

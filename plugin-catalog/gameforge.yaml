@@ -1,5 +1,5 @@
 name: gameforge
-repo: https://github.com/DECRUX9812/hermes-plugin-gameforge
+repo: https://github.com/DECRUX9812/slave-plugin-gameforge
 sha: ee4a07a7fdf26139ae53ad23156b8b275e99743b   # tag v1.1.2
 version: "1.1.2"
 title: GameForge
@@ -19,7 +19,7 @@ description: >-
 maintainer: DECRUX9812
 tier: community
 category: tools
-docs_url: https://github.com/DECRUX9812/hermes-plugin-gameforge#readme
+docs_url: https://github.com/DECRUX9812/slave-plugin-gameforge#readme
 platforms: [linux, macos, windows]
 capabilities:
   provides_tools:

@@ -1,9 +1,9 @@
 name: taskwatch
-repo: https://github.com/Joclto/hermes-taskwatch
+repo: https://github.com/Joclto/slave-taskwatch
 sha: d0bb2e52a14579418697ca677544dab657292a52
 title: TaskWatch
 description: >-
-  Background-task watchboard for the Hermes Desktop status bar and a side pane:
+  Background-task watchboard for the slave-agent Desktop status bar and a side pane:
   every process the focused chat dispatched through terminal(background=true)
   (claude, opencode, codex, a build, anything) with live output tail, runtime,
   a silence heartbeat, a two-click stop, and OS notifications when a task goes
@@ -16,7 +16,7 @@ maintainer: Joclto
 tier: community
 category: desktop
 version: "0.2.1"
-docs_url: https://github.com/Joclto/hermes-taskwatch
+docs_url: https://github.com/Joclto/slave-taskwatch
 platforms: []
 capabilities:
   provides_tools: []

@@ -11,16 +11,16 @@ def test_kanban_submission_enters_single_query_approval_context(tmp_path, monkey
     from gateway.session_contract import AdmissionReceipt, SessionActor, SessionRef
     from gateway.session_finite import execute_finite_admission, finite_turn_required, unattended_turn
     from gateway.session_kanban import run_task
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
     from persistence_assembly import profile_scope
     from tools.approval_context import _is_single_query_approval_context
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
-    monkeypatch.setenv('HERMES_KANBAN_HOME', str(tmp_path))
-    for name in ('HERMES_KANBAN_DB', 'HERMES_DELEGATED_CHILD', 'HERMES_SINGLE_QUERY_SESSION'):
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_KANBAN_HOME', str(tmp_path))
+    for name in ('SLAVE_KANBAN_DB', 'SLAVE_DELEGATED_CHILD', 'SLAVE_SINGLE_QUERY_SESSION'):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr('hermes_cli.profiles.resolve_profile_env', lambda name: str(tmp_path))
+    monkeypatch.setattr('slave_cli.profiles.resolve_profile_env', lambda name: str(tmp_path))
     workspace = tmp_path / 'workspace'
     workspace.mkdir()
     kb.create_board('owned')
@@ -73,16 +73,16 @@ def kanban_owner(tmp_path, monkeypatch):
     import json
     from gateway import run
     from gateway.session_controls import AuthorityConnection
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from slave_cli import kanban_db as kb
+    from slave_cli.kanban_db_connect import connect
     from tests.gateway.test_session_follow_profile_config import _owner
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
-    monkeypatch.setenv('HERMES_KANBAN_HOME', str(tmp_path))
-    for name in ('HERMES_KANBAN_DB', 'HERMES_DELEGATED_CHILD', 'HERMES_SINGLE_QUERY_SESSION', 'HERMES_YOLO_MODE'):
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_KANBAN_HOME', str(tmp_path))
+    for name in ('SLAVE_KANBAN_DB', 'SLAVE_DELEGATED_CHILD', 'SLAVE_SINGLE_QUERY_SESSION', 'SLAVE_YOLO_MODE'):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(run, '_hermes_home', tmp_path)
-    monkeypatch.setattr('hermes_cli.profiles.resolve_profile_env', lambda name: str(tmp_path))
+    monkeypatch.setattr(run, '_slave_home', tmp_path)
+    monkeypatch.setattr('slave_cli.profiles.resolve_profile_env', lambda name: str(tmp_path))
 
     def build(config):
         (tmp_path / 'config.yaml').write_text(json.dumps(config))

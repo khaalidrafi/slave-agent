@@ -54,7 +54,7 @@ Facts established in the session:
 4. Code transfer must come from a machine with a complete clone; recorded
    commands:
    #+begin_src sh
-   git clone https://github.com/NousResearch/hermes-agent && cd hermes-agent
+   git clone https://github.com/NousResearch/hermes-agent && cd slave-agent
    git fetch /path/to/slave-agent-light-core-2026-10-15.bundle ai/light-core:ai/light-core
    git push -u https://github.com/khaalidrafi/slave-agent ai/light-core
    gh repo set-default khaalidrafi/slave-agent ai/light-core
@@ -105,4 +105,4 @@ Facts established in the session:
   commit-message reword") remains open.
 - Sequencing note from the session: the client/BD-market proposal stays
   HELD until the brand work is done and the Owner consults (his words:
-  complete the Hermes replacement before consulting on the client).
+  complete the slave-agent replacement before consulting on the client).

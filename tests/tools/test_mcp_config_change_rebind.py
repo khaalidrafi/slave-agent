@@ -10,7 +10,7 @@ import pytest
 
 @pytest.mark.no_isolate
 def test_reconnect_adopts_changed_url_from_config_yaml(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     from tools import mcp_tool_config
     from tools.mcp_tool import MCPServerTask
 
@@ -49,7 +49,7 @@ def test_reconnect_adopts_changed_url_from_config_yaml(monkeypatch, tmp_path):
 def test_unchanged_or_missing_definition_keeps_the_running_config(monkeypatch, tmp_path):
     """No rebuild churn when config.yaml agrees with the running dict (or no longer lists the
     server): the start-time config stays bound byte-for-byte."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     from tools import mcp_tool_config
     from tools.mcp_tool import MCPServerTask
 
@@ -69,7 +69,7 @@ def test_plugin_remote_server_keeps_its_rendered_header_across_a_rebuild(monkeyp
     from types import SimpleNamespace
     from unittest.mock import patch
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setenv("PKG_API_KEY", "k-123")
     from tools import mcp_tool_config
     from tools.mcp_tool import MCPServerTask
@@ -77,9 +77,9 @@ def test_plugin_remote_server_keeps_its_rendered_header_across_a_rebuild(monkeyp
     portable = {"srv": {"url": "https://mcp.example.test/mcp", "headers": {"apikey": "${PKG_API_KEY}"},
                         "strict_redirect_headers": True}}
     manager = SimpleNamespace(get_portable_mcp_servers=lambda: {k: dict(v) for k, v in portable.items()})
-    with patch("hermes_cli.config.load_config", return_value={}), \
-            patch("hermes_cli.plugins.discover_plugins"), \
-            patch("hermes_cli.plugins.get_plugin_manager", return_value=manager):
+    with patch("slave_cli.config.load_config", return_value={}), \
+            patch("slave_cli.plugins.discover_plugins"), \
+            patch("slave_cli.plugins.get_plugin_manager", return_value=manager):
         running = mcp_tool_config._interpolate_env_vars(dict(portable["srv"]))
         task = MCPServerTask("srv")
         task._config = running
@@ -97,7 +97,7 @@ def test_unscoped_multiplex_load_keeps_plugin_servers_after_a_templated_one(monk
 
     from agent.secret_scope import set_multiplex_active
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     from tools import mcp_tool_config
 
     portable = {"srv": {"url": "https://mcp.example.test/mcp", "headers": {"apikey": "${VENDOR_KEY}"}},
@@ -105,9 +105,9 @@ def test_unscoped_multiplex_load_keeps_plugin_servers_after_a_templated_one(monk
     manager = SimpleNamespace(get_portable_mcp_servers=lambda: {k: dict(v) for k, v in portable.items()})
     set_multiplex_active(True)
     try:
-        with patch("hermes_cli.config.load_config", return_value={}), \
-                patch("hermes_cli.plugins.discover_plugins"), \
-                patch("hermes_cli.plugins.get_plugin_manager", return_value=manager):
+        with patch("slave_cli.config.load_config", return_value={}), \
+                patch("slave_cli.plugins.discover_plugins"), \
+                patch("slave_cli.plugins.get_plugin_manager", return_value=manager):
             loaded = mcp_tool_config._load_mcp_config()
     finally:
         set_multiplex_active(False)

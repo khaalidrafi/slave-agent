@@ -35,7 +35,7 @@ def reply_lost(error: Exception) -> bool:
 
 
 def _stale_topic(adapter: Any, error: Exception, metadata: Optional[dict]) -> bool:
-    """A forum topic Telegram no longer knows; Hermes DM-topic lanes keep their own anchor retry."""
+    """A forum topic Telegram no longer knows; slave-agent DM-topic lanes keep their own anchor retry."""
     return (adapter._is_bad_request_error(error) and adapter._is_thread_not_found_error(error)
             and adapter._metadata_thread_id(metadata) is not None and not adapter._dm_topic_fallback(metadata))
 

@@ -71,12 +71,12 @@ def _try_acquire_mcp_discovery_lock() -> Any:
     # would serialize discovery across profiles and never coordinate with B's own single-profile processes.
     from tools import mcp_tool as _origin
     try:
-        from hermes_constants import get_hermes_home, get_hermes_home_override
-        if get_hermes_home_override() is not None:
-            lock_path = str(get_hermes_home() / ".mcp-discovery.lock")
+        from slave_constants import get_slave_home, get_slave_home_override
+        if get_slave_home_override() is not None:
+            lock_path = str(get_slave_home() / ".mcp-discovery.lock")
         else:
             if _origin._MCP_DISCOVERY_LOCK_PATH is None:
-                _origin._MCP_DISCOVERY_LOCK_PATH = str(get_hermes_home() / ".mcp-discovery.lock")
+                _origin._MCP_DISCOVERY_LOCK_PATH = str(get_slave_home() / ".mcp-discovery.lock")
             lock_path = _origin._MCP_DISCOVERY_LOCK_PATH
         fh = open(lock_path, "w", encoding="utf-8")
     except Exception:

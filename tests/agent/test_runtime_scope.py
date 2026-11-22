@@ -1,4 +1,4 @@
-"""The runtime scope (``hermes_scope`` + ``agent/runtime_scope.py``) is one value.
+"""The runtime scope (``slave_scope`` + ``agent/runtime_scope.py``) is one value.
 
 Inside a bound scope, home, secrets and terminal policy always describe the same profile. The
 legacy setters cannot split them: on a local install a call naming another profile moves the
@@ -20,8 +20,8 @@ from agent.secret_scope import (
     reset_secret_scope,
     set_secret_scope,
 )
-from hermes_constants import get_hermes_home, hermes_home_key, reset_hermes_home_override, set_hermes_home_override
-from hermes_scope import (
+from slave_constants import get_slave_home, slave_home_key, reset_slave_home_override, set_slave_home_override
+from slave_scope import (
     LOCAL_OWNER,
     Fence,
     Group,
@@ -61,7 +61,7 @@ def _profile(root: Path, name: str, backend: str) -> Path:
 def two_profiles(tmp_path, monkeypatch):
     launch = tmp_path / "launch"
     launch.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     return _profile(tmp_path, "a", "local"), _profile(tmp_path, "b", "docker")
 
@@ -69,12 +69,12 @@ def two_profiles(tmp_path, monkeypatch):
 def _state() -> tuple[str, str | None, str | None, str]:
     """(home, secret-scope home, PROFILE_KEY, terminal backend) as readers see them now."""
     scope = get_terminal_scope() or {}
-    return (hermes_home_key(get_hermes_home()), current_secret_scope_home(),
+    return (slave_home_key(get_slave_home()), current_secret_scope_home(),
             (current_secret_scope() or {}).get("PROFILE_KEY"), scope.get("TERMINAL_ENV", ""))
 
 
 def _expect(home: Path, name: str, backend: str) -> tuple[str, str, str, str]:
-    return hermes_home_key(home), str(home), f"key-{name}", backend
+    return slave_home_key(home), str(home), f"key-{name}", backend
 
 
 # --- value types ---
@@ -128,7 +128,7 @@ def test_each_legacy_setter_for_another_profile_moves_the_whole_scope(two_profil
     with bind_profile_scope(a):
         assert _state() == _expect(a, "a", "local")
         if setter == "home":
-            token, reset = set_hermes_home_override(str(b)), reset_hermes_home_override
+            token, reset = set_slave_home_override(str(b)), reset_slave_home_override
         elif setter == "secret":
             token, reset = set_secret_scope(build_profile_secret_scope(b), profile_home=str(b)), reset_secret_scope
         else:
@@ -144,26 +144,26 @@ def test_legacy_setter_for_the_bound_profile_passes_through(two_profiles):
     a, _b = two_profiles
     with bind_profile_scope(a):
         bound = current_scope()
-        token = set_hermes_home_override(str(a))
+        token = set_slave_home_override(str(a))
         assert current_scope() is bound
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
         assert current_scope() is bound
 
 
 def test_legacy_setter_keeps_the_actor(two_profiles):
     a, b = two_profiles
     with bind_state(Scope("local", str(a), Principal("alice")), hydrate_secrets=False):
-        token = set_hermes_home_override(str(b))
+        token = set_slave_home_override(str(b))
         assert current_scope() == Scope("local", str(b), Principal("alice"))
-        reset_hermes_home_override(token)
+        reset_slave_home_override(token)
 
 
 def test_legacy_setters_without_a_scope_behave_as_before(two_profiles):
     a, _b = two_profiles
-    token = set_hermes_home_override(str(a))
-    assert hermes_home_key(get_hermes_home()) == hermes_home_key(a)
+    token = set_slave_home_override(str(a))
+    assert slave_home_key(get_slave_home()) == slave_home_key(a)
     assert current_scope() is None and current_secret_scope() is None
-    reset_hermes_home_override(token)
+    reset_slave_home_override(token)
 
 
 # --- hosted scopes refuse ---
@@ -171,8 +171,8 @@ def test_legacy_setters_without_a_scope_behave_as_before(two_profiles):
 def test_legacy_setters_refuse_in_a_hosted_scope(two_profiles):
     _a, b = two_profiles
     with bind_state(_hosted()):
-        for call in (lambda: set_hermes_home_override(str(b)),
-                     lambda: set_hermes_home_override(None),
+        for call in (lambda: set_slave_home_override(str(b)),
+                     lambda: set_slave_home_override(None),
                      lambda: set_secret_scope({"K": "v"}, profile_home=str(b)),
                      lambda: install_profile_terminal_scope(b)):
             with pytest.raises(ScopeSwitchRefused):
@@ -252,10 +252,10 @@ def test_a_partial_bind_never_inherits_a_piece_from_an_earlier_change(two_profil
     """The reviewer's replay case: a bind that keeps the current home override copies it, so removing
     the earlier override it came from cannot take a piece out from under it."""
     a, _b = two_profiles
-    outer = set_hermes_home_override(str(a))
+    outer = set_slave_home_override(str(a))
     with bind_state(scope_for_profile(a), hydrate_secrets=False, home_override=False):
         before = _state()
-        reset_hermes_home_override(outer)
+        reset_slave_home_override(outer)
         assert _state() == before
         assert current_scope() == Scope("local", str(a), LOCAL_OWNER)
 
@@ -269,18 +269,18 @@ def test_a_cross_profile_terminal_switch_keeps_the_callers_overlay(two_profiles)
 
 
 def test_setters_whose_tokens_are_discarded_do_not_grow_the_state(two_profiles):
-    import hermes_scope
+    import slave_scope
     a, _b = two_profiles
 
     def depth() -> int:
-        node, n = hermes_scope._STATE.get(), 0
+        node, n = slave_scope._STATE.get(), 0
         while node is not None:
             node, n = node.parent, n + 1
         return n
 
     def run() -> int:
         for _ in range(500):
-            set_hermes_home_override(str(a))
+            set_slave_home_override(str(a))
         return depth()
 
     import contextvars
@@ -294,12 +294,12 @@ def test_an_out_of_order_reset_keeps_the_later_whole_switch(two_profiles):
     change: B's home, secrets and terminal policy stay together."""
     a, b = two_profiles
     with bind_profile_scope(a):
-        same = set_hermes_home_override(str(a))
-        other = set_hermes_home_override(str(b))
-        reset_hermes_home_override(same)
+        same = set_slave_home_override(str(a))
+        other = set_slave_home_override(str(b))
+        reset_slave_home_override(same)
         assert _state() == _expect(b, "b", "docker")
         assert current_scope() == Scope("local", str(b), LOCAL_OWNER)
-        reset_hermes_home_override(other)
+        reset_slave_home_override(other)
         assert _state() == _expect(a, "a", "local")
 
 
@@ -308,9 +308,9 @@ def test_resetting_an_outer_override_from_inside_a_scope_keeps_the_scope_whole(t
     bound on top of it stays bound, whole."""
     a, b = two_profiles
     before = _state()
-    outer = set_hermes_home_override(str(b))
+    outer = set_slave_home_override(str(b))
     with bind_profile_scope(a):
-        reset_hermes_home_override(outer)
+        reset_slave_home_override(outer)
         assert _state() == _expect(a, "a", "local")
     assert _state() == before
 
@@ -362,47 +362,47 @@ def test_a_reset_cannot_leave_a_hosted_agent_from_inside_it(two_profiles):
     assert current_scope() is None
 
 
-def test_a_mirrored_hermes_home_is_not_mistaken_for_the_launch_profile(tmp_path, monkeypatch):
-    """An embedding host pins the launch home and mirrors the served profile into ``HERMES_HOME``:
+def test_a_mirrored_slave_home_is_not_mistaken_for_the_launch_profile(tmp_path, monkeypatch):
+    """An embedding host pins the launch home and mirrors the served profile into ``SLAVE_HOME``:
     binding that profile must give it its own secrets, never the launch profile's env-only keys."""
-    from hermes_constants import pin_process_hermes_home
+    from slave_constants import pin_process_slave_home
     from tui_gateway.launch_profile_policy import activate_multi_profile_hosting
     launch, served = tmp_path / "launch", _profile(tmp_path, "b", "local")
     launch.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
     monkeypatch.setenv("OPENAI_API_KEY", "launch-only-key")
     monkeypatch.setattr("agent.secret_scope._MULTIPLEX_ACTIVE", False)
-    pin_process_hermes_home(launch)
+    pin_process_slave_home(launch)
     try:
         activate_multi_profile_hosting()
-        monkeypatch.setenv("HERMES_HOME", str(served))
+        monkeypatch.setenv("SLAVE_HOME", str(served))
         with bind_profile_scope(served, hydrate_secrets=False):
             assert (current_secret_scope() or {}).get("OPENAI_API_KEY") is None
             assert current_secret_scope_home() == str(served)
     finally:
-        pin_process_hermes_home(None)
+        pin_process_slave_home(None)
 
 
 def test_home_reads_during_another_threads_first_scope_import_see_no_override(monkeypatch):
-    """``hermes_scope`` is in ``sys.modules`` before its body has run; a home read in that window is
+    """``slave_scope`` is in ``sys.modules`` before its body has run; a home read in that window is
     an unbound read, not an AttributeError."""
     import sys
     import types
-    from hermes_constants import get_hermes_home_override
-    monkeypatch.setitem(sys.modules, "hermes_scope", types.ModuleType("hermes_scope"))
-    assert get_hermes_home_override() is None
+    from slave_constants import get_slave_home_override
+    monkeypatch.setitem(sys.modules, "slave_scope", types.ModuleType("slave_scope"))
+    assert get_slave_home_override() is None
 
 
 def test_a_reassigned_token_variable_does_not_grow_the_state(two_profiles):
     import contextvars
-    import hermes_scope
+    import slave_scope
     a, _b = two_profiles
 
     def run() -> int:
         token = None
         for _ in range(500):
-            token = set_hermes_home_override(str(a))
-        node, depth = hermes_scope._STATE.get(), 0
+            token = set_slave_home_override(str(a))
+        node, depth = slave_scope._STATE.get(), 0
         while node is not None:
             node, depth = node.parent, depth + 1
         del token
@@ -425,7 +425,7 @@ def test_legacy_switch_builds_the_target_policy_on_first_read_only(two_profiles,
                         lambda home, **kw: built.append(Path(home)) or real(home, **kw))
     with bind_profile_scope(a):
         built.clear()
-        token = set_hermes_home_override(str(b))
+        token = set_slave_home_override(str(b))
         try:
             assert current_scope() == Scope("local", str(b), LOCAL_OWNER)
             assert built == [], "the switch built the target's terminal policy before anything read it"
@@ -433,15 +433,15 @@ def test_legacy_switch_builds_the_target_policy_on_first_read_only(two_profiles,
             get_terminal_scope()
             assert built == [b], "the policy is built once, on its first read"
         finally:
-            reset_hermes_home_override(token)
+            reset_slave_home_override(token)
         assert _state() == _expect(a, "a", "local")
 
 
 def test_a_bind_hydrates_the_target_profile_under_its_own_home(two_profiles, monkeypatch):
     """Secret sources are hydrated from the TARGET profile's ``secrets:`` config: hydration reads it
-    through ``get_hermes_home()``, so the bind moves the home first, as main's per-turn loader did.
+    through ``get_slave_home()``, so the bind moves the home first, as main's per-turn loader did.
     Entering profile B from inside A must never hydrate B from A's configuration."""
-    from hermes_cli import env_loader
+    from slave_cli import env_loader
 
     a, b = two_profiles
     (a / "config.yaml").write_text("secrets:\n  command:\n    enabled: false\nterminal:\n  backend: local\n")
@@ -449,13 +449,13 @@ def test_a_bind_hydrates_the_target_profile_under_its_own_home(two_profiles, mon
                                    "terminal:\n  backend: docker\n")
     seen = []
     monkeypatch.setattr(env_loader, "hydrate_profile_secret_sources",
-                        lambda home: seen.append((Path(home), hermes_home_key(get_hermes_home()),
+                        lambda home: seen.append((Path(home), slave_home_key(get_slave_home()),
                                                   env_loader._load_secrets_config(Path(home))["command"]["enabled"])))
     with bind_profile_scope(a, hydrate_secrets=False):
         with bind_profile_scope(b):
             pass
-        assert hermes_home_key(get_hermes_home()) == hermes_home_key(a)
-    assert seen == [(b, hermes_home_key(b), True)]
+        assert slave_home_key(get_slave_home()) == slave_home_key(a)
+    assert seen == [(b, slave_home_key(b), True)]
 
 
 def test_a_deferred_policy_keeps_the_overlay_it_was_bound_with(two_profiles):
@@ -480,12 +480,12 @@ def test_a_managed_reference_in_the_terminal_policy_resolves_against_the_target_
     """A managed ``${VAR}`` in ``terminal:`` reads the profile being bound, as a standalone load of
     that profile reads its own environment: entering B from inside A's bind must not freeze A's
     value into B's policy, and an unbound entry must not take the launch environment's."""
-    from hermes_cli import managed_scope
+    from slave_cli import managed_scope
 
     managed = tmp_path / "managed"
     managed.mkdir()
     (managed / "config.yaml").write_text("terminal:\n  ssh_host: ${SSH_TARGET}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("SLAVE_MANAGED_DIR", str(managed))
     monkeypatch.setenv("SSH_TARGET", "launch-host")
     managed_scope.invalidate_managed_cache()
     a, b = two_profiles

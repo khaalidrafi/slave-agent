@@ -1,4 +1,4 @@
-"""On-demand cancellation of an in-flight cron run (``hermes cron cancel``).
+"""On-demand cancellation of an in-flight cron run (``slave cron cancel``).
 
 The request has to reach the process that owns the run, and that process is usually not
 the one taking the request: ``run_one_job`` hands an attempt to a detached external worker
@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Protocol
 
-from hermes_constants import get_hermes_home
+from slave_constants import get_slave_home
 
 from cron.executions import cancellable_execution
 
@@ -29,12 +29,12 @@ from cron.executions import cancellable_execution
 # job is rare, so the prune rides along with the write instead of needing its own sweep.
 _MARKER_TTL_SECONDS = 24 * 3600
 
-_DEFAULT_REASON = "cancelled on request (hermes cron cancel)"
+_DEFAULT_REASON = "cancelled on request (slave cron cancel)"
 
 
 def _cancels_dir() -> Path:
     """Resolved per call so a multiplexed gateway never writes into another profile's home."""
-    return get_hermes_home().resolve() / "cron" / "cancels"
+    return get_slave_home().resolve() / "cron" / "cancels"
 
 
 def _marker_path(execution_id: str) -> Path:

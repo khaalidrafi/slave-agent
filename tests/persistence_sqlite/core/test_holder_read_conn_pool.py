@@ -13,7 +13,7 @@ process stayed alive, so the supervisor's restart-on-exit never fired.
 Worse, those connections were opened WITHOUT ``check_same_thread=False`` (both
 writer opens pass it), so ``close()`` on them raised ``ProgrammingError`` from
 a different thread and the bare ``except Exception: pass`` hid it -- leaving
-``hermes_cli.sqlite_safe_read``'s registry permanently over-counted as well.
+``slave_cli.sqlite_safe_read``'s registry permanently over-counted as well.
 
 The contract pinned here: reads borrow from a BOUNDED pool, connections are
 returned and reused, surplus connections are closed rather than dropped, and
@@ -51,7 +51,7 @@ from persistence.sqlite.conversation._store.sessions import create_session, get_
 
 def _live_count(path) -> int:
     """Live-connection count the tracking registry holds for *path*."""
-    import hermes_cli.sqlite_safe_read as mod
+    import slave_cli.sqlite_safe_read as mod
 
     with mod._live_lock:
         return mod._live_connections.get(mod._key(path), 0)
@@ -471,7 +471,7 @@ def test_idle_permits_are_reclaimed_from_a_peer_instance(db):
 # _READ_POOL_MAX bounds ONE file. A multiplexed gateway serves N profiles from
 # one process and each has its own state.db, so a per-file ceiling still lets
 # the cost grow with the profile count -- the per-instance bug one level out.
-# And Hermes's SQLite descriptors are only ever a share of the fd table: the
+# And Slave's SQLite descriptors are only ever a share of the fd table: the
 # #98573 report is a process where ~20 state.db handles were the share that
 # pushed httpx sockets and terminal subprocess pipes past 256, and the EMFILE
 # surfaced in tools/terminal_tool.py, not here.
@@ -635,7 +635,7 @@ def test_duplicate_handles_on_one_path_are_reported(db, caplog):
 
     extra = []
     try:
-        with caplog.at_level(logging.WARNING, logger="hermes_state"):
+        with caplog.at_level(logging.WARNING, logger="slave_state"):
             # A read-only attach is outside the count (#110934); it must be outside the list too.
             extra.append(open_read_only_attach())
             for _ in range(_HANDLES_PER_PATH_WARN + 1):
@@ -669,7 +669,7 @@ def test_read_only_handles_do_not_count_toward_the_duplicate_writer_warning(db, 
 
     extra = []
     try:
-        with caplog.at_level(logging.WARNING, logger="hermes_state"):
+        with caplog.at_level(logging.WARNING, logger="slave_state"):
             for _ in range(_HANDLES_PER_PATH_WARN + 2):
                 extra.append(StoreHolder(db.db_path, read_only=True))
         assert not any(
@@ -730,7 +730,7 @@ def test_closed_handles_do_not_count_toward_duplicate_writer_warning(db, caplog)
         handle.close()
 
     caplog.clear()
-    with caplog.at_level(logging.WARNING, logger="hermes_state"):
+    with caplog.at_level(logging.WARNING, logger="slave_state"):
         survivor = StoreHolder(db.db_path)
     try:
         assert not any(

@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from cron import incidents
 import cron.jobs as cron_jobs
 import cron.scheduler as sched
-from hermes_time import now as _hermes_now
+from slave_time import now as _slave_now
 
 
 def _point_db(monkeypatch, tmp_path):
@@ -60,12 +60,12 @@ def _tick_failing(job, tmp_path, deliveries, error="boom unrelated", *, settle=F
         return {"status": "pending"}
 
     with cron_jobs.use_cron_store(tmp_path), \
-         patch("cron.scheduler._hermes_home", tmp_path), \
+         patch("cron.scheduler._slave_home", tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+         patch("slave_cli.env_loader.load_slave_dotenv"), \
+         patch("slave_cli.env_loader.reset_secret_source_cache"), \
          patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
-         patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+         patch("slave_cli.runtime_provider.resolve_runtime_provider",
                return_value={
                    "api_key": "test-key",
                    "base_url": "https://example.invalid/v1",
@@ -109,11 +109,11 @@ def test_incidents_list_newest_instant_first_across_dst_fall_back(monkeypatch, t
     inc = _point_db(monkeypatch, tmp_path)
     new_york = ZoneInfo("America/New_York")
     monkeypatch.setattr(
-        inc, "_hermes_now", lambda: datetime(2026, 11, 1, 1, 50, tzinfo=new_york, fold=0)
+        inc, "_slave_now", lambda: datetime(2026, 11, 1, 1, 50, tzinfo=new_york, fold=0)
     )
     earlier, _ = inc.upsert_incident("job-1", "first failure")
     monkeypatch.setattr(
-        inc, "_hermes_now", lambda: datetime(2026, 11, 1, 1, 10, tzinfo=new_york, fold=1)
+        inc, "_slave_now", lambda: datetime(2026, 11, 1, 1, 10, tzinfo=new_york, fold=1)
     )
     later, _ = inc.upsert_incident("job-2", "second failure")
 
@@ -149,11 +149,11 @@ def test_error_change_mints_new_incident(monkeypatch, tmp_path):
 
 
 def test_redaction_applied_to_incident_error(monkeypatch, tmp_path):
-    # agent.redact snapshots _REDACT_ENABLED from HERMES_REDACT_SECRETS at
+    # agent.redact snapshots _REDACT_ENABLED from SLAVE_REDACT_SECRETS at
     # module-import time. When another collected test module imports the
     # gateway/scheduler chain (e.g. test_codex_execution_paths.py), that
     # import happens at COLLECTION time — before the conftest env scrub —
-    # so a developer shell exporting HERMES_REDACT_SECRETS=false freezes
+    # so a developer shell exporting SLAVE_REDACT_SECRETS=false freezes
     # redaction off and this test fails only in full-directory runs.
     # Pin the flag explicitly, matching the repo-wide pattern.
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True, raising=False)
@@ -269,7 +269,7 @@ def test_repeat_failure_alerts_once_then_reminds_after_cooldown(monkeypatch, tmp
         assert stored["last_status"] == "error", "the withheld run is still recorded"
 
         # Cooldown elapsed: exactly one reminder, then silent again.
-        stale = (_hermes_now() - timedelta(hours=7)).isoformat()
+        stale = (_slave_now() - timedelta(hours=7)).isoformat()
         with inc._transaction() as conn:
             conn.execute("UPDATE cron_incidents SET alerted_at=?", (stale,))
         _tick_failing(job, tmp_path, deliveries, error="repeat boom", settle=True)
@@ -360,7 +360,7 @@ def test_best_effort_incident_store_failure_returns_false(monkeypatch, tmp_path)
 
 
 def test_cli_list_and_ack(monkeypatch, tmp_path, capsys):
-    from hermes_cli.cron import cron_incidents
+    from slave_cli.cron import cron_incidents
 
     inc = _point_db(monkeypatch, tmp_path)
     inc_id, _ = inc.upsert_incident("job-1", "provider timeout boom")

@@ -107,9 +107,9 @@ describe("reloadForChunkLoadError", () => {
 describe("entryFromIndexHtml", () => {
   it("resolves the built module entry, base path included", () => {
     const html =
-      '<script>window.__HERMES_SESSION_TOKEN__="t";</script>' +
-      '<script type="module" crossorigin src="/hermes/assets/index-Bx1.js"></script>';
-    expect(entryFromIndexHtml(html, "https://host/hermes/sessions")).toBe("https://host/hermes/assets/index-Bx1.js");
+      '<script>window.__SLAVE_SESSION_TOKEN__="t";</script>' +
+      '<script type="module" crossorigin src="/slave/assets/index-Bx1.js"></script>';
+    expect(entryFromIndexHtml(html, "https://host/slave/sessions")).toBe("https://host/slave/assets/index-Bx1.js");
     expect(entryFromIndexHtml("<p>gateway error</p>", "https://host/")).toBeNull();
   });
 });

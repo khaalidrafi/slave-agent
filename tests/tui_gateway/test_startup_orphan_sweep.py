@@ -21,7 +21,7 @@ from tests.fixtures.storage_read import session_row
 from tests.fixtures.storage_seed import seed_messages, seed_session
 from tests.gateway.fixtures.storage_handles import close_storage_handles, storage_handle
 from tui_gateway import entry, server
-from hermes_cli import model_switch_providers
+from slave_cli import model_switch_providers
 
 
 IDLE_S = 6 * 3600

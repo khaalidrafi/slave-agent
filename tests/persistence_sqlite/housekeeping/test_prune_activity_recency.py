@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from hermes_cli.sessions_cmd import _note_pinned_skipped
+from slave_cli.sessions_cmd import _note_pinned_skipped
 from persistence.sqlite.conversation._store.compression import get_compression_lineage, publish_compression_child
 from persistence.sqlite.conversation._store.messages import append_message
 from persistence.sqlite.conversation._store.sessions import (

@@ -1,6 +1,6 @@
 """Registry commands ACP does not answer itself, over the real ACP stdio wire and a real gateway.
 
-Every registered Hermes command typed in an editor ends the prompt with a reply the user reads:
+Every registered slave-agent command typed in an editor ends the prompt with a reply the user reads:
 the owner's own answer (``slash.exec``, ``session.mutate``) or a named refusal. None of them may
 fail the JSON-RPC request with ``Internal error`` (#134889 ACP-17).
 """

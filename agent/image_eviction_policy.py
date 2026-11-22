@@ -16,7 +16,7 @@ retiring a batch costs one slower turn per batch and nothing below the limit.
 20 is the documented threshold at which Anthropic applies a stricter per-image dimension cap
 (2000 px) to EVERY image in the request, counting images nested in tool_result content. Crossing
 it costs nothing by itself: it only matters when some image actually exceeds 2000 px on a side.
-Hermes already shrinks its own tool images far below that before they enter history
+slave-agent already shrinks its own tool images far below that before they enter history
 (``vision_analyze`` and browser screenshots embed at 1568 px, ``computer_use`` at 1456 px by
 default), so the 21st screenshot of a run trips no provider constraint and a batch retire there
 buys a full prefix rewrite for nothing — and, on the preserved-thinking models, invalidates every

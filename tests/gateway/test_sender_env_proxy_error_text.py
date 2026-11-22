@@ -118,7 +118,7 @@ def test_env_proxy_send_failure_never_carries_the_proxy_secret(monkeypatch, capl
     with caplog.at_level(logging.DEBUG):
         result = asyncio.run(asyncio.wait_for(SENDERS[sender](monkeypatch), 60))
     error = str(result.get("error") or "")
-    # Hermes' own lines: httpcore's DEBUG trace prints ``socket_options=None`` (matches ``socks5``).
+    # Slave' own lines: httpcore's DEBUG trace prints ``socket_options=None`` (matches ``socks5``).
     logs = "\n".join(r.getMessage() for r in caplog.records if r.name.split(".")[0] in ("plugins", "gateway", "tools"))
     assert error, result
     # The exception type, on the proxy-error path (Signal's result after retries names only the batch).
@@ -135,7 +135,7 @@ _CLEAN = "http://127.0.0.1:2"
 # Each sender's own API hosts: NO_PROXY naming them means the request went direct.
 _TARGET_HOSTS = ("127.0.0.1,localhost,.feishu.cn,.weixin.qq.com,.line.me,ntfy.example.com,.dingtalk.com,.qq.com,"
                  ".googleapis.com,.botframework.com,.trafficmanager.net,.microsoftonline.com")
-# Variables that disagree: the library may read the secret one whichever Hermes would have picked.
+# Variables that disagree: the library may read the secret one whichever Slave would have picked.
 # A NO_PROXY naming the targets: httpx still parses every proxy variable when the client is built.
 DISAGREEING = {"https_clean_http_secret": {"HTTPS_PROXY": _CLEAN, "HTTP_PROXY": _SECRET},
                "upper_clean_lower_secret": {"HTTPS_PROXY": _CLEAN, "HTTP_PROXY": _CLEAN,

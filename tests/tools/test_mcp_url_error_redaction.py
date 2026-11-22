@@ -1,4 +1,4 @@
-"""MCP URL errors reach the model and ``hermes mcp test``: a credential in the URL must not ride along (#133713)."""
+"""MCP URL errors reach the model and ``slave mcp test``: a credential in the URL must not ride along (#133713)."""
 import pytest
 
 from tools.mcp_tool_errors import InvalidMcpUrlError, _validate_remote_mcp_url

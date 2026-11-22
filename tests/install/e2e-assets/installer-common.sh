@@ -12,7 +12,7 @@ arm_source_redirect() {
   # this function the shim shadows `git` and reports the official origin for
   # `remote get-url origin` (so fork detection sees it); any check that must see
   # the file:// redirect instead has to bypass the shim via this path.
-  export HERMES_E2E_REAL_GIT="$real_git"
+  export SLAVE_E2E_REAL_GIT="$real_git"
   # A global file survives install.sh replacing GIT_CONFIG_COUNT/KEY_n/VALUE_n.
   printf '' > "$cfg"
   for url in "$actual" "$https" "$ssh"; do
@@ -21,7 +21,7 @@ arm_source_redirect() {
   export GIT_CONFIG_GLOBAL="$cfg"
   # serve.git publishes commits on main, not releases: HEAD's installer would otherwise
   # install the latest stable release its tags name. Older installers ignore the variable.
-  export HERMES_INSTALL_CHANNEL=main
+  export SLAVE_INSTALL_CHANNEL=main
   [ "$(git -C "$repo" remote get-url origin)" = "file://$serve" ] \
     || fail 'git URL redirect did not reach the staged repository'
 
@@ -63,10 +63,10 @@ resolve_update_ref() {
   fi
   blob="$(printf 'synthetic next commit for the HEAD -> NEXT install E2E leg\n' \
     | git -C "$repo" hash-object -w --stdin)" || return
-  tree="$( { git -C "$repo" ls-tree -z "$parent"; printf '100644 blob %s\t.hermes-e2e-next\0' "$blob"; } \
+  tree="$( { git -C "$repo" ls-tree -z "$parent"; printf '100644 blob %s\t.slave-e2e-next\0' "$blob"; } \
     | git -C "$repo" mktree -z)" || return
-  GIT_AUTHOR_NAME='Hermes E2E' GIT_AUTHOR_EMAIL='e2e@hermes.invalid' \
-    GIT_COMMITTER_NAME='Hermes E2E' GIT_COMMITTER_EMAIL='e2e@hermes.invalid' \
+  GIT_AUTHOR_NAME='slave-agent E2E' GIT_AUTHOR_EMAIL='e2e@slave.invalid' \
+    GIT_COMMITTER_NAME='slave-agent E2E' GIT_COMMITTER_EMAIL='e2e@slave.invalid' \
     git -C "$repo" commit-tree "$tree" -p "$parent" -m 'e2e: synthetic next commit'
 }
 

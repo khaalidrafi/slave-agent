@@ -1,5 +1,5 @@
-import type { InputDetectDropResponse, PromptSubmitResponse, SessionActivateResponse } from '@hermes/shared/gateway-types'
-import { isUndeliveredCorrectionRefusal } from '@hermes/shared/json-rpc-channel'
+import type { InputDetectDropResponse, PromptSubmitResponse, SessionActivateResponse } from '@slave-agent/shared/gateway-types'
+import { isUndeliveredCorrectionRefusal } from '@slave-agent/shared/json-rpc-channel'
 
 import type { GatewayClient } from '../gatewayClient.js'
 import type { QueueItem } from '../hooks/useQueue.js'
@@ -463,7 +463,7 @@ export function submitPrompt(
       })
       .catch(async (e: Error & { code?: number }) => {
         // 4094 is a pre-admission refusal, not an ambiguous write; so is 4000 when the
-        // legacy `hermes serve` contract refuses `submission_id` as an unknown key. Special
+        // legacy `slave serve` contract refuses `submission_id` as an unknown key. Special
         // compute modes still support legacy submit; retry only these refusals,
         // keeping the prepared payload, destination and queue mode unchanged.
         const preAdmissionRefusal = e.code === 4094 || (e.code === 4000 && /submission_id/.test(e.message ?? ''))

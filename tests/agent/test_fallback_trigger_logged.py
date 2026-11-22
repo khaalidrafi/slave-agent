@@ -71,8 +71,8 @@ def test_nous_rate_guard_fallback_logs(monkeypatch, caplog):
     from agent.turn_api_call import nous_rate_limit_guard
 
     monkeypatch.setattr(nous_rate_guard, "nous_rate_limit_remaining", lambda **kw: 600)
-    monkeypatch.setattr("hermes_cli.anon_auth.is_anonymous_agent", lambda agent: False)
-    monkeypatch.setattr("hermes_cli.anon_auth.apply_model_switch", lambda agent: None)
+    monkeypatch.setattr("slave_cli.anon_auth.is_anonymous_agent", lambda agent: False)
+    monkeypatch.setattr("slave_cli.anon_auth.apply_model_switch", lambda agent: None)
     monkeypatch.setattr("agent.conversation_loop._arm_fallback_restart", lambda *a: "sys")
     agent = _agent(switches=True)
     with caplog.at_level(logging.WARNING, logger="agent.conversation_loop"):

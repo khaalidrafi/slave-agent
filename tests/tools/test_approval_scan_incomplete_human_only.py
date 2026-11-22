@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from hermes_cli import approvals_test
+from slave_cli import approvals_test
 from tools import approval
 from tools import approval_context
 from tools import approval_smart
@@ -51,9 +51,9 @@ def gate(monkeypatch):
     mode = {"value": "manual"}
     monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: mode["value"])
     monkeypatch.setattr(approval, "_YOLO_MODE_FROZEN", False)
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-    monkeypatch.setenv("HERMES_SESSION_KEY", SESSION)
-    for name in ("HERMES_GATEWAY_SESSION", "HERMES_EXEC_ASK", "HERMES_YOLO_MODE", "HERMES_CRON_SESSION"):
+    monkeypatch.setenv("SLAVE_INTERACTIVE", "1")
+    monkeypatch.setenv("SLAVE_SESSION_KEY", SESSION)
+    for name in ("SLAVE_GATEWAY_SESSION", "SLAVE_EXEC_ASK", "SLAVE_YOLO_MODE", "SLAVE_CRON_SESSION"):
         monkeypatch.delenv(name, raising=False)
     token = approval_context.set_current_session_key(SESSION)
     saved = set(approval._permanent_approved)
@@ -119,7 +119,7 @@ def test_yolo_and_off_refuse_an_unread_command(bypass, guard, gate, monkeypatch)
 
 @pytest.mark.parametrize("guard", [check_all_command_guards, check_dangerous_command])
 def test_cron_approve_mode_refuses_an_unread_command(guard, gate, monkeypatch):
-    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.setenv("SLAVE_CRON_SESSION", "1")
     monkeypatch.setattr(approval_context, "_get_cron_approval_mode", lambda: "approve")
     result = guard(BEAR_800 + "\nrm -rf build/", "local")
     assert result["approved"] is False and "no human is present" in result["message"]
@@ -127,8 +127,8 @@ def test_cron_approve_mode_refuses_an_unread_command(guard, gate, monkeypatch):
 
 
 def test_ask_mode_without_a_notifier_refuses_instead_of_parking(gate, monkeypatch):
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.delenv("SLAVE_INTERACTIVE", raising=False)
+    monkeypatch.setenv("SLAVE_EXEC_ASK", "1")
     result = check_all_command_guards(GREP_500, "local")
     assert result["approved"] is False and result.get("status") != "pending_approval"
     assert "no human is present" in result["message"]

@@ -30,7 +30,7 @@ def _selection_readers(config_path: Path):
     deployment never asks whether this is PM's runtime (the selector is all it needs)."""
     import os
 
-    from hermes_cli import config_backend
+    from slave_cli import config_backend
 
     if os.environ.get(config_backend.BACKEND_ENV, "").strip().lower() in ("", "file"):
         return config_backend.config_version, config_backend.read_config_doc
@@ -125,11 +125,11 @@ def dependency_homes() -> list[Path]:
     """Every home whose selection feeds the shared venv: the default home plus each LIVE profile.
     Enumerates the complete union or refuses; a partial scan cannot remove members.
 
-    Live means what ``hermes profile`` lists (hermes_constants): a valid id carrying an identity
+    Live means what ``slave profile`` lists (slave_constants): a valid id carrying an identity
     marker and no tombstone. Staging dirs (``.work.staging-*``), deleted profiles and stray
     marker-less dirs must not put plugins into the shared environment.
     """
-    from hermes_constants import PROFILE_ID_RE, named_profile_is_live
+    from slave_constants import PROFILE_ID_RE, named_profile_is_live
     from pm.environments import dependency_home_root
 
     homes = [dependency_home_root()]

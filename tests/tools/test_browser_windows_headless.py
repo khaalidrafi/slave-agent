@@ -20,11 +20,11 @@ _WITH_DISPLAY = {"DISPLAY": ":0", "WAYLAND_DISPLAY": "wayland-0"}
 
 @pytest.fixture(autouse=True)
 def home(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".slave"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setenv("SLAVE_RUNTIME_DIR", str(tmp_path / "tools"))
     monkeypatch.setattr("tools.browser_session_cloud.chromium_args", list)
     bs_cloud.reset_caches()
     yield home

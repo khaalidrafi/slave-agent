@@ -74,7 +74,7 @@ def _sanitize_ws_text(text: str) -> str:
 
     ``json.dumps(..., ensure_ascii=False)`` happily emits lone UTF-16 surrogates; Starlette's
     ``send_text`` then raises ``UnicodeEncodeError``, which used to latch the whole connection
-    closed. Same U+FFFD replacement every other Hermes transport applies.
+    closed. Same U+FFFD replacement every other slave-agent transport applies.
 
     See #97288.
     """
@@ -378,7 +378,7 @@ def _disable_nagle(ws: Any) -> None:
 def _authority_connection(ws: Any, transport: WSTransport, auth_identity: dict | None, operator: bool):
     """The session-authority connection for this socket (route scope, else app state), or None
     when this backend has no authority and requests go to the legacy ``server.dispatch``."""
-    authority = (getattr(ws, 'scope', None) or {}).get('hermes.session_authority') or getattr(
+    authority = (getattr(ws, 'scope', None) or {}).get('slave.session_authority') or getattr(
         getattr(getattr(ws, 'app', None), 'state', None), 'session_authority', None)
     if authority is None:
         return None
@@ -390,7 +390,7 @@ async def _dispatch_request(authority_connection: Any, req: Any, req_method: Any
     """One request through the authority when attached, else the legacy dispatcher. A request from the
     local Desktop runs as work for it (the welcome trial and onboarding key on that), and so do the
     threads it hands off to: ``to_thread`` and the legacy pool copy this context."""
-    from hermes_cli.process_identity import serving_local_desktop
+    from slave_cli.process_identity import serving_local_desktop
     from tui_gateway.server_requests import resolve_pinned_response
     if authority_connection is not None and resolve_pinned_response(req, transport):
         # The answer to a request a sidecar RPC sent back to THIS socket (vault.preview.fill's page
@@ -662,7 +662,7 @@ async def handle_ws(ws: Any, *, auth_identity: dict | None = None, subprotocol: 
             }},
         })
         if ready_ok:
-            # Live-apply skins Hermes activates mid-conversation, and track this peer for session-less
+            # Live-apply skins Slave activates mid-conversation, and track this peer for session-less
             # global broadcasts write_json can't route.
             server._ensure_skin_watcher()
             server._ensure_lease_watcher()  # cross-process lease moves → display.lease

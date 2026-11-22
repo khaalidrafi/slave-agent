@@ -6,8 +6,8 @@ import shlex
 
 import pytest
 
-from acp_adapter.server import HermesACPAgent
-from hermes_cli.gateway_client import GatewayClientError
+from acp_adapter.server import SlaveACPAgent
+from slave_cli.gateway_client import GatewayClientError
 from tests.acp_adapter.test_gateway_sessions import editor, viewer
 from tests.waiting import async_wait_until
 
@@ -16,7 +16,7 @@ from tests.waiting import async_wait_until
 @pytest.mark.asyncio
 async def test_profile_mismatch_refuses_before_creation(daemon, tmp_path, monkeypatch):
     import acp_adapter.gateway_server as server
-    agent = HermesACPAgent()
+    agent = SlaveACPAgent()
     agent._home = tmp_path / "foreign-profile"
     # A real authenticated connection to the wrong profile, not a fake descriptor.
     monkeypatch.setattr(server, "connect_gateway", lambda: viewer(daemon))

@@ -10,7 +10,7 @@ from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionSource, SessionStore
 from gateway.session_authority import LiveSession, initialize_session_authority
 from gateway.session_controls import AuthorityConnection
-from hermes_cli.gateway_client import GatewayClientError, GatewayRPCError
+from slave_cli.gateway_client import GatewayClientError, GatewayRPCError
 from tests.waiting import async_wait_until
 from tests.fixtures.storage_seed import seed_session
 
@@ -39,7 +39,7 @@ class Wire:
 @pytest.mark.asyncio
 @pytest.mark.parametrize('settled_before_retry', [False, True])
 async def test_retry_after_lost_submit_ack_is_one_admission(tmp_path, monkeypatch, settled_before_retry):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     executed = []
 
@@ -93,7 +93,7 @@ async def test_retry_after_lost_submit_ack_is_one_admission(tmp_path, monkeypatc
 async def test_repeated_prompt_after_other_work_is_new_work(tmp_path, monkeypatch):
     """The retained identity of an un-acked prompt is only for the editor's retry (that session's
     next prompt): once other work was sent, the same words are a new turn, not a silent replay."""
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('SLAVE_HOME', str(tmp_path))
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     executed = []
 

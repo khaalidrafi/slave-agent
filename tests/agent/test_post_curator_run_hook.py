@@ -2,7 +2,7 @@
 
 Fires once per curator pass, after the per-run report directory is fully
 written, with the ``run.json`` path in the payload. Goes through the
-standard lifecycle hook surface (``hermes_cli.lifecycle.invoke_hook``) so both
+standard lifecycle hook surface (``slave_cli.lifecycle.invoke_hook``) so both
 Python plugins and shell-script hooks (``agent/shell_hooks.py``) receive
 it with no extra wiring. Observer-only: return values are ignored, and a
 failing callback must never break the curator.
@@ -20,28 +20,28 @@ import pytest
 
 
 def _plugins():
-    """Resolve hermes_cli.plugins at call time, not import time.
+    """Resolve slave_cli.plugins at call time, not import time.
 
     Some test files (e.g. tests/plugins/test_security_guidance_plugin.py)
-    delete ``hermes_cli.plugins`` from ``sys.modules`` and re-import it,
+    delete ``slave_cli.plugins`` from ``sys.modules`` and re-import it,
     which would leave a module-level binding here pointing at a stale
     module object whose PluginManager the curator never sees.
     """
-    return importlib.import_module("hermes_cli.plugins")
+    return importlib.import_module("slave_cli.plugins")
 
 
 @pytest.fixture
 def curator_env(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with a skills/ dir + reset curator module state."""
-    home = tmp_path / ".hermes"
+    """Isolated SLAVE_HOME with a skills/ dir + reset curator module state."""
+    home = tmp_path / ".slave"
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("SLAVE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import slave_constants
+    importlib.reload(slave_constants)
     from agent import curator
     importlib.reload(curator)
     yield {"home": home, "curator": curator}
@@ -59,7 +59,7 @@ def _fresh_plugin_manager():
 
 
 def _run_pass(curator):
-    """One real prune-only pass (no LLM fork), the path a scheduled tick and `hermes curator run` take."""
+    """One real prune-only pass (no LLM fork), the path a scheduled tick and `slave curator run` take."""
     curator.run_curator_review(synchronous=True, consolidate=False)
     return curator.load_state().get("last_report_path")
 
@@ -113,9 +113,9 @@ def test_a_pass_without_its_own_complete_report_fires_nothing(curator_env, monke
 
 
 def test_dry_run_pass_fires_flagged_with_the_hooks_test_payload_shape(curator_env):
-    """A preview still announces its report, flagged so observers don't act on it; ``hermes hooks
+    """A preview still announces its report, flagged so observers don't act on it; ``slave hooks
     test post_curator_run`` sends the same keys a real pass does."""
-    from hermes_cli.hooks import _DEFAULT_PAYLOADS
+    from slave_cli.hooks import _DEFAULT_PAYLOADS
     curator = curator_env["curator"]
     received = []
     _plugins().get_plugin_manager()._hooks.setdefault("post_curator_run", []).append(

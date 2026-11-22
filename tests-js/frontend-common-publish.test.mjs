@@ -48,7 +48,7 @@ function fault(match, code, failures = Infinity) {
 function previousProduct() {
   const out = join(root, 'native-deps')
   mkdirSync(out)
-  writeFileSync(join(out, '.hermes-product'), 'hermes-frontend-product-v1\n')
+  writeFileSync(join(out, '.slave-product'), 'slave-frontend-product-v1\n')
   writeFileSync(join(out, 'old.txt'), 'old')
   return out
 }
@@ -61,7 +61,7 @@ test('a held staging tree publishes once the scanner lets go', async () => {
     writeFileSync(join(product, 'hud-modifier-monitor.exe'), 'new')
   })
   expect(staged.calls).toBe(3)
-  expect(readdirSync(out).sort()).toEqual(['.hermes-product', 'hud-modifier-monitor.exe'])
+  expect(readdirSync(out).sort()).toEqual(['.slave-product', 'hud-modifier-monitor.exe'])
   expect(readdirSync(root)).toEqual(['native-deps'])
 })
 

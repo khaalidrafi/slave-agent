@@ -16,7 +16,7 @@ def _pytest(tmp_path: Path, *args: str, **env: str) -> tuple[subprocess.Complete
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "-q", "-o", "addopts=", "-p", "no:cacheprovider", *args],
         cwd=ROOT, capture_output=True, text=True, timeout=300, check=False,
-        env={**os.environ, "HERMES_CONTRACT_ACCOUNTING": str(artifact), **env},
+        env={**os.environ, "SLAVE_CONTRACT_ACCOUNTING": str(artifact), **env},
     )
     return result, artifact
 

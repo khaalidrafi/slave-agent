@@ -15,13 +15,13 @@ from tests.gateway.test_run_progress_topics import _make_runner
 @pytest.mark.parametrize('error', [None, 'codex app-server subprocess exited unexpectedly'], ids=['completed', 'failed_after_text'])
 async def test_codex_held_partial_final_reaches_chat_only_rewritten(error, monkeypatch):
     import gateway.run as gateway_run
-    from hermes_cli import plugins
+    from slave_cli import plugins
     from agent.transports.codex_app_server_session import CodexAppServerSession, TurnResult
     from gateway.config import Platform, StreamingConfig
     from gateway.session import SessionSource
     from gateway.platforms.event import MessageEvent, MessageType
 
-    home = Path(os.environ['HERMES_HOME'])
+    home = Path(os.environ['SLAVE_HOME'])
     redactor_home(home, 'http://127.0.0.1:9/v1', hold=True)
     plugins._reset_plugin_managers_for_tests()
     def run_turn(self, user_input, **kwargs):
@@ -30,7 +30,7 @@ async def test_codex_held_partial_final_reaches_chat_only_rewritten(error, monke
                           thread_id='thread-held', turn_id='turn-held')
     monkeypatch.setattr(CodexAppServerSession, 'run_turn', run_turn)
     monkeypatch.setattr(CodexAppServerSession, 'ensure_started', lambda self: 'thread-held')
-    monkeypatch.setattr(gateway_run, '_hermes_home', home)
+    monkeypatch.setattr(gateway_run, '_slave_home', home)
     monkeypatch.setattr(gateway_run, '_resolve_runtime_agent_kwargs', lambda: {
         'api_key': 'sk-fake', 'base_url': 'http://127.0.0.1:9/v1', 'provider': 'custom',
         'api_mode': 'codex_app_server'})

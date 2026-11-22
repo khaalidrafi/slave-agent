@@ -45,7 +45,7 @@ def _venv(root: Path) -> Path:
 def _payload(root: Path, python: str) -> Path:
     """A sealed payload layout whose recorded interpreter is *python*."""
     payload = root / "payload"
-    repo = payload / "hermes-agent"
+    repo = payload / "slave-agent"
     repo.mkdir(parents=True)
     tools = payload / "tools" / "python"
     tools.mkdir(parents=True)
@@ -53,8 +53,8 @@ def _payload(root: Path, python: str) -> Path:
     store_python.write_text(f"#!/bin/sh\nexec {python!s} \"$@\"\n", encoding="utf-8")
     store_python.chmod(store_python.stat().st_mode | stat.S_IEXEC)
     (payload / "manifest.json").write_text(json.dumps({
-        "schema": 1, "target": "test", "repo": "hermes-agent", "venv": "venv", "store": "tools",
-        "runtime": {"repoDir": "hermes-agent", "toolsDir": "tools", "storePython": "tools/python/python",
+        "schema": 1, "target": "test", "repo": "slave-agent", "venv": "venv", "store": "tools",
+        "runtime": {"repoDir": "slave-agent", "toolsDir": "tools", "storePython": "tools/python/python",
                     "sitePackages": "venv/site", "commands": {}},
     }), encoding="utf-8")
     return repo

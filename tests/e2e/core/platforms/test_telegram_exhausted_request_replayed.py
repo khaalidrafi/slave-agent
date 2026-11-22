@@ -65,7 +65,7 @@ def test_exhausted_request_is_answered_on_the_fresh_session(tmp_path, fits_after
         # health: allow HX013 -- absence proof: a second replay or duplicate answer would land in this window
         time.sleep(8)
         gw.wait_idle()
-        with closing(sqlite3.connect(f"file:{gw.hermes_home / 'state.db'}?mode=ro", uri=True)) as db:
+        with closing(sqlite3.connect(f"file:{gw.slave_home / 'state.db'}?mode=ro", uri=True)) as db:
             sessions = db.execute("SELECT id, end_reason FROM sessions ORDER BY started_at").fetchall()
             stored = db.execute("SELECT session_id FROM messages WHERE role='user' AND content LIKE ?",
                                 (f"%{_REQUEST}%",)).fetchall()

@@ -1,5 +1,5 @@
 {
-  "name": "@hermes/root-tests",
+  "name": "@slave-agent/root-tests",
   "private": true,
   "engines": {
     "npm": "npm is refused here: run pnpm install --frozen-lockfile at the repository root"

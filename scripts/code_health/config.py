@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from fnmatch import fnmatch
 
-from hermes_agent.compat.paths import original_path
+from slave_agent.compat.paths import original_path
 
 # Master switch, honoured everywhere the ratchet runs (CI, `scripts/check`, the git hooks). It is
 # read from main, never from the branch under test, so a PR cannot relax its own check: CI reads
@@ -109,20 +109,20 @@ RULES: tuple[Rule, ...] = (
     Rule("HX009", "isinstance(r, Exception) on gather results", "check `BaseException`:"
          " `gather(return_exceptions=True)` also returns CancelledError", "ast"),
     # Profile scope (one process serves many profiles).
-    Rule("HX001", "hardcoded Hermes home", "`get_hermes_home()` for paths,"
-         " `display_hermes_home()` for user-facing text (`hermes_constants`); a path that"
+    Rule("HX001", "hardcoded slave-agent home", "`get_slave_home()` for paths,"
+         " `display_slave_home()` for user-facing text (`slave_constants`); a path that"
          " deliberately lives under the user's home, not the profile (e.g. the profiles root),"
          " takes `# health: allow HX001 -- <why>`", "ast",
          blocking=WARN_UNTIL_REPLAYED,
-         exclude=SINGLE_PROFILE + ("hermes_constants.py",)),
-    Rule("HX002", "new HERMES_* environment variable", "behavioural settings go in"
+         exclude=SINGLE_PROFILE + ("slave_constants.py",)),
+    Rule("HX002", "new SLAVE_* environment variable", "behavioural settings go in"
          " config.yaml, secrets through the secret scope; `.env` is for credentials only",
          "ast", exclude=SINGLE_PROFILE),
     Rule("HX004", "UnscopedSecretError falls back to os.getenv", "bind the owning profile's"
          " secret scope at the spawn site; never read the launch profile's environment",
          "ast", exclude=SINGLE_PROFILE),
     Rule("HX005", "home/config/env captured at import time", "resolve it at call time"
-         " (`get_hermes_home()`, `load_config()`) or key the slot by `hermes_home_key()`;"
+         " (`get_slave_home()`, `load_config()`) or key the slot by `slave_home_key()`;"
          " module constants hold the launch profile's value", "ast",
          exclude=SINGLE_PROFILE),
     Rule("HX012", "raw threading.Thread", "`spawn_context_thread(...)` so the thread keeps"
@@ -138,15 +138,15 @@ RULES: tuple[Rule, ...] = (
     Rule("HX016", "legacy profile setter", "bind a scope:"
          " `agent.runtime_scope.bind_profile_scope(home)` moves home, secrets and terminal policy"
          " together (`bind_turn(session_id, turn_id, fence)` inside it for a turn); `bind_state(scope, ...)` for a host"
-         " that binds less on purpose. A raw `set_hermes_home_override` / `set_secret_scope` /"
+         " that binds less on purpose. A raw `set_slave_home_override` / `set_secret_scope` /"
          " `set_terminal_scope` / `install_profile_terminal_scope` call blocks only when it is new: an"
          " existing call stays until someone migrates it", "ast",
-         exclude=SINGLE_PROFILE + ("agent/runtime_scope.py", "hermes_constants.py",
+         exclude=SINGLE_PROFILE + ("agent/runtime_scope.py", "slave_constants.py",
                                    "agent/secret_scope.py", "tools/terminal_scope.py")),
     # Process identity.
     Rule("HX003", "process identity from argv substrings", "use"
          " `gateway.status.looks_like_gateway_command_line` /"
-         " `hermes_cli.update_cmd._hermes_holder_subcommand` and match full cmdlines", "ast",
+         " `slave_cli.update_cmd._slave_holder_subcommand` and match full cmdlines", "ast",
          blocking=WARN_UNTIL_REPLAYED),
     # Config truthiness.
     Rule("HX010", "bool() of a config/env string", "`bool(\"false\")` is True. Is it set?"
@@ -157,9 +157,9 @@ RULES: tuple[Rule, ...] = (
     Rule("HX011", "if/elif ladder on one name", "use a dict/table -> handler (`_SLASH_DISPATCH`"
          " is the shape)", "ast", exclude=()),
     # Session store: an fd the lock-safety registry cannot see (closing any raw fd on the file
-    # cancels the process's POSIX locks on it; see `_HEADER_PROBE_FDS` in hermes_state_dbfile.py).
+    # cancels the process's POSIX locks on it; see `_HEADER_PROBE_FDS` in slave_state_dbfile.py).
     Rule("HX015", "untracked sqlite3.connect on state.db", "open it with"
-         " `hermes_cli.sqlite_safe_read.connect_tracked(..., tracking_path=<the db path>)`"
+         " `slave_cli.sqlite_safe_read.connect_tracked(..., tracking_path=<the db path>)`"
          " so `has_live_connection()` / `offline_file_access()` see the fd; a deliberately offline"
          " file (snapshot, scratch copy, quarantined file) takes `# health: allow HX015 -- <why>`",
          "ast", blocking=WARN_UNTIL_REPLAYED, exclude=TESTS + ("evals/*",)),
@@ -174,7 +174,7 @@ RULES: tuple[Rule, ...] = (
     Rule("HX014", "private API-error predicate", "use `classify_api_error` (`agent.auxiliary_error_policy`"
          " on the aux path); add the phrasing to its pattern tables", "ast",
          include=("agent/auxiliary*.py", "agent/context_compressor*.py", "agent/turn_*.py")),
-    # Logs reach `hermes debug share` and bug reports: user content and identities stay out of INFO+.
+    # Logs reach `slave debug share` and bug reports: user content and identities stay out of INFO+.
     Rule("HX017", "user content or identity logged at INFO+", "log the metadata, not the value:"
          " `len(text)`, an id or a short hash (`gateway.platforms.helpers.hash_for_log`), or a"
          " redacted form (`redact_phone`); the verbatim value goes to `logger.debug`. A content-named"

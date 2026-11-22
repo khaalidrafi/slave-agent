@@ -1,4 +1,4 @@
-"""Real-profile local browsing: snapshot the user's default Chromium profile into a Hermes-owned copy and
+"""Real-profile local browsing: snapshot the user's default Chromium profile into a Slave-owned copy and
 launch the user's REAL browser binary on it through the launcher.
 
 The real binary (not the packaged Chromium, and never ``--password-store=basic``/``--use-mock-keychain``)
@@ -38,7 +38,7 @@ def real_profile_fallback_note(err: str) -> str:
 def _unsupported_reason(browser) -> Optional[str]:
     """Why the default browser's profile can't be used, else None. A pre-release channel lives in a profile
     dir we don't resolve; normalizing it to the stable family would drive a DIFFERENT account."""
-    from hermes_cli.browser_connect import UNSUPPORTED_CHANNEL
+    from slave_cli.browser_connect import UNSUPPORTED_CHANNEL
     if browser is None:
         return (_RP + "your default browser is not a supported Chromium browser (Chrome, Edge, Brave, "
                 "Brave Origin, Chromium). Real-profile browsing requires a Chromium default; set one or turn the toggle off.")
@@ -51,25 +51,25 @@ def _unsupported_reason(browser) -> Optional[str]:
 
 def _snapshot_error(err: str) -> str:
     """A locked profile adds the approved-close command, which the agent must ASK the user about first."""
-    from hermes_cli.browser_connect import _PROFILE_LOCKED_PREFIX
+    from slave_cli.browser_connect import _PROFILE_LOCKED_PREFIX
     if err and err.startswith(_PROFILE_LOCKED_PREFIX):
         return (err[len(_PROFILE_LOCKED_PREFIX):] + " To close it (only after the user approves — it "
-                "quits their browser and loses unsaved tabs), run: `hermes browser close-profile`; the next "
+                "quits their browser and loses unsaved tabs), run: `slave browser close-profile`; the next "
                 "browser session then uses the profile.")
     return f"{_RP}{err}"
 
 
 def _home_lock() -> threading.Lock:
-    from hermes_constants import hermes_home_key
+    from slave_constants import slave_home_key
     with _locks_guard:
-        return _locks.setdefault(hermes_home_key(), threading.Lock())
+        return _locks.setdefault(slave_home_key(), threading.Lock())
 
 
 def real_profile_key() -> str:
     """Launcher key of the CURRENT profile's real-profile browser. Per home: one process serves many profiles,
     so a consent-off profile must never stop another's browser, nor a consenting one reuse its cookie jar."""
-    from hermes_constants import hermes_home_key
-    return f"hermes-real-profile@{hermes_home_key()}"
+    from slave_constants import slave_home_key
+    return f"slave-real-profile@{slave_home_key()}"
 
 
 def terminate_real_profile_browser() -> None:
@@ -83,7 +83,7 @@ def _consent_revoked() -> tuple[None, None]:
     revoking consent actually removes the credential copies."""
     terminate_real_profile_browser()
     try:
-        from hermes_cli.browser_connect import cleanup_real_profile_snapshots
+        from slave_cli.browser_connect import cleanup_real_profile_snapshots
         cleanup_real_profile_snapshots()
     except OSError as exc:
         logger.debug("real-profile cleanup-on-consent-off failed: %s", exc)
@@ -91,7 +91,7 @@ def _consent_revoked() -> tuple[None, None]:
 
 
 def _launch(browser_name: str) -> tuple[Optional[str], Optional[str]]:
-    from hermes_cli.browser_connect import chromium_executable, real_profile_copy_dir, snapshot_real_profile
+    from slave_cli.browser_connect import chromium_executable, real_profile_copy_dir, snapshot_real_profile
     from tools.browser_launcher import launch_chromium
     from tools.browser_session import ensure_screen_for_headed_chromium
     real_binary = chromium_executable(browser_name)
@@ -102,7 +102,7 @@ def _launch(browser_name: str) -> tuple[Optional[str], Optional[str]]:
     def overlay() -> Optional[str]:
         # The snapshot overlay rewrites Cookies / Login Data, so it runs inside the launcher's cross-process
         # step on the copy dir: never beside another process's copy, never under a live copy-browser (maybe
-        # from an earlier Hermes process; the launcher ATTACHES to that one instead).
+        # from an earlier Slave process; the launcher ATTACHES to that one instead).
         copied, err = snapshot_real_profile(browser_name)
         if err or not copied:
             snapshot_failure.append(_snapshot_error(err))
@@ -138,13 +138,13 @@ def real_profile_cdp() -> tuple[Optional[str], Optional[str]]:
     lock = _home_lock()
     if not lock.acquire(timeout=_LOCK_TIMEOUT_S):
         return None, (_RP + "the real-profile browser is already being prepared by another call that has not "
-                      "finished. Retry after that call completes, or restart Hermes if it was abandoned.")
+                      "finished. Retry after that call completes, or restart slave-agent if it was abandoned.")
     try:
         from tools.browser_launcher import get_browser
         running = get_browser(real_profile_key())
         if running is not None:
             return running.cdp_url, None
-        from hermes_cli.browser_connect import detect_default_chromium
+        from slave_cli.browser_connect import detect_default_chromium
         browser_name = detect_default_chromium()
         unsupported = _unsupported_reason(browser_name)
         if unsupported:

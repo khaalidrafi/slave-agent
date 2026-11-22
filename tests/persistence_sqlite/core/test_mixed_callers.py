@@ -13,7 +13,7 @@ from persistence.sqlite import _holder
 
 @pytest.fixture
 def home():
-    return Path(os.environ["HERMES_HOME"])
+    return Path(os.environ["SLAVE_HOME"])
 
 
 @pytest.fixture

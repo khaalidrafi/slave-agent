@@ -261,7 +261,7 @@ def transcript_target(authority, ref):
 
 # A resume reply's rows reach Ink twice (``messages`` and ``display_messages``). Archived rows are display-only
 # and fill only what the live rows leave of this budget, so they keep the reply well under the gateway clients'
-# 8 MiB WebSocket frame cap (``hermes_cli/gateway_client.py``) and never push a reply main could send past it.
+# 8 MiB WebSocket frame cap (``slave_cli/gateway_client.py``) and never push a reply main could send past it.
 # Live rows are never dropped.
 RESUME_HISTORY_BYTES = 3 * 1024 * 1024
 
@@ -415,7 +415,7 @@ def reset_local_session(store, old_entry, session_id, now, display_name):
         is_fresh_reset=True)
     handle = store._persistence_for_key(old_entry.session_key)
     epochs = getattr(store, '_local_authority_epochs', None) or {}
-    epoch = (epochs.get(handle.scope.hermes_home_key, store._local_authority_epoch) if handle is not None
+    epoch = (epochs.get(handle.scope.slave_home_key, store._local_authority_epoch) if handle is not None
              else store._local_authority_epoch)
     handle.bindings.reset_target(epoch=epoch, parent_session_id=old_entry.session_id, entry=entry.to_dict())
     store._entries[old_entry.session_key] = entry

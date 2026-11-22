@@ -27,7 +27,7 @@ def _session(owner_task_id="task-a", session_key="key-a", task_id="container-a",
 
 @pytest.fixture()
 def reg(monkeypatch):
-    monkeypatch.setattr("hermes_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
+    monkeypatch.setattr("slave_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
     registry = ProcessRegistry()
     monkeypatch.setattr(pr, "process_registry", registry)
     # Compression lineage lookups never touch a real state.db here.
@@ -81,7 +81,7 @@ def test_resumed_api_run_keeps_access_after_compression(monkeypatch):
     fresh run id, so after a rotation only the task's own lineage ties the caller to its process."""
     from persistence_assembly import open_persistence, profile_scope
     from tests.fixtures.storage_seed import seed_session
-    monkeypatch.setattr("hermes_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
+    monkeypatch.setattr("slave_cli.process_identity._update_supervised_pgids", lambda verb, pgids: None)
     registry = ProcessRegistry()
     monkeypatch.setattr(pr, "process_registry", registry)
     with open_persistence(profile_scope()) as store:

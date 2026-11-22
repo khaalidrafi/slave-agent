@@ -23,7 +23,7 @@ from persistence.core.errors import PermanentStoreError
 from tests.fixtures.storage_holder import raw_holder
 from tui_gateway.hosted_room_prepare_stall import STALL_ATTEMPTS
 
-MEMBERS = [{"member_id": "default", "profile": "default", "handle": "hermes"},
+MEMBERS = [{"member_id": "default", "profile": "default", "handle": "slave"},
            {"member_id": "ops", "profile": "ops", "handle": "ops"}]
 
 

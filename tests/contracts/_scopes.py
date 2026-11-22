@@ -1,4 +1,4 @@
-"""Scopes for the contract suites: one profile home per label under the suites' fake Hermes root."""
+"""Scopes for the contract suites: one profile home per label under the suites' fake slave-agent root."""
 
 from __future__ import annotations
 

@@ -1,8 +1,8 @@
 import { PassThrough } from 'stream'
 
-import { renderSync } from '@hermes/ink'
-import { canonicalResult } from '@hermes/shared/gateway-canonical'
-import type { SessionInfo } from '@hermes/shared/gateway-types'
+import { renderSync } from '@slave-agent/ink'
+import { canonicalResult } from '@slave-agent/shared/gateway-canonical'
+import type { SessionInfo } from '@slave-agent/shared/gateway-types'
 import React from 'react'
 import { describe, expect, it } from 'vitest'
 
@@ -22,14 +22,14 @@ const snapshot = {
   info: {
     branch: 'main',
     cwd: '/work/repo',
-    desktop_protocol: 'hermes-gateway-v1',
+    desktop_protocol: 'slave-gateway-v1',
     lazy: true,
     mcp_servers: [
       { connected: true, name: 'nous-support', status: 'connected', tools: 6, transport: 'http' },
       { connected: false, disabled: true, name: 'linear', status: 'disabled', tools: 0, transport: 'stdio' }
     ],
     model: 'anthropic/claude-opus-5.5',
-    profile_id: '/home/u/.hermes',
+    profile_id: '/home/u/.slave',
     profile_name: 'default',
     provider: 'nous',
     reasoning_effort: 'high',
@@ -106,7 +106,7 @@ describe('banner from a canonical session snapshot', () => {
     // draws its card (headings, version line slot, loading rows) rather than a one-line notice.
     const { info } = canonicalResult('session.resume', {
       ...snapshot,
-      info: { desktop_protocol: 'hermes-gateway-v1', lazy: true, model: 'anthropic/claude-opus-5.5', version: '0.18.0' }
+      info: { desktop_protocol: 'slave-gateway-v1', lazy: true, model: 'anthropic/claude-opus-5.5', version: '0.18.0' }
     })
 
     const frame = await render(info)

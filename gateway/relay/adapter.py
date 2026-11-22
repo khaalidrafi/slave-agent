@@ -149,7 +149,7 @@ class RelayAdapter(RelayDiscordInteractionMixin, BasePlatformAdapter):
         # platforms on one WS and a reply must egress through the platform the
         # inbound came from. Empty for a single-platform gateway (connector default).
         self._platform_by_chat: dict[str, str] = {}
-        # chat_id -> Hermes profile the connector routed the inbound to (multiplex mode). Echoed
+        # chat_id -> Slave profile the connector routed the inbound to (multiplex mode). Echoed
         # on every outbound frame's metadata so the connector can stamp the SAME profile on the
         # next passthrough_forward for that chat; empty on a single-profile gateway.
         self._profile_by_chat: dict[str, str] = {}
@@ -738,7 +738,7 @@ class RelayAdapter(RelayDiscordInteractionMixin, BasePlatformAdapter):
         chat_id: str,
         tasks: list,
         *,
-        title: str = "Hermes is working",
+        title: str = "slave-agent is working",
         reply_to: Optional[str] = None,
         metadata: Optional[dict[str, Any]] = None,
         fallback_text: Optional[str] = None,

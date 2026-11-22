@@ -1,4 +1,4 @@
-"""The standalone Telegram sender (``hermes send``, the ``send_message`` tool, standalone cron
+"""The standalone Telegram sender (``slave send``, the ``send_message`` tool, standalone cron
 delivery) makes the gateway adapter's outbound decisions for the same text: the push-notification
 mode, the invisible-only guard, the ``rich_messages`` fast-path, and a MarkdownV2 retry before
 plain text when Bot API HTML rejects a tag. The ``telegram`` package is stubbed; the bot records
@@ -50,11 +50,11 @@ def _install_telegram_mock(monkeypatch: pytest.MonkeyPatch, bot) -> None:
 
 @pytest.fixture
 def standalone(monkeypatch: pytest.MonkeyPatch, tmp_path):
-    """A temp HERMES_HOME with ``config.yaml`` content of the test's choosing, plus a recording bot."""
+    """A temp SLAVE_HOME with ``config.yaml`` content of the test's choosing, plus a recording bot."""
     for var in ("TELEGRAM_PROXY", "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY",
-                "all_proxy", "HERMES_TELEGRAM_NOTIFICATIONS"):
+                "all_proxy", "SLAVE_TELEGRAM_NOTIFICATIONS"):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
     monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
     monkeypatch.setattr("gateway.platforms.base._detect_macos_system_proxy", lambda: None)
     bot = MagicMock()
@@ -314,7 +314,7 @@ def test_a_sender_written_to_the_earlier_contract_still_delivers(standalone, mon
     (no ``notify``) is reached through the real registry lookup and is never handed ``notify``; a
     sender taking ``**kwargs`` still gets it."""
     from gateway.platform_registry import platform_registry
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
     discover_plugins()
     entry = platform_registry.get("telegram")
     calls = []
@@ -339,7 +339,7 @@ def test_an_unhashable_callable_sender_still_delivers(standalone, monkeypatch) -
     """A ``standalone_sender_fn`` that is a callable object defining ``__eq__`` (so unhashable)
     is reached through the real registry lookup and still gets ``notify``."""
     from gateway.platform_registry import platform_registry
-    from hermes_cli.plugins import discover_plugins
+    from slave_cli.plugins import discover_plugins
     discover_plugins()
 
     class Sender:

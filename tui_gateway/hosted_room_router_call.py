@@ -31,7 +31,7 @@ _ROUTER_MAX_TOKENS = 200
 
 
 def _member_roster(room: Mapping[str, Any], homes: Mapping[str, Path]) -> list[dict[str, str]]:
-    from hermes_cli.profiles import read_profile_meta
+    from slave_cli.profiles import read_profile_meta
 
     roster = []
     for member in room.get("members") or ():

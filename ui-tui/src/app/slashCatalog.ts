@@ -1,4 +1,4 @@
-import type { CommandsCatalogResponse } from '@hermes/shared/gateway-types'
+import type { CommandsCatalogResponse } from '@slave-agent/shared/gateway-types'
 import { useStore } from '@nanostores/react'
 import { atom } from 'nanostores'
 import { useEffect } from 'react'

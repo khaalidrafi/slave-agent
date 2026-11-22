@@ -41,7 +41,7 @@ def test_branch_keeps_its_launch_key_after_the_compressed_root_is_deleted(tmp_pa
         name: {'id': name, 'name': name, 'limit': {'context': 1000000, 'output': 4000}}
         for name in ('original', 'summary')}}}))
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='profile-key', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
 
     def db():

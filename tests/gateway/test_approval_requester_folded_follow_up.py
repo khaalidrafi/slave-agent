@@ -91,4 +91,4 @@ async def test_a_child_process_started_after_a_fold_names_the_turns_actor(follow
     env = {}
     worker.run(_inject_session_context_env, env)  # the env a terminal / execute_code child starts with
 
-    assert (env["HERMES_SESSION_ACTOR_ID"], env["HERMES_SESSION_ACTOR_NAME"]) == actor
+    assert (env["SLAVE_SESSION_ACTOR_ID"], env["SLAVE_SESSION_ACTOR_NAME"]) == actor

@@ -2,7 +2,7 @@
 
 The "database is locked for over Ns" failure names the victim but not the holder, and the
 open-descriptor scan (``holders``) cannot tell a reader from the one writer: every
-Hermes process has the DB open. SQLite's unix VFS takes ``fcntl`` byte-range locks whose offsets
+slave-agent process has the DB open. SQLite's unix VFS takes ``fcntl`` byte-range locks whose offsets
 encode the lock kind, and the kernel exports them with the owning pid, so the holder can be named
 at the moment the deadline passes.
 """
@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-logger = logging.getLogger("hermes_state_lockowners")
+logger = logging.getLogger("slave_state_lockowners")
 
 # sqlite/src/os_unix.c: UNIX_SHM_BASE = (22 + SQLITE_SHM_NLOCK) * 4 = 120; WAL lock i sits at BASE + i.
 _SHM_LOCK_NAMES = {

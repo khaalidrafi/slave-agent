@@ -32,8 +32,8 @@ test('a reused packaged app may report its build commit only across the syntheti
   try {
     git(repo, 'init', '-q')
     const head = commitFile(repo, 'app.ts')
-    const next = commitFile(repo, '.hermes-e2e-next')
-    const app = { appVersion: '0.0.0', commit: head, hermesRoot: repo, platform: process.platform }
+    const next = commitFile(repo, '.slave-e2e-next')
+    const app = { appVersion: '0.0.0', commit: head, slaveRoot: repo, platform: process.platform }
 
     // HEAD -> NEXT: only the marker changed, so the app built at HEAD stands for NEXT.
     const reused = reusedDesktopBuildCommit(repo, 'source', next)

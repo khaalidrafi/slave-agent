@@ -170,7 +170,7 @@ def _create_and_trigger_job(gw: GatewayProc, tag: str, prompt: str) -> str:
                                          "chat_type": "dm", "user_id": "chaos-user"}}
     out = subprocess.run(
         [python_exe(), "-c", CREATE_JOB, json.dumps(spec)], cwd=str(REPO_ROOT),
-        env=hermetic_env(gw.home, gw.hermes_home, tag), capture_output=True, text=True, timeout=120, check=False)
+        env=hermetic_env(gw.home, gw.slave_home, tag), capture_output=True, text=True, timeout=120, check=False)
     assert out.returncode == 0, f"cron job create failed: {out.stderr[-2000:]}"
     return out.stdout.strip().splitlines()[-1]
 
@@ -182,9 +182,9 @@ def test_cron_delivery_then_compress_then_human_input(tmp_path: Path) -> None:
     srv.start()
     tag = new_tag()
     gw = GatewayProc(tmp_path, srv.base_url, tag)
-    (gw.hermes_home / "plugins" / fake_platform.PLUGIN_DIR_NAME / "__init__.py").write_text(
+    (gw.slave_home / "plugins" / fake_platform.PLUGIN_DIR_NAME / "__init__.py").write_text(
         PLUGIN_INIT, encoding="utf-8")
-    cfg_path = gw.hermes_home / "config.yaml"
+    cfg_path = gw.slave_home / "config.yaml"
     cfg = cfg_path.read_text(encoding="utf-8")
     assert "compression:\n  enabled: false\n" in cfg
     cfg_path.write_text(cfg.replace("compression:\n  enabled: false\n", COMPRESSION_CONFIG), encoding="utf-8")

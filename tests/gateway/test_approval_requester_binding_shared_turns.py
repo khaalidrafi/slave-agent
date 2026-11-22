@@ -29,7 +29,7 @@ def _clean_state():
 
 
 def _observed_event(adapter, uid, name, body):
-    text = f"@hermes_bot {body}"
+    text = f"@slave_bot {body}"
     msg = _group_message(text, from_user_id=uid, from_user_name=name, entities=[_mention_entity(text)])
     return adapter._apply_telegram_group_observe_attribution(adapter._build_message_event(msg, MessageType.TEXT))
 

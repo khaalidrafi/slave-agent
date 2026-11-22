@@ -3,7 +3,7 @@ surface and nothing bundled; both answer for the requested profile's home."""
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+import slave_yaml as yaml
 import pytest
 
 from agent import i18n, i18n_layers
@@ -24,17 +24,17 @@ def _call(server, method, params):
 
 def test_languages_and_catalog_serve_pack_layers_per_surface(tmp_path, monkeypatch, clean_layers):
     from tui_gateway import server
-    from hermes_cli.plugins import PluginContext, PluginManager
-    from hermes_cli.plugins_manifest import PluginManifest
+    from slave_cli.plugins import PluginContext, PluginManager
+    from slave_cli.plugins_manifest import PluginManifest
 
     home = tmp_path / "home"
     (home / "locales").mkdir(parents=True)
     (home / "locales" / "de.yaml").write_text(yaml.safe_dump({"approval": {"denied": "Overlay-DE"}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", home)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", home)
     i18n.reset_language_cache()
 
-    ctx = PluginContext(PluginManifest(name="hermes-lang-pl", source="user", path=str(home)), PluginManager())
+    ctx = PluginContext(PluginManifest(name="slave-lang-pl", source="user", path=str(home)), PluginManager())
     ctx.register_locale("pl", {"approval": {"denied": "Odrzucono"}}, endonym="Polski")
     ctx.register_locale("pl", {"status": {"ready": "Gotowy"}}, surface="tui")
     ctx.register_locale("pl", {"settings": {"title": "Ustawienia"}}, surface="desktop", rtl=False)
@@ -42,7 +42,7 @@ def test_languages_and_catalog_serve_pack_layers_per_surface(tmp_path, monkeypat
     languages = _call(server, "i18n.languages", {})["result"]["languages"]
     ids = [row["id"] for row in languages]
     assert ids == ["en", *sorted(ids[1:])]
-    assert {"id": "pl", "endonym": "Polski", "rtl": False, "source": "plugin:hermes-lang-pl",
+    assert {"id": "pl", "endonym": "Polski", "rtl": False, "source": "plugin:slave-lang-pl",
             "surfaces": ["core", "tui", "desktop"]} in languages
     assert {"id": "ar", "endonym": "العربية", "rtl": True, "source": "bundled", "surfaces": ["core", "tui"]} in languages
 
@@ -69,8 +69,8 @@ def test_catalog_answers_for_the_requested_profile_home(tmp_path, monkeypatch, c
     (launch / "locales").mkdir(parents=True)
     (named / "locales").mkdir(parents=True)
     (named / "locales" / "de.yaml").write_text(yaml.safe_dump({"approval": {"denied": "Nur named"}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    monkeypatch.setattr(server, "_hermes_home", launch)
+    monkeypatch.setenv("SLAVE_HOME", str(launch))
+    monkeypatch.setattr(server, "_slave_home", launch)
     monkeypatch.setattr(server, "_profile_home", lambda name: str(named) if name == "named" else None)
     i18n.reset_language_cache()
 
@@ -82,31 +82,31 @@ def test_cold_gateway_serves_an_installed_pack_before_any_agent_exists(tmp_path,
     """The Desktop asks for ``i18n.languages`` / ``i18n.catalog`` right after connecting, before anything
     in the gateway has discovered plugins. An installed, enabled pack must already be in both answers."""
     from tui_gateway import server
-    from hermes_cli import plugins as plugins_mod
+    from slave_cli import plugins as plugins_mod
 
     home = tmp_path / "home"
-    plugin = home / "plugins" / "hermes-lang-ko"
+    plugin = home / "plugins" / "slave-lang-ko"
     (plugin / "locales").mkdir(parents=True)
     empty_bundled = tmp_path / "bundled"
     empty_bundled.mkdir()
     (plugin / "plugin.yaml").write_text(yaml.safe_dump({
-        "name": "hermes-lang-ko", "version": "1.0.0", "description": "Korean pack",
+        "name": "slave-lang-ko", "version": "1.0.0", "description": "Korean pack",
         "provides_locales": [{"id": "ko", "endonym": "한국어"}]}, allow_unicode=True), encoding="utf-8")
     (plugin / "locales" / "ko.yaml").write_text("{}\n", encoding="utf-8")
     (plugin / "locales" / "ko.desktop.yaml").write_text(
         yaml.safe_dump({"settings": {"appearance": {"modelPricingTitle": "모델 가격"}}}, allow_unicode=True),
         encoding="utf-8")
-    (home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["hermes-lang-ko"]}}), encoding="utf-8")
+    (home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["slave-lang-ko"]}}), encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(server, "_hermes_home", home)
+    monkeypatch.setenv("SLAVE_HOME", str(home))
+    monkeypatch.setattr(server, "_slave_home", home)
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     i18n.reset_language_cache()
     manager = plugins_mod.get_plugin_manager()
     assert "ko" not in i18n_layers.pack_languages()  # nothing has loaded plugins in this home yet
     try:
         ko = next(row for row in _call(server, "i18n.languages", {})["result"]["languages"] if row["id"] == "ko")
-        assert ko["source"] == "plugin:hermes-lang-ko" and "desktop" in ko["surfaces"]
+        assert ko["source"] == "plugin:slave-lang-ko" and "desktop" in ko["surfaces"]
         desktop = _call(server, "i18n.catalog", {"lang": "ko", "surface": "desktop"})["result"]
         assert desktop["messages"] == {"settings.appearance.modelPricingTitle": "모델 가격"}
     finally:
@@ -115,13 +115,13 @@ def test_cold_gateway_serves_an_installed_pack_before_any_agent_exists(tmp_path,
 
 def test_failed_plugin_discovery_still_answers_with_bundled_languages(tmp_path, monkeypatch, clean_layers):
     from tui_gateway import server
-    from hermes_cli import plugins as plugins_mod
+    from slave_cli import plugins as plugins_mod
 
     def boom(force=False):
         raise RuntimeError("plugin loader broke")
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setattr(server, "_slave_home", tmp_path)
     monkeypatch.setattr(plugins_mod, "discover_plugins", boom)
     i18n.reset_language_cache()
 
@@ -136,7 +136,7 @@ def test_slow_plugin_discovery_does_not_hold_up_other_requests(method, tmp_path,
     import queue
     import threading
 
-    from hermes_cli import plugins as plugins_mod
+    from slave_cli import plugins as plugins_mod
     from tui_gateway import server
 
     class Transport:
@@ -153,8 +153,8 @@ def test_slow_plugin_discovery_does_not_hold_up_other_requests(method, tmp_path,
         entered.set()
         assert release.wait(10)
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setenv("SLAVE_HOME", str(tmp_path))
+    monkeypatch.setattr(server, "_slave_home", tmp_path)
     monkeypatch.setattr(plugins_mod, "discover_plugins", slow_discovery)
     transport = Transport()
     try:

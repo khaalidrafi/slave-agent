@@ -1,6 +1,6 @@
 """A peer DM that overflows the LOCAL Bot Chat's context auto-resets it, and the follow-up is answered.
 
-``hermes peer dm`` lands in the peer's Bot Chat, a ``source='local'`` session the authority FIFO owns
+``slave peer dm`` lands in the peer's Bot Chat, a ``source='local'`` session the authority FIFO owns
 (not an API conversation, so the API_SERVER exemption from the compression-exhaustion reset never
 applies). The reset ran INSIDE the overflowing turn, while that turn's own admission was still
 ``started``: ``reset_local_target`` refused it (``session_busy``), the exception became a failed turn
@@ -117,7 +117,7 @@ def overflow_run(tmp_path_factory):
                       'compression': {'provider': 'custom', 'model': 'fake-model', 'base_url': url}},
         'platforms': {'api_server': {'enabled': True, 'extra': {'host': '127.0.0.1', 'port': api_port, 'key': KEY}}},
         'platform_toolsets': {'cli': [], 'api_server': []}}))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                              OPENAI_API_KEY='loopback-only', PYTHONUNBUFFERED='1')
     big = 'MKBIG ' + 'lorem ipsum dolor sit amet ' * 12000  # the live repro's DM (capped to 64 KB at the door)
     try:
@@ -126,7 +126,7 @@ def overflow_run(tmp_path_factory):
             assert status == 201, created
             sid = created['session']['id']
             first = _post(api_port, f'/api/sessions/{sid}/chat', {'message': big})
-            # ``hermes peer dm`` resolves the Bot Chat by exact title before every DM (``_find_bot_chat``).
+            # ``slave peer dm`` resolves the Bot Chat by exact title before every DM (``_find_bot_chat``).
             found = _get(api_port, '/api/sessions?limit=200&title=Bot+Chat&include_hidden=1')['data']
             follow = _post(api_port, f'/api/sessions/{sid}/chat', {'message': 'short follow-up MKFOLLOW'})
     finally:
@@ -196,7 +196,7 @@ def racing_run(tmp_path_factory):
                       'compression': {'provider': 'custom', 'model': 'fake-model', 'base_url': url}},
         'platforms': {'api_server': {'enabled': True, 'extra': {'host': '127.0.0.1', 'port': api_port, 'key': KEY}}},
         'platform_toolsets': {'cli': [], 'api_server': []}}))
-    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env = child_env() | dict(HOME=str(user), USERPROFILE=str(user), SLAVE_HOME=str(home), PYTHONPATH=str(root),
                              OPENAI_API_KEY='loopback-only', PYTHONUNBUFFERED='1')
     big = 'MKBIG ' + 'lorem ipsum dolor sit amet ' * 12000
     results = {}
