@@ -100,16 +100,32 @@ KEEP_RE = re.compile(
     r"|hermes-parser|hermes-estree|hermes-engine"
     r"|nousresearch/hermes-sandbox"
     r"|hermes-?\d|Hermes-?\d"
+    # Third-party plugin products whose own names carry the word (catalog entries
+    # name them: their titles, repos and subdirs are their brand, not ours).
+    r"|[Hh]ermes[Ff]ord|[Hh]ermes[Mm]ade|[Hh]ermes[Vv]ault|[Tt]ama[Hh]ermes|[Ll]it[Hh]ermes"
+    r"|[Gg]it[Hh]ermes|[Hh]ermes[Bb]ots|[Hh]ermes[Cc]law|hermessysadmin|hermeschan"
+    r"|CursorProviderHermes|soloknucklefXrhermes|ModelProviderHermes|athenaforhermes"
+    r"|hermesagentradio\.com"
+    # Guard fixtures that deliberately CONTAIN hermes-shaped letters to prove the
+    # system guards do not over-match (myhermes-dashboard, shermesa, hermesbubble).
+    r"|myhermes|shermesa|summoninghermes|hermesbubble"
     # Upstream plugin-catalog schema key: third-party catalog format, renamed
     # keys would corrupt every entry (upstream tooling reads requires_hermes).
     r"|requires_hermes"
     # Third-party and upstream-official plugin repositories: someone else's
     # repo names (Qhantom-Labs/hermesclaw, raw.githubusercontent URLs), never
-    # our brand to change.
-    r"|github\.com/[\w.-]+/[\w.-]*hermes[\w.-]*"
-    r"|githubusercontent\.com/[\w.-]+/[\w.-]*hermes[\w.-]*"
+    # our brand to change. Case-blind on the hermes fragment so capitalized
+    # third-party names (AceDataCloudModelProviderHermes) keep too.
+    r"|github\.com/[\w.-]*[Hh]ermes[\w.-]*"
+    r"|githubusercontent\.com/[\w.-]*[Hh]ermes[\w.-]*"
     # Upstream installer host (we ship a package, not an installer).
     r"|hermes-assets\.nousresearch\.com"
+    # Upstream's Windows update identity (a dotted product id in install tests).
+    r"|NousResearch\.Hermes[\w.]*"
+    # LEGACY-NAME references that must keep matching pre-rename installs: the
+    # lifecycle/approval guards detect old hermes-named processes and commands
+    # (an upgrading user still runs them), and their tests feed exactly those.
+    r"|hermes\[\.\\-\]\?gateway|\\bhermes|\\bhermes\\s\+|hermes gateway (?:restart|stop)"
     # Upstream container/CI infrastructure paths: /opt/hermes, /etc/hermes,
     # /run/secrets/hermes-env, /home/hermes-check, $RUNNER_TEMP/hermes-*.
     # Facts about upstream's build environments, not user-visible brand.
@@ -120,6 +136,19 @@ KEEP_RE = re.compile(
 # leading . / _ or word char, so dotted paths and identifiers hit the arms above.
 IDENTITY_RE = re.compile(
     r"@hermes/|(?P<keep>" + KEEP_RE.pattern + r")"
+    r"|@hermes(?![\w.])"              # the desktop mention handle @hermes -> @slave
+    r"|@Hermes(?![\w.])"              # capitalized mention handle in tests/fixtures
+    r"|@hermes(?=\.(?!dev))"           # @hermes. at sentence end (not the .dev domain)
+    r"|@Hermes(?=\.(?!dev))"
+    r"|(?<=[a-z])Hermes(?![a-z0-9_])"  # camelCase/PascalCase tails: canUpdateHermes, Get-SourceHermes, PtyHermes
+    r"|(?<=\$)hermes(?![\w])"         # $hermes shell variables in test assets
+    r"|(?<=\$)HERMES(?![\w])"         # $HERMES shell variables (capital)
+    r"|(?<=\\n)hermes(?=[ \t]+)"      # CLI invocation at an escaped-newline start in a literal
+    r"|(?<=\\n)hermes(?=-)"           # hyphenated token at an escaped-newline start
+    r"|hermes(?=room)"                 # the room-grants auth scheme hermesroom -> slaveroom
+    r"|(?<=%2F)hermes(?=%2F)"          # URL-encoded /hermes/ API path prefix
+    r"|(?<=\.)Hermes(?![\w-])"         # Fixture.Hermes-style ids in our test data
+    r"|(?<=\.)HERMES(?![\w-])"         # .HERMES state-dir spelling in case-insensitive tests
     r"|hermes-agent(?![\w])|hermes-tui|hermes-ink|hermes-bots"
     r"|HERMES_|hermes_"
     r"|\.hermes(?![\w-])"
@@ -128,6 +157,26 @@ IDENTITY_RE = re.compile(
     r"|Hermes(?=[A-Za-z0-9_])"   # PascalCase identifiers: HermesCLI
     r"|HERMES(?=[A-Za-z0-9_])"
     r"|-hermes-"
+    # Path SEGMENTS (2026-11-23, Owner order "Rename ALL"): bin/hermes, refs/hermes,
+    # docker/hermes-exec-shim.sh, /run/hermes-service — ours, and the trailing
+    # component may be followed by /, a quote, a space or a hyphen. Upstream's
+    # infra prefixes (/opt|/etc|/run/secrets|/home|/tmp|RUNNER_TEMP + /hermes...)
+    # stay KEEP-protected above, so only fork-owned paths move.
+    r"|(?<=/)hermes(?![A-Za-z0-9_])"
+    r"|(?<=/)Hermes(?![A-Za-z0-9_])"
+    r"|(?<=/)HERMES(?![A-Za-z0-9_])"
+    # .hermes-* artifact prefixes (.hermes-update.lock, .hermes-sandbox/) — the
+    # state dir's own artifact namespace, not third-party.
+    r"|(?<=\.)hermes(?=-)"
+    # Token-start hermes-<word> (hermes-ref: action inputs, hermes-home in CI env
+    # values). KEEPS above still win for upstream URLs and third-party packages.
+    r"|(?<![\w./@$-])hermes(?=-)"
+    r"|(?<![\w./@$-])Hermes(?=-)"
+    r"|(?<![\w./@$-])HERMES(?=-)"
+    # Identifier TAILS after an underscore (_OPTION_ID_TO_HERMES, _map_outcome_
+    # to_hermes) — the leading-underscore shapes the word-boundary arms miss.
+    r"|(?<=_)hermes(?![A-Za-z0-9_])"
+    r"|(?<=_)HERMES(?![A-Za-z0-9_])"
     r"|(?<![\w./@$])hermes(?![\w])"
     r"|(?<![\w./@$])Hermes(?![\w])"
     r"|(?<![\w./@$])HERMES(?![\w])"
@@ -189,7 +238,7 @@ def covered_extensions() -> set[str]:
 # LICENSE is a legal notice we must not alter; contributors/ is attribution data;
 # native/ is vendored. Lockfiles carry our dist name too, so the identity tier
 # includes them (they have no prose, so only identity rules could ever apply).
-NEVER_RE = re.compile(r"^(LICENSE|contributors/|native/|node_modules/)|(^|/)\.git/")
+NEVER_RE = re.compile(r"^(LICENSE|contributors/|native/|node_modules/|scripts/releases/authors_legacy\.py)|(^|/)\.git/")
 # Files that embed the *search* vocabulary. Rewriting them would blind or break the
 # tooling: rebrand.py holds the rule arms, brand.py the vocabulary, and the
 # fork-brand CI asserts that no old import survives.
@@ -569,8 +618,8 @@ def verify() -> list[str]:
     kept = 0
     for line in residual:
         path_part, _, text = line.partition(":")
-        if path_part in SELF_PATHS:
-            continue
+        if path_part in SELF_PATHS or NEVER_RE.match(path_part):
+            continue  # the tool itself, and attribution data we never rewrite
         stripped = KEEP_RE.sub("", text)
         if "hermes" not in stripped.lower():
             kept += 1
@@ -617,7 +666,11 @@ def main() -> int:
             except (UnicodeDecodeError, OSError):
                 continue  # binary
             new, k = engine_for(path, tier)(src)
-            if not k:
+            # A match that substitutes identical text (every KEEP arm returns its
+            # input) is not a replacement: counting it broke the dry-run
+            # idempotency gate ("0 files, 0 replacements") on any tree that
+            # legitimately carries kept upstream/third-party names.
+            if not k or new == src:
                 continue
             hits += k
             changed += 1
