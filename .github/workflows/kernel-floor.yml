@@ -37,5 +37,5 @@ jobs:
         # (this step has been red on every push since 2026-11-18 for exactly
         # that reason -- 'No module named pytest').
         run: |
-          python3 -m pip install --quiet pytest 'ruamel.yaml'
+          python3 -m pip install --quiet pytest 'ruamel.yaml' psutil
           python3 -m pytest -q tests/scripts/test_kernel_floor.py
