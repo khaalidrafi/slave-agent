@@ -773,6 +773,33 @@ def apply_subprocess_home_env(env: MutableMapping[str, str]) -> None:
     apply_scratch_tmp_env(env)
 
 
+# ---- Launch-only env vars ----
+# Only the real launch environment (service unit ``Environment=``, container image, operator
+# export) may set these. Every user-writable layer skips them, so a user ``.env`` or a
+# user-configured secret source cannot repoint a deployment bootstrap value. ``HERMES_MANAGED_DIR``
+# would void administrator policy at a directory the user controls (#135200); ``HERMES_HOME``
+# moves identity, policy and plugin scope wholesale -- one write to ``~/.hermes/.env`` would
+# otherwise relocate SOUL.md, config.yaml, plugins, skills and cron on the next start (#144685).
+# ``GATEWAY_STATUS_REPORT_URL`` turns on gateway status reports to a URL the hosting deployment
+# chose (``gateway/status_report``): the launch stamp is its opt-in, so no user-writable layer may
+# turn reports on or point them somewhere else.
+# Skipped by ``hermes_cli.env_loader._load_dotenv_with_fallback``,
+# ``hermes_cli.config.reload_env``, ``agent.secret_sources.registry.apply_all`` (reported as
+# ``skipped_protected``) and ``onepassword.apply_onepassword_secrets``; refused by the ``.env``
+# writers (``validate_env_var_name_for_write``) and never mirrored by ``_publish_env_value``.
+# RESTORED 2026-11-23: the 375-commit upstream merge kept the consumers (hermes_cli/config.py
+# imports these names) but dropped this definition -- every runtime import of hermes_cli.config
+# died on the missing name while compileall (the chain's test lane) saw only syntax.
+LAUNCH_ONLY_ENV_KEYS = frozenset({"HERMES_MANAGED_DIR", "HERMES_HOME", "GATEWAY_STATUS_REPORT_URL"})
+
+
+def is_launch_only_env_key(name: str) -> bool:
+    """True when ``name`` is a launch-only key in any letter case. Windows env names are
+    case-insensitive, so ``hermes_managed_dir=`` in a ``.env`` would set ``HERMES_MANAGED_DIR``;
+    folding on POSIX too is harmless (a lowercase name there is a distinct var nothing reads)."""
+    return name.upper() in LAUNCH_ONLY_ENV_KEYS
+
+
 # --- Scratch dir: Hermes' own temp space, never the system /tmp ---
 # System temp is tmpfs on most Linux distros and containers, so browser profiles, PTY probes,
 # download spools and every ``tempfile.mkdtemp()`` a Hermes-launched script performs eat RAM
