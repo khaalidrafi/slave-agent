@@ -61,8 +61,10 @@ jobs:
         # block glyph". A *new* word-mark is allowed, but it has to come from brand.py.
         run: |
           # exclude this file: the guard's own pattern literal lives here and
-          # would self-match (the lane has been red since the island landed)
-          if git grep -I -l -F '██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗' -- . ':(exclude).github/workflows/fork-brand-consistency.yml'; then
+          # would self-match; and specs/002 quotes the deleted row as HISTORY
+          # (documenting the art is not drawing it). Both kept the lane red
+          # since the island landed.
+          if git grep -I -l -F '██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗' -- . ':(exclude).github/workflows/fork-brand-consistency.yml' ':(exclude)specs/'; then
             echo "drawn word-art is back; build the nameplate from brand.PRODUCT" >&2
             exit 1
           fi
